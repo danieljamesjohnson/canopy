@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      hive_ce_generator|hive_ce_generator:
+        enabled: true
+        options:
+          use_null_safety: true
