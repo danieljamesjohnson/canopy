@@ -1,0 +1,51 @@
+import 'package:hive_ce/hive.dart';
+import 'package:uuid/uuid.dart';
+
+part 'scheduled_chunk.g.dart';
+
+const _uuid = Uuid();
+
+/// Type of a scheduled chunk. Break types have null goalId.
+enum ChunkType { work, shortBreak, longBreak }
+
+@HiveType(typeId: 3)
+class ScheduledChunk extends HiveObject {
+  ScheduledChunk({
+    String? id,
+    required this.chunkTypeIndex,
+    this.goalId,
+    required this.durationMinutes,
+    this.anchoredStartMinutes,
+    this.rationale = '',
+  }) : id = id ?? _uuid.v4();
+
+  @HiveField(0)
+  final String id;
+
+  /// ChunkType.index
+  @HiveField(1)
+  int chunkTypeIndex;
+
+  /// null for break chunks
+  @HiveField(2)
+  String? goalId;
+
+  @HiveField(3)
+  int durationMinutes;
+
+  /// Set only when anchored to a CommitmentBlock. Minutes from midnight UTC.
+  @HiveField(4)
+  int? anchoredStartMinutes;
+
+  /// One-line explanation of why this chunk was scheduled.
+  @HiveField(5)
+  String rationale;
+
+  @HiveField(6)
+  bool isCompleted = false;
+
+  @HiveField(7)
+  bool isSkipped = false;
+
+  ChunkType get chunkType => ChunkType.values[chunkTypeIndex];
+}
