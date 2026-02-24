@@ -47,7 +47,7 @@ Key non-negotiable constraints carried through all phases:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Add dependencies, create project directory scaffold, minimal main.dart
+- [x] 01-01-PLAN.md — Add dependencies, create project directory scaffold, minimal main.dart
 - [ ] 01-02-PLAN.md — Hive entity models (7 entities) + build_runner TypeAdapter generation
 - [ ] 01-03-PLAN.md — go_router with StatefulShellRoute, 6 stub screens, 4 ChangeNotifier stubs
 - [ ] 01-04-PLAN.md — Repository interfaces/stubs, database init, migration runner, main.dart wiring, unit tests
@@ -281,7 +281,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/4 | Planned | - |
+| 1. Foundation | 1/4 | In progress | - |
 | 2. Goals and Commitments | 0/0 | Not started | - |
 | 3. Schedule Generation and Morning Check-In | 0/0 | Not started | - |
 | 4. Chunk Tracking and Notifications | 0/0 | Not started | - |
