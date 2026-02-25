@@ -24,7 +24,7 @@ Key non-negotiable constraints carried through all phases:
 
 ## Phases
 
-- [ ] **Phase 1: Foundation** — Database, routing, Provider scaffold, and migration runner — no user-visible features
+- [x] **Phase 1: Foundation** — Database, routing, Provider scaffold, and migration runner — no user-visible features (completed 2026-02-25)
 - [ ] **Phase 2: Goals and Commitments** — Three goal types CRUD, CommitmentBlock CRUD, three-screen onboarding
 - [ ] **Phase 3: Schedule Generation and Morning Check-In** — Mood check-in, rule-based schedule generation, schedule display UI
 - [ ] **Phase 4: Chunk Tracking and Notifications** — Swipe completion, CompletionLog, local notifications, data export
@@ -44,7 +44,7 @@ Key non-negotiable constraints carried through all phases:
 **Requirements covered:**
 - Implicit foundation for all eight active requirements — no requirement can be implemented without this layer
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 01-01-PLAN.md — Add dependencies, create project directory scaffold, minimal main.dart
@@ -281,7 +281,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 3/4 | In Progress|  |
+| 1. Foundation | 4/4 | Complete   | 2026-02-25 |
 | 2. Goals and Commitments | 0/0 | Not started | - |
 | 3. Schedule Generation and Morning Check-In | 0/0 | Not started | - |
 | 4. Chunk Tracking and Notifications | 0/0 | Not started | - |

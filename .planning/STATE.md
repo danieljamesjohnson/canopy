@@ -2,7 +2,7 @@
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-02-24T15:54:00Z
+**Last session:** 2026-02-25T12:34:46.503Z
 
 ---
 
@@ -12,7 +12,7 @@
 **Current Plan:** 01-04
 **Status:** In progress
 
-**Progress:** [███░░░░░░░] 3/4 plans complete in Phase 1
+**Progress:** [██████████] 100%
 
 ---
 
@@ -39,6 +39,9 @@
 | 01-02 | Enums stored as int index (goalTypeIndex, chunkTypeIndex, eventIndex) | Fragile across renames if stored as string; int index is safe |
 
 ---
+- [Phase 01-04]: SettingsNotifier constructed before MultiProvider so same instance passed to createRouter and ChangeNotifierProvider.value
+- [Phase 01-04]: Migration runner stores schemaVersion as int in SharedPreferences; _migrations list is index-based, additive-only
+- [Phase 01-04]: CompletionLog and QuarterlySnapshot repository interfaces have no delete/update — append-only enforced at interface level
 
 ## Performance Metrics
 
@@ -49,6 +52,7 @@
 | 01-foundation | 01-03 | 4 minutes | 2 | 11 |
 
 ---
+| Phase 01-foundation P01-04 | 10 | 3 tasks | 16 files |
 
 ## Blockers
 
