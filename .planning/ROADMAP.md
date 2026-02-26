@@ -116,6 +116,16 @@ Plans:
 4. The three-screen onboarding flow can be completed start to finish, including skipping all optional fields, in under 90 seconds — tested on a physical or simulated device
 5. Completing or skipping onboarding sets the onboarding-complete flag in shared_preferences so the flow does not re-appear on subsequent launches
 
+**Plans:** 6 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Expand Goal model (fields 4-11), regenerate TypeAdapter, bump schemaVersion to 2
+- [ ] 02-02-PLAN.md — Implement GoalsNotifier, CommitmentsNotifier; wire SettingsNotifier to Hive persistence
+- [ ] 02-03-PLAN.md — GoalCard + GoalTypePicker widgets; GoalsScreen + GoalFormSheet + ArchivedGoalsScreen
+- [ ] 02-04-PLAN.md — CommitmentsScreen + CommitmentFormSheet; /commitments route wired
+- [ ] 02-05-PLAN.md — Three-screen onboarding PageView with step dots and skip affordances
+- [ ] 02-06-PLAN.md — Final analyze/test + human verify end-to-end flows
+
 ---
 
 ### Phase 3: Schedule Generation and Morning Check-In
@@ -282,7 +292,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-02-25 |
-| 2. Goals and Commitments | 0/0 | Not started | - |
+| 2. Goals and Commitments | 0/6 | Not started | - |
 | 3. Schedule Generation and Morning Check-In | 0/0 | Not started | - |
 | 4. Chunk Tracking and Notifications | 0/0 | Not started | - |
 | 5. Quarterly Review | 0/0 | Not started | - |
