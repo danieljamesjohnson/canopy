@@ -20,7 +20,7 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
       final onOnboarding = state.matchedLocation == '/onboarding';
 
       if (!onboardingDone && !onOnboarding) return '/onboarding';
-      if (onboardingDone && onOnboarding) return '/home';
+      if (onboardingDone && onOnboarding) return '/goals';
       return null;
     },
     routes: [
