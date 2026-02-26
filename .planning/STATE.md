@@ -2,7 +2,7 @@
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-02-26T12:56:59.446Z
+**Last session:** 2026-02-26T13:04:21.779Z
 
 ---
 
@@ -12,7 +12,7 @@
 **Current Plan:** Not started
 **Status:** Milestone complete
 
-**Progress:** [█████░░░░░] 50%
+**Progress:** [██████░░░░] 60%
 
 ---
 
@@ -44,6 +44,8 @@
 - [Phase 01-04]: CompletionLog and QuarterlySnapshot repository interfaces have no delete/update — append-only enforced at interface level
 - [Phase 02-01]: Nullable fields (color, priorityWeight, weeklyHourBudget, deadline, etc.) degrade gracefully for existing Hive records; non-nullable int fields (sortOrder=0, streakCount=0) use field declaration defaults
 - [Phase 02-01]: No-op _migration1to2 added to migration list so schemaVersion increments atomically even for additive-only Hive schema changes
+- [Phase 02-02]: SettingsNotifier constructed in main() before runApp so init() can be awaited before router evaluates redirect
+- [Phase 02-02]: Commitment blocks are hard-deleted; goals are archive-only enforced at notifier layer
 
 ## Performance Metrics
 
@@ -56,6 +58,7 @@
 ---
 | Phase 01-foundation P01-04 | 10 | 3 tasks | 16 files |
 | Phase 02-goals-and-commitments P02-01 | 2 | 2 tasks | 3 files |
+| Phase 02-goals-and-commitments P02-02 | 2 minutes | 2 tasks | 4 files |
 
 ## Blockers
 
