@@ -2,17 +2,17 @@
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-02-26T13:04:21.779Z
+**Last session:** 2026-02-26T13:09:05.944Z
 
 ---
 
 ## Current Position
 
-**Phase:** 01-foundation
-**Current Plan:** Not started
-**Status:** Milestone complete
+**Phase:** 02-goals-and-commitments
+**Current Plan:** 02-04
+**Status:** In progress
 
-**Progress:** [██████░░░░] 60%
+**Progress:** [███████░░░] 70%
 
 ---
 
@@ -46,6 +46,9 @@
 - [Phase 02-01]: No-op _migration1to2 added to migration list so schemaVersion increments atomically even for additive-only Hive schema changes
 - [Phase 02-02]: SettingsNotifier constructed in main() before runApp so init() can be awaited before router evaluates redirect
 - [Phase 02-02]: Commitment blocks are hard-deleted; goals are archive-only enforced at notifier layer
+- [Phase 02-03]: DraggableScrollableSheet constructed inline in showModalBottomSheet builder so scrollController flows correctly to GoalFormSheet.scrollController
+- [Phase 02-03]: Type-specific fields reset to null when GoalType changes in form sheet to avoid stale cross-type data
+- [Phase 02-03]: /goals/archived added as child route inside Goals StatefulShellBranch so bottom nav bar remains visible
 
 ## Performance Metrics
 
@@ -59,6 +62,7 @@
 | Phase 01-foundation P01-04 | 10 | 3 tasks | 16 files |
 | Phase 02-goals-and-commitments P02-01 | 2 | 2 tasks | 3 files |
 | Phase 02-goals-and-commitments P02-02 | 2 minutes | 2 tasks | 4 files |
+| Phase 02-goals-and-commitments P02-03 | 2 minutes | 2 tasks | 6 files |
 
 ## Blockers
 
@@ -68,4 +72,4 @@ None.
 
 ## Stopped At
 
-Completed 01-foundation / 01-02-PLAN.md
+Completed 02-goals-and-commitments / 02-03-PLAN.md
