@@ -13,23 +13,30 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   await HiveDatabase.init(prefs);
-  runApp(const CanopyApp());
+
+  // SettingsNotifier is constructed before runApp so init() can load persisted
+  // values. The same instance is passed to createRouter and registered via
+  // ChangeNotifierProvider.value so no double-construction occurs.
+  final settingsNotifier = SettingsNotifier();
+  await settingsNotifier.init();
+
+  runApp(CanopyApp(settingsNotifier: settingsNotifier));
 }
 
 class CanopyApp extends StatelessWidget {
-  const CanopyApp({super.key});
+  const CanopyApp({super.key, required this.settingsNotifier});
+
+  final SettingsNotifier settingsNotifier;
 
   @override
   Widget build(BuildContext context) {
-    // SettingsNotifier is constructed first so it can be passed to createRouter.
-    // The same instance is registered in MultiProvider so widgets can read it.
-    final settingsNotifier = SettingsNotifier();
-
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<GoalsNotifier>(create: (_) => GoalsNotifier()),
-        ChangeNotifierProvider<CommitmentsNotifier>(create: (_) => CommitmentsNotifier()),
-        ChangeNotifierProvider<ScheduleNotifier>(create: (_) => ScheduleNotifier()),
+        ChangeNotifierProvider<CommitmentsNotifier>(
+            create: (_) => CommitmentsNotifier()),
+        ChangeNotifierProvider<ScheduleNotifier>(
+            create: (_) => ScheduleNotifier()),
         // Use value provider for settingsNotifier since we constructed it above.
         ChangeNotifierProvider<SettingsNotifier>.value(value: settingsNotifier),
       ],
