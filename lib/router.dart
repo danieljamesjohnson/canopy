@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'providers/settings_notifier.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
+import 'screens/goals/archived_goals_screen.dart';
 import 'screens/goals/goals_screen.dart';
 import 'screens/schedule/schedule_screen.dart';
 import 'screens/quarterly_review/quarterly_review_screen.dart';
@@ -40,6 +41,12 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
               GoRoute(
                 path: '/goals',
                 builder: (context, state) => const GoalsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'archived',
+                    builder: (context, state) => const ArchivedGoalsScreen(),
+                  ),
+                ],
               ),
             ],
           ),
