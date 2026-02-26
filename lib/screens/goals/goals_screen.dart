@@ -73,11 +73,18 @@ class _GoalsScreenState extends State<GoalsScreen> {
               if (value == 'archived') {
                 context.push('/goals/archived');
               }
+              if (value == 'commitments') {
+                context.push('/commitments');
+              }
             },
             itemBuilder: (context) => const [
               PopupMenuItem(
                 value: 'archived',
                 child: Text('View archived'),
+              ),
+              PopupMenuItem(
+                value: 'commitments',
+                child: Text('Commitment blocks'),
               ),
             ],
           ),

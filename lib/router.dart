@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'providers/settings_notifier.dart';
+import 'screens/commitments/commitments_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/goals/archived_goals_screen.dart';
@@ -77,6 +78,11 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
       GoRoute(
         path: '/review',
         builder: (context, state) => const QuarterlyReviewScreen(),
+      ),
+      // Commitments is outside the shell — settings-style focused screen.
+      GoRoute(
+        path: '/commitments',
+        builder: (context, state) => const CommitmentsScreen(),
       ),
     ],
   );
