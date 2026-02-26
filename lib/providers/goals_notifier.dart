@@ -1,5 +1,87 @@
 import 'package:flutter/foundation.dart';
+import '../data/models/goal.dart';
+import '../data/repositories/goal_repository.dart';
+import '../data/repositories/hive_goal_repository.dart';
 
 class GoalsNotifier extends ChangeNotifier {
-  // Phase 1 stub — Phase 2 adds goal state and CRUD methods.
+  final GoalRepository _repository = HiveGoalRepository();
+
+  List<Goal> _goals = [];
+
+  List<Goal> get goals => List.unmodifiable(_goals);
+
+  List<Goal> get timeTargetGoals =>
+      _goals.where((g) => g.goalType == GoalType.timeTarget).toList();
+
+  List<Goal> get outcomeGoals =>
+      _goals.where((g) => g.goalType == GoalType.outcome).toList();
+
+  List<Goal> get habitGoals =>
+      _goals.where((g) => g.goalType == GoalType.habit).toList();
+
+  static const List<String> _colorPalette = [
+    '#4CAF50',
+    '#2196F3',
+    '#FF9800',
+    '#9C27B0',
+    '#F44336',
+    '#00BCD4',
+    '#FF5722',
+    '#607D8B',
+  ];
+
+  /// Returns next color from palette based on current goals count.
+  String autoColor() => _colorPalette[_goals.length % _colorPalette.length];
+
+  /// Loads all active (non-archived) goals, sorted by sortOrder.
+  Future<void> loadGoals() async {
+    final active = await _repository.getActive();
+    active.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    _goals = active;
+    notifyListeners();
+  }
+
+  /// Saves a goal (create or update) and reloads the list.
+  Future<void> saveGoal(Goal goal) async {
+    await _repository.save(goal);
+    await loadGoals();
+  }
+
+  /// Archives a goal by id — sets isArchived = true, does NOT delete.
+  Future<void> archiveGoal(String id) async {
+    final goal = await _repository.getById(id);
+    if (goal == null) return;
+    goal.isArchived = true;
+    await _repository.save(goal);
+    await loadGoals();
+  }
+
+  /// Returns archived goals sorted by name. Does NOT call notifyListeners.
+  Future<List<Goal>> getArchivedGoals() async {
+    final all = await _repository.getAll();
+    final archived = all.where((g) => g.isArchived).toList();
+    archived.sort((a, b) => a.name.compareTo(b.name));
+    return archived;
+  }
+
+  /// Reorders goals within a [type] group.
+  ///
+  /// [oldIndex] and [newIndex] are indices within the type-filtered list.
+  /// After reorder, sortOrder values are updated and saved.
+  Future<void> reorder(GoalType type, int oldIndex, int newIndex) async {
+    final group =
+        _goals.where((g) => g.goalType == type).toList();
+
+    if (newIndex > oldIndex) newIndex -= 1;
+
+    final item = group.removeAt(oldIndex);
+    group.insert(newIndex, item);
+
+    for (var i = 0; i < group.length; i++) {
+      group[i].sortOrder = i;
+      await _repository.save(group[i]);
+    }
+
+    await loadGoals();
+  }
 }
