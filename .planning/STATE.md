@@ -2,7 +2,7 @@
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-02-26T13:12:45.969Z
+**Last session:** 2026-02-26T13:17:30.816Z
 
 ---
 
@@ -12,7 +12,7 @@
 **Current Plan:** 02-05
 **Status:** In progress
 
-**Progress:** [████████░░] 80%
+**Progress:** [█████████░] 90%
 
 ---
 
@@ -51,6 +51,9 @@
 - [Phase 02-03]: /goals/archived added as child route inside Goals StatefulShellBranch so bottom nav bar remains visible
 - [Phase 02-04]: CommitmentsScreen placed outside StatefulShellRoute — no bottom nav shown (settings-style)
 - [Phase 02-04]: Goals overflow menu uses context.push('/commitments') so back navigation returns to Goals
+- [Phase 02-05]: _Screen1 is StatefulWidget with addListener/removeListener in initState/dispose to avoid StatefulBuilder listener accumulation
+- [Phase 02-05]: router.dart redirect after onboarding returns /goals not /home so user sees their created goal immediately
+- [Phase 02-05]: setOnboardingComplete(true) is strictly last in _completeOnboarding — saves all awaited before router redirect fires
 
 ## Performance Metrics
 
@@ -66,6 +69,7 @@
 | Phase 02-goals-and-commitments P02-02 | 2 minutes | 2 tasks | 4 files |
 | Phase 02-goals-and-commitments P02-03 | 2 minutes | 2 tasks | 6 files |
 | Phase 02-goals-and-commitments P02-04 | 4 minutes | 2 tasks | 4 files |
+| Phase 02-goals-and-commitments P02-05 | 3 minutes | 1 tasks | 2 files |
 
 ## Blockers
 
