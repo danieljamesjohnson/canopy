@@ -16,9 +16,11 @@ Generate a usable daily schedule every morning — one that reflects your real g
 
 ### Active
 
+- [ ] User can define fixed commitment blocks (e.g. full-time job hours) that are always scheduled regardless of mood
 - [ ] User can set up goals across three types: time-target activities (relationships, wellness), outcome-focused projects, and recurring habits/routines
-- [ ] App generates a daily schedule of Chunks (25-min focused sessions) each morning based on goals and priorities
-- [ ] Morning check-in asks how the user is feeling; harder days get fewer Chunks and easier tasks, good days get fuller schedules
+- [ ] App generates a daily schedule of Chunks (25-min focused sessions) each morning based on commitments, goals, and priorities
+- [ ] Schedule includes automatic 5-min short breaks after each chunk and a 25-min long break after every 3 chunks (mood 1–2) or 4 chunks (mood 3–5); breaks shown explicitly in the schedule
+- [ ] Morning check-in asks how the user is feeling; mood controls discretionary chunk count only — commitment blocks are always present; mood 1–2 triggers a reduced "just survive today" discretionary schedule
 - [ ] User can track which Chunks they complete throughout the day
 - [ ] App performs a quarterly review: data summary + guided reflection to help user adjust goals and priorities
 - [ ] Schedule generation is rule-based (no AI API dependency in v1)
@@ -35,7 +37,9 @@ Generate a usable daily schedule every morning — one that reflects your real g
 - Flutter project targeting all platforms (iOS, Android, Web, Windows, macOS, Linux)
 - Currently at Flutter starter template; all app code goes in `lib/`
 - The "Chunk" concept is like a Pomodoro (25 min) but framed around budgeting time toward goals rather than pure focus sessions
-- Three goal types require different scheduling logic:
+- Every chunk is followed by a 5-min short break; after 3–4 chunks a 25-min long break is inserted (mood-adaptive cadence)
+- Commitment blocks (job, school, appointments) are chunked up automatically within their time window and always appear in the schedule
+- Three discretionary goal types require different scheduling logic:
   - **Time-target** (e.g. family time, friends): allocate hours per week, spread across days
   - **Outcome-focused projects** (e.g. side project, learning): schedule based on outcome priority and deadline
   - **Habits/routines** (e.g. meditation, brushing teeth, cleaning): daily or periodic, lower cognitive load
@@ -54,7 +58,9 @@ Generate a usable daily schedule every morning — one that reflects your real g
 | Rule-based scheduling (not AI) | Ship and validate the core loop without API dependency | — Pending |
 | 25-minute Chunks | Proven focused session length (Pomodoro research), familiar concept | — Pending |
 | Three goal types | Relationships/wellness need time targets; projects need outcomes; habits need consistency | — Pending |
+| Commitment blocks | Real-world obligations (job, school) always scheduled; v2 will read from calendar | — Pending |
+| Break structure | 5-min after each chunk, 25-min long break every 3–4 chunks (mood-adaptive); breaks shown in schedule | — Pending |
 | Local storage only | Personal tool, no server complexity in v1 | — Pending |
 
 ---
-*Last updated: 2026-02-24 after initialization*
+*Last updated: 2026-02-24 — added commitment blocks, break structure, mood-adaptive capacity model*
