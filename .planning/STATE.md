@@ -9,8 +9,8 @@
 ## Current Position
 
 **Phase:** 01-foundation
-**Current Plan:** 01-04
-**Status:** In progress
+**Current Plan:** Not started
+**Status:** Milestone complete
 
 **Progress:** [██████████] 100%
 
