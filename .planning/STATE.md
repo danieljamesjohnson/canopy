@@ -2,17 +2,17 @@
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-02-26T13:09:05.944Z
+**Last session:** 2026-02-26T13:12:45.969Z
 
 ---
 
 ## Current Position
 
 **Phase:** 02-goals-and-commitments
-**Current Plan:** 02-04
+**Current Plan:** 02-05
 **Status:** In progress
 
-**Progress:** [███████░░░] 70%
+**Progress:** [████████░░] 80%
 
 ---
 
@@ -49,6 +49,8 @@
 - [Phase 02-03]: DraggableScrollableSheet constructed inline in showModalBottomSheet builder so scrollController flows correctly to GoalFormSheet.scrollController
 - [Phase 02-03]: Type-specific fields reset to null when GoalType changes in form sheet to avoid stale cross-type data
 - [Phase 02-03]: /goals/archived added as child route inside Goals StatefulShellBranch so bottom nav bar remains visible
+- [Phase 02-04]: CommitmentsScreen placed outside StatefulShellRoute — no bottom nav shown (settings-style)
+- [Phase 02-04]: Goals overflow menu uses context.push('/commitments') so back navigation returns to Goals
 
 ## Performance Metrics
 
@@ -63,6 +65,7 @@
 | Phase 02-goals-and-commitments P02-01 | 2 | 2 tasks | 3 files |
 | Phase 02-goals-and-commitments P02-02 | 2 minutes | 2 tasks | 4 files |
 | Phase 02-goals-and-commitments P02-03 | 2 minutes | 2 tasks | 6 files |
+| Phase 02-goals-and-commitments P02-04 | 4 minutes | 2 tasks | 4 files |
 
 ## Blockers
 
@@ -72,4 +75,4 @@ None.
 
 ## Stopped At
 
-Completed 02-goals-and-commitments / 02-03-PLAN.md
+Completed 02-goals-and-commitments / 02-04-PLAN.md
