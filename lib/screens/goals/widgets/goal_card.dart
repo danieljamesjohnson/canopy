@@ -62,13 +62,15 @@ class GoalCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Colored left border
-              Container(
-                width: 5,
+        child: Stack(
+          children: [
+            // Colored left border — sized by Stack to match content height
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 5,
+              child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: goalColor,
                   borderRadius: const BorderRadius.only(
@@ -77,50 +79,60 @@ class GoalCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Title row: icon + name + color swatch
-                      Row(
+            ),
+            // Content — determines Stack size
+            Padding(
+              padding: const EdgeInsets.only(left: 5),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(_typeIcon(goal.goalType), size: 16, color: goalColor),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              goal.name,
-                              style: theme.textTheme.titleMedium,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                          // Title row: icon + name + color swatch
+                          Row(
+                            children: [
+                              Icon(_typeIcon(goal.goalType),
+                                  size: 16, color: goalColor),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  goal.name,
+                                  style: theme.textTheme.titleMedium,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                width: 16,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: goalColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 6),
-                          Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: goalColor,
-                              shape: BoxShape.circle,
+                          if (secondary != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              secondary,
+                              style: theme.textTheme.bodySmall,
                             ),
-                          ),
+                          ],
                         ],
                       ),
-                      if (secondary != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          secondary,
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
-                ),
+                  ?trailing,
+                ],
               ),
-              ?trailing,
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
