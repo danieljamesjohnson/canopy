@@ -43,7 +43,7 @@ class CanopyApp extends StatelessWidget {
       child: MaterialApp.router(
         title: 'Canopy',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrangeAccent),
+          colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF3D6B4F)),
           useMaterial3: true,
         ),
         routerConfig: createRouter(settingsNotifier),
