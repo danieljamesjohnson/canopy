@@ -62,63 +62,65 @@ class GoalCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Colored left border
-            Container(
-              width: 5,
-              decoration: BoxDecoration(
-                color: goalColor,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  bottomLeft: Radius.circular(12),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Colored left border
+              Container(
+                width: 5,
+                decoration: BoxDecoration(
+                  color: goalColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
                 ),
               ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Title row: icon + name + color swatch
-                    Row(
-                      children: [
-                        Icon(_typeIcon(goal.goalType), size: 16, color: goalColor),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            goal.name,
-                            style: theme.textTheme.titleMedium,
-                            overflow: TextOverflow.ellipsis,
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Title row: icon + name + color swatch
+                      Row(
+                        children: [
+                          Icon(_typeIcon(goal.goalType), size: 16, color: goalColor),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              goal.name,
+                              style: theme.textTheme.titleMedium,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          width: 16,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            color: goalColor,
-                            shape: BoxShape.circle,
+                          const SizedBox(width: 6),
+                          Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: goalColor,
+                              shape: BoxShape.circle,
+                            ),
                           ),
+                        ],
+                      ),
+                      if (secondary != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          secondary,
+                          style: theme.textTheme.bodySmall,
                         ),
                       ],
-                    ),
-                    if (secondary != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        secondary,
-                        style: theme.textTheme.bodySmall,
-                      ),
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
-            ?trailing,
-          ],
+              ?trailing,
+            ],
+          ),
         ),
       ),
     );
