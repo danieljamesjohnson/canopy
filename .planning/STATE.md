@@ -4,20 +4,20 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: Not started
 status: planning
-last_updated: "2026-03-23T18:29:30.239Z"
+last_updated: "2026-03-23T18:33:04.297Z"
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 15
-  completed_plans: 11
-  percent: 73
+  completed_plans: 12
+  percent: 80
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-03-23T18:29:30.237Z
+**Last session:** 2026-03-23T18:33:04.294Z
 
 ---
 
@@ -27,7 +27,7 @@ progress:
 **Current Plan:** Not started
 **Status:** Ready to plan
 
-**Progress:** [███████░░░] 73%
+**Progress:** [████████░░] 80%
 
 ---
 
@@ -72,6 +72,8 @@ progress:
 - [Phase 03-01]: Commitment chunks excluded from discretionary capacity — fixed anchored slots counted separately
 - [Phase 03-01]: daysRemaining floors at 1 via max(1,...) to prevent division-by-zero in urgency score
 - [Phase 03-01]: Phase 3 uses placeholder chunksRemaining=2.0 in urgency formula; replaced with CompletionLog in Phase 4
+- [Phase 03-02]: ScheduleNotifier constructed before runApp so init() can be awaited; passed via ChangeNotifierProvider.value to avoid double-construction
+- [Phase 03-02]: Stub screens (CheckinScreen, AcknowledgmentScreen) created in Plan 02 so router.dart compiles; replaced by full implementations in Plans 03 and 04
 
 ## Performance Metrics
 
@@ -89,6 +91,7 @@ progress:
 | Phase 02-goals-and-commitments P02-04 | 4 minutes | 2 tasks | 4 files |
 | Phase 02-goals-and-commitments P02-05 | 3 minutes | 1 tasks | 2 files |
 | Phase 03-schedule-generation-and-morning-check-in P03-01 | 8 | 2 tasks | 2 files |
+| Phase 03-schedule-generation-and-morning-check-in P03-02 | 2 | 2 tasks | 6 files |
 
 ## Blockers
 

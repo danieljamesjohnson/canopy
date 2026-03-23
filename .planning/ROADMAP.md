@@ -172,7 +172,7 @@ Plans:
 4. Break chunks appear in the correct positions — a 5-min short break follows every work chunk; a 25-min long break appears after every 3 chunks on mood 1–2 or every 4 chunks on mood 3–5
 5. The schedule persists across app restarts — relaunching the app on the same day shows the morning's generated schedule, not a blank screen
 
-**Plans:** 5 plans
+**Plans:** 2/5 plans executed
 
 Plans:
 - [ ] 03-01-PLAN.md — ScheduleGeneratorService: pure Dart algorithm with TDD (allocation sequence, break insertion, capacity table)
@@ -302,7 +302,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-02-25 |
 | 2. Goals and Commitments | 3/6 | In Progress|  |
-| 3. Schedule Generation and Morning Check-In | 0/5 | Planned | - |
+| 3. Schedule Generation and Morning Check-In | 2/5 | In Progress|  |
 | 4. Chunk Tracking and Notifications | 0/0 | Not started | - |
 | 5. Quarterly Review | 0/0 | Not started | - |
 | 6. Desktop and Web Polish | 0/0 | Not started | - |
