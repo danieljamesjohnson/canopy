@@ -4,20 +4,20 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: Not started
 status: planning
-last_updated: "2026-03-23T17:42:00.880Z"
+last_updated: "2026-03-23T18:29:30.239Z"
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
-  percent: 90
+  total_plans: 15
+  completed_plans: 11
+  percent: 73
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-03-23T17:42:00.877Z
+**Last session:** 2026-03-23T18:29:30.237Z
 
 ---
 
@@ -27,7 +27,7 @@ progress:
 **Current Plan:** Not started
 **Status:** Ready to plan
 
-**Progress:** [█████████░] 90%
+**Progress:** [███████░░░] 73%
 
 ---
 
@@ -69,6 +69,9 @@ progress:
 - [Phase 02-05]: _Screen1 is StatefulWidget with addListener/removeListener in initState/dispose to avoid StatefulBuilder listener accumulation
 - [Phase 02-05]: router.dart redirect after onboarding returns /goals not /home so user sees their created goal immediately
 - [Phase 02-05]: setOnboardingComplete(true) is strictly last in _completeOnboarding — saves all awaited before router redirect fires
+- [Phase 03-01]: Commitment chunks excluded from discretionary capacity — fixed anchored slots counted separately
+- [Phase 03-01]: daysRemaining floors at 1 via max(1,...) to prevent division-by-zero in urgency score
+- [Phase 03-01]: Phase 3 uses placeholder chunksRemaining=2.0 in urgency formula; replaced with CompletionLog in Phase 4
 
 ## Performance Metrics
 
@@ -85,6 +88,7 @@ progress:
 | Phase 02-goals-and-commitments P02-03 | 2 minutes | 2 tasks | 6 files |
 | Phase 02-goals-and-commitments P02-04 | 4 minutes | 2 tasks | 4 files |
 | Phase 02-goals-and-commitments P02-05 | 3 minutes | 1 tasks | 2 files |
+| Phase 03-schedule-generation-and-morning-check-in P03-01 | 8 | 2 tasks | 2 files |
 
 ## Blockers
 
