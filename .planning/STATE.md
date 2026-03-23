@@ -4,20 +4,20 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: Not started
 status: planning
-last_updated: "2026-03-23T18:36:41.706Z"
+last_updated: "2026-03-23T18:40:40.332Z"
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 15
-  completed_plans: 13
-  percent: 87
+  completed_plans: 14
+  percent: 93
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-03-23T18:36:41.703Z
+**Last session:** 2026-03-23T18:40:40.330Z
 
 ---
 
@@ -27,7 +27,7 @@ progress:
 **Current Plan:** Not started
 **Status:** Ready to plan
 
-**Progress:** [█████████░] 87%
+**Progress:** [█████████░] 93%
 
 ---
 
@@ -77,6 +77,9 @@ progress:
 - [Phase 03-03]: Inline AnimatedSwitcher (Path A) used for acknowledgment — avoids second route and keeps mood state in one widget
 - [Phase 03-03]: AcknowledgmentScreen kept as standalone widget for future route use even though Phase 3 uses inline approach
 - [Phase 03-03]: Swipe-up threshold primaryVelocity < -300 logical pixels/second for deliberate gesture
+- [Phase 03-04]: hexToColor() copied into chunk_card.dart (not imported from goal_card.dart) to keep schedule widgets self-contained; schedule_screen.dart imports from chunk_card.dart
+- [Phase 03-04]: context.read<GoalsNotifier>() used inside ListView.builder for goal color lookup to avoid unnecessary rebuild cascade
+- [Phase 03-04]: HomeScreen AppBar title is 'Canopy'; mood color map declared as static const in each screen for two-screen simplicity
 
 ## Performance Metrics
 
@@ -96,6 +99,7 @@ progress:
 | Phase 03-schedule-generation-and-morning-check-in P03-01 | 8 | 2 tasks | 2 files |
 | Phase 03-schedule-generation-and-morning-check-in P03-02 | 2 | 2 tasks | 6 files |
 | Phase 03-schedule-generation-and-morning-check-in P03-03 | 8 | 2 tasks | 2 files |
+| Phase 03-schedule-generation-and-morning-check-in P03-04 | 2 | 2 tasks | 4 files |
 
 ## Blockers
 
