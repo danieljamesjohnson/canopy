@@ -7,6 +7,7 @@ import 'screens/home/home_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/goals/archived_goals_screen.dart';
 import 'screens/goals/goals_screen.dart';
+import 'screens/schedule/checkin_screen.dart';
 import 'screens/schedule/schedule_screen.dart';
 import 'screens/quarterly_review/quarterly_review_screen.dart';
 import 'screens/settings/settings_screen.dart';
@@ -56,6 +57,12 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
               GoRoute(
                 path: '/schedule',
                 builder: (context, state) => const ScheduleScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'checkin',
+                    builder: (context, state) => const CheckinScreen(),
+                  ),
+                ],
               ),
             ],
           ),

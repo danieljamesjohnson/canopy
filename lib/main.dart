@@ -20,13 +20,17 @@ void main() async {
   final settingsNotifier = SettingsNotifier();
   await settingsNotifier.init();
 
-  runApp(CanopyApp(settingsNotifier: settingsNotifier));
+  final scheduleNotifier = ScheduleNotifier();
+  await scheduleNotifier.init();
+
+  runApp(CanopyApp(settingsNotifier: settingsNotifier, scheduleNotifier: scheduleNotifier));
 }
 
 class CanopyApp extends StatelessWidget {
-  const CanopyApp({super.key, required this.settingsNotifier});
+  const CanopyApp({super.key, required this.settingsNotifier, required this.scheduleNotifier});
 
   final SettingsNotifier settingsNotifier;
+  final ScheduleNotifier scheduleNotifier;
 
   @override
   Widget build(BuildContext context) {
@@ -35,9 +39,9 @@ class CanopyApp extends StatelessWidget {
         ChangeNotifierProvider<GoalsNotifier>(create: (_) => GoalsNotifier()),
         ChangeNotifierProvider<CommitmentsNotifier>(
             create: (_) => CommitmentsNotifier()),
-        ChangeNotifierProvider<ScheduleNotifier>(
-            create: (_) => ScheduleNotifier()),
-        // Use value provider for settingsNotifier since we constructed it above.
+        // Use value providers for notifiers constructed before runApp so init()
+        // can be awaited without double-construction.
+        ChangeNotifierProvider<ScheduleNotifier>.value(value: scheduleNotifier),
         ChangeNotifierProvider<SettingsNotifier>.value(value: settingsNotifier),
       ],
       child: MaterialApp.router(

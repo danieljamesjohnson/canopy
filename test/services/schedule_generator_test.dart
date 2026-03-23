@@ -39,16 +39,6 @@ void main() {
         priorityWeight: priorityWeight,
       );
 
-  Goal makeTimeTarget({
-    String name = 'Time target',
-    double? priorityWeight,
-  }) =>
-      Goal(
-        name: name,
-        goalTypeIndex: GoalType.timeTarget.index,
-        priorityWeight: priorityWeight,
-      );
-
   CommitmentBlock makeBlock({
     String name = 'Block',
     List<int> daysOfWeek = const [1, 2, 3, 4, 5],
@@ -64,9 +54,6 @@ void main() {
 
   int workCount(List<ScheduledChunk> chunks) =>
       chunks.where((c) => c.chunkType == ChunkType.work).length;
-
-  int breakCount(List<ScheduledChunk> chunks, ChunkType type) =>
-      chunks.where((c) => c.chunkType == type).length;
 
   // ---------------------------------------------------------------------------
   // Test 1: mood=3, 0 goals, 0 blocks → empty list
