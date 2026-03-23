@@ -123,3 +123,14 @@ None - no external service configuration required.
 ---
 *Phase: 03-schedule-generation-and-morning-check-in*
 *Completed: 2026-03-23*
+
+## Self-Check: PASSED
+
+- lib/screens/schedule/widgets/chunk_card.dart — FOUND
+- lib/screens/schedule/widgets/schedule_progress_bar.dart — FOUND
+- lib/screens/schedule/schedule_screen.dart — FOUND
+- lib/screens/home/home_screen.dart — FOUND
+- .planning/phases/03-schedule-generation-and-morning-check-in/03-04-SUMMARY.md — FOUND
+- Commit eb15cb7 (Task 1) — FOUND
+- Commit d89a3bf (Task 2) — FOUND
+- Commit 027941f (docs) — FOUND
