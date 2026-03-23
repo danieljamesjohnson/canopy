@@ -25,7 +25,7 @@ class HiveDailyScheduleRepository implements DailyScheduleRepository {
 
   @override
   Future<DailySchedule?> getTodaysSchedule() async {
-    final today = DateTime.now().toUtc();
+    final today = DateTime.now(); // local time — must match generateToday() key format
     final dateYmd =
         '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
     return getByDate(dateYmd);
