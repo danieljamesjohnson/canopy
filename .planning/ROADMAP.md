@@ -24,7 +24,7 @@ Key non-negotiable constraints carried through all phases:
 
 ## Phases
 
-- [x] **Phase 1: Foundation** — Database, routing, Provider scaffold, and migration runner — no user-visible features (completed 2026-02-25)
+- [x] **Phase 1: Foundation** — Database, routing, Provider scaffold, and migration runner — no user-visible features (completed 2026-02-25)
 - [ ] **Phase 2: Goals and Commitments** — Three goal types CRUD, CommitmentBlock CRUD, three-screen onboarding
 - [ ] **Phase 3: Schedule Generation and Morning Check-In** — Mood check-in, rule-based schedule generation, schedule display UI
 - [ ] **Phase 4: Chunk Tracking and Notifications** — Swipe completion, CompletionLog, local notifications, data export
@@ -172,6 +172,15 @@ Plans:
 4. Break chunks appear in the correct positions — a 5-min short break follows every work chunk; a 25-min long break appears after every 3 chunks on mood 1–2 or every 4 chunks on mood 3–5
 5. The schedule persists across app restarts — relaunching the app on the same day shows the morning's generated schedule, not a blank screen
 
+**Plans:** 5 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — ScheduleGeneratorService: pure Dart algorithm with TDD (allocation sequence, break insertion, capacity table)
+- [ ] 03-02-PLAN.md — ScheduleNotifier expansion + /schedule/checkin route wiring + main.dart init
+- [ ] 03-03-PLAN.md — CheckinScreen (mood emoji tap, background tint, follow-up toggle) + acknowledgment + swipe-up gesture
+- [ ] 03-04-PLAN.md — ScheduleScreen (empty state + ChunkCard list + ScheduleProgressBar) + HomeScreen summary
+- [ ] 03-05-PLAN.md — Final analyze/test + human verify end-to-end morning loop
+
 ---
 
 ### Phase 4: Chunk Tracking and Notifications
@@ -293,7 +302,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-02-25 |
 | 2. Goals and Commitments | 3/6 | In Progress|  |
-| 3. Schedule Generation and Morning Check-In | 0/0 | Not started | - |
+| 3. Schedule Generation and Morning Check-In | 0/5 | Planned | - |
 | 4. Chunk Tracking and Notifications | 0/0 | Not started | - |
 | 5. Quarterly Review | 0/0 | Not started | - |
 | 6. Desktop and Web Polish | 0/0 | Not started | - |
