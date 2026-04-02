@@ -105,3 +105,12 @@ None - no external service configuration required.
 ---
 *Phase: 02-goals-and-commitments*
 *Completed: 2026-02-26*
+
+## Self-Check: PASSED
+
+- FOUND: lib/data/models/goal.dart
+- FOUND: lib/data/models/goal.g.dart
+- FOUND: lib/data/database/migrations.dart
+- FOUND: .planning/phases/02-goals-and-commitments/02-01-SUMMARY.md
+- Commit 44917a6 verified
+- Commit 5b4abee verified

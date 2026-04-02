@@ -20,13 +20,14 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..morningNotificationMinutes = (fields[0] as num).toInt()
       ..onboardingComplete = fields[1] as bool
       ..midDayNudgeEnabled = fields[2] as bool
-      ..midDayNudgeMinutes = (fields[3] as num).toInt();
+      ..midDayNudgeMinutes = (fields[3] as num).toInt()
+      ..morningNotificationEnabled = fields[4] == null ? true : fields[4] as bool;
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.morningNotificationMinutes)
       ..writeByte(1)
@@ -34,7 +35,9 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(2)
       ..write(obj.midDayNudgeEnabled)
       ..writeByte(3)
-      ..write(obj.midDayNudgeMinutes);
+      ..write(obj.midDayNudgeMinutes)
+      ..writeByte(4)
+      ..write(obj.morningNotificationEnabled);
   }
 
   @override

@@ -13,6 +13,10 @@ class AppSettings extends HiveObject {
   @HiveField(1)
   bool onboardingComplete = false;
 
+  /// Whether the morning notification is enabled (default true).
+  @HiveField(4)
+  bool morningNotificationEnabled = true;
+
   /// Mid-day nudge opt-in (default false per ROADMAP.md).
   @HiveField(2)
   bool midDayNudgeEnabled = false;
