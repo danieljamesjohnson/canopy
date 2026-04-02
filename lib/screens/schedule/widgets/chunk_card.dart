@@ -90,9 +90,10 @@ class ChunkCard extends StatelessWidget {
 
   Widget _buildWork(BuildContext context) {
     final theme = Theme.of(context);
-    final barColor =
-        chunk.isCompleted ? Colors.grey.shade400 : (goalColor ?? theme.colorScheme.primary);
-    final contentOpacity = chunk.isCompleted ? 0.5 : 1.0;
+    final barColor = chunk.isCompleted || chunk.isSkipped
+        ? Colors.grey.shade400
+        : (goalColor ?? theme.colorScheme.primary);
+    final contentOpacity = chunk.isCompleted || chunk.isSkipped ? 0.5 : 1.0;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
@@ -168,10 +169,11 @@ class ChunkCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     chunk.isCompleted
                         ? Icon(Icons.check_circle, color: Colors.green.shade600)
-                        : Icon(
-                            Icons.radio_button_unchecked,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+                        : chunk.isSkipped
+                            ? Icon(Icons.arrow_forward,
+                                color: theme.colorScheme.onSurfaceVariant)
+                            : Icon(Icons.radio_button_unchecked,
+                                color: theme.colorScheme.onSurfaceVariant),
                   ],
                 ),
               ),

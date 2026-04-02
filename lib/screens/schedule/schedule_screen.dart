@@ -1,12 +1,15 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/models/daily_schedule.dart';
+import '../../data/models/scheduled_chunk.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
-import '../../data/models/scheduled_chunk.dart';
 import 'widgets/chunk_card.dart';
 import 'widgets/schedule_progress_bar.dart';
+import 'widgets/swipeable_chunk_card.dart';
 
 class ScheduleScreen extends StatelessWidget {
   const ScheduleScreen({super.key});
@@ -32,16 +35,28 @@ class ScheduleScreen extends StatelessWidget {
     final moodColor = _moodColors[mood] ?? _moodColors[3]!;
 
     // Partition chunks: active (not skipped) and skipped.
-    final activeChunks =
-        schedule.chunks.where((c) => !c.isSkipped).toList();
-    final skippedChunks =
-        schedule.chunks.where((c) => c.isSkipped).toList();
+    final activeChunks = schedule.chunks.where((c) => !c.isSkipped).toList();
+    final skippedChunks = schedule.chunks.where((c) => c.isSkipped).toList();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Today'),
         backgroundColor: moodColor,
         foregroundColor: Colors.white,
+        actions: [
+          if (_resolvedWorkChunkRatio(schedule) >= 0.5)
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'summary') context.push('/summary');
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'summary',
+                  child: Text('View your day'),
+                ),
+              ],
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -50,9 +65,8 @@ class ScheduleScreen extends StatelessWidget {
             child: ListView(
               children: [
                 // Active (non-skipped) chunks with swipe gestures on work chunks.
-                ...activeChunks.map(
-                  (chunk) => _buildChunkItem(context, chunk, scheduleNotifier),
-                ),
+                for (final chunk in activeChunks)
+                  _buildSwipeableCard(context, chunk),
                 // "Skipped today" expansion tile — hidden when no skipped chunks.
                 if (skippedChunks.isNotEmpty)
                   _buildSkippedSection(context, skippedChunks),
@@ -64,61 +78,20 @@ class ScheduleScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildChunkItem(
-    BuildContext context,
-    ScheduledChunk chunk,
-    ScheduleNotifier scheduleNotifier,
-  ) {
-    final goalColor = _resolveGoalColor(context, chunk);
-    final card = ChunkCard(chunk: chunk, goalColor: goalColor);
-
-    // Only work chunks that are not yet completed or skipped get swipe wrapping.
-    final isSwipeable =
-        chunk.chunkType == ChunkType.work && !chunk.isCompleted && !chunk.isSkipped;
-
-    if (!isSwipeable) return card;
-
-    return Dismissible(
-      key: ValueKey(chunk.id),
-      // confirmDismiss always returns false — the card stays in position.
-      // We use Dismissible purely for the drag gesture affordance.
-      confirmDismiss: (direction) async {
-        if (direction == DismissDirection.startToEnd) {
-          await scheduleNotifier.markComplete(chunk.id);
-        } else if (direction == DismissDirection.endToStart) {
-          await scheduleNotifier.markSkipped(chunk.id);
-        }
-        return false;
-      },
-      background: _buildSwipeBackground(
-        alignment: Alignment.centerLeft,
-        color: Colors.green.shade400,
-        icon: Icons.check_circle_outline,
-      ),
-      secondaryBackground: _buildSwipeBackground(
-        alignment: Alignment.centerRight,
-        color: Colors.orange.shade400,
-        icon: Icons.skip_next_outlined,
-      ),
-      child: card,
-    );
+  /// Returns the ratio of resolved (completed or skipped) work chunks to
+  /// total work chunks. Returns 0.0 when there are no work chunks.
+  double _resolvedWorkChunkRatio(DailySchedule schedule) {
+    final workChunks =
+        schedule.chunks.where((c) => c.chunkType == ChunkType.work).toList();
+    if (workChunks.isEmpty) return 0.0;
+    final resolved =
+        workChunks.where((c) => c.isCompleted || c.isSkipped).length;
+    return resolved / workChunks.length;
   }
 
-  Widget _buildSwipeBackground({
-    required AlignmentGeometry alignment,
-    required Color color,
-    required IconData icon,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      alignment: alignment,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Icon(icon, color: Colors.white, size: 28),
-    );
+  Widget _buildSwipeableCard(BuildContext context, ScheduledChunk chunk) {
+    final goalColor = _lookupGoalColor(context, chunk);
+    return SwipeableChunkCard(chunk: chunk, goalColor: goalColor);
   }
 
   Widget _buildSkippedSection(
@@ -130,14 +103,15 @@ class ScheduleScreen extends StatelessWidget {
       child: ExpansionTile(
         title: Text(
           'Skipped today (${skippedChunks.length})',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
+        initiallyExpanded: false,
         tilePadding: const EdgeInsets.symmetric(horizontal: 4),
         childrenPadding: EdgeInsets.zero,
         children: skippedChunks.map((chunk) {
-          final goalColor = _resolveGoalColor(context, chunk);
+          final goalColor = _lookupGoalColor(context, chunk);
           return ChunkCard(chunk: chunk, goalColor: goalColor);
         }).toList(),
       ),
@@ -145,7 +119,7 @@ class ScheduleScreen extends StatelessWidget {
   }
 
   /// Resolves goal color for a chunk by looking up its goalId in GoalsNotifier.
-  Color? _resolveGoalColor(BuildContext context, ScheduledChunk chunk) {
+  Color? _lookupGoalColor(BuildContext context, ScheduledChunk chunk) {
     if (chunk.goalId == null) return null;
     final goals = context.read<GoalsNotifier>().goals;
     final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
@@ -156,35 +130,61 @@ class ScheduleScreen extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Schedule')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.wb_sunny_outlined, size: 64, color: Colors.amber),
-              const SizedBox(height: 16),
-              Text(
-                'Plan your day in 30 seconds.',
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
+      body: Column(
+        children: [
+          if (kIsWeb)
+            MaterialBanner(
+              content: const Text(
+                'Start your morning check-in to build today\'s schedule.',
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Tell us how you\'re feeling and we\'ll build your schedule.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+              backgroundColor:
+                  Theme.of(context).colorScheme.primaryContainer,
+              contentTextStyle: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => context.push('/schedule/checkin'),
+                  child: const Text('Start check-in'),
+                ),
+              ],
+            ),
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.wb_sunny_outlined,
+                        size: 64, color: Colors.amber),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Plan your day in 30 seconds.',
+                      style: Theme.of(context).textTheme.titleMedium,
+                      textAlign: TextAlign.center,
                     ),
-                textAlign: TextAlign.center,
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tell us how you\'re feeling and we\'ll build your schedule.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => context.push('/schedule/checkin'),
+                      child: const Text('Start your day'),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () => context.push('/schedule/checkin'),
-                child: const Text('Start your day'),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
