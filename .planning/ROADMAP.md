@@ -192,6 +192,13 @@ Plans:
 **Requirements covered:**
 - User can track which Chunks they complete throughout the day
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Add packages, Android notification config, NotificationService, ScheduleNotifier completion tracking, SettingsNotifier expansion
+- [ ] 04-02-PLAN.md — SwipeableChunkCard + ScheduleScreen (skipped section, Web banner, overflow menu) + EndOfDaySummaryScreen + route wiring + main.dart notification init
+- [ ] 04-03-PLAN.md — ExportService (JSON via share_plus) + Settings screen full implementation (notification config, data export)
+
 **Deliverables:**
 - Swipe gestures on schedule cards: swipe right to complete, swipe left to skip; tap opens a detail/edit bottom sheet
 - CompletionLog: append-only event log (event sourcing pattern) — each entry records chunk ID, goal ID, date, event type (completed / skipped / deferred), timestamp; CompletionLog records are never mutated or deleted
@@ -303,7 +310,7 @@ Plans:
 | 1. Foundation | 4/4 | Complete   | 2026-02-25 |
 | 2. Goals and Commitments | 3/6 | In Progress|  |
 | 3. Schedule Generation and Morning Check-In | 2/5 | In Progress|  |
-| 4. Chunk Tracking and Notifications | 0/0 | Not started | - |
+| 4. Chunk Tracking and Notifications | 0/3 | Not started | - |
 | 5. Quarterly Review | 0/0 | Not started | - |
 | 6. Desktop and Web Polish | 0/0 | Not started | - |
 
@@ -339,7 +346,7 @@ All eight active requirements from PROJECT.md are mapped to exactly one phase. N
 | Three goal types: time-target, outcome, habit | Phase 2 |
 | Daily Chunk schedule generated each morning | Phase 3 |
 | Break structure: 5-min short, 25-min long, mood-adaptive cadence | Phase 3 |
-| Morning mood check-in controls discretionary chunk count; mood 1–2 triggers reduced schedule | Phase 3 |
+| Morning mood check-in controls discretionary chunk count; mood 1-2 triggers reduced schedule | Phase 3 |
 | User can track which Chunks they complete | Phase 4 |
 | Quarterly review: data summary + guided reflection | Phase 5 |
 | Schedule generation is rule-based (no AI API) | Phase 3 |
