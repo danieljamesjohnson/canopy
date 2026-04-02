@@ -62,7 +62,7 @@ display density.
 | Body | `bodyMedium` | 14sp | 400 | 1.43 |
 | Label / metadata | `bodySmall` | 12sp | 400 | 1.33 |
 | Chunk title | `titleMedium` bold | 16sp | 700 | 1.5 |
-| Section heading / summary stat | `titleLarge` | 22sp | 400 | 1.27 |
+| Section heading / summary stat | `titleLarge` bold | 22sp | 700 | 1.27 |
 
 Declared weights used in Phase 4: **400 (regular)** and **700 (bold)**.
 Weight 600 (semibold) is used only in `ScheduleProgressBar` label (pre-existing — not
@@ -160,7 +160,7 @@ Route: `GoRoute(path: '/summary')` outside `StatefulShellRoute` — no bottom na
 **Screen layout (single-scroll column):**
 
 Section A — Hero stat:
-- Large centered number: completed chunk count (28sp, weight 700)
+- Large centered number: completed chunk count (`titleLarge` bold, 22sp, weight 700)
 - Sub-label: "of N chunks complete" (`bodyMedium`, `onSurfaceVariant`)
 - Vertical padding: 32dp above, 24dp below
 
@@ -169,7 +169,7 @@ Section B — Per-goal breakdown:
 - One row per goal that had chunks today: goal color dot (12dp circle) + goal name +
   "X of Y" label right-aligned
 - Row height: 48dp
-- Section heading: "By goal" (`titleMedium`, weight 700), 16dp top margin
+- Section heading: "By goal" (`titleMedium` bold, 16sp, weight 700), 16dp top margin
 
 Section C — Skipped count (only if skipped > 0):
 - Single `Text` line: "N chunk(s) set aside today." (`bodyMedium`, `onSurfaceVariant`)
