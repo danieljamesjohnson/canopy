@@ -6,6 +6,7 @@ import '../../data/models/scheduled_chunk.dart';
 import '../../providers/commitments_notifier.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
+import '../../services/notification_service.dart';
 
 class CheckinScreen extends StatefulWidget {
   const CheckinScreen({super.key});
@@ -60,6 +61,10 @@ class _CheckinScreenState extends State<CheckinScreen> {
           goals: context.read<GoalsNotifier>().goals,
           blocks: context.read<CommitmentsNotifier>().blocks,
         );
+
+    // Request iOS notification permission after first successful check-in.
+    // No-op on Web and non-iOS platforms; iOS ignores if already granted.
+    await NotificationService.requestIOSPermissions();
 
     if (mounted) {
       setState(() {
