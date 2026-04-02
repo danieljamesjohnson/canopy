@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import 'providers/settings_notifier.dart';
 import 'screens/commitments/commitments_screen.dart';
+import 'screens/end_of_day/end_of_day_summary_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/goals/archived_goals_screen.dart';
@@ -12,8 +13,14 @@ import 'screens/schedule/schedule_screen.dart';
 import 'screens/quarterly_review/quarterly_review_screen.dart';
 import 'screens/settings/settings_screen.dart';
 
+/// Root navigator key exposed so main.dart can use it for notification tap
+/// navigation without a BuildContext (notification callbacks have no context).
+final GlobalKey<NavigatorState> rootNavigatorKey =
+    GlobalKey<NavigatorState>();
+
 GoRouter createRouter(SettingsNotifier settingsNotifier) {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/home',
     refreshListenable: settingsNotifier,
     redirect: (context, state) {
@@ -90,6 +97,11 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
       GoRoute(
         path: '/commitments',
         builder: (context, state) => const CommitmentsScreen(),
+      ),
+      // End-of-day summary is outside the shell — no bottom nav shown.
+      GoRoute(
+        path: '/summary',
+        builder: (context, state) => const EndOfDaySummaryScreen(),
       ),
     ],
   );

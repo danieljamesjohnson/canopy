@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -7,7 +8,8 @@ import 'providers/goals_notifier.dart';
 import 'providers/commitments_notifier.dart';
 import 'providers/schedule_notifier.dart';
 import 'providers/settings_notifier.dart';
-import 'router.dart';
+import 'router.dart' show rootNavigatorKey, createRouter;
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +24,23 @@ void main() async {
 
   final scheduleNotifier = ScheduleNotifier();
   await scheduleNotifier.init();
+
+  // Initialize notification service before runApp.
+  // Web: no-op (in-app banner used instead).
+  await NotificationService.initialize();
+
+  // Wire notification tap → navigate to check-in screen (AC-3).
+  // Uses rootNavigatorKey from router.dart to navigate without a BuildContext.
+  NotificationService.onTapCallback = (NotificationResponse response) {
+    final context = rootNavigatorKey.currentContext;
+    if (context == null) return;
+    // Navigate to check-in if no schedule exists, otherwise show schedule.
+    if (scheduleNotifier.hasScheduleToday) {
+      rootNavigatorKey.currentState?.pushNamed('/schedule');
+    } else {
+      rootNavigatorKey.currentState?.pushNamed('/schedule/checkin');
+    }
+  };
 
   runApp(CanopyApp(settingsNotifier: settingsNotifier, scheduleNotifier: scheduleNotifier));
 }
