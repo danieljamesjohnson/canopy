@@ -4,20 +4,20 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: Not started
 status: planning
-last_updated: "2026-04-02T12:26:38.292Z"
+last_updated: "2026-04-02T12:36:34.588Z"
 progress:
   total_phases: 6
-  completed_phases: 4
-  total_plans: 16
+  completed_phases: 3
+  total_plans: 18
   completed_plans: 16
-  percent: 100
+  percent: 89
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-04-02T12:26:38.289Z
+**Last session:** 2026-04-02T12:36:34.585Z
 
 ---
 
@@ -27,7 +27,7 @@ progress:
 **Current Plan:** Not started
 **Status:** Ready to plan
 
-**Progress:** [██████████] 100%
+**Progress:** [█████████░] 89%
 
 ---
 
@@ -83,6 +83,9 @@ progress:
 - [Phase 03-05]: Habit ordering and timeless habit/weekly-goal display after work blocks are out-of-scope for Phase 3 — flagged as future enhancements
 - [Phase 04-01]: Dismissible with confirmDismiss=false used for swipe gesture detection so cards stay in place
 - [Phase 04-01]: Skipped chunks rendered in ExpansionTile at bottom of schedule list, hidden when empty
+- [Phase 04-chunk-tracking-and-notifications]: flutter_local_notifications v21 uses all-named-parameter API; RESEARCH.md positional pattern updated accordingly
+- [Phase 04-chunk-tracking-and-notifications]: rootNavigatorKey passed as navigatorKey to GoRouter so notification tap callbacks can navigate without BuildContext (AC-3)
+- [Phase 04-chunk-tracking-and-notifications]: iOS notification permission deferred to post-first-check-in via NotificationService.requestIOSPermissions() in checkin_screen.dart
 
 ## Performance Metrics
 
@@ -105,6 +108,7 @@ progress:
 | Phase 03-schedule-generation-and-morning-check-in P03-04 | 2 | 2 tasks | 4 files |
 | Phase 03-schedule-generation-and-morning-check-in P03-05 | 5 | 2 tasks | 0 files |
 | Phase 04-chunk-tracking-and-notifications P04-01 | 3 | 4 tasks | 2 files |
+| Phase 04-chunk-tracking-and-notifications P04-02 | 5 | 2 tasks | 9 files |
 
 ## Blockers
 
