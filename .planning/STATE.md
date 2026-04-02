@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: Not started
 status: planning
-last_updated: "2026-03-23T21:13:11.659Z"
+last_updated: "2026-04-02T12:26:38.292Z"
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 15
-  completed_plans: 15
+  completed_phases: 4
+  total_plans: 16
+  completed_plans: 16
   percent: 100
 ---
 
@@ -17,7 +17,7 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-03-23T20:28:41.409Z
+**Last session:** 2026-04-02T12:26:38.289Z
 
 ---
 
@@ -81,6 +81,8 @@ progress:
 - [Phase 03-04]: context.read<GoalsNotifier>() used inside ListView.builder for goal color lookup to avoid unnecessary rebuild cascade
 - [Phase 03-04]: HomeScreen AppBar title is 'Canopy'; mood color map declared as static const in each screen for two-screen simplicity
 - [Phase 03-05]: Habit ordering and timeless habit/weekly-goal display after work blocks are out-of-scope for Phase 3 — flagged as future enhancements
+- [Phase 04-01]: Dismissible with confirmDismiss=false used for swipe gesture detection so cards stay in place
+- [Phase 04-01]: Skipped chunks rendered in ExpansionTile at bottom of schedule list, hidden when empty
 
 ## Performance Metrics
 
@@ -102,6 +104,7 @@ progress:
 | Phase 03-schedule-generation-and-morning-check-in P03-03 | 8 | 2 tasks | 2 files |
 | Phase 03-schedule-generation-and-morning-check-in P03-04 | 2 | 2 tasks | 4 files |
 | Phase 03-schedule-generation-and-morning-check-in P03-05 | 5 | 2 tasks | 0 files |
+| Phase 04-chunk-tracking-and-notifications P04-01 | 3 | 4 tasks | 2 files |
 
 ## Blockers
 

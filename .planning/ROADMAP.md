@@ -27,7 +27,7 @@ Key non-negotiable constraints carried through all phases:
 - [x] **Phase 1: Foundation** — Database, routing, Provider scaffold, and migration runner — no user-visible features (completed 2026-02-25)
 - [ ] **Phase 2: Goals and Commitments** — Three goal types CRUD, CommitmentBlock CRUD, three-screen onboarding
 - [ ] **Phase 3: Schedule Generation and Morning Check-In** — Mood check-in, rule-based schedule generation, schedule display UI
-- [ ] **Phase 4: Chunk Tracking and Notifications** — Swipe completion, CompletionLog, local notifications, data export
+- [x] **Phase 4: Chunk Tracking and Notifications** — Swipe completion, CompletionLog, local notifications, data export (completed 2026-04-02)
 - [ ] **Phase 5: Quarterly Review** — Aggregation, fl_chart visualizations, guided reflection, QuarterlySnapshot
 - [ ] **Phase 6: Desktop and Web Polish** — Adaptive layouts, hover states, window constraints, Web URL and notification fallbacks
 
@@ -303,7 +303,7 @@ Plans:
 | 1. Foundation | 4/4 | Complete   | 2026-02-25 |
 | 2. Goals and Commitments | 3/6 | In Progress|  |
 | 3. Schedule Generation and Morning Check-In | 2/5 | In Progress|  |
-| 4. Chunk Tracking and Notifications | 0/0 | Not started | - |
+| 4. Chunk Tracking and Notifications | 1/1 | Complete   | 2026-04-02 |
 | 5. Quarterly Review | 0/0 | Not started | - |
 | 6. Desktop and Web Polish | 0/0 | Not started | - |
 
