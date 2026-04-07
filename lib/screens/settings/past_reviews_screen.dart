@@ -51,8 +51,8 @@ class _PastReviewsScreenState extends State<PastReviewsScreen> {
           child: Text(
             'No reviews yet -- complete your first quarterly review to see it here.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
@@ -73,16 +73,18 @@ class _PastReviewsScreenState extends State<PastReviewsScreen> {
         final periodStart = DateTime.parse(snapshot.periodStartYmd);
         final monthYear = DateFormat('MMM yyyy').format(periodStart);
 
-        final totalChunks =
-            snapshot.goalChunkTotals.values.fold(0, (sum, v) => sum + v);
+        final totalChunks = snapshot.goalChunkTotals.values.fold(
+          0,
+          (sum, v) => sum + v,
+        );
 
         return ListTile(
           title: Text('Q$qNumber -- $monthYear'),
           trailing: Text(
             '$totalChunks chunks completed',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         );
       },

@@ -32,8 +32,8 @@ class DonutChart extends StatelessWidget {
     final legendEntries = <({Color color, String label, double pct})>[];
 
     // Total value for percentage calculation
-    final totalValue = goalChunkTotals.values.fold<int>(0, (a, b) => a + b) +
-        notSpentCount;
+    final totalValue =
+        goalChunkTotals.values.fold<int>(0, (a, b) => a + b) + notSpentCount;
 
     for (var i = 0; i < goals.length; i++) {
       final goal = goals[i];
@@ -41,26 +41,32 @@ class DonutChart extends StatelessWidget {
       final color = _colorForGoal(goal, i);
       final pct = totalValue > 0 ? count / totalValue * 100 : 0.0;
 
-      sections.add(PieChartSectionData(
-        value: count.toDouble(),
-        color: color,
-        radius: 50,
-        showTitle: false,
-      ));
+      sections.add(
+        PieChartSectionData(
+          value: count.toDouble(),
+          color: color,
+          radius: 50,
+          showTitle: false,
+        ),
+      );
       legendEntries.add((color: color, label: goal.name, pct: pct));
     }
 
     // "Time not spent" slice
-    final notSpentPct =
-        totalValue > 0 ? notSpentCount / totalValue * 100 : 0.0;
-    sections.add(PieChartSectionData(
-      value: notSpentCount.toDouble(),
+    final notSpentPct = totalValue > 0 ? notSpentCount / totalValue * 100 : 0.0;
+    sections.add(
+      PieChartSectionData(
+        value: notSpentCount.toDouble(),
+        color: outlineVariant,
+        radius: 50,
+        showTitle: false,
+      ),
+    );
+    legendEntries.add((
       color: outlineVariant,
-      radius: 50,
-      showTitle: false,
+      label: 'Time not spent',
+      pct: notSpentPct,
     ));
-    legendEntries.add(
-        (color: outlineVariant, label: 'Time not spent', pct: notSpentPct));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -83,28 +89,30 @@ class DonutChart extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: legendEntries
-                .map((e) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Row(
-                        children: [
-                          CircleAvatar(radius: 6, backgroundColor: e.color),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              e.label,
-                              style: theme.textTheme.bodySmall,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                .map(
+                  (e) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      children: [
+                        CircleAvatar(radius: 6, backgroundColor: e.color),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            e.label,
+                            style: theme.textTheme.bodySmall,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          Text(
-                            '${e.pct.toStringAsFixed(0)}%',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                        ),
+                        Text(
+                          '${e.pct.toStringAsFixed(0)}%',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                        ],
-                      ),
-                    ))
+                        ),
+                      ],
+                    ),
+                  ),
+                )
                 .toList(),
           ),
         ),
@@ -116,6 +124,7 @@ class DonutChart extends StatelessWidget {
     if (goal.color != null) return hexToColor(goal.color!);
     const palette = GoalsNotifier.colorPalette;
     return Color(
-        int.parse(palette[index % palette.length].replaceFirst('#', '0xFF')));
+      int.parse(palette[index % palette.length].replaceFirst('#', '0xFF')),
+    );
   }
 }

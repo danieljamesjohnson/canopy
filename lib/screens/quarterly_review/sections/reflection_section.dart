@@ -67,22 +67,19 @@ class _ReflectionSectionState extends State<ReflectionSection> {
       case 0:
         // Top 3 by completion rate
         final sorted = goals.toList()
-          ..sort((a, b) =>
-              (rates[b.id] ?? 0.0).compareTo(rates[a.id] ?? 0.0));
+          ..sort((a, b) => (rates[b.id] ?? 0.0).compareTo(rates[a.id] ?? 0.0));
         return sorted.take(3).map((g) => g.name).toList();
 
       case 1:
         // Top 3 by absolute chunks completed
         final sorted = goals.toList()
-          ..sort((a, b) =>
-              (totals[b.id] ?? 0).compareTo(totals[a.id] ?? 0));
+          ..sort((a, b) => (totals[b.id] ?? 0).compareTo(totals[a.id] ?? 0));
         return sorted.take(3).map((g) => g.name).toList();
 
       case 2:
         // Bottom 3 by completion rate (only goals with >=1 chunk)
         final withData = goals.where((g) => (totals[g.id] ?? 0) >= 1).toList()
-          ..sort((a, b) =>
-              (rates[a.id] ?? 0.0).compareTo(rates[b.id] ?? 0.0));
+          ..sort((a, b) => (rates[a.id] ?? 0.0).compareTo(rates[b.id] ?? 0.0));
         return withData.take(3).map((g) => g.name).toList();
 
       case 3:
@@ -95,10 +92,7 @@ class _ReflectionSectionState extends State<ReflectionSection> {
             .where((g) => (rates[g.id] ?? 0.0) <= 0.20)
             .map((g) => g.name)
             .toList();
-        return [
-          ...underperforming,
-          'Nothing \u2014 keep them all',
-        ];
+        return [...underperforming, 'Nothing \u2014 keep them all'];
 
       default:
         return [];
@@ -132,10 +126,7 @@ class _ReflectionSectionState extends State<ReflectionSection> {
         ),
 
         // Step dots
-        _StepDots(
-          currentPage: _currentQuestion,
-          totalPages: _totalQuestions,
-        ),
+        _StepDots(currentPage: _currentQuestion, totalPages: _totalQuestions),
 
         // Question PageView
         Expanded(
@@ -161,10 +152,7 @@ class _ReflectionSectionState extends State<ReflectionSection> {
 // ---------------------------------------------------------------------------
 
 class _StepDots extends StatelessWidget {
-  const _StepDots({
-    required this.currentPage,
-    required this.totalPages,
-  });
+  const _StepDots({required this.currentPage, required this.totalPages});
 
   final int currentPage;
   final int totalPages;
@@ -185,8 +173,9 @@ class _StepDots extends StatelessWidget {
             width: isActive ? 24 : 8,
             height: 8,
             decoration: BoxDecoration(
-              color:
-                  isActive ? colorScheme.primary : colorScheme.outlineVariant,
+              color: isActive
+                  ? colorScheme.primary
+                  : colorScheme.outlineVariant,
               borderRadius: BorderRadius.circular(4),
             ),
           );

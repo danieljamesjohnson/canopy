@@ -58,7 +58,8 @@ class _AdjustmentsSectionState extends State<AdjustmentsSection> {
     if (goal.color != null) return hexToColor(goal.color!);
     const palette = GoalsNotifier.colorPalette;
     return Color(
-        int.parse(palette[index % palette.length].replaceFirst('#', '0xFF')));
+      int.parse(palette[index % palette.length].replaceFirst('#', '0xFF')),
+    );
   }
 
   Future<void> _finish() async {
@@ -90,14 +91,15 @@ class _AdjustmentsSectionState extends State<AdjustmentsSection> {
       }
 
       // Persist QuarterlySnapshot (append-only — never overwrite)
-      final snapshot = QuarterlySnapshot(
-        periodStartYmd: widget.periodStartYmd,
-        periodEndYmd: widget.periodEndYmd,
-      )
-        ..goalChunkTotals = Map.of(widget.goalChunkTotals)
-        ..reflectionAnswers = List.of(widget.reflectionAnswers)
-        ..goalPrioritySnapshot = prioritySnapshot
-        ..archivedGoalIds = _archivedIds.toList();
+      final snapshot =
+          QuarterlySnapshot(
+              periodStartYmd: widget.periodStartYmd,
+              periodEndYmd: widget.periodEndYmd,
+            )
+            ..goalChunkTotals = Map.of(widget.goalChunkTotals)
+            ..reflectionAnswers = List.of(widget.reflectionAnswers)
+            ..goalPrioritySnapshot = prioritySnapshot
+            ..archivedGoalIds = _archivedIds.toList();
 
       await HiveQuarterlySnapshotRepository().append(snapshot);
 
@@ -119,8 +121,9 @@ class _AdjustmentsSectionState extends State<AdjustmentsSection> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final visibleGoals =
-        _orderedGoals.where((g) => !_archivedIds.contains(g.id)).toList();
+    final visibleGoals = _orderedGoals
+        .where((g) => !_archivedIds.contains(g.id))
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -151,8 +154,9 @@ class _AdjustmentsSectionState extends State<AdjustmentsSection> {
             itemCount: visibleGoals.length,
             itemBuilder: (context, i) {
               final goal = visibleGoals[i];
-              final globalIndex =
-                  _orderedGoals.indexWhere((g) => g.id == goal.id);
+              final globalIndex = _orderedGoals.indexWhere(
+                (g) => g.id == goal.id,
+              );
               return GoalAdjustmentTile(
                 key: ValueKey(goal.id),
                 goal: goal,
@@ -161,8 +165,7 @@ class _AdjustmentsSectionState extends State<AdjustmentsSection> {
                 completionRate: widget.completionRates[goal.id],
                 showArchivePrompt: _showArchivePrompt(goal),
                 onArchive: () => setState(() => _archivedIds.add(goal.id)),
-                onKeep: () =>
-                    setState(() => _dismissedPrompts.add(goal.id)),
+                onKeep: () => setState(() => _dismissedPrompts.add(goal.id)),
               );
             },
             onReorder: (oldIndex, newIndex) {

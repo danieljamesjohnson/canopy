@@ -79,8 +79,7 @@ class _QuarterlyReviewScreenState extends State<QuarterlyReviewScreen> {
       return;
     }
 
-    final totalCompleted =
-        service.totalCompleted(allLogs, startYmd, todayYmd);
+    final totalCompleted = service.totalCompleted(allLogs, startYmd, todayYmd);
 
     if (totalCompleted == 0 && goals.isEmpty) {
       if (mounted) {
@@ -99,12 +98,14 @@ class _QuarterlyReviewScreenState extends State<QuarterlyReviewScreen> {
         _periodStartYmd = startYmd;
         _periodEndYmd = todayYmd;
         _totalCompleted = totalCompleted;
-        _goalChunkTotals =
-            service.completedByGoal(allLogs, startYmd, todayYmd);
+        _goalChunkTotals = service.completedByGoal(allLogs, startYmd, todayYmd);
         _notSpentCount = service.notSpentCount(allLogs, startYmd, todayYmd);
         _weeklyData = service.completedByWeek(allLogs, startYmd, todayYmd);
-        _completionRates =
-            service.completionRateByGoal(allLogs, startYmd, todayYmd);
+        _completionRates = service.completionRateByGoal(
+          allLogs,
+          startYmd,
+          todayYmd,
+        );
       });
     }
   }
@@ -139,54 +140,51 @@ class _QuarterlyReviewScreenState extends State<QuarterlyReviewScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : !_hasData
-              ? _buildEmptyState(theme)
-              : Column(
-                  children: [
-                    // Section indicator (3 dots)
-                    _SectionDots(
-                      currentSection: _currentSection,
-                      totalSections: 3,
-                    ),
-                    Expanded(
-                      child: PageView(
-                        controller: _outerController,
-                        physics: const NeverScrollableScrollPhysics(),
-                        children: [
-                          // Section 1: Data
-                          DataSection(
-                            totalCompleted: _totalCompleted,
-                            goalChunkTotals: _goalChunkTotals,
-                            notSpentCount: _notSpentCount,
-                            weeklyData: _weeklyData,
-                            goals: goals,
-                            onNext: () => _advanceToSection(1),
-                          ),
-
-                          // Section 2: Reflection
-                          ReflectionSection(
-                            goals: goals,
-                            goalChunkTotals: _goalChunkTotals,
-                            completionRates: _completionRates,
-                            onComplete: (answers) {
-                              setState(() => _reflectionAnswers = answers);
-                              _advanceToSection(2);
-                            },
-                          ),
-
-                          // Section 3: Adjustments
-                          AdjustmentsSection(
-                            goals: goals,
-                            completionRates: _completionRates,
-                            reflectionAnswers: _reflectionAnswers,
-                            periodStartYmd: _periodStartYmd,
-                            periodEndYmd: _periodEndYmd,
-                            goalChunkTotals: _goalChunkTotals,
-                          ),
-                        ],
+          ? _buildEmptyState(theme)
+          : Column(
+              children: [
+                // Section indicator (3 dots)
+                _SectionDots(currentSection: _currentSection, totalSections: 3),
+                Expanded(
+                  child: PageView(
+                    controller: _outerController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      // Section 1: Data
+                      DataSection(
+                        totalCompleted: _totalCompleted,
+                        goalChunkTotals: _goalChunkTotals,
+                        notSpentCount: _notSpentCount,
+                        weeklyData: _weeklyData,
+                        goals: goals,
+                        onNext: () => _advanceToSection(1),
                       ),
-                    ),
-                  ],
+
+                      // Section 2: Reflection
+                      ReflectionSection(
+                        goals: goals,
+                        goalChunkTotals: _goalChunkTotals,
+                        completionRates: _completionRates,
+                        onComplete: (answers) {
+                          setState(() => _reflectionAnswers = answers);
+                          _advanceToSection(2);
+                        },
+                      ),
+
+                      // Section 3: Adjustments
+                      AdjustmentsSection(
+                        goals: goals,
+                        completionRates: _completionRates,
+                        reflectionAnswers: _reflectionAnswers,
+                        periodStartYmd: _periodStartYmd,
+                        periodEndYmd: _periodEndYmd,
+                        goalChunkTotals: _goalChunkTotals,
+                      ),
+                    ],
+                  ),
                 ),
+              ],
+            ),
     );
   }
 

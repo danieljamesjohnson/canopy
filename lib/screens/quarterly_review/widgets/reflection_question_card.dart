@@ -51,10 +51,7 @@ class _ReflectionQuestionCardState extends State<ReflectionQuestionCard> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              widget.question,
-              style: theme.textTheme.headlineSmall,
-            ),
+            Text(widget.question, style: theme.textTheme.headlineSmall),
             const SizedBox(height: 24),
 
             // Suggestion chips
@@ -62,10 +59,12 @@ class _ReflectionQuestionCardState extends State<ReflectionQuestionCard> {
               spacing: 8,
               runSpacing: 8,
               children: widget.suggestedAnswers
-                  .map((answer) => ActionChip(
-                        label: Text(answer),
-                        onPressed: () => widget.onAnswered(answer),
-                      ))
+                  .map(
+                    (answer) => ActionChip(
+                      label: Text(answer),
+                      onPressed: () => widget.onAnswered(answer),
+                    ),
+                  )
                   .toList(),
             ),
             const SizedBox(height: 16),

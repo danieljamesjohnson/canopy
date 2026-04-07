@@ -40,27 +40,23 @@ class QuarterlyAggregationService {
   }
 
   /// Returns count of skipped + deferred logs within [startYmd]..[endYmd] (inclusive).
-  int notSpentCount(
-    List<CompletionLog> logs,
-    String startYmd,
-    String endYmd,
-  ) {
+  int notSpentCount(List<CompletionLog> logs, String startYmd, String endYmd) {
     return _inRange(logs, startYmd, endYmd)
-        .where((l) =>
-            l.event == CompletionEvent.skipped ||
-            l.event == CompletionEvent.deferred)
+        .where(
+          (l) =>
+              l.event == CompletionEvent.skipped ||
+              l.event == CompletionEvent.deferred,
+        )
         .length;
   }
 
   /// Returns count of completed logs within [startYmd]..[endYmd] (inclusive).
-  int totalCompleted(
-    List<CompletionLog> logs,
-    String startYmd,
-    String endYmd,
-  ) {
-    return _inRange(logs, startYmd, endYmd)
-        .where((l) => l.event == CompletionEvent.completed)
-        .length;
+  int totalCompleted(List<CompletionLog> logs, String startYmd, String endYmd) {
+    return _inRange(
+      logs,
+      startYmd,
+      endYmd,
+    ).where((l) => l.event == CompletionEvent.completed).length;
   }
 
   /// Returns true when [now] is within the review window.

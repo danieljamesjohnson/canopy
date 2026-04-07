@@ -41,9 +41,7 @@ class ReviewBanner extends StatelessWidget {
                           Expanded(
                             child: Text(
                               'Your quarterly review is ready',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -57,10 +55,8 @@ class ReviewBanner extends StatelessWidget {
                       Text(
                         "See how far you've come. Takes about 5 minutes.",
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),

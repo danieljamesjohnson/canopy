@@ -44,8 +44,10 @@ class DataSection extends StatelessWidget {
 
     // Top 3 goals by chunk count, descending
     final sortedGoals = goals.toList()
-      ..sort((a, b) =>
-          (goalChunkTotals[b.id] ?? 0).compareTo(goalChunkTotals[a.id] ?? 0));
+      ..sort(
+        (a, b) =>
+            (goalChunkTotals[b.id] ?? 0).compareTo(goalChunkTotals[a.id] ?? 0),
+      );
     final top3 = sortedGoals.take(3).toList();
 
     return SingleChildScrollView(
@@ -107,10 +109,7 @@ class DataSection extends StatelessWidget {
               return SizedBox(
                 height: 48,
                 child: ListTile(
-                  leading: CircleAvatar(
-                    radius: 6,
-                    backgroundColor: color,
-                  ),
+                  leading: CircleAvatar(radius: 6, backgroundColor: color),
                   title: Text(goal.name),
                   trailing: Text(
                     '$count chunks',

@@ -7,10 +7,7 @@ import 'package:intl/intl.dart';
 /// [weeklyData] maps Monday ISO date keys (e.g. "2026-01-06") to chunk counts.
 /// Bars are sorted by date ascending. Week axis labels use "Jan 6" format.
 class WeeklyBarChart extends StatelessWidget {
-  const WeeklyBarChart({
-    super.key,
-    required this.weeklyData,
-  });
+  const WeeklyBarChart({super.key, required this.weeklyData});
 
   final Map<String, int> weeklyData;
 

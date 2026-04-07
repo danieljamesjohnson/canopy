@@ -34,18 +34,9 @@ class GoalAdjustmentTile extends StatelessWidget {
     final mainRow = Row(
       children: [
         // Left color bar
-        Container(
-          width: 5,
-          height: 56,
-          color: goalColor,
-        ),
+        Container(width: 5, height: 56, color: goalColor),
         const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            goal.name,
-            style: theme.textTheme.bodyMedium,
-          ),
-        ),
+        Expanded(child: Text(goal.name, style: theme.textTheme.bodyMedium)),
         // Drag handle — wrapped in ReorderableDelayedDragStartListener
         ReorderableDelayedDragStartListener(
           index: index,
@@ -91,10 +82,7 @@ class GoalAdjustmentTile extends StatelessWidget {
                         onPressed: onArchive,
                         child: const Text('Archive'),
                       ),
-                      TextButton(
-                        onPressed: onKeep,
-                        child: const Text('Keep'),
-                      ),
+                      TextButton(onPressed: onKeep, child: const Text('Keep')),
                     ],
                   ),
                 )
