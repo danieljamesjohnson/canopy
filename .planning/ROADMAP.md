@@ -27,7 +27,7 @@ Key non-negotiable constraints carried through all phases:
 - [x] **Phase 1: Foundation** — Database, routing, Provider scaffold, and migration runner — no user-visible features (completed 2026-02-25)
 - [ ] **Phase 2: Goals and Commitments** — Three goal types CRUD, CommitmentBlock CRUD, three-screen onboarding
 - [ ] **Phase 3: Schedule Generation and Morning Check-In** — Mood check-in, rule-based schedule generation, schedule display UI
-- [x] **Phase 4: Chunk Tracking and Notifications** — Swipe completion, CompletionLog, local notifications, data export (completed 2026-04-02)
+- [x] **Phase 4: Chunk Tracking and Notifications** — Swipe completion, CompletionLog, local notifications, data export (completed 2026-04-02)
 - [ ] **Phase 5: Quarterly Review** — Aggregation, fl_chart visualizations, guided reflection, QuarterlySnapshot
 - [ ] **Phase 6: Desktop and Web Polish** — Adaptive layouts, hover states, window constraints, Web URL and notification fallbacks
 
@@ -230,6 +230,14 @@ Plans:
 **Requirements covered:**
 - App performs a quarterly review: data summary + guided reflection to help user adjust goals and priorities
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Aggregation service (TDD), QuarterlySnapshot model expansion, GoalsNotifier.reorderAll, fl_chart dependency
+- [ ] 05-02-PLAN.md — QuarterlyReviewScreen with DataSection (charts), ReflectionSection (5 questions), AdjustmentsSection (reorder + archive)
+- [ ] 05-03-PLAN.md — Home screen review banner, Settings past reviews list, /settings/past-reviews route
+- [ ] 05-04-PLAN.md — Final test suite + human verification of full review flow
+
 **Deliverables:**
 - CompletionLog aggregation layer: functions to aggregate CompletionLog into per-goal totals, per-week chunk counts, completion rates, and streak records over a configurable date range
 - QuarterlySnapshot entity: persisted record of each quarterly review — date, goal totals, reflection answers, next-quarter priority adjustments; append-only (no overwriting past snapshots)
@@ -304,7 +312,7 @@ Plans:
 | 2. Goals and Commitments | 3/6 | In Progress|  |
 | 3. Schedule Generation and Morning Check-In | 2/5 | In Progress|  |
 | 4. Chunk Tracking and Notifications | 1/3 | In Progress|  |
-| 5. Quarterly Review | 0/0 | Not started | - |
+| 5. Quarterly Review | 0/4 | Planned | - |
 | 6. Desktop and Web Polish | 0/0 | Not started | - |
 
 ---
