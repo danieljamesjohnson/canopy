@@ -64,6 +64,19 @@ class GoalsNotifier extends ChangeNotifier {
     return archived;
   }
 
+  /// Reorders all goals across types using a flat ordered ID list.
+  /// Sets sortOrder = index position for each goal found in [orderedGoalIds].
+  Future<void> reorderAll(List<String> orderedGoalIds) async {
+    for (var i = 0; i < orderedGoalIds.length; i++) {
+      final goal = _goals.where((g) => g.id == orderedGoalIds[i]).firstOrNull;
+      if (goal != null) {
+        goal.sortOrder = i;
+        await _repository.save(goal);
+      }
+    }
+    await loadGoals();
+  }
+
   /// Reorders goals within a [type] group.
   ///
   /// [oldIndex] and [newIndex] are indices within the type-filtered list.

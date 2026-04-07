@@ -32,4 +32,12 @@ class QuarterlySnapshot extends HiveObject {
 
   @HiveField(5)
   List<String> reflectionAnswers = [];
+
+  /// goalId -> sortOrder at review time. Captured when review is submitted.
+  @HiveField(6)
+  Map<String, int> goalPrioritySnapshot = {};
+
+  /// Goal IDs archived during this review.
+  @HiveField(7)
+  List<String> archivedGoalIds = [];
 }

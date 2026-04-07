@@ -23,13 +23,15 @@ class QuarterlySnapshotAdapter extends TypeAdapter<QuarterlySnapshot> {
       )
       ..completedAt = fields[3] as DateTime
       ..goalChunkTotals = (fields[4] as Map).cast<String, int>()
-      ..reflectionAnswers = (fields[5] as List).cast<String>();
+      ..reflectionAnswers = (fields[5] as List).cast<String>()
+      ..goalPrioritySnapshot = (fields[6] as Map).cast<String, int>()
+      ..archivedGoalIds = (fields[7] as List).cast<String>();
   }
 
   @override
   void write(BinaryWriter writer, QuarterlySnapshot obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +43,11 @@ class QuarterlySnapshotAdapter extends TypeAdapter<QuarterlySnapshot> {
       ..writeByte(4)
       ..write(obj.goalChunkTotals)
       ..writeByte(5)
-      ..write(obj.reflectionAnswers);
+      ..write(obj.reflectionAnswers)
+      ..writeByte(6)
+      ..write(obj.goalPrioritySnapshot)
+      ..writeByte(7)
+      ..write(obj.archivedGoalIds);
   }
 
   @override
