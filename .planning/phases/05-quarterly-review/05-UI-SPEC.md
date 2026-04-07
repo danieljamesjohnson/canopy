@@ -34,7 +34,7 @@ Declared values (multiples of 4, matching existing codebase patterns):
 | Token | Value | Usage |
 |-------|-------|-------|
 | xs | 4px | Icon gaps, dot indicators, chart section gaps |
-| sm | 8px | Inline element spacing, chip spacing |
+| sm | 8px | Inline element spacing, chip spacing, banner card vertical padding |
 | md | 16px | Default horizontal page padding, card margin |
 | lg | 24px | Section-to-section vertical spacing |
 | xl | 32px | Hero stat top padding, major section breaks |
@@ -46,7 +46,6 @@ Exceptions:
 - Bar chart container height: 180px height (SizedBox constraint, not spacing token)
 - Left color bar on goal cards: 4–6dp width (established pattern from ChunkCard)
 - Drag handle touch target: 48dp minimum (accessibility, matches existing GoalsScreen pattern)
-- Review banner on HomeScreen: 12px vertical padding inside banner card (between sm and md)
 
 Source: Established by existing code in `home_screen.dart` (16px horizontal, 8px/16px vertical), `end_of_day_summary_screen.dart` (16px horizontal, 32px hero top, 48px bottom), `onboarding_screen.dart` (24px horizontal/bottom).
 
@@ -61,15 +60,16 @@ Material 3 textTheme roles mapped to this phase's usage. All values use `Theme.o
 | Display | `titleLarge` + `fontSize: 48` override | 48px | bold (700) | 1.1 | Hero stat number ("247") — matches end_of_day_summary_screen pattern |
 | Heading | `headlineSmall` | ~24px | normal (400) | 1.2 | Section titles in data section, reflection question text |
 | Title | `titleMedium` | ~16px | bold (700) | 1.3 | "By goal" labels, section subheadings |
-| Body | `bodyMedium` | ~14px | normal (400) | 1.5 | Hero stat label ("chunks completed this quarter"), reflection suggestions, chart legend text |
-| Label | `labelMedium` | ~12px | normal (500) | 1.4 | Chart axis labels (week labels in bar chart at 9–10px), section headers, chip labels |
-| Small | `bodySmall` | ~12px | normal (400) | 1.4 | Archive suggestion note, completion rate percentage text |
+| Body/Label | `bodyMedium` / `labelMedium` / `bodySmall` | ~14px / ~12px | normal (400) | 1.5 / 1.4 | Hero stat label, reflection suggestions, chart legend text, chip labels, section headers, archive suggestion notes, completion rate percentages |
+
+**Declared font weights: normal (400) and bold (700) only.** `labelMedium`'s Material default of weight 500 is treated as normal (400) for purposes of this contract — no weight 500 distinction is made.
+
+**Chart axis exception:** Week axis labels in the bar chart use `fontSize: 9` hardcoded. This is a narrow exception for compact chart axis rendering only — it is not a named type role and does not constitute a fifth size in the type scale.
 
 **Typography rules:**
 - Use `onSurfaceVariant` color for secondary/supporting text (labels, subtitles, helper text)
 - Use `onSurface` for primary content text
 - Reflection question text uses `headlineSmall` — large enough to read without glasses, small enough to fit 2+ lines
-- Week axis labels in bar chart: `fontSize: 9` hardcoded (established by RESEARCH.md Pattern 3 — axis labels must be compact)
 
 Source: Established by existing code patterns across all Phase 1–4 screens.
 
@@ -209,6 +209,7 @@ QuarterlyReviewScreen (StatefulWidget)
 - "Start review" button: `context.push('/review')`
 - Banner copy: "Your quarterly review is ready — see how far you've come."
 - Banner subtitle: "Takes about 5 minutes."
+- Banner vertical padding: 8px (sm token) top and bottom
 - Dismiss icon: `Icons.close` trailing the banner title row
 
 ### Settings — Past Reviews Entry (D-15)
