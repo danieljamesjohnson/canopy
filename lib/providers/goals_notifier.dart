@@ -30,6 +30,9 @@ class GoalsNotifier extends ChangeNotifier {
     '#607D8B',
   ];
 
+  /// Public read-only access to the color palette for use in chart widgets.
+  static const List<String> colorPalette = _colorPalette;
+
   /// Returns next color from palette based on current goals count.
   String autoColor() => _colorPalette[_goals.length % _colorPalette.length];
 

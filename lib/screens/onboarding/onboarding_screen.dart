@@ -342,7 +342,6 @@ class _Screen2State extends State<_Screen2> {
           // Name field
           TextField(
             controller: _nameController,
-            onChanged: (_) => setState(() {}),
             decoration: const InputDecoration(
               labelText: 'Name',
               hintText: 'e.g. Work, Class, Gym',
@@ -500,7 +499,6 @@ class _Screen3State extends State<_Screen3> {
           // Habit name
           TextField(
             controller: _nameController,
-            onChanged: (_) => setState(() {}),
             decoration: const InputDecoration(
               labelText: 'Habit name',
               hintText: 'e.g. Morning run, Journaling',
@@ -573,9 +571,18 @@ class _ScreenLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-      child: child,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight - 32, // account for padding
+            ),
+            child: IntrinsicHeight(child: child),
+          ),
+        );
+      },
     );
   }
 }
