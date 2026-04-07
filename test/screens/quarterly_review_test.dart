@@ -1,8 +1,14 @@
 import 'package:canopy/data/models/goal.dart';
+import 'package:canopy/providers/goals_notifier.dart';
+import 'package:canopy/screens/quarterly_review/sections/adjustments_section.dart';
 import 'package:canopy/screens/quarterly_review/sections/data_section.dart';
+import 'package:canopy/screens/quarterly_review/sections/reflection_section.dart';
 import 'package:canopy/screens/quarterly_review/widgets/donut_chart.dart';
+import 'package:canopy/screens/quarterly_review/widgets/goal_adjustment_tile.dart';
+import 'package:canopy/screens/quarterly_review/widgets/reflection_question_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 // ---------------------------------------------------------------------------
 // Stub helpers
@@ -118,6 +124,143 @@ void main() {
 
   // ---------------------------------------------------------------------------
   // Task 2 Tests: ReflectionQuestionCard, AdjustmentsSection, GoalAdjustmentTile
-  // (Added in Task 2)
   // ---------------------------------------------------------------------------
+
+  group('ReflectionQuestionCard', () {
+    testWidgets('renders the question text', (tester) async {
+      await tester.pumpWidget(_wrap(ReflectionQuestionCard(
+        question: 'Which goal gave you the most energy?',
+        suggestedAnswers: const ['Exercise', 'Reading'],
+        onAnswered: (_) {},
+      )));
+      expect(find.text('Which goal gave you the most energy?'), findsOneWidget);
+    });
+
+    testWidgets('renders suggestion chips', (tester) async {
+      await tester.pumpWidget(_wrap(ReflectionQuestionCard(
+        question: 'Test question',
+        suggestedAnswers: const ['Exercise', 'Reading'],
+        onAnswered: (_) {},
+      )));
+      expect(find.text('Exercise'), findsOneWidget);
+      expect(find.text('Reading'), findsOneWidget);
+    });
+
+    testWidgets('tapping a chip calls onAnswered with chip label', (tester) async {
+      String? answered;
+      await tester.pumpWidget(_wrap(ReflectionQuestionCard(
+        question: 'Test question',
+        suggestedAnswers: const ['Exercise', 'Reading'],
+        onAnswered: (v) => answered = v,
+      )));
+      await tester.tap(find.text('Exercise'));
+      await tester.pump();
+      expect(answered, equals('Exercise'));
+    });
+
+    testWidgets('renders "Other..." button', (tester) async {
+      await tester.pumpWidget(_wrap(ReflectionQuestionCard(
+        question: 'Test question',
+        suggestedAnswers: const ['Exercise'],
+        onAnswered: (_) {},
+      )));
+      expect(find.text('Other...'), findsOneWidget);
+    });
+  });
+
+  group('GoalAdjustmentTile', () {
+    final goal = _stubGoal(id: 'g1', name: 'Exercise', color: '#4CAF50');
+
+    testWidgets('renders goal name', (tester) async {
+      await tester.pumpWidget(_wrap(ReorderableListView(
+        onReorder: (oldIdx, newIdx) {},
+        children: [
+          GoalAdjustmentTile(
+            key: const ValueKey('g1'),
+            goal: goal,
+            goalColor: const Color(0xFF4CAF50),
+            index: 0,
+          ),
+        ],
+      )));
+      expect(find.text('Exercise'), findsOneWidget);
+    });
+
+    testWidgets('shows archive prompt text when showArchivePrompt is true',
+        (tester) async {
+      await tester.pumpWidget(_wrap(ReorderableListView(
+        onReorder: (oldIdx, newIdx) {},
+        children: [
+          GoalAdjustmentTile(
+            key: const ValueKey('g1'),
+            goal: goal,
+            goalColor: const Color(0xFF4CAF50),
+            index: 0,
+            showArchivePrompt: true,
+            onArchive: () {},
+            onKeep: () {},
+          ),
+        ],
+      )));
+      expect(find.textContaining('rarely made it in'), findsOneWidget);
+    });
+  });
+
+  group('AdjustmentsSection', () {
+    final goals = [
+      _stubGoal(id: 'g1', name: 'Exercise', color: '#4CAF50'),
+      _stubGoal(id: 'g2', name: 'Reading', color: '#2196F3'),
+    ];
+
+    Widget wrapWithProvider(Widget child) =>
+        ChangeNotifierProvider<GoalsNotifier>(
+          create: (ctx) => GoalsNotifier(),
+          child: MaterialApp(home: Scaffold(body: child)),
+        );
+
+    testWidgets('renders "Set your priorities for next quarter" heading',
+        (tester) async {
+      await tester.pumpWidget(wrapWithProvider(AdjustmentsSection(
+        goals: goals,
+        completionRates: const {'g1': 0.8, 'g2': 0.5},
+        reflectionAnswers: const [],
+        periodStartYmd: '2026-01-01',
+        periodEndYmd: '2026-04-01',
+        goalChunkTotals: const {'g1': 20, 'g2': 10},
+      )));
+      expect(find.text('Set your priorities for next quarter'), findsOneWidget);
+    });
+
+    testWidgets('renders "Finish review" button', (tester) async {
+      await tester.pumpWidget(wrapWithProvider(AdjustmentsSection(
+        goals: goals,
+        completionRates: const {'g1': 0.8, 'g2': 0.5},
+        reflectionAnswers: const [],
+        periodStartYmd: '2026-01-01',
+        periodEndYmd: '2026-04-01',
+        goalChunkTotals: const {'g1': 20, 'g2': 10},
+      )));
+      await tester.ensureVisible(find.text('Finish review'));
+      expect(find.text('Finish review'), findsOneWidget);
+    });
+  });
+
+  group('ReflectionSection', () {
+    final goals = [
+      _stubGoal(id: 'g1', name: 'Exercise', color: '#4CAF50'),
+    ];
+
+    testWidgets('renders the first question', (tester) async {
+      await tester.pumpWidget(_wrap(ReflectionSection(
+        goals: goals,
+        goalChunkTotals: const {'g1': 10},
+        completionRates: const {'g1': 0.8},
+        onComplete: (_) {},
+      )));
+      expect(
+        find.textContaining('most energy'),
+        findsOneWidget,
+      );
+    });
+  });
 }
