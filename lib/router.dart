@@ -11,6 +11,7 @@ import 'screens/goals/goals_screen.dart';
 import 'screens/schedule/checkin_screen.dart';
 import 'screens/schedule/schedule_screen.dart';
 import 'screens/quarterly_review/quarterly_review_screen.dart';
+import 'screens/settings/past_reviews_screen.dart';
 import 'screens/settings/settings_screen.dart';
 
 /// Root navigator key exposed so main.dart can use it for notification tap
@@ -78,6 +79,12 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
               GoRoute(
                 path: '/settings',
                 builder: (context, state) => const SettingsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'past-reviews',
+                    builder: (context, state) => const PastReviewsScreen(),
+                  ),
+                ],
               ),
             ],
           ),

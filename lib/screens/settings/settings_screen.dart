@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../data/repositories/hive_completion_log_repository.dart';
 import '../../providers/settings_notifier.dart';
@@ -195,6 +196,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   )
                 : const Icon(Icons.chevron_right),
             onTap: _exporting ? null : () => _handleExport(context),
+          ),
+
+          const Divider(indent: 16, endIndent: 16),
+
+          // Reviews section heading
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text(
+              'Reviews',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+
+          // Past reviews row
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: const Text('Past reviews'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/past-reviews'),
           ),
         ],
       ),
