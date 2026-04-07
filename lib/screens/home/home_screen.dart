@@ -3,12 +3,21 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/scheduled_chunk.dart';
+import '../../data/repositories/hive_completion_log_repository.dart';
+import '../../data/repositories/hive_quarterly_snapshot_repository.dart';
 import '../../providers/schedule_notifier.dart';
+import '../../services/quarterly_aggregation_service.dart';
 import '../schedule/widgets/schedule_progress_bar.dart';
+import 'widgets/review_banner.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   static const Map<int, Color> _moodColors = {
     1: Color(0xFF4A6275),
     2: Color(0xFF5C7A8A),
@@ -32,6 +41,29 @@ class HomeScreen extends StatelessWidget {
     4: 'Good energy — tackle some harder things',
     5: 'Great energy — go for your stretch goals',
   };
+
+  bool _bannerDismissed = false;
+  bool _inReviewWindow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkReviewWindow();
+  }
+
+  Future<void> _checkReviewWindow() async {
+    final logs = await HiveCompletionLogRepository().getAll();
+    final latest = await HiveQuarterlySnapshotRepository().getLatest();
+    final service = QuarterlyAggregationService();
+    if (mounted) {
+      setState(() {
+        _inReviewWindow = service.isInReviewWindow(
+          latestSnapshot: latest,
+          allLogs: logs,
+        );
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +90,11 @@ class HomeScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ScheduleProgressBar(schedule: schedule, moodColor: moodColor),
+          if (_inReviewWindow && !_bannerDismissed)
+            ReviewBanner(
+              onStart: () => context.push('/review'),
+              onDismiss: () => setState(() => _bannerDismissed = true),
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
@@ -130,32 +167,44 @@ class HomeScreen extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Canopy')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'No schedule yet',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Start your morning check-in to generate today\'s schedule.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+      body: Column(
+        children: [
+          if (_inReviewWindow && !_bannerDismissed)
+            ReviewBanner(
+              onStart: () => context.push('/review'),
+              onDismiss: () => setState(() => _bannerDismissed = true),
+            ),
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'No schedule yet',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                textAlign: TextAlign.center,
+                    const SizedBox(height: 8),
+                    Text(
+                      'Start your morning check-in to generate today\'s schedule.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    OutlinedButton(
+                      onPressed: () => context.push('/schedule/checkin'),
+                      child: const Text('Start your day'),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 24),
-              OutlinedButton(
-                onPressed: () => context.push('/schedule/checkin'),
-                child: const Text('Start your day'),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
