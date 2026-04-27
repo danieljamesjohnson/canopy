@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../data/repositories/hive_completion_log_repository.dart';
+import '../../dev/dev_data_loader.dart';
 import '../../providers/settings_notifier.dart';
 import '../../services/export_service.dart';
 import '../../services/notification_service.dart';
@@ -30,8 +31,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _exporting = true);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-          content: Text('Preparing export...'),
-          behavior: SnackBarBehavior.floating),
+        content: Text('Preparing export...'),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
     try {
       final logs = await HiveCompletionLogRepository().getAll();
@@ -68,10 +70,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
               'Notifications',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
 
@@ -80,7 +81,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.alarm),
             title: const Text('Morning reminder'),
             subtitle: Text(
-                morningEnabled ? _formatMinutes(morningMinutes) : 'Off'),
+              morningEnabled ? _formatMinutes(morningMinutes) : 'Off',
+            ),
             trailing: Switch(
               value: morningEnabled,
               onChanged: (val) async {
@@ -89,7 +91,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     .setMorningNotificationEnabled(val);
                 if (val) {
                   await NotificationService.scheduleMorningNotification(
-                      morningMinutes);
+                    morningMinutes,
+                  );
                 } else {
                   await NotificationService.cancelMorningNotification();
                 }
@@ -110,7 +113,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           .read<SettingsNotifier>()
                           .setMorningNotificationMinutes(newMinutes);
                       await NotificationService.scheduleMorningNotification(
-                          newMinutes);
+                        newMinutes,
+                      );
                     }
                   }
                 : null,
@@ -120,15 +124,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.notifications_outlined),
             title: const Text('Mid-day nudge'),
-            subtitle: Text(midDayEnabled
-                ? _formatMinutes(midDayMinutes)
-                : 'Opt-in reminder to check your schedule'),
+            subtitle: Text(
+              midDayEnabled
+                  ? _formatMinutes(midDayMinutes)
+                  : 'Opt-in reminder to check your schedule',
+            ),
             trailing: Switch(
               value: midDayEnabled,
               onChanged: (val) async {
-                await context
-                    .read<SettingsNotifier>()
-                    .setMidDayNudgeEnabled(val);
+                await context.read<SettingsNotifier>().setMidDayNudgeEnabled(
+                  val,
+                );
                 if (val) {
                   await NotificationService.scheduleMidDayNudge(midDayMinutes);
                 } else {
@@ -163,8 +169,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: Text(
                 'Reminders may arrive up to 15 minutes early due to device battery settings.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
 
@@ -175,10 +181,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Text(
               'Data',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
 
@@ -187,7 +192,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.download_outlined),
             title: const Text('Export data'),
             subtitle: const Text(
-                'Download a JSON file of all your completion history'),
+              'Download a JSON file of all your completion history',
+            ),
             trailing: _exporting
                 ? const SizedBox(
                     width: 20,
@@ -205,10 +211,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Text(
               'Reviews',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
 
@@ -227,6 +232,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: const Text('Open quarterly review (dev)'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/review'),
+            ),
+
+          // Dev-only: ingest a canned scenario into Hive. Stripped in release.
+          if (kDebugMode)
+            ListTile(
+              leading: const Icon(Icons.cloud_download_outlined),
+              title: const Text('Ingest dev data'),
+              subtitle: const Text(
+                'Loads the typical_quarter scenario into Hive',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final result = await DevDataLoader.ingest();
+                if (!context.mounted) return;
+                if (result.success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Loaded ${result.goalsLoaded} goals, '
+                        '${result.logsLoaded} logs, '
+                        '${result.snapshotsLoaded} snapshots.',
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Ingest failed: ${result.error}'),
+                      duration: const Duration(seconds: 6),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+            ),
+
+          // Dev-only: wipe goals/logs/snapshots from Hive. Stripped in release.
+          if (kDebugMode)
+            ListTile(
+              leading: const Icon(Icons.delete_sweep_outlined),
+              title: const Text('Clear all dev data'),
+              subtitle: const Text(
+                'Wipes goals, logs, and snapshots from Hive',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Clear all dev data?'),
+                    content: const Text(
+                      'This wipes all goals, completion logs, and quarterly '
+                      'snapshots from local storage. Settings, schedules, '
+                      'and commitment blocks are not affected. This cannot '
+                      'be undone.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        child: Text(
+                          'Clear',
+                          style: TextStyle(
+                            color: Theme.of(ctx).colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed != true) return;
+                if (!context.mounted) return;
+                final result = await DevDataLoader.clearAll();
+                if (!context.mounted) return;
+                if (result.success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Cleared ${result.goalsCleared} goals, '
+                        '${result.logsCleared} logs, '
+                        '${result.snapshotsCleared} snapshots.',
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Clear failed: ${result.error}'),
+                      duration: const Duration(seconds: 6),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
             ),
         ],
       ),
