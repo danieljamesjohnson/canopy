@@ -26,7 +26,8 @@ class NotificationService {
   /// Initializes the notification plugin.
   ///
   /// - Web: returns immediately (banner fallback).
-  /// - iOS: defers permission request until [requestIOSPermissions] is called.
+  /// - iOS/macOS: defers permission request until [requestDarwinPermissions]
+  ///   is called.
   /// - Windows/Linux: skips timezone setup (no notification scheduling on
   ///   those platforms requires TZDateTime).
   static Future<void> initialize() async {
@@ -45,19 +46,31 @@ class NotificationService {
     }
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const ios = DarwinInitializationSettings(
-      // Defer permission request until after first successful check-in.
+    // macOS and iOS share a Darwin settings instance — same deferred-permission
+    // semantics for both. requestDarwinPermissions() handles the explicit request
+    // after the first successful check-in.
+    const darwin = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
-    const linux = LinuxInitializationSettings(
-      defaultActionName: 'Open',
+    const linux = LinuxInitializationSettings(defaultActionName: 'Open');
+    // Windows toast notification identity. The GUID is a stable v4 — do NOT
+    // regenerate per-build; it is the activation callback identifier and must
+    // remain stable across versions for in-flight scheduled notifications to
+    // resolve. appUserModelId follows the reverse-DNS pattern recommended by
+    // https://docs.microsoft.com/en-us/windows/win32/shell/appids.
+    const windows = WindowsInitializationSettings(
+      appName: 'Canopy',
+      appUserModelId: 'com.canopy.app.Canopy',
+      guid: 'a3f7c2e8-9b1d-4a6f-8c5e-2d4b7f9a1c3e',
     );
     const settings = InitializationSettings(
       android: android,
-      iOS: ios,
+      iOS: darwin,
+      macOS: darwin,
       linux: linux,
+      windows: windows,
     );
     await _plugin.initialize(
       settings: settings,
@@ -69,15 +82,22 @@ class NotificationService {
   ///
   /// Cancels any existing morning notification (ID 0) first.
   static Future<void> scheduleMorningNotification(
-      int minutesFromMidnight) async {
+    int minutesFromMidnight,
+  ) async {
     if (kIsWeb) return;
     await _plugin.cancel(id: 0);
     final hour = minutesFromMidnight ~/ 60;
     final minute = minutesFromMidnight % 60;
 
     final now = tz.TZDateTime.now(tz.local);
-    var scheduled =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var scheduled = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
@@ -112,8 +132,14 @@ class NotificationService {
     final minute = minutesFromMidnight % 60;
 
     final now = tz.TZDateTime.now(tz.local);
-    var scheduled =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var scheduled = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
@@ -150,16 +176,39 @@ class NotificationService {
     await _plugin.cancel(id: 1);
   }
 
-  /// Requests iOS notification permissions.
+  /// Requests notification permissions on Darwin platforms (iOS and macOS).
   ///
   /// Call this after the first successful mood check-in. No-op on Web and
-  /// non-iOS platforms. iOS silently ignores if permissions already granted.
-  static Future<void> requestIOSPermissions() async {
+  /// non-Darwin platforms. Darwin platforms silently ignore if permissions
+  /// are already granted.
+  static Future<void> requestDarwinPermissions() async {
     if (kIsWeb) return;
-    if (!Platform.isIOS) return;
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
+    if (Platform.isIOS) {
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+      return;
+    }
+    if (Platform.isMacOS) {
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+            MacOSFlutterLocalNotificationsPlugin
+          >()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+      return;
+    }
+    // Android/Linux/Windows: no-op. Android requests permission via
+    // AndroidInitializationSettings at install time on API < 33; Android 13+
+    // permission is requested at first scheduling attempt automatically by
+    // the plugin. Linux and Windows do not require a runtime permission.
   }
+
+  /// Back-compat alias for [requestDarwinPermissions].
+  ///
+  /// Retained so existing callers in `lib/screens/schedule/checkin_screen.dart`
+  /// continue to compile without modification. Prefer the Darwin name in new
+  /// code.
+  static Future<void> requestIOSPermissions() => requestDarwinPermissions();
 }
