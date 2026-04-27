@@ -43,7 +43,7 @@ metrics:
   completed: "2026-04-26"
   tasks: 1
   files: 2
-status: awaiting-human-verify
+status: complete
 ---
 
 # Phase 5 Plan 05: macOS/Windows InitializationSettings Boot Fix Summary
@@ -164,9 +164,9 @@ The plan's `<out_of_scope>` section enumerates Phase 6 follow-ups that are expli
 - GREEN gate: commit `6b499ad` — `feat(05-05): add macOS+Windows InitializationSettings to fix boot crash`. All 4 new tests pass; full suite (50 tests) green.
 - REFACTOR gate: not needed — the GREEN code is already minimal and well-commented; no separate refactor commit required.
 
-## Task 2: Awaiting Human Verification (CHECKPOINT)
+## Task 2: Human Verification (CHECKPOINT) — APPROVED
 
-**Status:** CHECKPOINT — awaiting human sign-off via `flutter run -d macos`.
+**Status:** APPROVED on 2026-04-26. Human ran `flutter run -d macos` from the merged master checkout; app boots cleanly with no `ArgumentError` and the home screen renders. The 12 UAT items previously blocked by the boot crash are unblocked and will be re-verified via `/gsd-verify-work 5`.
 
 **What to verify (per plan Task 2):**
 
@@ -187,13 +187,14 @@ The plan's `<out_of_scope>` section enumerates Phase 6 follow-ups that are expli
 
 **Resume signal:** Type "approved" or describe issues. After approval, run `/gsd-verify-work 5` to resume UAT from Test 2 (the 12 tests previously blocked by the boot crash).
 
-## Self-Check: PARTIAL (Task 1 complete, Task 2 pending human verification)
+## Self-Check: PASSED
 
 - File `test/services/notification_service_test.dart` — FOUND
 - File `lib/services/notification_service.dart` — FOUND (modified)
 - Commit `730c206` (RED) — present in `git log`
 - Commit `6b499ad` (GREEN) — present in `git log`
+- Commit `adacc2b` (worktree merge into master) — present in `git log`
 - `flutter test`: 50/50 pass — VERIFIED
 - `flutter analyze`: No issues found — VERIFIED
 - Spec greps all >= 1 — VERIFIED
-- Task 2 checkpoint not yet exercised (requires human running `flutter run -d macos`)
+- Task 2 human-verify checkpoint — APPROVED 2026-04-26 (macOS boot clean)
