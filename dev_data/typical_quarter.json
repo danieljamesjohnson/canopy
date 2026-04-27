@@ -1,0 +1,794 @@
+{
+  "goals": [
+    {
+      "id": "g-health",
+      "name": "Health & fitness",
+      "goalTypeIndex": 2,
+      "color": "#4CAF50",
+      "priorityWeight": 0.8,
+      "sortOrder": 0,
+      "frequencyPerWeek": 5,
+      "streakCount": 0
+    },
+    {
+      "id": "g-spanish",
+      "name": "Learn Spanish",
+      "goalTypeIndex": 0,
+      "color": "#2196F3",
+      "priorityWeight": 0.7,
+      "sortOrder": 1,
+      "weeklyHourBudget": 4.0,
+      "streakCount": 0
+    },
+    {
+      "id": "g-side",
+      "name": "Ship side project",
+      "goalTypeIndex": 1,
+      "color": "#FF9800",
+      "priorityWeight": 0.9,
+      "sortOrder": 2,
+      "outcomeDescription": "Public launch on Product Hunt",
+      "deadline": "2026-06-30T00:00:00.000Z",
+      "streakCount": 0
+    }
+  ],
+  "completion_logs": [
+    {
+      "id": "c-health-0-0",
+      "chunkId": "dev-health-w0-0",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-05",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-0-1",
+      "chunkId": "dev-health-w0-1",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-07",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-0-2",
+      "chunkId": "dev-health-w0-2",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-09",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-0-3",
+      "chunkId": "dev-health-w0-3",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-10",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-1-0",
+      "chunkId": "dev-health-w1-0",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-12",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-1-1",
+      "chunkId": "dev-health-w1-1",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-14",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-1-2",
+      "chunkId": "dev-health-w1-2",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-16",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-1-3",
+      "chunkId": "dev-health-w1-3",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-17",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-2-0",
+      "chunkId": "dev-health-w2-0",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-19",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-2-1",
+      "chunkId": "dev-health-w2-1",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-21",
+      "eventIndex": 1
+    },
+    {
+      "id": "c-health-2-2",
+      "chunkId": "dev-health-w2-2",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-23",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-2-3",
+      "chunkId": "dev-health-w2-3",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-24",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-3-0",
+      "chunkId": "dev-health-w3-0",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-26",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-3-1",
+      "chunkId": "dev-health-w3-1",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-28",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-3-2",
+      "chunkId": "dev-health-w3-2",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-30",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-3-3",
+      "chunkId": "dev-health-w3-3",
+      "goalId": "g-health",
+      "dateYmd": "2026-01-31",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-4-0",
+      "chunkId": "dev-health-w4-0",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-02",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-4-1",
+      "chunkId": "dev-health-w4-1",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-04",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-4-2",
+      "chunkId": "dev-health-w4-2",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-06",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-4-3",
+      "chunkId": "dev-health-w4-3",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-07",
+      "eventIndex": 1
+    },
+    {
+      "id": "c-health-5-0",
+      "chunkId": "dev-health-w5-0",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-09",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-5-1",
+      "chunkId": "dev-health-w5-1",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-11",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-5-2",
+      "chunkId": "dev-health-w5-2",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-13",
+      "eventIndex": 1
+    },
+    {
+      "id": "c-health-5-3",
+      "chunkId": "dev-health-w5-3",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-14",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-6-0",
+      "chunkId": "dev-health-w6-0",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-16",
+      "eventIndex": 1
+    },
+    {
+      "id": "c-health-6-1",
+      "chunkId": "dev-health-w6-1",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-18",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-6-2",
+      "chunkId": "dev-health-w6-2",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-20",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-6-3",
+      "chunkId": "dev-health-w6-3",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-21",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-7-0",
+      "chunkId": "dev-health-w7-0",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-23",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-7-1",
+      "chunkId": "dev-health-w7-1",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-25",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-7-2",
+      "chunkId": "dev-health-w7-2",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-27",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-7-3",
+      "chunkId": "dev-health-w7-3",
+      "goalId": "g-health",
+      "dateYmd": "2026-02-28",
+      "eventIndex": 1
+    },
+    {
+      "id": "c-health-8-0",
+      "chunkId": "dev-health-w8-0",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-02",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-8-1",
+      "chunkId": "dev-health-w8-1",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-04",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-8-2",
+      "chunkId": "dev-health-w8-2",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-06",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-8-3",
+      "chunkId": "dev-health-w8-3",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-07",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-9-0",
+      "chunkId": "dev-health-w9-0",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-09",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-9-1",
+      "chunkId": "dev-health-w9-1",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-11",
+      "eventIndex": 1
+    },
+    {
+      "id": "c-health-9-2",
+      "chunkId": "dev-health-w9-2",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-13",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-9-3",
+      "chunkId": "dev-health-w9-3",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-14",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-10-0",
+      "chunkId": "dev-health-w10-0",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-16",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-10-1",
+      "chunkId": "dev-health-w10-1",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-18",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-10-2",
+      "chunkId": "dev-health-w10-2",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-20",
+      "eventIndex": 1
+    },
+    {
+      "id": "c-health-10-3",
+      "chunkId": "dev-health-w10-3",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-21",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-11-0",
+      "chunkId": "dev-health-w11-0",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-23",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-11-1",
+      "chunkId": "dev-health-w11-1",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-25",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-11-2",
+      "chunkId": "dev-health-w11-2",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-27",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-11-3",
+      "chunkId": "dev-health-w11-3",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-28",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-12-0",
+      "chunkId": "dev-health-w12-0",
+      "goalId": "g-health",
+      "dateYmd": "2026-03-30",
+      "eventIndex": 1
+    },
+    {
+      "id": "c-health-12-1",
+      "chunkId": "dev-health-w12-1",
+      "goalId": "g-health",
+      "dateYmd": "2026-04-01",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-12-2",
+      "chunkId": "dev-health-w12-2",
+      "goalId": "g-health",
+      "dateYmd": "2026-04-03",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-health-12-3",
+      "chunkId": "dev-health-w12-3",
+      "goalId": "g-health",
+      "dateYmd": "2026-04-04",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-0-0",
+      "chunkId": "dev-spanish-w0-0",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-01-06",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-0-1",
+      "chunkId": "dev-spanish-w0-1",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-01-08",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-0-2",
+      "chunkId": "dev-spanish-w0-2",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-01-10",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-1-0",
+      "chunkId": "dev-spanish-w1-0",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-01-13",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-1-1",
+      "chunkId": "dev-spanish-w1-1",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-01-15",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-1-2",
+      "chunkId": "dev-spanish-w1-2",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-01-17",
+      "eventIndex": 1
+    },
+    {
+      "id": "c-spanish-2-0",
+      "chunkId": "dev-spanish-w2-0",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-01-20",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-2-1",
+      "chunkId": "dev-spanish-w2-1",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-01-22",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-2-2",
+      "chunkId": "dev-spanish-w2-2",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-01-24",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-3-0",
+      "chunkId": "dev-spanish-w3-0",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-01-27",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-3-1",
+      "chunkId": "dev-spanish-w3-1",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-01-29",
+      "eventIndex": 2
+    },
+    {
+      "id": "c-spanish-3-2",
+      "chunkId": "dev-spanish-w3-2",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-01-31",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-4-0",
+      "chunkId": "dev-spanish-w4-0",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-02-03",
+      "eventIndex": 1
+    },
+    {
+      "id": "c-spanish-4-1",
+      "chunkId": "dev-spanish-w4-1",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-02-05",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-4-2",
+      "chunkId": "dev-spanish-w4-2",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-02-07",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-5-0",
+      "chunkId": "dev-spanish-w5-0",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-02-10",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-5-1",
+      "chunkId": "dev-spanish-w5-1",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-02-12",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-6-0",
+      "chunkId": "dev-spanish-w6-0",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-02-17",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-6-1",
+      "chunkId": "dev-spanish-w6-1",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-02-19",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-7-0",
+      "chunkId": "dev-spanish-w7-0",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-02-24",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-7-1",
+      "chunkId": "dev-spanish-w7-1",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-02-26",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-8-0",
+      "chunkId": "dev-spanish-w8-0",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-03-03",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-8-1",
+      "chunkId": "dev-spanish-w8-1",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-03-05",
+      "eventIndex": 1
+    },
+    {
+      "id": "c-spanish-8-2",
+      "chunkId": "dev-spanish-w8-2",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-03-07",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-9-0",
+      "chunkId": "dev-spanish-w9-0",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-03-10",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-9-1",
+      "chunkId": "dev-spanish-w9-1",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-03-12",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-9-2",
+      "chunkId": "dev-spanish-w9-2",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-03-14",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-10-0",
+      "chunkId": "dev-spanish-w10-0",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-03-17",
+      "eventIndex": 2
+    },
+    {
+      "id": "c-spanish-10-1",
+      "chunkId": "dev-spanish-w10-1",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-03-19",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-10-2",
+      "chunkId": "dev-spanish-w10-2",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-03-21",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-11-0",
+      "chunkId": "dev-spanish-w11-0",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-03-24",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-11-1",
+      "chunkId": "dev-spanish-w11-1",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-03-26",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-11-2",
+      "chunkId": "dev-spanish-w11-2",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-03-28",
+      "eventIndex": 1
+    },
+    {
+      "id": "c-spanish-12-0",
+      "chunkId": "dev-spanish-w12-0",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-03-31",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-12-1",
+      "chunkId": "dev-spanish-w12-1",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-04-02",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-spanish-12-2",
+      "chunkId": "dev-spanish-w12-2",
+      "goalId": "g-spanish",
+      "dateYmd": "2026-04-04",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-0-0",
+      "chunkId": "dev-side-w0-0",
+      "goalId": "g-side",
+      "dateYmd": "2026-01-06",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-0-1",
+      "chunkId": "dev-side-w0-1",
+      "goalId": "g-side",
+      "dateYmd": "2026-01-10",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-1-0",
+      "chunkId": "dev-side-w1-0",
+      "goalId": "g-side",
+      "dateYmd": "2026-01-13",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-1-1",
+      "chunkId": "dev-side-w1-1",
+      "goalId": "g-side",
+      "dateYmd": "2026-01-17",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-2-0",
+      "chunkId": "dev-side-w2-0",
+      "goalId": "g-side",
+      "dateYmd": "2026-01-20",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-2-1",
+      "chunkId": "dev-side-w2-1",
+      "goalId": "g-side",
+      "dateYmd": "2026-01-24",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-3-0",
+      "chunkId": "dev-side-w3-0",
+      "goalId": "g-side",
+      "dateYmd": "2026-01-27",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-3-1",
+      "chunkId": "dev-side-w3-1",
+      "goalId": "g-side",
+      "dateYmd": "2026-01-31",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-4-0",
+      "chunkId": "dev-side-w4-0",
+      "goalId": "g-side",
+      "dateYmd": "2026-02-03",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-4-1",
+      "chunkId": "dev-side-w4-1",
+      "goalId": "g-side",
+      "dateYmd": "2026-02-07",
+      "eventIndex": 1
+    },
+    {
+      "id": "c-side-5-0",
+      "chunkId": "dev-side-w5-0",
+      "goalId": "g-side",
+      "dateYmd": "2026-02-12",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-6-0",
+      "chunkId": "dev-side-w6-0",
+      "goalId": "g-side",
+      "dateYmd": "2026-02-19",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-7-0",
+      "chunkId": "dev-side-w7-0",
+      "goalId": "g-side",
+      "dateYmd": "2026-02-26",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-8-0",
+      "chunkId": "dev-side-w8-0",
+      "goalId": "g-side",
+      "dateYmd": "2026-03-05",
+      "eventIndex": 2
+    },
+    {
+      "id": "c-side-9-0",
+      "chunkId": "dev-side-w9-0",
+      "goalId": "g-side",
+      "dateYmd": "2026-03-12",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-10-0",
+      "chunkId": "dev-side-w10-0",
+      "goalId": "g-side",
+      "dateYmd": "2026-03-17",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-10-1",
+      "chunkId": "dev-side-w10-1",
+      "goalId": "g-side",
+      "dateYmd": "2026-03-21",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-11-0",
+      "chunkId": "dev-side-w11-0",
+      "goalId": "g-side",
+      "dateYmd": "2026-03-24",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-11-1",
+      "chunkId": "dev-side-w11-1",
+      "goalId": "g-side",
+      "dateYmd": "2026-03-28",
+      "eventIndex": 0
+    },
+    {
+      "id": "c-side-12-0",
+      "chunkId": "dev-side-w12-0",
+      "goalId": "g-side",
+      "dateYmd": "2026-04-02",
+      "eventIndex": 0
+    }
+  ],
+  "quarterly_snapshots": []
+}

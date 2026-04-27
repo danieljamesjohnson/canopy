@@ -40,13 +40,13 @@ class DevIngestResult {
     required this.goalsLoaded,
     required this.logsLoaded,
     required this.snapshotsLoaded,
-  })  : success = true,
-        error = null;
+  }) : success = true,
+       error = null;
   DevIngestResult.failure(Object this.error)
-      : success = false,
-        goalsLoaded = 0,
-        logsLoaded = 0,
-        snapshotsLoaded = 0;
+    : success = false,
+      goalsLoaded = 0,
+      logsLoaded = 0,
+      snapshotsLoaded = 0;
   final bool success;
   final Object? error;
   final int goalsLoaded;
@@ -60,13 +60,13 @@ class DevClearResult {
     required this.goalsCleared,
     required this.logsCleared,
     required this.snapshotsCleared,
-  })  : success = true,
-        error = null;
+  }) : success = true,
+       error = null;
   DevClearResult.failure(Object this.error)
-      : success = false,
-        goalsCleared = 0,
-        logsCleared = 0,
-        snapshotsCleared = 0;
+    : success = false,
+      goalsCleared = 0,
+      logsCleared = 0,
+      snapshotsCleared = 0;
   final bool success;
   final Object? error;
   final int goalsCleared;
@@ -121,11 +121,7 @@ class DevDataLoader {
           .map((e) => _snapshotFromJson(e as Map<String, dynamic>))
           .toList(growable: false);
       return DevIngestParseResult.success(
-        DevIngestData(
-          goals: goals,
-          completionLogs: logs,
-          snapshots: snapshots,
-        ),
+        DevIngestData(goals: goals, completionLogs: logs, snapshots: snapshots),
       );
     } catch (e) {
       return DevIngestParseResult.failure(e);
@@ -185,8 +181,9 @@ class DevDataLoader {
       );
     }
     if (json['reflectionAnswers'] is List) {
-      snap.reflectionAnswers =
-          List<String>.from(json['reflectionAnswers'] as List);
+      snap.reflectionAnswers = List<String>.from(
+        json['reflectionAnswers'] as List,
+      );
     }
     if (json['goalPrioritySnapshot'] is Map) {
       snap.goalPrioritySnapshot = Map<String, int>.from(
@@ -196,8 +193,7 @@ class DevDataLoader {
       );
     }
     if (json['archivedGoalIds'] is List) {
-      snap.archivedGoalIds =
-          List<String>.from(json['archivedGoalIds'] as List);
+      snap.archivedGoalIds = List<String>.from(json['archivedGoalIds'] as List);
     }
     return snap;
   }
@@ -248,8 +244,7 @@ class DevDataLoader {
     try {
       final goalsBox = Hive.box<Goal>('goals');
       final logsBox = Hive.box<CompletionLog>('completion_logs');
-      final snapshotsBox =
-          Hive.box<QuarterlySnapshot>('quarterly_snapshots');
+      final snapshotsBox = Hive.box<QuarterlySnapshot>('quarterly_snapshots');
       final goalsCleared = goalsBox.length;
       final logsCleared = logsBox.length;
       final snapshotsCleared = snapshotsBox.length;

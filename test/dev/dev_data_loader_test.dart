@@ -55,11 +55,17 @@ void main() {
     test('bundled scenario file — counts match documented range', () {
       // Tests run from project root; the asset is also a regular file we can read directly.
       final file = File('dev_data/typical_quarter.json');
-      expect(file.existsSync(), isTrue,
-          reason: 'dev_data/typical_quarter.json must exist at project root');
+      expect(
+        file.existsSync(),
+        isTrue,
+        reason: 'dev_data/typical_quarter.json must exist at project root',
+      );
       final result = DevDataLoader.parseJson(file.readAsStringSync());
-      expect(result.success, isTrue,
-          reason: 'bundled scenario must parse cleanly');
+      expect(
+        result.success,
+        isTrue,
+        reason: 'bundled scenario must parse cleanly',
+      );
       expect(result.data!.goals.length, 3);
       expect(result.data!.completionLogs.length, inInclusiveRange(100, 120));
       expect(result.data!.snapshots.length, 0);
