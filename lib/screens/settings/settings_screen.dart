@@ -1,5 +1,5 @@
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -219,6 +219,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/past-reviews'),
           ),
+
+          // Dev-only: open quarterly review directly (UAT shortcut). Stripped in release.
+          if (kDebugMode)
+            ListTile(
+              leading: const Icon(Icons.bug_report_outlined),
+              title: const Text('Open quarterly review (dev)'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/review'),
+            ),
         ],
       ),
     );
