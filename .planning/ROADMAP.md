@@ -27,7 +27,8 @@ Key non-negotiable constraints carried through all phases:
 - [x] **Phase 1: Foundation** — Database, routing, Provider scaffold, and migration runner — no user-visible features (completed 2026-02-25)
 - [ ] **Phase 2: Goals and Commitments** — Three goal types CRUD, CommitmentBlock CRUD, three-screen onboarding
 - [ ] **Phase 3: Schedule Generation and Morning Check-In** — Mood check-in, rule-based schedule generation, schedule display UI
-- [x] **Phase 4: Chunk Tracking and Notifications** — Swipe completion, CompletionLog, local notifications, data export (completed 2026-04-02)
+- [x] **Phase 4: Chunk Tracking and Notifications** — Swipe completion, CompletionLog, local notifications, data export
+ (completed 2026-04-02)
 - [x] **Phase 5: Quarterly Review** — Aggregation, fl_chart visualizations, guided reflection, QuarterlySnapshot
 - [ ] **Phase 6: Desktop and Web Polish** — Adaptive layouts, hover states, window constraints, Web URL and notification fallbacks
 
@@ -294,6 +295,17 @@ Plans:
 4. Navigating directly to `/schedule` and `/goals` in a Web browser loads the correct screen without a 404 or blank white screen
 5. All existing widget tests pass; new LayoutBuilder breakpoint tests pass at 480dp, 720dp, and 1200dp
 
+**Plans:** 0/7 plans complete
+
+Plans:
+- [ ] 06-01-PLAN.md — Wave 0 preflight: window_manager dep, AppSettings schema bump to v3, test helpers
+- [ ] 06-02-PLAN.md — ThemeNotifier with HSL modulator and lifecycle ticker
+- [ ] 06-03-PLAN.md — Conditional window_setup trio (re-export, io, stub)
+- [ ] 06-04-PLAN.md — ResponsiveShell + main.dart wiring + router migration
+- [ ] 06-05-PLAN.md — Card hover affordances + breathing pulse + checkin mood wiring
+- [ ] 06-06-PLAN.md — Widget + unit tests (8 new files + quarterly_review migration)
+- [ ] 06-07-PLAN.md — Manual UAT + ROADMAP update (mood theming deliverable + AC-6) + finalize VALIDATION
+
 ---
 
 ## Progress Table
@@ -305,7 +317,7 @@ Plans:
 | 3. Schedule Generation and Morning Check-In | 5/5 | Complete | 2026-03 |
 | 4. Chunk Tracking and Notifications | 3/3 | Complete | 2026-04-02 |
 | 5. Quarterly Review | 6/6 | Complete | 2026-05-12 |
-| 6. Desktop and Web Polish | 0/0 | Not started | - |
+| 6. Desktop and Web Polish | 0/7 | Not started | - |
 
 ---
 
