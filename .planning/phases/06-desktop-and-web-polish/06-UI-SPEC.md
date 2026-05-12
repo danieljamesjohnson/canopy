@@ -240,7 +240,7 @@ Locked timing:
 
 | Property | Value |
 |----------|-------|
-| Wrapper | `AnimatedTheme` at `MaterialApp.router` `theme` slot |
+| Wrapper | `MaterialApp.router` `themeAnimationDuration` / `themeAnimationCurve` (Flutter 3.19+ idiom — supersedes the earlier `AnimatedTheme` wrapper note; both achieve identical 500ms easeOutCubic cross-fade). Per RESEARCH.md §Standard Stack alternatives table. |
 | Duration | **500ms** (centred in D-09's 400–600ms budget) |
 | Curve | `Curves.easeOutCubic` — decelerating; the app "settles into" the new mood, not a linear ramp |
 | Trigger | `ThemeNotifier.setMoodSeed(seed)` writes the new seed and notifies listeners; `AnimatedTheme` cross-fades automatically |

@@ -49,7 +49,8 @@ Detailed per-task map will be populated by the planner alongside PLAN.md generat
 | AC-2 | `MouseRegion.onExit` hides revealed icons (opacity → 0) | widget | (same file) | ❌ W0 |
 | AC-2 | Touch drag on `Dismissible`-wrapped `ChunkCard` swipes-completes without hover icons | widget | (same file — `tester.drag` for cross-input parity) | ❌ W0 |
 | AC-2 | `InkWell.onHover` on GoalCard reveals edit + archive icons | widget | `flutter test test/screens/goal_card_hover_test.dart` | ❌ W0 |
-| AC-3 | `window_manager.setMinimumSize(480, 640)` called on desktop only | unit | `flutter test test/platform/window_setup_test.dart` | ❌ W0 |
+| AC-3 | `setupDesktopWindow()` completes without throwing on the test host (early-return path on Android/iOS test platform) | unit | `flutter test test/platform/window_setup_test.dart` | ❌ W0 |
+| AC-3 | `window_manager.setMinimumSize(480, 640)` call asserted | manual | covered by the macOS UAT row below (Plan 07 Task 1) — verified by visually resizing the window narrower than 480px on macOS | manual |
 | AC-3 | Conditional import compiles on web (stub branch only) | smoke | `flutter build web --no-tree-shake-icons` (no `dart:io` errors) | ❌ W0 |
 | AC-3 | Window resize refuses below 480px on macOS | manual | `flutter run -d macos`, drag window narrower than 480px — snaps back | manual |
 | AC-4 | Direct URL `/schedule` loads ScheduleScreen on Web | manual | `flutter run -d chrome` + URL bar | manual |

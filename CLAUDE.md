@@ -40,7 +40,7 @@ flutter clean
 
 This is a Flutter app targeting Android, iOS, Web, Windows, Linux, and macOS. Currently it is the default Flutter starter template.
 
-- **State management**: `StatefulWidget` with `setState()` — no external state management library
+- **State management**: Provider + `ChangeNotifier` for cross-screen state (notifiers in `lib/providers/`); `StatefulWidget` + `setState()` for screen-local state only
 - **Routing**: Single-screen `MaterialApp` with no routing library
 - **Theme**: Material 3 with `ColorScheme.fromSeed(Colors.deepOrangeAccent)`
 - **Linting**: `package:flutter_lints` via `analysis_options.yaml`

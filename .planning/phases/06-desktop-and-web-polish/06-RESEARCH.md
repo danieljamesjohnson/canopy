@@ -918,22 +918,22 @@ ReorderableListView.builder(
 | A2 | `MaterialApp.themeAnimationDuration` is preferred over `AnimatedTheme` wrapper for Phase 6's use case | Pattern 1 + Standard Stack alternatives | Both work. If a future requirement needs subtree-only theming, `AnimatedTheme` may resurface. For now, the MaterialApp parameter is simpler and the Material 3 idiom — confirmed against api.flutter.dev. |
 | A3 | mood 3 (`#4A8C7A`) is the right default for `pumpWithMood` | Pattern 5 + UI-SPEC §Widget Test Mood-Pinning Strategy | UI-SPEC already locked mood 3 as the default — research confirms this is sensible (median weather, balanced contrast). |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Mood seed reset timing seam**
    - **What we know:** D-10 forbids carry-forward. Theme must reset to curious every morning.
    - **What's unclear:** Whether the reset belongs in `ScheduleNotifier.generateToday`, `ThemeNotifier.init` (compare lastSeenDate to today), or `_HomeScreenState.initState`.
-   - **Recommendation:** Put the reset in `ThemeNotifier` itself — on `init()` and on `didChangeAppLifecycleState(resumed)`, compare a persisted `lastMoodSetYmd` to today's local Ymd; if different, set `_moodSeed = null` (do not write a new seed to Hive — let the user's next mood tap do that). This keeps the reset logic in the theme's own module rather than dispersed across `ScheduleNotifier` and `HomeScreen`. **Confirm in plan-check.**
+   - **RESOLVED:** Reset lives in `ThemeNotifier` itself — implemented in **Plan 02 Task 2** as the private method `_resetIfDayChanged`, called from both `init()` and `didChangeAppLifecycleState(AppLifecycleState.resumed)`. Compares persisted `lastMoodSetYmdInt` (HiveField 6, also added in Plan 02 Task 1) to today's local Ymd; if different, sets `_moodSeed = null` in memory only — does NOT write to Hive, so the user's next mood tap refreshes the persisted seed. This keeps the reset logic in the theme's own module rather than dispersed across `ScheduleNotifier` and `HomeScreen`. Verified by **Plan 06 Task 1** behaviors 11 and 12 (rollover triggered when persisted Ymd is yesterday; rollover not triggered when persisted Ymd is today).
 
 2. **macOS NSWindow modification required for window_manager**
    - **What we know:** `window_manager` README states macOS host app's `MainFlutterWindow.swift` may need a snippet to extend `NSWindow` correctly.
    - **What's unclear:** Whether Canopy's existing `macos/Runner/MainFlutterWindow.swift` already satisfies this (gitStatus shows Runner.xcodeproj modified — suggests recent macOS build work happened).
-   - **Recommendation:** Plan task 0 of the window_manager work: read `macos/Runner/MainFlutterWindow.swift`, compare to window_manager's README example, apply diff only if needed. Likely a 2-line change or already correct.
+   - **RESOLVED:** Verification happens in **Plan 01 Task 2** as part of the window_manager dependency installation. The task's automated verify command greps for `class MainFlutterWindow: NSWindow` to confirm the host class extends NSWindow correctly (window_manager's documented requirement). If the grep fails, the task halts and prompts a 2-line edit to `macos/Runner/MainFlutterWindow.swift`. In practice the current file is likely already correct (recent macOS build work in gitStatus).
 
 3. **Whether to verify Web URLs automatically or manually**
    - **What we know:** AC-4 ("direct navigation to `/schedule`, `/goals` loads correct screen") is verifiable manually with `flutter run -d chrome` + URL bar typing.
    - **What's unclear:** Whether integration tests on Chrome (`flutter test --platform chrome`) are worth the CI cost for this specific AC.
-   - **Recommendation:** Manual verification in Phase 6 — the route table is already correct and stable. If Phase 7+ adds deep-linking complexity, revisit. Document the manual test in `## Validation Architecture` below.
+   - **RESOLVED:** Manual verification in Phase 6 — covered by the **Plan 07 Task 1 (Manual UAT)** AC-4 row, which walks `flutter run -d chrome` + typing `/schedule`, `/goals`, `/review` in the URL bar. The route table is already correct and stable. The `widget`-level redirect logic (onboardingComplete on direct URL load) IS automated in **Plan 06 Task 3** via `router_redirect_test.dart`. If Phase 7+ adds deep-linking complexity, revisit; for Phase 6 the widget test + manual smoke is sufficient.
 
 ## Environment Availability
 
