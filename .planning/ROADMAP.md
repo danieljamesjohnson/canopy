@@ -28,7 +28,7 @@ Key non-negotiable constraints carried through all phases:
 - [ ] **Phase 2: Goals and Commitments** — Three goal types CRUD, CommitmentBlock CRUD, three-screen onboarding
 - [ ] **Phase 3: Schedule Generation and Morning Check-In** — Mood check-in, rule-based schedule generation, schedule display UI
 - [x] **Phase 4: Chunk Tracking and Notifications** — Swipe completion, CompletionLog, local notifications, data export (completed 2026-04-02)
-- [ ] **Phase 5: Quarterly Review** — Aggregation, fl_chart visualizations, guided reflection, QuarterlySnapshot
+- [x] **Phase 5: Quarterly Review** — Aggregation, fl_chart visualizations, guided reflection, QuarterlySnapshot
 - [ ] **Phase 6: Desktop and Web Polish** — Adaptive layouts, hover states, window constraints, Web URL and notification fallbacks
 
 ---
@@ -300,11 +300,11 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 4/4 | Complete   | 2026-02-25 |
-| 2. Goals and Commitments | 3/6 | In Progress|  |
-| 3. Schedule Generation and Morning Check-In | 2/5 | In Progress|  |
-| 4. Chunk Tracking and Notifications | 1/3 | In Progress|  |
-| 5. Quarterly Review | 0/0 | Not started | - |
+| 1. Foundation | 4/4 | Complete | 2026-02-25 |
+| 2. Goals and Commitments | 6/6 | Complete | 2026-03 |
+| 3. Schedule Generation and Morning Check-In | 5/5 | Complete | 2026-03 |
+| 4. Chunk Tracking and Notifications | 3/3 | Complete | 2026-04-02 |
+| 5. Quarterly Review | 6/6 | Complete | 2026-05-12 |
 | 6. Desktop and Web Polish | 0/0 | Not started | - |
 
 ---

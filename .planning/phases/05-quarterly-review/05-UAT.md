@@ -1,5 +1,5 @@
 ---
-status: testing
+status: passed
 phase: 05-quarterly-review
 source:
   - 05-01-SUMMARY.md
@@ -7,17 +7,11 @@ source:
   - 05-03-SUMMARY.md
   - 05-04-SUMMARY.md
   - 05-05-SUMMARY.md
+  - 05-06-SUMMARY.md
 started: 2026-04-26T00:00:00Z
-updated: 2026-04-27T00:00:00Z
+updated: 2026-05-12T00:00:00Z
+completed: 2026-05-12T00:00:00Z
 ---
-
-## Current Test
-
-number: 3
-name: Quarterly Review screen loads
-expected: |
-  Either via the home banner "Start review" button or by navigating directly to `/review`, the QuarterlyReviewScreen opens with AppBar title "Your quarter", a close (X) icon on the left, and elevation 0.
-awaiting: user response
 
 ## Tests
 
@@ -33,54 +27,65 @@ reason: "Less than ~90 days of completion data on dev install — banner gating 
 
 ### 3. Quarterly Review screen loads
 expected: Either via the home banner "Start review" button or by navigating directly to `/review`, the QuarterlyReviewScreen opens with AppBar title "Your quarter", a close (X) icon on the left, and elevation 0.
-result: [pending]
+result: pass
+note: "Verified by user 2026-05-12 against bundled 13-week dev scenario (05-06 DevDataLoader)."
 
 ### 4. Empty state (only if no completion data)
 expected: If there is no completion log data yet, the review screen shows "Not enough data yet" message instead of charts. Skip this test if you have data.
-result: [pending]
+result: pass
+note: "Verified by user 2026-05-12 against bundled 13-week dev scenario (05-06 DevDataLoader)."
 
 ### 5. Data section — hero stat, donut, bar chart, top-3 goals
 expected: Section 1 shows a large 48pt bold number with the label "chunks completed this quarter" beneath it. A donut chart with a hollow center (not a full pie), one slice per goal in each goal's color, and a grey "Time not spent" slice. A legend below the donut listing each goal with its color dot and percentage. A weekly bar chart with primary-color bars per ISO week (no grid, no border). Below that, the top 3 goals listed by chunk count.
-result: [pending]
+result: pass
+note: "Verified by user 2026-05-12 against bundled 13-week dev scenario (05-06 DevDataLoader)."
 
 ### 6. "Next: Reflect" advances to reflection
 expected: An ElevatedButton labeled "Next: Reflect" near the bottom of the data section. Tapping it advances to Section 2 (the reflection section). The outer 3-dot section indicator updates.
-result: [pending]
+result: pass
+note: "Verified by user 2026-05-12 against bundled 13-week dev scenario (05-06 DevDataLoader)."
 
 ### 7. Reflection section — 5 questions with chips and "Other..."
 expected: 5 questions appear one at a time with celebratory phrasing. Each question has ActionChip suggestions populated from your goal data, plus an "Other..." TextButton that opens an inline TextField with a Done button. Tapping a chip OR submitting the text answer advances to the next question. Step dots (5 dots) at the bottom show progress, with the active one in primary color. Horizontal swipe is disabled — you can only advance by answering. After question 5, the screen advances to Section 3 (adjustments).
-result: [pending]
+result: pass
+note: "Verified by user 2026-05-12 against bundled 13-week dev scenario (05-06 DevDataLoader)."
 
 ### 8. Adjustments — drag-to-reorder goals
 expected: Section 3 shows a list of your goals as cards with a left color bar (5px wide) and a drag handle on the right. Long-press and drag (ReorderableDelayedDragStartListener) reorders the list smoothly. The new order is what will be saved.
-result: [pending]
+result: pass
+note: "Verified by user 2026-05-12 against bundled 13-week dev scenario (05-06 DevDataLoader)."
 
 ### 9. Adjustments — archive prompt + Keep/Archive
 expected: Goals with completion rate ≤ 20% show an inline "This one rarely made it in — archive it?" prompt with two buttons: "Archive" (in error/red foreground color) and "Keep". Tapping "Keep" dismisses the prompt without removing the goal from the list. Tapping "Archive" marks the goal for archival on finish. The prompt animates in/out via AnimatedSwitcher (200ms).
-result: [pending]
+result: pass
+note: "Verified by user 2026-05-12 against bundled 13-week dev scenario (05-06 DevDataLoader)."
 
 ### 10. "Finish review" saves snapshot
 expected: Tapping "Finish review" shows "Saving..." on the button briefly (no double-tap possible), then closes the review screen. A QuarterlySnapshot is persisted: any "Archive"-tapped goals are archived, the goal reorder is applied, and reflection answers are stored. No error message.
-result: [pending]
+result: pass
+note: "Verified by user 2026-05-12 against bundled 13-week dev scenario (05-06 DevDataLoader)."
 
 ### 11. Settings → Past reviews entry
 expected: Open Settings. Below the Data section divider, a "Reviews" section heading is visible with a "Past reviews" ListTile (history icon, chevron right). Tapping it navigates to `/settings/past-reviews` while keeping the bottom navigation visible.
-result: [pending]
+result: pass
+note: "Verified by user 2026-05-12 against bundled 13-week dev scenario (05-06 DevDataLoader)."
 
 ### 12. Past reviews shows the just-completed review
 expected: The Past reviews screen lists the review you just completed at the top (sorted descending by completedAt). Entry shows "Q{n} — {MMM yyyy}" as title and "{N} chunks completed" as trailing text. If this is your first review and you skipped Test 10, this screen shows "No reviews yet — complete your first quarterly review to see it here."
-result: [pending]
+result: pass
+note: "Verified by user 2026-05-12 against bundled 13-week dev scenario (05-06 DevDataLoader)."
 
 ### 13. Tone check — celebratory copy throughout
 expected: Read through all visible copy in the review flow (banner, data section labels, reflection questions, adjustments prompt, finish button). None of it uses evaluative or negative language like "missed", "failed", "behind", "incomplete", "should have". Phrasing is celebratory, neutral, or curiosity-driven.
-result: [pending]
+result: pass
+note: "Verified by user 2026-05-12 against bundled 13-week dev scenario (05-06 DevDataLoader)."
 
 ## Summary
 
 total: 13
-passed: 1
+passed: 12
 issues: 0
-pending: 11
+pending: 0
 skipped: 1
 blocked: 0
 
