@@ -151,17 +151,23 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
   Color _effectiveSeed() {
     final base = _moodSeed ?? curiousSeed;
     if (!_timeModulationEnabled) return base;
-    return _modulateHsl(base, _now());
+    return modulateHsl(base, _now());
   }
 
   /// Pure function — easy to unit-test with synthetic DateTime inputs
   /// (Plan 06 owns the assertion tests against this method).
   ///
+  /// Marked `@visibleForTesting` so `test/providers/theme_notifier_test.dart`
+  /// can assert the HSL math against synthetic DateTime inputs without
+  /// constructing a full ThemeNotifier. Production callers use the private
+  /// path through `_effectiveSeed()` / `currentTheme`.
+  ///
   /// UI-SPEC §Time-of-Day Modulation (locked math):
   ///   t = cos(2π * (minutesSinceMidnight / 1440 - 0.5))  // peak noon, trough midnight
   ///   newL = (hsl.lightness + 0.05 * t).clamp(0.0, 1.0)  // ±5% absolute lightness
   ///   newS = (hsl.saturation + 0.10 * t).clamp(0.0, 1.0) // ±10% absolute saturation
-  static Color _modulateHsl(Color base, DateTime now) {
+  @visibleForTesting
+  static Color modulateHsl(Color base, DateTime now) {
     final hsl = HSLColor.fromColor(base);
     final minutes = now.hour * 60 + now.minute;
     final t = math.cos(2 * math.pi * (minutes / 1440 - 0.5));
