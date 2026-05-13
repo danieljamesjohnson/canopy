@@ -32,13 +32,17 @@ Future<void> pumpWithMood(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(seedColor: seed),
   );
+  final app = MaterialApp(
+    theme: theme,
+    home: Scaffold(body: child),
+  );
+  // `MultiProvider` asserts `children.isNotEmpty`; wrap only when callers
+  // supplied at least one provider. Tests that don't need providers (hover,
+  // drag handle visibility, breakpoint) pass `extraProviders: const []`.
+  final providers = extraProviders.toList(growable: false);
   await tester.pumpWidget(
-    MultiProvider(
-      providers: [...extraProviders],
-      child: MaterialApp(
-        theme: theme,
-        home: Scaffold(body: child),
-      ),
-    ),
+    providers.isEmpty
+        ? app
+        : MultiProvider(providers: providers, child: app),
   );
 }
