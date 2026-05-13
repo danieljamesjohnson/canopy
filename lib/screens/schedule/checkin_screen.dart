@@ -6,6 +6,7 @@ import '../../data/models/scheduled_chunk.dart';
 import '../../providers/commitments_notifier.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
+import '../../providers/theme_notifier.dart';
 import '../../services/notification_service.dart';
 
 class CheckinScreen extends StatefulWidget {
@@ -16,13 +17,8 @@ class CheckinScreen extends StatefulWidget {
 }
 
 class _CheckinScreenState extends State<CheckinScreen> {
-  static const Map<int, Color> _moodColors = {
-    1: Color(0xFF4A6275), // steel blue-grey (stormy)
-    2: Color(0xFF5C7A8A), // slate (overcast)
-    3: Color(0xFF4A8C7A), // muted teal (partly cloudy)
-    4: Color(0xFF7AAF6A), // soft green (clearing)
-    5: Color(0xFFE8C547), // warm amber (sunny)
-  };
+  // Mood seed palette is the single source of truth in `ThemeNotifier.moodSeeds`
+  // (Phase 6 Plan 02). This screen reads it directly via `ThemeNotifier.moodSeeds[mood]`.
 
   static const Map<int, String> _moodEmojis = {
     1: '🌧️',
@@ -47,7 +43,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
 
   Color get _backgroundColor {
     if (_selectedMood != null) {
-      return _moodColors[_selectedMood!]!;
+      return ThemeNotifier.moodSeeds[_selectedMood!]!;
     }
     return Colors.transparent; // fallback; Builder supplies surface color
   }
@@ -57,10 +53,10 @@ class _CheckinScreenState extends State<CheckinScreen> {
     setState(() => _isGenerating = true);
 
     await context.read<ScheduleNotifier>().generateToday(
-          moodIndex: _selectedMood!,
-          goals: context.read<GoalsNotifier>().goals,
-          blocks: context.read<CommitmentsNotifier>().blocks,
-        );
+      moodIndex: _selectedMood!,
+      goals: context.read<GoalsNotifier>().goals,
+      blocks: context.read<CommitmentsNotifier>().blocks,
+    );
 
     // Request iOS notification permission after first successful check-in.
     // No-op on Web and non-iOS platforms; iOS ignores if already granted.
@@ -76,14 +72,15 @@ class _CheckinScreenState extends State<CheckinScreen> {
 
   String _buildAckText(DailySchedule schedule, int moodIndex) {
     final prefix = _moodPrefix[moodIndex] ?? '';
-    final workChunks =
-        schedule.chunks.where((c) => c.chunkType == ChunkType.work).toList();
+    final workChunks = schedule.chunks
+        .where((c) => c.chunkType == ChunkType.work)
+        .toList();
     final count = workChunks.length;
-    final firstName =
-        workChunks.isNotEmpty ? workChunks.first.rationale : null;
+    final firstName = workChunks.isNotEmpty ? workChunks.first.rationale : null;
     final countText = '$count chunk${count == 1 ? '' : 's'}.';
-    final startText =
-        firstName != null && firstName.isNotEmpty ? ' Starting with $firstName.' : '';
+    final startText = firstName != null && firstName.isNotEmpty
+        ? ' Starting with $firstName.'
+        : '';
     return '$prefix $countText$startText';
   }
 
@@ -150,6 +147,12 @@ class _CheckinScreenState extends State<CheckinScreen> {
                     setState(() {
                       _selectedMood = mood;
                     });
+                    // Phase 6 Plan 05: route the mood tap through ThemeNotifier
+                    // so Plan 04's themeAnimationDuration warms the ColorScheme
+                    // app-wide (AC-6, D-09).
+                    context.read<ThemeNotifier>().setMoodSeed(
+                      ThemeNotifier.moodSeeds[mood]!,
+                    );
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
@@ -162,10 +165,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                           : Colors.transparent,
                     ),
                     alignment: Alignment.center,
-                    child: Text(
-                      emoji,
-                      style: const TextStyle(fontSize: 36),
-                    ),
+                    child: Text(emoji, style: const TextStyle(fontSize: 36)),
                   ),
                 );
               }).toList(),
@@ -178,10 +178,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                 children: [
                   Text(
                     'Want a lighter day?',
-                    style: TextStyle(
-                      color: onBg,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(color: onBg, fontSize: 16),
                   ),
                   const SizedBox(width: 12),
                   Switch(
@@ -237,7 +234,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
   Widget _buildAcknowledgmentBody(BuildContext context) {
     final schedule = context.watch<ScheduleNotifier>().todaySchedule;
     final mood = _selectedMood ?? 3;
-    final bgColor = _moodColors[mood]!;
+    final bgColor = ThemeNotifier.moodSeeds[mood]!;
 
     final ackText = schedule != null ? _buildAckText(schedule, mood) : '';
 
