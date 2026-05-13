@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-const int currentSchemaVersion = 2;
+const int currentSchemaVersion = 3;
 
 typedef MigrationFn = Future<void> Function();
 
@@ -9,6 +9,7 @@ typedef MigrationFn = Future<void> Function();
 final List<MigrationFn> _migrations = [
   _migration0to1,
   _migration1to2,
+  _migration2to3,
 ];
 
 Future<void> _migration0to1() async {
@@ -21,6 +22,12 @@ Future<void> _migration1to2() async {
   // int fields with defaults (sortOrder=0, streakCount=0).
   // No data transformation needed — Hive binary reader returns null for missing
   // nullable fields and 0 for missing int fields in existing records.
+}
+
+Future<void> _migration2to3() async {
+  // Phase 6: AppSettings expanded with nullable moodSeedArgb (HiveField 5).
+  // No data transformation needed — Hive binary reader returns null for missing
+  // nullable fields in existing records (per Phase 2 _migration1to2 pattern).
 }
 
 Future<void> runMigrations(SharedPreferences prefs) async {
