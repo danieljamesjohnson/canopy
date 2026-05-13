@@ -24,4 +24,10 @@ class AppSettings extends HiveObject {
   /// Mid-day nudge time in minutes from midnight (default 720 = 12:00pm).
   @HiveField(3)
   int midDayNudgeMinutes = 720;
+
+  /// Mood seed ARGB int value. Null = pre-check-in 'curious' state
+  /// (UI-SPEC §Color §Pre-Check-in Curious Seed). Set when user taps a mood
+  /// at check-in; cleared on daily rollover (Phase 6 D-10).
+  @HiveField(5)
+  int? moodSeedArgb;
 }
