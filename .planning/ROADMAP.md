@@ -298,7 +298,7 @@ Plans:
 **Plans:** 0/7 plans complete
 
 Plans:
-- [ ] 06-01-PLAN.md — Wave 0 preflight: window_manager dep, AppSettings schema bump to v3, test helpers
+- [x] 06-01-PLAN.md — Wave 0 preflight: window_manager dep, AppSettings schema bump to v3, test helpers
 - [ ] 06-02-PLAN.md — ThemeNotifier with HSL modulator and lifecycle ticker
 - [ ] 06-03-PLAN.md — Conditional window_setup trio (re-export, io, stub)
 - [ ] 06-04-PLAN.md — ResponsiveShell + main.dart wiring + router migration
