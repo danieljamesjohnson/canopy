@@ -7,6 +7,11 @@ import '../../../data/models/goal.dart';
 /// Shows a left color bar, goal name, and a drag handle. When [showArchivePrompt]
 /// is true, an inline archive suggestion appears below the main row via
 /// [AnimatedSwitcher].
+///
+/// [dragHandleVisible] controls whether the drag handle Icon is rendered at
+/// opacity 0.6 (true — desktop default) or fully hidden (false — mobile, per
+/// UI-SPEC §Drag Handle Visibility). The wrapping [ReorderableDelayedDragStartListener]
+/// remains in either case so mobile long-press-drag still works.
 class GoalAdjustmentTile extends StatelessWidget {
   const GoalAdjustmentTile({
     super.key,
@@ -17,6 +22,7 @@ class GoalAdjustmentTile extends StatelessWidget {
     this.showArchivePrompt = false,
     this.onArchive,
     this.onKeep,
+    this.dragHandleVisible = true,
   });
 
   final Goal goal;
@@ -26,6 +32,7 @@ class GoalAdjustmentTile extends StatelessWidget {
   final bool showArchivePrompt;
   final VoidCallback? onArchive;
   final VoidCallback? onKeep;
+  final bool dragHandleVisible;
 
   @override
   Widget build(BuildContext context) {
@@ -37,13 +44,20 @@ class GoalAdjustmentTile extends StatelessWidget {
         Container(width: 5, height: 56, color: goalColor),
         const SizedBox(width: 12),
         Expanded(child: Text(goal.name, style: theme.textTheme.bodyMedium)),
-        // Drag handle — wrapped in ReorderableDelayedDragStartListener
+        // Drag handle — wrapped in ReorderableDelayedDragStartListener.
+        // The wrapper itself is always present (long-press-drag works on
+        // mobile regardless of icon visibility). The icon opacity follows
+        // UI-SPEC: 0.6 on desktop, 0.0 on mobile.
         ReorderableDelayedDragStartListener(
           index: index,
           child: SizedBox(
             width: 48,
             height: 48,
-            child: Icon(Icons.drag_handle, color: theme.colorScheme.outline),
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 120),
+              opacity: dragHandleVisible ? 0.6 : 0.0,
+              child: Icon(Icons.drag_handle, color: theme.colorScheme.outline),
+            ),
           ),
         ),
       ],

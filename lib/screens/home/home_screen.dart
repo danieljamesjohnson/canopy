@@ -6,6 +6,7 @@ import '../../data/models/scheduled_chunk.dart';
 import '../../data/repositories/hive_completion_log_repository.dart';
 import '../../data/repositories/hive_quarterly_snapshot_repository.dart';
 import '../../providers/schedule_notifier.dart';
+import '../../providers/theme_notifier.dart';
 import '../../services/quarterly_aggregation_service.dart';
 import '../schedule/widgets/schedule_progress_bar.dart';
 import 'widgets/review_banner.dart';
@@ -18,20 +19,15 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const Map<int, Color> _moodColors = {
-    1: Color(0xFF4A6275),
-    2: Color(0xFF5C7A8A),
-    3: Color(0xFF4A8C7A),
-    4: Color(0xFF7AAF6A),
-    5: Color(0xFFE8C547),
-  };
+  // Mood seed palette is the single source of truth in `ThemeNotifier.moodSeeds`
+  // (Phase 6 Plan 02). This screen reads it directly via `ThemeNotifier.moodSeeds[mood]`.
 
   static const Map<int, String> _moodEmojis = {
-    1: '\u{1F327}\uFE0F',
-    2: '\u{1F325}\uFE0F',
-    3: '\u26C5',
-    4: '\u{1F324}\uFE0F',
-    5: '\u2600\uFE0F',
+    1: '\u{1F327}️',
+    2: '\u{1F325}️',
+    3: '⛅',
+    4: '\u{1F324}️',
+    5: '☀️',
   };
 
   static const Map<int, String> _moodDescriptions = {
@@ -75,13 +71,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final schedule = scheduleNotifier.todaySchedule!;
     final mood = scheduleNotifier.moodIndex ?? 3;
-    final moodColor = _moodColors[mood] ?? _moodColors[3]!;
+    final moodColor =
+        ThemeNotifier.moodSeeds[mood] ?? ThemeNotifier.moodSeeds[3]!;
     final moodEmoji = _moodEmojis[mood] ?? _moodEmojis[3]!;
     final moodDescription = _moodDescriptions[mood] ?? _moodDescriptions[3]!;
 
     final nextChunk = schedule.chunks
-        .where((c) =>
-            c.chunkType == ChunkType.work && !c.isCompleted && !c.isSkipped)
+        .where(
+          (c) =>
+              c.chunkType == ChunkType.work && !c.isCompleted && !c.isSkipped,
+        )
         .firstOrNull;
 
     return Scaffold(
@@ -105,8 +104,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Text(
                     moodDescription,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
@@ -118,9 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text(
               'Up next',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    letterSpacing: 0.8,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                letterSpacing: 0.8,
+              ),
             ),
           ),
           if (nextChunk == null)
@@ -152,9 +151,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     '${nextChunk.durationMinutes} min',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -165,6 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final isPreCheckin = context.watch<ThemeNotifier>().isPreCheckin;
     return Scaffold(
       appBar: AppBar(title: const Text('Canopy')),
       body: Column(
@@ -189,15 +188,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       'Start your morning check-in to generate today\'s schedule.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
-                    OutlinedButton(
+                    BreathingPulseCta(
+                      enabled: isPreCheckin,
                       onPressed: () => context.push('/schedule/checkin'),
-                      child: const Text('Start your day'),
+                      child: OutlinedButton(
+                        onPressed: () => context.push('/schedule/checkin'),
+                        child: const Text('Start your day'),
+                      ),
                     ),
                   ],
                 ),
@@ -206,6 +208,111 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A subtle breathing-pulse decoration around a CTA. Drives a 2400ms easeInOut
+/// AnimationController that fades a [BoxShadow] from 8px to 16px blur (UI-SPEC
+/// §Breathing Pulse, D-08). Only animates when [enabled] is true AND when
+/// MediaQuery/PlatformDispatcher reduced-motion is NOT requested.
+///
+/// Extracted as a public top-level widget so Plan 06 Task 3 can pump it in
+/// isolation without HomeScreen's full provider tree (W-3 resolution).
+class BreathingPulseCta extends StatefulWidget {
+  const BreathingPulseCta({
+    super.key,
+    required this.enabled,
+    required this.onPressed,
+    required this.child,
+  });
+
+  /// True when the pulse should animate (pre-check-in state per
+  /// `ThemeNotifier.isPreCheckin`). False settles the controller at the
+  /// midpoint (no animation).
+  final bool enabled;
+
+  /// Forwarded to outer taps where the parent does not already supply the
+  /// callback on [child]. Kept for completeness; callers should attach the
+  /// callback directly to their [child] widget as well to ensure tap
+  /// targets remain valid.
+  final VoidCallback onPressed;
+
+  /// The CTA being decorated (typically an [OutlinedButton]).
+  final Widget child;
+
+  @override
+  State<BreathingPulseCta> createState() => _BreathingPulseCtaState();
+}
+
+class _BreathingPulseCtaState extends State<BreathingPulseCta>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  bool get _animationsDisabled => WidgetsBinding
+      .instance
+      .platformDispatcher
+      .accessibilityFeatures
+      .disableAnimations;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    );
+    if (widget.enabled && !_animationsDisabled) {
+      _controller.repeat(reverse: true);
+    } else {
+      // UI-SPEC §Breathing Pulse — when disabled OR reduced-motion is on,
+      // render the pulse at midpoint (blur 12px) and do not animate.
+      _controller.value = 0.5;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant BreathingPulseCta oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.enabled != oldWidget.enabled) {
+      if (widget.enabled && !_animationsDisabled) {
+        _controller.repeat(reverse: true);
+      } else {
+        _controller.stop();
+        _controller.value = 0.5;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return AnimatedBuilder(
+      animation: CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+      builder: (context, child) {
+        final t = _controller.value;
+        final blur = 8.0 + 8.0 * t;
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: primary.withValues(alpha: 0.25),
+                blurRadius: blur,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: child,
+        );
+      },
+      child: widget.child,
     );
   }
 }

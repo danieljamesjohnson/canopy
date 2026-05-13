@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -147,40 +149,51 @@ class _AdjustmentsSectionState extends State<AdjustmentsSection> {
           ),
         ),
 
-        // Reorderable goal list
+        // Reorderable goal list. Drag handle visibility is platform-gated per
+        // UI-SPEC §Drag Handle Visibility — opacity 0.6 on desktop, hidden
+        // on mobile (long-press-drag still works either way).
         Expanded(
-          child: ReorderableListView.builder(
-            buildDefaultDragHandles: false,
-            itemCount: visibleGoals.length,
-            itemBuilder: (context, i) {
-              final goal = visibleGoals[i];
-              final globalIndex = _orderedGoals.indexWhere(
-                (g) => g.id == goal.id,
+          child: Builder(
+            builder: (context) {
+              final isMobileTouch =
+                  defaultTargetPlatform == TargetPlatform.android ||
+                  defaultTargetPlatform == TargetPlatform.iOS;
+              return ReorderableListView.builder(
+                buildDefaultDragHandles: false,
+                itemCount: visibleGoals.length,
+                itemBuilder: (context, i) {
+                  final goal = visibleGoals[i];
+                  final globalIndex = _orderedGoals.indexWhere(
+                    (g) => g.id == goal.id,
+                  );
+                  return GoalAdjustmentTile(
+                    key: ValueKey(goal.id),
+                    goal: goal,
+                    goalColor: _colorForGoal(goal, globalIndex),
+                    index: i,
+                    completionRate: widget.completionRates[goal.id],
+                    showArchivePrompt: _showArchivePrompt(goal),
+                    onArchive: () => setState(() => _archivedIds.add(goal.id)),
+                    onKeep: () =>
+                        setState(() => _dismissedPrompts.add(goal.id)),
+                    dragHandleVisible: !isMobileTouch,
+                  );
+                },
+                onReorder: (oldIndex, newIndex) {
+                  if (newIndex > oldIndex) newIndex -= 1;
+                  setState(() {
+                    final visible = _orderedGoals
+                        .where((g) => !_archivedIds.contains(g.id))
+                        .toList();
+                    final item = visible.removeAt(oldIndex);
+                    visible.insert(newIndex, item);
+                    final archived = _orderedGoals
+                        .where((g) => _archivedIds.contains(g.id))
+                        .toList();
+                    _orderedGoals = [...visible, ...archived];
+                  });
+                },
               );
-              return GoalAdjustmentTile(
-                key: ValueKey(goal.id),
-                goal: goal,
-                goalColor: _colorForGoal(goal, globalIndex),
-                index: i,
-                completionRate: widget.completionRates[goal.id],
-                showArchivePrompt: _showArchivePrompt(goal),
-                onArchive: () => setState(() => _archivedIds.add(goal.id)),
-                onKeep: () => setState(() => _dismissedPrompts.add(goal.id)),
-              );
-            },
-            onReorder: (oldIndex, newIndex) {
-              if (newIndex > oldIndex) newIndex -= 1;
-              setState(() {
-                final visible = _orderedGoals
-                    .where((g) => !_archivedIds.contains(g.id))
-                    .toList();
-                final item = visible.removeAt(oldIndex);
-                visible.insert(newIndex, item);
-                final archived = _orderedGoals
-                    .where((g) => _archivedIds.contains(g.id))
-                    .toList();
-                _orderedGoals = [...visible, ...archived];
-              });
             },
           ),
         ),

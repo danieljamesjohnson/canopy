@@ -8,17 +8,39 @@ Color hexToColor(String hex) {
 
 /// A Material Card displaying a goal with a colored left border, type icon,
 /// name, and an optional secondary stat (weekly hours or streak count).
-class GoalCard extends StatelessWidget {
+///
+/// When [trailing] is null and the pointer hovers (desktop), the hover-revealed
+/// edit + archive icons fade in via [AnimatedOpacity] (120ms easeOut). On mobile
+/// (Android/iOS) pointer events never fire `onHover`, so the icons stay at
+/// opacity 0 — preserving touch UX. When a caller supplies [trailing] (e.g.
+/// the drag handle from `GoalsScreen`'s ReorderableListView), the hover icons
+/// are NOT shown; the trailing slot is exclusively used.
+class GoalCard extends StatefulWidget {
   const GoalCard({
     super.key,
     required this.goal,
     this.trailing,
     this.onTap,
+    this.onEdit,
+    this.onArchive,
   });
 
   final Goal goal;
   final Widget? trailing;
   final VoidCallback? onTap;
+
+  /// Hover-revealed "Edit goal" affordance (desktop). Null disables the icon.
+  final VoidCallback? onEdit;
+
+  /// Hover-revealed "Archive goal" affordance (desktop). Null disables the icon.
+  final VoidCallback? onArchive;
+
+  @override
+  State<GoalCard> createState() => _GoalCardState();
+}
+
+class _GoalCardState extends State<GoalCard> {
+  bool _hovered = false;
 
   IconData _typeIcon(GoalType type) {
     switch (type) {
@@ -51,9 +73,12 @@ class GoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final goalColor =
-        goal.color != null ? hexToColor(goal.color!) : theme.colorScheme.primary;
+    final goal = widget.goal;
+    final goalColor = goal.color != null
+        ? hexToColor(goal.color!)
+        : theme.colorScheme.primary;
     final secondary = _secondaryLine(goal);
+    final showHoverIcons = widget.trailing == null;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -61,7 +86,8 @@ class GoalCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
+        onTap: widget.onTap,
+        onHover: (hovered) => setState(() => _hovered = hovered),
         child: Stack(
           children: [
             // Colored left border — sized by Stack to match content height
@@ -88,7 +114,9 @@ class GoalCard extends StatelessWidget {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
@@ -96,8 +124,11 @@ class GoalCard extends StatelessWidget {
                           // Title row: icon + name + color swatch
                           Row(
                             children: [
-                              Icon(_typeIcon(goal.goalType),
-                                  size: 16, color: goalColor),
+                              Icon(
+                                _typeIcon(goal.goalType),
+                                size: 16,
+                                color: goalColor,
+                              ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
@@ -119,19 +150,46 @@ class GoalCard extends StatelessWidget {
                           ),
                           if (secondary != null) ...[
                             const SizedBox(height: 4),
-                            Text(
-                              secondary,
-                              style: theme.textTheme.bodySmall,
-                            ),
+                            Text(secondary, style: theme.textTheme.bodySmall),
                           ],
                         ],
                       ),
                     ),
                   ),
-                  ?trailing,
+                  ?widget.trailing,
                 ],
               ),
             ),
+            // Hover-revealed edit + archive icons (desktop only — onHover
+            // never fires on touch-only mobile pointer events, so this stays
+            // at opacity 0 on Android/iOS). Suppressed when a trailing
+            // widget is supplied (e.g. the drag handle from GoalsScreen).
+            if (showHoverIcons)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: AnimatedOpacity(
+                  opacity: _hovered ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 120),
+                  curve: Curves.easeOut,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Edit goal',
+                        onPressed: _hovered ? widget.onEdit : null,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.archive_outlined),
+                        tooltip: 'Archive goal',
+                        onPressed: _hovered ? widget.onArchive : null,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),
