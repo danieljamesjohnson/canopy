@@ -25,7 +25,10 @@ Future<void> _migration1to2() async {
 }
 
 Future<void> _migration2to3() async {
-  // Phase 6: AppSettings expanded with nullable moodSeedArgb (HiveField 5).
+  // Phase 6: AppSettings expanded with nullable moodSeedArgb (HiveField 5)
+  // and nullable lastMoodSetYmdInt (HiveField 6). Both are part of this single
+  // v3 schema bump — additive nullable ints supporting daily mood seed +
+  // no-carry-forward rollover seam (D-10).
   // No data transformation needed — Hive binary reader returns null for missing
   // nullable fields in existing records (per Phase 2 _migration1to2 pattern).
 }

@@ -30,4 +30,10 @@ class AppSettings extends HiveObject {
   /// at check-in; cleared on daily rollover (Phase 6 D-10).
   @HiveField(5)
   int? moodSeedArgb;
+
+  /// YYYYMMDD-encoded local date of the last `setMoodSeed` call. Read by
+  /// `ThemeNotifier.init()` and on `AppLifecycleState.resumed` to enforce
+  /// the no-carry-forward rule (D-10). Null = no mood ever set yet.
+  @HiveField(6)
+  int? lastMoodSetYmdInt;
 }
