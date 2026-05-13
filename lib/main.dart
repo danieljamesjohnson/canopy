@@ -4,15 +4,20 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/database/hive_database.dart';
+import 'platform/window_setup.dart';
 import 'providers/goals_notifier.dart';
 import 'providers/commitments_notifier.dart';
 import 'providers/schedule_notifier.dart';
 import 'providers/settings_notifier.dart';
+import 'providers/theme_notifier.dart';
 import 'router.dart' show rootNavigatorKey, createRouter;
 import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Phase 6 Plan 03: enforces 480x640 window minimum on Win/macOS/Linux.
+  // Web stub + mobile guard make this safe to call on every platform.
+  await setupDesktopWindow();
   final prefs = await SharedPreferences.getInstance();
   await HiveDatabase.init(prefs);
 
@@ -24,6 +29,12 @@ void main() async {
 
   final scheduleNotifier = ScheduleNotifier();
   await scheduleNotifier.init();
+
+  // Phase 6 Plan 02: ThemeNotifier is the single source of truth for the
+  // app's ColorScheme.fromSeed. Construct + init before runApp so the first
+  // frame has the correct mood seed (or the curious pre-checkin seed).
+  final themeNotifier = ThemeNotifier();
+  await themeNotifier.init();
 
   // Initialize notification service before runApp.
   // Web: no-op (in-app banner used instead).
@@ -42,14 +53,24 @@ void main() async {
     }
   };
 
-  runApp(CanopyApp(settingsNotifier: settingsNotifier, scheduleNotifier: scheduleNotifier));
+  runApp(CanopyApp(
+    settingsNotifier: settingsNotifier,
+    scheduleNotifier: scheduleNotifier,
+    themeNotifier: themeNotifier,
+  ));
 }
 
 class CanopyApp extends StatelessWidget {
-  const CanopyApp({super.key, required this.settingsNotifier, required this.scheduleNotifier});
+  const CanopyApp({
+    super.key,
+    required this.settingsNotifier,
+    required this.scheduleNotifier,
+    required this.themeNotifier,
+  });
 
   final SettingsNotifier settingsNotifier;
   final ScheduleNotifier scheduleNotifier;
+  final ThemeNotifier themeNotifier;
 
   @override
   Widget build(BuildContext context) {
@@ -62,14 +83,22 @@ class CanopyApp extends StatelessWidget {
         // can be awaited without double-construction.
         ChangeNotifierProvider<ScheduleNotifier>.value(value: scheduleNotifier),
         ChangeNotifierProvider<SettingsNotifier>.value(value: settingsNotifier),
+        ChangeNotifierProvider<ThemeNotifier>.value(value: themeNotifier),
       ],
-      child: MaterialApp.router(
-        title: 'Canopy',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF3D6B4F)),
-          useMaterial3: true,
+      // Consumer<ThemeNotifier> narrows the rebuild scope to MaterialApp.router
+      // only — the MultiProvider node above is not rebuilt on every 20-min
+      // ticker tick (RESEARCH.md anti-pattern line 607).
+      child: Consumer<ThemeNotifier>(
+        builder: (context, theme, _) => MaterialApp.router(
+          title: 'Canopy',
+          theme: theme.currentTheme,
+          // D-09 / UI-SPEC §Mood Warming Transition lock: 500ms easeOutCubic
+          // cross-fade between ColorScheme.fromSeed snapshots when the user
+          // taps a mood (or when the 20-min tick redraws modulation).
+          themeAnimationDuration: const Duration(milliseconds: 500),
+          themeAnimationCurve: Curves.easeOutCubic,
+          routerConfig: createRouter(settingsNotifier),
         ),
-        routerConfig: createRouter(settingsNotifier),
       ),
     );
   }
