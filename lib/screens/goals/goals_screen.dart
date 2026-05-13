@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -35,9 +37,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
         expand: false,
         snap: true,
         snapSizes: const [0.6, 1.0],
-        builder: (ctx, scrollController) => GoalFormSheet(
-          scrollController: scrollController,
-        ),
+        builder: (ctx, scrollController) =>
+            GoalFormSheet(scrollController: scrollController),
       ),
     );
   }
@@ -54,10 +55,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
         expand: false,
         snap: true,
         snapSizes: const [0.6, 1.0],
-        builder: (ctx, scrollController) => GoalFormSheet(
-          scrollController: scrollController,
-          goal: goal,
-        ),
+        builder: (ctx, scrollController) =>
+            GoalFormSheet(scrollController: scrollController, goal: goal),
       ),
     );
   }
@@ -78,10 +77,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
               }
             },
             itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'archived',
-                child: Text('View archived'),
-              ),
+              PopupMenuItem(value: 'archived', child: Text('View archived')),
               PopupMenuItem(
                 value: 'commitments',
                 child: Text('Commitment blocks'),
@@ -153,10 +149,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
         child: Text(
           title,
-          style: Theme.of(context)
-              .textTheme
-              .titleSmall
-              ?.copyWith(color: colorScheme.primary),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(color: colorScheme.primary),
         ),
       ),
     );
@@ -169,6 +164,13 @@ class _GoalsScreenState extends State<GoalsScreen> {
     GoalType type,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
+    // Phase 6 Plan 05: drag handle visibility gated by platform per UI-SPEC
+    // §Drag Handle Visibility (opacity 0.6 desktop / hidden mobile). On mobile
+    // long-press-drag still works because ReorderableListView keeps the
+    // long-press gesture regardless of whether a visible drag handle exists.
+    final isMobileTouch =
+        defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
     return SliverToBoxAdapter(
       child: ReorderableListView.builder(
         shrinkWrap: true,
@@ -179,13 +181,24 @@ class _GoalsScreenState extends State<GoalsScreen> {
           key: ValueKey(group[i].id),
           goal: group[i],
           onTap: () => _openEditSheet(context, group[i]),
-          trailing: ReorderableDelayedDragStartListener(
-            index: i,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Icon(Icons.drag_handle, color: colorScheme.outline),
-            ),
-          ),
+          onEdit: () => _openEditSheet(context, group[i]),
+          onArchive: () => notifier.archiveGoal(group[i].id),
+          trailing: isMobileTouch
+              ? null
+              : ReorderableDelayedDragStartListener(
+                  index: i,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 120),
+                    opacity: 0.6,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Icon(
+                        Icons.drag_handle,
+                        color: colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                ),
         ),
         onReorder: (oldIndex, newIndex) =>
             notifier.reorder(type, oldIndex, newIndex),
@@ -209,16 +222,13 @@ class _EmptyState extends StatelessWidget {
             color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 16),
-          Text(
-            'No goals yet',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('No goals yet', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Text(
             'Add your first goal',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
+              color: Theme.of(context).colorScheme.outline,
+            ),
           ),
         ],
       ),
