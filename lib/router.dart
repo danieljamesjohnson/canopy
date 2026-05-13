@@ -13,6 +13,7 @@ import 'screens/schedule/schedule_screen.dart';
 import 'screens/quarterly_review/quarterly_review_screen.dart';
 import 'screens/settings/past_reviews_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'widgets/responsive_shell.dart';
 
 /// Root navigator key exposed so main.dart can use it for notification tap
 /// navigation without a BuildContext (notification callbacks have no context).
@@ -35,7 +36,7 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          return _ScaffoldWithNavBar(navigationShell: navigationShell);
+          return ResponsiveShell(navigationShell: navigationShell);
         },
         branches: [
           StatefulShellBranch(
@@ -114,30 +115,3 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
   );
 }
 
-class _ScaffoldWithNavBar extends StatelessWidget {
-  const _ScaffoldWithNavBar({required this.navigationShell});
-
-  final StatefulNavigationShell navigationShell;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) {
-          navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          );
-        },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.flag_outlined), label: 'Goals'),
-          NavigationDestination(icon: Icon(Icons.calendar_today_outlined), label: 'Schedule'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Settings'),
-        ],
-      ),
-    );
-  }
-}
