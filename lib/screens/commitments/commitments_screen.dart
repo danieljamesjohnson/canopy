@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -33,15 +35,16 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
         expand: false,
         snap: true,
         snapSizes: const [0.65, 1.0],
-        builder: (ctx, sc) => CommitmentFormSheet(
-          scrollController: sc,
-          block: block,
-        ),
+        builder: (ctx, sc) =>
+            CommitmentFormSheet(scrollController: sc, block: block),
       ),
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, CommitmentBlock block) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    CommitmentBlock block,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -121,8 +124,8 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
           Text(
             'Add your regular jobs, classes, or appointments',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
+              color: Theme.of(context).colorScheme.outline,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -133,9 +136,7 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Commitments'),
-      ),
+      appBar: AppBar(title: const Text('Commitments')),
       body: Consumer<CommitmentsNotifier>(
         builder: (ctx, notifier, _) {
           if (notifier.blocks.isEmpty) {
@@ -145,49 +146,12 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
             itemCount: notifier.blocks.length,
             itemBuilder: (ctx, i) {
               final block = notifier.blocks[i];
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: InkWell(
-                  onTap: () => _openAddSheet(context, block),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 12),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 16,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            color: _parseColor(block.color),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                block.name,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _commitmentCardSubtitle(block),
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () => _confirmDelete(context, block),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              return _CommitmentRow(
+                block: block,
+                colorSwatch: _parseColor(block.color),
+                subtitle: _commitmentCardSubtitle(block),
+                onEdit: () => _openAddSheet(context, block),
+                onDelete: () => _confirmDelete(context, block),
               );
             },
           );
@@ -197,6 +161,114 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
         onPressed: () => _openAddSheet(context),
         icon: const Icon(Icons.add),
         label: const Text('Add commitment'),
+      ),
+    );
+  }
+}
+
+/// One row in the commitments list. On desktop the edit + delete icons fade in
+/// on hover (opacity 0 -> 1, 120ms easeOut). On mobile the always-visible
+/// delete IconButton is preserved (per PATTERNS.md cross-cutting landmine —
+/// mobile users would otherwise lose delete access since pointer-only onHover
+/// never fires on touch).
+class _CommitmentRow extends StatefulWidget {
+  const _CommitmentRow({
+    required this.block,
+    required this.colorSwatch,
+    required this.subtitle,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final CommitmentBlock block;
+  final Color colorSwatch;
+  final String subtitle;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  State<_CommitmentRow> createState() => _CommitmentRowState();
+}
+
+class _CommitmentRowState extends State<_CommitmentRow> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobileTouch =
+        defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: InkWell(
+        onTap: widget.onEdit,
+        onHover: (hovered) => setState(() => _hovered = hovered),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: widget.colorSwatch,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.block.name,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.subtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              if (isMobileTouch)
+                // Mobile keeps the always-visible delete IconButton so
+                // delete access is never gated behind a hover that
+                // mobile pointer events can't trigger (cross-cutting
+                // landmine resolution).
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Delete commitment',
+                  onPressed: widget.onDelete,
+                )
+              else
+                // Desktop reveals edit + delete on hover.
+                AnimatedOpacity(
+                  opacity: _hovered ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 120),
+                  curve: Curves.easeOut,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Edit commitment',
+                        onPressed: _hovered ? widget.onEdit : null,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'Delete commitment',
+                        onPressed: _hovered ? widget.onDelete : null,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
