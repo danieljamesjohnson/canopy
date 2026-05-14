@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, TargetPlatform;
+    show debugPrint, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -45,6 +45,13 @@ class _AdjustmentsSectionState extends State<AdjustmentsSection> {
   bool _isSaving = false;
   String? _saveError;
 
+  /// Pending snapshot cached across retries so a re-tap of "Retry" reuses
+  /// the same `QuarterlySnapshot.id` and `_box.put(id, snapshot)` overwrites
+  /// the prior (possibly-failed) row instead of minting a duplicate
+  /// quarter — protecting the append-only history the call site comment
+  /// promises. See CR-02 in 06-REVIEW.md.
+  QuarterlySnapshot? _pendingSnapshot;
+
   @override
   void initState() {
     super.initState();
@@ -74,7 +81,9 @@ class _AdjustmentsSectionState extends State<AdjustmentsSection> {
     try {
       final notifier = context.read<GoalsNotifier>();
 
-      // Archive flagged goals
+      // Archive flagged goals. `archiveGoal` is idempotent against an
+      // already-archived id (a no-op on retry), so re-running this loop
+      // after a partial failure is safe.
       for (final id in _archivedIds) {
         await notifier.archiveGoal(id);
       }
@@ -93,22 +102,33 @@ class _AdjustmentsSectionState extends State<AdjustmentsSection> {
       }
 
       // Persist QuarterlySnapshot (append-only — never overwrite)
-      final snapshot =
-          QuarterlySnapshot(
-              periodStartYmd: widget.periodStartYmd,
-              periodEndYmd: widget.periodEndYmd,
-            )
-            ..goalChunkTotals = Map.of(widget.goalChunkTotals)
-            ..reflectionAnswers = List.of(widget.reflectionAnswers)
-            ..goalPrioritySnapshot = prioritySnapshot
-            ..archivedGoalIds = _archivedIds.toList();
+      //
+      // CR-02: cache the constructed `QuarterlySnapshot` across retries so
+      // a re-tap of "Retry" reuses the same `id`. `_box.put(id, snapshot)`
+      // is keyed on the snapshot id, so re-running with the same id
+      // overwrites the prior failed row instead of minting a duplicate
+      // quarterly history entry. The mutable fields are re-stamped on
+      // every attempt so the snapshot reflects the latest in-memory
+      // archive/reorder state.
+      _pendingSnapshot ??= QuarterlySnapshot(
+        periodStartYmd: widget.periodStartYmd,
+        periodEndYmd: widget.periodEndYmd,
+      );
+      _pendingSnapshot!
+        ..goalChunkTotals = Map.of(widget.goalChunkTotals)
+        ..reflectionAnswers = List.of(widget.reflectionAnswers)
+        ..goalPrioritySnapshot = prioritySnapshot
+        ..archivedGoalIds = _archivedIds.toList();
 
-      await HiveQuarterlySnapshotRepository().append(snapshot);
+      await HiveQuarterlySnapshotRepository().append(_pendingSnapshot!);
 
       if (mounted) {
         Navigator.of(context).pop();
       }
-    } catch (_) {
+    } catch (e, st) {
+      // Log the original exception so a silent quarterly-review failure
+      // is not opaque to support. `catch (_)` would hide the cause.
+      debugPrint('AdjustmentsSection._finish failed: $e\n$st');
       if (mounted) {
         setState(() {
           _isSaving = false;
