@@ -134,10 +134,19 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
   /// Clears the mood seed and persists `moodSeedArgb = null` to Hive,
   /// then notifies listeners. Used by the midnight rollover seam and by
   /// any explicit "reset mood" affordance.
+  ///
+  /// WR-07: also clears `_lastMoodSetYmd` (in-memory) and
+  /// `lastMoodSetYmdInt` (Hive) so the persisted "last mood event"
+  /// timestamp does not lag behind the actual mood state after a reset.
+  /// Without this clear, future telemetry derived from
+  /// `lastMoodSetYmdInt` would see a stale value pointing at the
+  /// pre-reset day.
   Future<void> resetToCurious() async {
     _moodSeed = null;
+    _lastMoodSetYmd = null;
     final s = await _repo.getSettings() ?? AppSettings();
     s.moodSeedArgb = null;
+    s.lastMoodSetYmdInt = null;
     await _repo.saveSettings(s);
     notifyListeners();
   }
