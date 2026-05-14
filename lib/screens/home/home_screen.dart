@@ -246,7 +246,7 @@ class BreathingPulseCta extends StatefulWidget {
 }
 
 class _BreathingPulseCtaState extends State<BreathingPulseCta>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final AnimationController _controller;
 
   bool get _animationsDisabled => WidgetsBinding
@@ -258,34 +258,48 @@ class _BreathingPulseCtaState extends State<BreathingPulseCta>
   @override
   void initState() {
     super.initState();
+    // WR-01: register as a binding observer so a mid-session toggle of
+    // the OS "reduce motion" / accessibility-disable-animations setting
+    // is reflected in the controller's run state without waiting for a
+    // parent rebuild with a different `enabled` value.
+    WidgetsBinding.instance.addObserver(this);
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     );
-    if (widget.enabled && !_animationsDisabled) {
-      _controller.repeat(reverse: true);
-    } else {
-      // UI-SPEC §Breathing Pulse — when disabled OR reduced-motion is on,
-      // render the pulse at midpoint (blur 12px) and do not animate.
-      _controller.value = 0.5;
-    }
+    _applyAnimationState();
   }
 
   @override
   void didUpdateWidget(covariant BreathingPulseCta oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.enabled != oldWidget.enabled) {
-      if (widget.enabled && !_animationsDisabled) {
-        _controller.repeat(reverse: true);
-      } else {
-        _controller.stop();
-        _controller.value = 0.5;
-      }
+      _applyAnimationState();
+    }
+  }
+
+  @override
+  void didChangeAccessibilityFeatures() {
+    // Re-evaluate the run state in lockstep with the OS toggle.
+    _applyAnimationState();
+  }
+
+  /// Single source of truth for the controller's run state.
+  ///
+  /// UI-SPEC §Breathing Pulse — when disabled OR reduced-motion is on,
+  /// render the pulse at midpoint (blur 12px) and do not animate.
+  void _applyAnimationState() {
+    if (widget.enabled && !_animationsDisabled) {
+      _controller.repeat(reverse: true);
+    } else {
+      _controller.stop();
+      _controller.value = 0.5;
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     super.dispose();
   }
