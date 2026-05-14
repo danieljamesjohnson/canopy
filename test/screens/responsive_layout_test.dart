@@ -30,6 +30,13 @@ GoRouter _testRouter() {
               GoRoute(
                 path: '/a',
                 builder: (_, _) => const _DummyBranch(label: 'A'),
+                routes: [
+                  GoRoute(
+                    path: 'sub',
+                    builder: (_, _) =>
+                        const _DummyBranch(label: 'A sub-route'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -96,6 +103,39 @@ void main() {
     testWidgets('shows NavigationRail at 1200dp (desktop)', (tester) async {
       await _pumpShellAt(tester, const Size(1200, 800));
       expect(find.byType(NavigationRail), findsOneWidget);
+    });
+
+    testWidgets(
+        're-tapping the active branch destination pops nested routes to root (WR-09)',
+        (tester) async {
+      // WR-09 regression guard: ResponsiveShell._goBranch passes
+      // `initialLocation: index == navigationShell.currentIndex` to
+      // navigationShell.goBranch. This contract means re-tapping the
+      // *active* branch pops the branch's navigator back to its root,
+      // while tapping a different branch preserves nested state. A
+      // future refactor that inverts the condition would silently pop
+      // nested state on *any* tap — this test prevents that regression
+      // by exercising the active-tab pop semantics through a sub-route.
+      final router = _testRouter();
+      setViewport(tester, const Size(480, 800));
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpAndSettle();
+
+      // Branch A starts at /a — push the sub-route and confirm we navigated.
+      router.go('/a/sub');
+      await tester.pumpAndSettle();
+      expect(find.text('Branch A sub-route'), findsOneWidget);
+      expect(find.text('Branch A'), findsNothing);
+
+      // Re-tap the active branch's NavigationBar destination ("Home" — the
+      // first destination). _goBranch should pass initialLocation:true
+      // because we are tapping the already-active branch, causing the
+      // branch's nested navigator to pop to its root (/a).
+      await tester.tap(find.text('Home'));
+      await tester.pumpAndSettle();
+      expect(find.text('Branch A'), findsOneWidget,
+          reason: 'active-tab re-tap must pop nested route back to root');
+      expect(find.text('Branch A sub-route'), findsNothing);
     });
 
     testWidgets('does not throw OverflowError at any breakpoint',
