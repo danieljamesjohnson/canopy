@@ -306,7 +306,7 @@ Plans:
 - [x] 06-04-PLAN.md — ResponsiveShell + main.dart wiring + router migration
 - [x] 06-05-PLAN.md — Card hover affordances + breathing pulse + checkin mood wiring
 - [x] 06-06-PLAN.md — Widget + unit tests (8 new files + quarterly_review migration)
-- [ ] 06-07-PLAN.md — Manual UAT + ROADMAP update (mood theming deliverable + AC-6) + finalize VALIDATION
+- [x] 06-07-PLAN.md — Manual UAT + ROADMAP update (mood theming deliverable + AC-6) + finalize VALIDATION
 
 ---
 
