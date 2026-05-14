@@ -237,31 +237,37 @@ class _HoverableChunkContentState extends State<_HoverableChunkContent> {
             // Hover-revealed action icons (desktop only — onEnter/onExit
             // never fires on touch-only mobile pointer events, so this stays
             // at opacity 0 on Android/iOS).
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              child: AnimatedOpacity(
-                opacity: _hovered ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 120),
-                curve: Curves.easeOut,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.check_circle_outline),
-                      tooltip: 'Mark complete',
-                      onPressed: onMarkComplete,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.skip_next_outlined),
-                      tooltip: 'Skip',
-                      onPressed: onMarkSkipped,
-                    ),
-                  ],
+            //
+            // WR-02: skip the overlay entirely on resolved chunks. The
+            // mark-complete / mark-skipped IconButtons would be `onPressed:
+            // null` (disabled) at full opacity on hover otherwise — looking
+            // tappable but doing nothing.
+            if (!isResolved)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: AnimatedOpacity(
+                  opacity: _hovered ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 120),
+                  curve: Curves.easeOut,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.check_circle_outline),
+                        tooltip: 'Mark complete',
+                        onPressed: onMarkComplete,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.skip_next_outlined),
+                        tooltip: 'Skip',
+                        onPressed: onMarkSkipped,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
