@@ -280,6 +280,7 @@ Plans:
 - Web notification fallback: persistent in-app banner (already built in Phase 4) verified as the only notification mechanism on Web — no attempt to use the Web Push API in v1
 - Mouse/touch interaction parity: all swipe actions on mobile have a non-swipe equivalent on desktop (checkbox for complete, context menu or button for skip)
 - Widget tests for LayoutBuilder breakpoints verifying correct layout at 480dp, 720dp, and 1200dp widths
+- **Full app mood theming (deferred from Phase 3):** `ColorScheme.fromSeed` swap driven by today's mood with time-of-day brightness/saturation modulation; pre-check-in "curious" theme with breathing pulse on the check-in CTA; ~400–600ms warming transition into the chosen mood on tap. Palette: `#4A6275` / `#5C7A8A` / `#4A8C7A` / `#7AAF6A` / `#E8C547` (locked Phase 3).
 
 **Key technical decisions:**
 - Two-column layout threshold is 720dp (logical pixels). Below this, single-column. This covers most tablet portrait orientations in the single-column bucket, which is intentional — the schedule card list reads better in single-column.
@@ -294,8 +295,9 @@ Plans:
 3. The minimum window size constraint prevents resizing below 480px width on Windows — the window snaps back or refuses to resize below the minimum
 4. Navigating directly to `/schedule` and `/goals` in a Web browser loads the correct screen without a 404 or blank white screen
 5. All existing widget tests pass; new LayoutBuilder breakpoint tests pass at 480dp, 720dp, and 1200dp
+6. Tapping each of the 5 moods at check-in changes the app-wide ColorScheme within 600ms; all existing widget tests pass (with a test fixture that pins a known mood).
 
-**Plans:** 0/7 plans complete
+**Plans:** 6/7 plans complete
 
 Plans:
 - [x] 06-01-PLAN.md — Wave 0 preflight: window_manager dep, AppSettings schema bump to v3, test helpers

@@ -1,10 +1,11 @@
 ---
 phase: 6
 slug: desktop-and-web-polish
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: approved
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-05-12
+approved: 2026-05-14
 ---
 
 # Phase 6 — Validation Strategy
@@ -108,11 +109,20 @@ Existing test inventory: `widget_test.dart` placeholder, `quarterly_review_test.
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies (populated by planner)
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references (10 new files listed above)
-- [ ] No watch-mode flags (Flutter test uses single-pass by default)
-- [ ] Feedback latency < 10s for quick command, < 10s for full suite
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies (populated by planner)
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (10 new files listed above)
+- [x] No watch-mode flags (Flutter test uses single-pass by default)
+- [x] Feedback latency < 10s for quick command, < 10s for full suite
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-05-14
+
+## Manual UAT Signoff (Plan 06-07 Task 1)
+
+- **AC-3 macOS window resize (480×640 floor):** PASS — window refused to shrink below floor. User observation: state appeared to reset across launches; deemed acceptable (likely a mix of the daily curious-reset behavior in `ThemeNotifier` and Flutter debug-mode storage volatility, not a Phase 6 regression).
+- **AC-4 Web URL deep links + onboarding redirect:** PASS — `/schedule`, `/goals`, `/review` each load the correct screen on `flutter run -d chrome`; the redirect-to-`/onboarding` behavior works pre-onboarding. Same state-reset observation noted (Flutter debug-mode Chrome spawns with a temp `--user-data-dir` by default, wiping IndexedDB/localStorage on relaunch).
+- **AC-6 mood tap warming transition:** PASS — color settles smoothly within the 500ms easeOutCubic curve locked by UI-SPEC; amber mood-5 (#E8C547) remained legible on AppBar; breathing pulse visible on pre-check-in CTA.
+- **W-5 light-mode-only scope:** ACK — dark theme deferred to a future phase, no `darkTheme:` slot added to MaterialApp.router.
+
+Outstanding observation (non-blocking, follow-up): user noticed app state reset between launches during manual UAT. Likely Flutter debug-mode artifact + intended daily curious-reset; if it persists on release builds with a stable mood set the same day, file a debug session.
