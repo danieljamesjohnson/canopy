@@ -138,14 +138,25 @@ class _GoalCardState extends State<GoalCard> {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Container(
-                                width: 16,
-                                height: 16,
-                                decoration: BoxDecoration(
-                                  color: goalColor,
-                                  shape: BoxShape.circle,
+                              // WR-03: hide the color swatch on hover so the
+                              // hover-revealed edit + archive IconButtons
+                              // (~96dp wide, painted by the Positioned stack
+                              // child below) do not paint over the swatch.
+                              // Without this gate the swatch silently
+                              // disappears under the icons on hover; with the
+                              // gate the swatch fades out as the icons fade
+                              // in, keeping the right-edge readable.
+                              if (showHoverIcons && _hovered)
+                                const SizedBox(width: 16, height: 16)
+                              else
+                                Container(
+                                  width: 16,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    color: goalColor,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                           if (secondary != null) ...[
