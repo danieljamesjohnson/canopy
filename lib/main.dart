@@ -17,7 +17,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Phase 6 Plan 03: enforces 480x640 window minimum on Win/macOS/Linux.
   // Web stub + mobile guard make this safe to call on every platform.
-  await setupDesktopWindow();
+  //
+  // WR-05: window-min-size enforcement is a polish nice-to-have, not a
+  // startup blocker. If the window_manager plugin fails (transient
+  // platform-channel error, OS version mismatch, sandboxed-Linux quirk),
+  // log + continue so Hive and providers still initialize and the app
+  // can launch with a default-sized window.
+  try {
+    await setupDesktopWindow();
+  } catch (e, st) {
+    debugPrint('setupDesktopWindow failed (continuing): $e\n$st');
+  }
   final prefs = await SharedPreferences.getInstance();
   await HiveDatabase.init(prefs);
 
