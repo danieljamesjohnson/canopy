@@ -92,11 +92,25 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
   /// writing to Hive — per D-10, no carry-forward; the next mood tap will
   /// refresh the persisted seed.
   Future<void> init() async {
-    final settings = await _repo.getSettings();
-    final argb = settings?.moodSeedArgb;
-    _moodSeed = (argb == null) ? null : Color(argb);
-    _lastMoodSetYmd = settings?.lastMoodSetYmdInt;
-    _resetIfDayChanged();
+    // WR-06: defend against a corrupted-Hive / partial-migration scenario
+    // where `_repo.getSettings()` throws. Combined with WR-05's
+    // setupDesktopWindow guard, this ensures one bad piece of persisted
+    // state cannot hard-brick the app on launch — the ThemeNotifier
+    // falls back to the pre-checkin curious seed and the rest of the
+    // boot sequence (Hive providers, runApp) still runs.
+    try {
+      final settings = await _repo.getSettings();
+      final argb = settings?.moodSeedArgb;
+      _moodSeed = (argb == null) ? null : Color(argb);
+      _lastMoodSetYmd = settings?.lastMoodSetYmdInt;
+      _resetIfDayChanged();
+    } catch (e, st) {
+      debugPrint(
+        'ThemeNotifier.init failed (defaulting to curious): $e\n$st',
+      );
+      _moodSeed = null;
+      _lastMoodSetYmd = null;
+    }
     WidgetsBinding.instance.addObserver(this);
     _startTicker();
     notifyListeners();
