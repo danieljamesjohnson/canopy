@@ -30,7 +30,7 @@ Key non-negotiable constraints carried through all phases:
 - [x] **Phase 4: Chunk Tracking and Notifications** — Swipe completion, CompletionLog, local notifications, data export
  (completed 2026-04-02)
 - [x] **Phase 5: Quarterly Review** — Aggregation, fl_chart visualizations, guided reflection, QuarterlySnapshot
-- [ ] **Phase 6: Desktop and Web Polish** — Adaptive layouts, hover states, window constraints, Web URL and notification fallbacks
+- [x] **Phase 6: Desktop and Web Polish** — Adaptive layouts, hover states, window constraints, Web URL and notification fallbacks (completed 2026-05-14)
 
 ---
 
@@ -297,7 +297,7 @@ Plans:
 5. All existing widget tests pass; new LayoutBuilder breakpoint tests pass at 480dp, 720dp, and 1200dp
 6. Tapping each of the 5 moods at check-in changes the app-wide ColorScheme within 600ms; all existing widget tests pass (with a test fixture that pins a known mood).
 
-**Plans:** 6/7 plans complete
+**Plans:** 7/7 plans complete
 
 Plans:
 - [x] 06-01-PLAN.md — Wave 0 preflight: window_manager dep, AppSettings schema bump to v3, test helpers
@@ -319,7 +319,7 @@ Plans:
 | 3. Schedule Generation and Morning Check-In | 5/5 | Complete | 2026-03 |
 | 4. Chunk Tracking and Notifications | 3/3 | Complete | 2026-04-02 |
 | 5. Quarterly Review | 6/6 | Complete | 2026-05-12 |
-| 6. Desktop and Web Polish | 0/7 | Not started | - |
+| 6. Desktop and Web Polish | 7/7 | Complete | 2026-05-14 |
 
 ---
 
