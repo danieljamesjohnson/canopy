@@ -35,6 +35,21 @@ Future<void> _migration2to3() async {
 
 Future<void> runMigrations(SharedPreferences prefs) async {
   final int storedVersion = prefs.getInt('schemaVersion') ?? 0;
+  // WR-08: refuse to silently downgrade the persisted schemaVersion.
+  // If `storedVersion > currentSchemaVersion`, the app was rolled back
+  // to an older build while Hive still has data from a newer schema.
+  // Persisting `currentSchemaVersion` here would later cause the future
+  // build (re-installed) to replay migrations that already ran. In
+  // debug builds the assert surfaces the condition loudly; in release
+  // we skip the persist so the stored value stays at the newer
+  // version, preserving forward-migration correctness on next upgrade.
+  assert(
+    storedVersion <= currentSchemaVersion,
+    'Stored schema version $storedVersion is ahead of currentSchemaVersion '
+    '$currentSchemaVersion — refusing to downgrade. This usually means the '
+    'app was rolled back; uninstall + reinstall is required.',
+  );
+  if (storedVersion > currentSchemaVersion) return;
   for (int i = storedVersion; i < currentSchemaVersion; i++) {
     await _migrations[i]();
   }
