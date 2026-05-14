@@ -185,8 +185,15 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
     _ticker?.cancel();
     if (!_timeModulationEnabled || !_isForeground) return;
     _ticker = Timer.periodic(const Duration(minutes: 20), (_) {
+      // D-10 ("no carry-forward"): re-check the day boundary on every tick
+      // so a foregrounded app clears the in-memory mood seed at the local
+      // midnight crossing without requiring a pause/resume cycle. Without
+      // this, a user who leaves Canopy open past midnight would continue
+      // to see yesterday's mood driving the ColorScheme.fromSeed.
+      //
       // Notify regardless of mood — both modulated curious AND modulated
       // mood seeds drift through the day.
+      _resetIfDayChanged();
       notifyListeners();
     });
   }
