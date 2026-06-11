@@ -20,10 +20,10 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 
 ### Read — A Schedule You Can Read (READ)
 
-- [ ] **READ-01**: Each scheduled chunk displays its goal's name as the title, with the rationale as secondary text.
+- [x] **READ-01**: Each scheduled chunk displays its goal's name as the title, with the rationale as secondary text.
 - [x] **READ-02**: Chunks are ordered coherently in day order around anchored commitment blocks; breaks never appear inside a commitment window, and there is no dangling trailing break.
-- [ ] **READ-03**: Tapping a chunk opens a detail sheet showing the goal, why it was scheduled, and complete / skip / defer actions.
-- [ ] **READ-04**: A minimal companion focus mode highlights the current chunk with an optional 25-minute countdown that flows into completion and a break suggestion. *(Owner decision: companion mode in scope; designed here, completion loop closed in CLOSE.)*
+- [x] **READ-03**: Tapping a chunk opens a detail sheet showing the goal, why it was scheduled, and complete / skip / defer actions.
+- [x] **READ-04**: A minimal companion focus mode highlights the current chunk with an optional 25-minute countdown that flows into completion and a break suggestion. *(Owner decision: companion mode in scope; designed here, completion loop closed in CLOSE.)*
 
 ### Engine — An Engine That Budgets (ENGINE)
 
@@ -73,10 +73,10 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 | LOOP-03 | Phase 7 | Pending |
 | LOOP-04 | Phase 7 | Pending |
 | LOOP-05 | Phase 7 | Pending |
-| READ-01 | Phase 8 | Pending |
+| READ-01 | Phase 8 | Complete |
 | READ-02 | Phase 8 | Complete |
-| READ-03 | Phase 8 | Pending |
-| READ-04 | Phase 8 | Pending |
+| READ-03 | Phase 8 | Complete |
+| READ-04 | Phase 8 | Complete |
 | ENGINE-01 | Phase 9 | Pending |
 | ENGINE-02 | Phase 9 | Pending |
 | ENGINE-03 | Phase 9 | Pending |

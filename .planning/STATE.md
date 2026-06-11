@@ -2,22 +2,22 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: executing
-last_updated: "2026-06-11T03:06:55.157Z"
+status: verifying
+last_updated: "2026-06-11T03:13:06.435Z"
 last_activity: 2026-06-11 -- Phase 8 execution started
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 4
-  percent: 20
+  completed_plans: 5
+  percent: 40
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-11T03:06:55.152Z
+**Last session:** 2026-06-11T03:13:06.430Z
 
 ---
 
@@ -26,7 +26,7 @@ progress:
 Phase: 8 (A Schedule You Can Read) — EXECUTING
 Plan: 3 of 3
 Next: Phase 8 — A Schedule You Can Read
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-11 -- Phase 8 execution started
 
 Progress: [----------] 0% (0/5 phases complete)
@@ -90,6 +90,8 @@ Progress: [----------] 0% (0/5 phases complete)
 - [Phase 04-chunk-tracking-and-notifications]: iOS notification permission deferred to post-first-check-in via NotificationService.requestIOSPermissions() in checkin_screen.dart
 - [Phase ?]: Break chunks interleaved after discretionary work chunks get syntheticStartMinutes = workChunk.syntheticStartMinutes + 25 so Step D sort keeps them correctly positioned
 - [Phase ?]: Overflow discretionary chunks (no free slot found) are dropped from result — syntheticStartMinutes stays null and removeWhere filters them before Step C build
+- [Phase ?]: Timer.periodic in StatefulWidget (not ChangeNotifier) for FocusScreen — screen-local state avoids 1500 notifyListeners calls per session
+- [Phase ?]: state.extra is! String guard in /focus route builder — T-08-05 mitigation; malformed extra returns harmless Scaffold not crash
 
 ## Performance Metrics
 
@@ -115,6 +117,7 @@ Progress: [----------] 0% (0/5 phases complete)
 | Phase 04-chunk-tracking-and-notifications P04-02 | 5 | 2 tasks | 9 files |
 | Phase 08-a-schedule-you-can-read P01 | 7 minutes | 3 tasks | 9 files |
 | Phase 08-a-schedule-you-can-read P02 | 6 minutes | 2 tasks | 7 files |
+| Phase 08-a-schedule-you-can-read P03 | 3 minutes | 2 tasks | 4 files |
 
 ## Blockers
 

@@ -414,7 +414,7 @@ Note: Commitment blocks are defined in Phase 2 and their scheduling logic is imp
 ## v1.1 Phases
 
 - [x] **Phase 7: Unbreak the Morning** — Loop plumbing so the daily loop cannot dead-end on any cold launch or resume (completed 2026-06-11)
-- [ ] **Phase 8: A Schedule You Can Read** — Legible schedule: goal names, coherent ordering, chunk detail sheet, minimal companion focus mode
+- [x] **Phase 8: A Schedule You Can Read** — Legible schedule: goal names, coherent ordering, chunk detail sheet, minimal companion focus mode (completed 2026-06-11)
 - [ ] **Phase 9: An Engine That Budgets** — Rule-based generation that actually honors the goal model: capacity fill, weekly budgets, habit frequency, deadline pressure, priority
 - [ ] **Phase 10: Close the Day** — Discoverable end-of-day moment, deferral carry-in, commitment chunk attribution
 - [ ] **Phase 11: Honest Long Loop** — Quarterly review data correctness and priority-adjustment feedback into generation
@@ -459,7 +459,7 @@ Plans:
   3. Tapping any chunk opens a detail sheet showing the goal name, why the chunk was scheduled, and complete / skip / defer action buttons.
   4. A minimal companion focus mode is accessible from the detail sheet or schedule: it highlights the current chunk and offers an optional 25-minute countdown that flows into a completion action and a break suggestion.
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 **Wave 1**
 
@@ -471,7 +471,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 08-03-PLAN.md — Minimal focus mode: FocusScreen countdown + /focus route + entry affordance (READ-04)
+- [x] 08-03-PLAN.md — Minimal focus mode: FocusScreen countdown + /focus route + entry affordance (READ-04)
 
 **UI hint**: yes
 
@@ -531,7 +531,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 7. Unbreak the Morning | 2/2 | Complete   | 2026-06-11 |
-| 8. A Schedule You Can Read | 2/3 | In Progress|  |
+| 8. A Schedule You Can Read | 3/3 | Complete   | 2026-06-11 |
 | 9. An Engine That Budgets | 0/TBD | Not started | - |
 | 10. Close the Day | 0/TBD | Not started | - |
 | 11. Honest Long Loop | 0/TBD | Not started | - |
