@@ -4,6 +4,7 @@ import 'package:canopy/data/models/commitment_block.dart';
 import 'package:canopy/data/models/completion_log.dart';
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
+import 'package:intl/intl.dart';
 
 /// Pure Dart service — no Flutter imports, no async, no side effects.
 ///
@@ -57,28 +58,40 @@ class ScheduleGeneratorService {
     return {for (int i = 0; i < freq; i++) i * 7 ~/ freq + 1};
   }
 
-  /// Computes the habit streak from [allLogs], walking backward from most recent.
+  /// Computes the habit streak by walking backward through the calendar from
+  /// [today], checking each due weekday for a completed log entry.
   ///
-  /// Skips non-due weekdays (frequency-aware); increments streak on completed
-  /// due days; breaks on any other event (skipped/deferred) on a due day.
+  /// A due weekday with no log entry (truly missed — user never opened the app)
+  /// breaks the streak, per the spec: "A due day that is skipped or missed
+  /// resets the streak to 0" (09-CONTEXT.md). The previous log-walk
+  /// implementation was blind to missing entries (WR-02).
+  ///
+  /// The walk is bounded at 365 days to keep execution O(1) in the worst case.
   static int computeStreak(
     String goalId,
     Set<int> dueWeekdays,
-    List<CompletionLog> allLogs,
-  ) {
-    final goalLogs = allLogs
-        .where((l) => l.goalId == goalId)
-        .toList()
-      ..sort((a, b) => b.dateYmd.compareTo(a.dateYmd)); // most recent first
+    List<CompletionLog> allLogs, {
+    required DateTime today,
+  }) {
+    // Index all completed dates for O(1) lookup.
+    final completedDates = <String>{
+      for (final l in allLogs)
+        if (l.goalId == goalId && l.event == CompletionEvent.completed) l.dateYmd,
+    };
+
+    final fmt = DateFormat('yyyy-MM-dd');
     int streak = 0;
-    for (final log in goalLogs) {
-      final dt = DateTime.parse(log.dateYmd);
-      if (!dueWeekdays.contains(dt.weekday)) continue; // not a due day — skip
-      if (log.event == CompletionEvent.completed) {
-        streak++;
-      } else {
-        break; // skipped or missed due day → streak resets to 0
+    var day = DateTime(today.year, today.month, today.day);
+    for (int i = 0; i < 365; i++) {
+      if (dueWeekdays.contains(day.weekday)) {
+        final ymd = fmt.format(day);
+        if (completedDates.contains(ymd)) {
+          streak++;
+        } else {
+          break; // due day with no completion (missed or skipped) — reset
+        }
       }
+      day = day.subtract(const Duration(days: 1));
     }
     return streak;
   }
@@ -212,7 +225,7 @@ class ScheduleGeneratorService {
       final effectiveFreq = goal.frequencyPerWeek ?? 7;
       final dueWeekdays = computeDueWeekdays(effectiveFreq);
       if (!dueWeekdays.contains(date.weekday)) continue; // not due today
-      final streak = computeStreak(goal.id, dueWeekdays, completionLogs);
+      final streak = computeStreak(goal.id, dueWeekdays, completionLogs, today: date);
       workChunks.add(
         ScheduledChunk(
           chunkTypeIndex: ChunkType.work.index,

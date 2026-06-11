@@ -654,4 +654,79 @@ void main() {
     expect(highChunks, greaterThan(0), reason: 'high-priority goal must win the capacity slot');
     expect(lowChunks, 0, reason: 'low-priority goal must be excluded when capacity is filled by high-priority');
   });
+
+  // ---------------------------------------------------------------------------
+  // T-09-WR02: computeStreak — missed due day (no log entry) breaks streak
+  //
+  // Locks the spec decision: "A due day that is skipped or missed resets the
+  // streak to 0" (09-CONTEXT.md). A truly missed day has no log entry at all;
+  // the old log-walk was blind to it. The new calendar-walk detects the gap.
+  // ---------------------------------------------------------------------------
+  test('T-09-WR02: missed due day (no log entry) breaks streak to 0', () {
+    // 3x/week habit: due Mon(1)/Wed(3)/Fri(5).
+    // Scenario: user completes Monday and Wednesday of one week, then misses
+    // Friday entirely (no log entry), then completes the following Monday.
+    // Expected streak from the following Monday: 1 (Friday gap resets it).
+    // Without the calendar-walk fix, the old impl would return 3 (invisible gap).
+    final habit = Goal(
+      id: 'streak-gap-goal',
+      name: 'Run',
+      goalTypeIndex: GoalType.habit.index,
+      frequencyPerWeek: 3, // Mon/Wed/Fri
+    );
+
+    // Week 1: complete Mon 2026-03-23 and Wed 2026-03-25; miss Fri 2026-03-27.
+    // Week 2: complete Mon 2026-03-30 (today).
+    final logs = [
+      makeLog(goalId: habit.id, dateYmd: '2026-03-23'), // Mon week 1
+      makeLog(goalId: habit.id, dateYmd: '2026-03-25'), // Wed week 1
+      // Fri 2026-03-27 intentionally absent — truly missed
+      makeLog(goalId: habit.id, dateYmd: '2026-03-30'), // Mon week 2 (today)
+    ];
+
+    final dueWeekdays = ScheduleGeneratorService.computeDueWeekdays(3);
+    // today = Mon 2026-03-30
+    final today = DateTime(2026, 3, 30);
+    final streak = ScheduleGeneratorService.computeStreak(
+      habit.id,
+      dueWeekdays,
+      logs,
+      today: today,
+    );
+
+    // Walk from today (Mon 30, completed=1) → Fri 27 (no entry → break).
+    // Streak must be 1, not 3.
+    expect(streak, 1,
+        reason: 'A missed Friday (no log) must break the streak; '
+            'only the Monday completion after the gap should count');
+  });
+
+  test('T-09-WR02b: no missed days — consecutive completions count correctly', () {
+    // 3x/week habit: Mon/Wed/Fri. All three due days completed in order.
+    // Today = the Friday. Streak must be 3.
+    final habit = Goal(
+      id: 'streak-full-goal',
+      name: 'Run',
+      goalTypeIndex: GoalType.habit.index,
+      frequencyPerWeek: 3,
+    );
+
+    final logs = [
+      makeLog(goalId: habit.id, dateYmd: '2026-03-23'), // Mon
+      makeLog(goalId: habit.id, dateYmd: '2026-03-25'), // Wed
+      makeLog(goalId: habit.id, dateYmd: '2026-03-27'), // Fri (today)
+    ];
+
+    final dueWeekdays = ScheduleGeneratorService.computeDueWeekdays(3);
+    final today = DateTime(2026, 3, 27); // Friday
+    final streak = ScheduleGeneratorService.computeStreak(
+      habit.id,
+      dueWeekdays,
+      logs,
+      today: today,
+    );
+
+    expect(streak, 3,
+        reason: 'Three consecutive due-day completions must yield streak = 3');
+  });
 }
