@@ -86,6 +86,29 @@ class GoalsNotifier extends ChangeNotifier {
     await loadGoals();
   }
 
+  /// Reorders all goals using a flat ordered ID list, writing both [sortOrder]
+  /// and [priorityWeight] so the schedule generator picks up priority changes.
+  ///
+  /// Linear spread: index 0 (top) → 0.75, index n-1 (bottom) → 0.25.
+  /// Single goal: weight = 0.75. Weights are monotonically distinct.
+  ///
+  /// Formula: priorityWeight[i] = high - (high - low) * i / (n - 1)  when n > 1
+  ///          priorityWeight[0] = high                                 when n == 1
+  Future<void> reorderAllWithPriority(List<String> orderedIds) async {
+    const double high = 0.75;
+    const double low = 0.25;
+    final n = orderedIds.length;
+    for (var i = 0; i < n; i++) {
+      final goal = _goals.where((g) => g.id == orderedIds[i]).firstOrNull;
+      if (goal != null) {
+        goal.sortOrder = i;
+        goal.priorityWeight = n <= 1 ? high : high - (high - low) * i / (n - 1);
+        await _repository.save(goal);
+      }
+    }
+    await loadGoals();
+  }
+
   /// Reorders goals within a [type] group.
   ///
   /// [oldIndex] and [newIndex] are indices within the type-filtered list.
