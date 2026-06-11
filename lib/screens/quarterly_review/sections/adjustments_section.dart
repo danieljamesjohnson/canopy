@@ -93,7 +93,7 @@ class _AdjustmentsSectionState extends State<AdjustmentsSection> {
           .where((g) => !_archivedIds.contains(g.id))
           .map((g) => g.id)
           .toList();
-      await notifier.reorderAll(orderedIds);
+      await notifier.reorderAllWithPriority(orderedIds);
 
       // Build priority snapshot map
       final prioritySnapshot = <String, int>{};

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/models/commitment_block.dart';
+import '../../data/models/goal.dart';
 import '../../data/repositories/completion_log_repository.dart';
 import '../../data/repositories/hive_completion_log_repository.dart';
 import '../../data/repositories/hive_quarterly_snapshot_repository.dart';
 import '../../data/repositories/quarterly_snapshot_repository.dart';
+import '../../providers/commitments_notifier.dart';
 import '../../providers/goals_notifier.dart';
 import '../../services/quarterly_aggregation_service.dart';
 import 'sections/adjustments_section.dart';
@@ -52,6 +55,10 @@ class _QuarterlyReviewScreenState extends State<QuarterlyReviewScreen> {
   String _periodStartYmd = '';
   String _periodEndYmd = '';
 
+  // Archived goals + commitment blocks loaded in _loadData for DonutChart
+  List<Goal> _archivedGoals = [];
+  List<CommitmentBlock> _commitmentBlocks = [];
+
   // Answers from ReflectionSection (passed to AdjustmentsSection)
   List<String> _reflectionAnswers = [];
 
@@ -68,13 +75,23 @@ class _QuarterlyReviewScreenState extends State<QuarterlyReviewScreen> {
   }
 
   Future<void> _loadData() async {
-    final goals = context.read<GoalsNotifier>().goals;
+    // Capture provider refs BEFORE any await (Pitfall 6: context.read after
+    // an await risks accessing an unmounted widget's context).
+    final goalsNotifier = context.read<GoalsNotifier>();
+    final commitmentsNotifier = context.read<CommitmentsNotifier>();
+
     final logRepo =
         widget._completionLogRepository ?? HiveCompletionLogRepository();
     final snapshotRepo =
         widget._snapshotRepository ?? HiveQuarterlySnapshotRepository();
     final allLogs = await logRepo.getAll();
     final latestSnapshot = await snapshotRepo.getLatest();
+
+    // Load archived goals + commitment blocks for DonutChart (REVIEW-03).
+    final archivedGoals = await goalsNotifier.getArchivedGoals();
+    // CommitmentsNotifier.blocks is already populated at startup — sync read.
+    final commitmentBlocks = commitmentsNotifier.blocks;
+
     final service = QuarterlyAggregationService();
     final today = DateTime.now();
     final todayYmd = _toYmd(today);
@@ -99,7 +116,9 @@ class _QuarterlyReviewScreenState extends State<QuarterlyReviewScreen> {
 
     final totalCompleted = service.totalCompleted(allLogs, startYmd, todayYmd);
 
-    if (totalCompleted == 0 && goals.isEmpty) {
+    // Guard on allLogs.isEmpty: show empty state only when there is literally
+    // no review data, independent of provider goal-list state (REVIEW-03).
+    if (allLogs.isEmpty) {
       if (mounted) {
         setState(() {
           _loading = false;
@@ -113,6 +132,8 @@ class _QuarterlyReviewScreenState extends State<QuarterlyReviewScreen> {
       setState(() {
         _loading = false;
         _hasData = true;
+        _archivedGoals = archivedGoals;
+        _commitmentBlocks = List.of(commitmentBlocks);
         _periodStartYmd = startYmd;
         _periodEndYmd = todayYmd;
         _totalCompleted = totalCompleted;
@@ -169,17 +190,14 @@ class _QuarterlyReviewScreenState extends State<QuarterlyReviewScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
                       // Section 1: Data
-                      // REVIEW-03 (Plan 02): _archivedGoals and _commitmentBlocks
-                      // will be wired in Plan 02 — passed as empty lists here
-                      // so the constructor compiles until Plan 02 lands.
                       DataSection(
                         totalCompleted: _totalCompleted,
                         goalChunkTotals: _goalChunkTotals,
                         notSpentCount: _notSpentCount,
                         weeklyData: _weeklyData,
                         goals: goals,
-                        archivedGoals: const [],
-                        commitmentBlocks: const [],
+                        archivedGoals: _archivedGoals,
+                        commitmentBlocks: _commitmentBlocks,
                         onNext: () => _advanceToSection(1),
                       ),
 
