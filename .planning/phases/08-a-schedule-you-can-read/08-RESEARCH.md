@@ -741,17 +741,15 @@ for (final chunk in workChunks) {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Discretionary chunks that overflow available gaps**
+1. **Discretionary chunks that overflow available gaps** — RESOLVED
    - What we know: packer assigns synthetic start times greedily; chunks that don't fit in any gap are left without a start time.
-   - What's unclear: should unfit chunks be dropped from the output entirely, or appended at a nominal "end of day" time?
-   - Recommendation: drop them. The mood cap already limits chunk count; a day with many commitments naturally reduces discretionary capacity. This is consistent with current behavior and avoids artificial late-night times.
+   - RESOLVED: drop unfit chunks from the output entirely (recommendation adopted; implemented in Step B of `_assignSyntheticStartTimes`). The mood cap already limits chunk count; a day with many commitments naturally reduces discretionary capacity. Consistent with current behavior and avoids artificial late-night times.
 
-2. **Gesture conflict on resolved work chunks opened via tap**
+2. **Gesture conflict on resolved work chunks opened via tap** — RESOLVED
    - What we know: resolved chunks (isCompleted/isSkipped) have `DismissDirection.none` on `SwipeableChunkCard` (line 37 of swipeable_chunk_card.dart).
-   - What's unclear: should tapping a resolved chunk open the detail sheet (showing status + no actions)?
-   - Recommendation: per UI-SPEC "Resolved chunks" section — show goal name + rationale + status badge, no action buttons. Keep tappable; add `isResolved` state to sheet builder.
+   - RESOLVED: keep resolved chunks tappable; the detail sheet renders in read-only mode per the UI-SPEC "Resolved chunks" section — goal name + rationale + status badge, no action buttons (`isResolved` state in the sheet builder).
 
 ---
 
