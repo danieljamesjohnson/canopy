@@ -69,13 +69,19 @@ void main() async {
 
   // Wire notification tap → navigate to check-in screen (AC-3).
   // Uses the GoRouter instance to navigate without a BuildContext.
+  // WR-02: defer navigation to the next frame so that a notification tap
+  // delivered during the cold-launch window (before MaterialApp.router
+  // has completed its first build) cannot call router.go() before the
+  // router has a registered navigator — which would throw GoException.
   NotificationService.onTapCallback = (NotificationResponse response) {
-    // Navigate to check-in if no schedule exists, otherwise show schedule.
-    if (scheduleNotifier.hasScheduleToday) {
-      router.go('/schedule');
-    } else {
-      router.go('/schedule/checkin');
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Navigate to check-in if no schedule exists, otherwise show schedule.
+      if (scheduleNotifier.hasScheduleToday) {
+        router.go('/schedule');
+      } else {
+        router.go('/schedule/checkin');
+      }
+    });
   };
 
   // LOOP-04: auto-schedule the morning notification at startup when enabled,
