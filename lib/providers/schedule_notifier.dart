@@ -163,23 +163,33 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       );
 
       // Streak write-back (ENGINE-03): recompute and persist streakCount for
-      // habit goals. Guard: goalId must be a non-empty UUID (commitment chunks
-      // have goalId == '' or null; never call getByGoalId('') — T-09-08).
+      // habit goals. Wrapped in its own try/catch so a goal-save failure does
+      // NOT trigger the outer catch (which reverts the already-committed
+      // schedule save and log append). Streak staleness is tolerable; a
+      // log/schedule divergence is not (WR-01).
+      // Guard: goalId must be a non-empty UUID (commitment chunks have
+      // goalId == '' or null; never call getByGoalId('') — T-09-08).
       if (chunk.goalId != null && chunk.goalId!.isNotEmpty) {
-        final goal = await _goalRepo.getById(chunk.goalId!);
-        if (goal != null && goal.goalType == GoalType.habit) {
-          final due = ScheduleGeneratorService.computeDueWeekdays(
-            goal.frequencyPerWeek ?? 7,
-          );
-          // Fetch logs AFTER appending the completion entry above so the
-          // just-appended entry is included in the streak computation.
-          final updatedLogs = await _logRepo.getByGoalId(goal.id);
-          goal.streakCount = ScheduleGeneratorService.computeStreak(
-            goal.id,
-            due,
-            updatedLogs,
-          );
-          await _goalRepo.save(goal);
+        try {
+          final goal = await _goalRepo.getById(chunk.goalId!);
+          if (goal != null && goal.goalType == GoalType.habit) {
+            final due = ScheduleGeneratorService.computeDueWeekdays(
+              goal.frequencyPerWeek ?? 7,
+            );
+            // Fetch logs AFTER appending the completion entry above so the
+            // just-appended entry is included in the streak computation.
+            final updatedLogs = await _logRepo.getByGoalId(goal.id);
+            goal.streakCount = ScheduleGeneratorService.computeStreak(
+              goal.id,
+              due,
+              updatedLogs,
+              today: DateTime.parse(_todaySchedule!.dateYmd),
+            );
+            await _goalRepo.save(goal);
+          }
+        } catch (_) {
+          // Streak is stale until next generation — acceptable.
+          // Do not rethrow: the primary writes (schedule + log) succeeded.
         }
       }
     } catch (_) {
@@ -223,20 +233,29 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
 
       // Streak write-back (ENGINE-03): recompute and persist streakCount for
       // habit goals. A skip on a due day will reset the streak to 0 because
-      // computeStreak breaks on the first non-completed due-day log (T-09-07).
+      // computeStreak breaks on the first non-completed due-day log.
+      // Wrapped in its own try/catch so a goal-save failure does NOT trigger
+      // the outer catch (WR-01). Streak staleness is tolerable; a
+      // log/schedule divergence is not.
       if (chunk.goalId != null && chunk.goalId!.isNotEmpty) {
-        final goal = await _goalRepo.getById(chunk.goalId!);
-        if (goal != null && goal.goalType == GoalType.habit) {
-          final due = ScheduleGeneratorService.computeDueWeekdays(
-            goal.frequencyPerWeek ?? 7,
-          );
-          final updatedLogs = await _logRepo.getByGoalId(goal.id);
-          goal.streakCount = ScheduleGeneratorService.computeStreak(
-            goal.id,
-            due,
-            updatedLogs,
-          );
-          await _goalRepo.save(goal);
+        try {
+          final goal = await _goalRepo.getById(chunk.goalId!);
+          if (goal != null && goal.goalType == GoalType.habit) {
+            final due = ScheduleGeneratorService.computeDueWeekdays(
+              goal.frequencyPerWeek ?? 7,
+            );
+            final updatedLogs = await _logRepo.getByGoalId(goal.id);
+            goal.streakCount = ScheduleGeneratorService.computeStreak(
+              goal.id,
+              due,
+              updatedLogs,
+              today: DateTime.parse(_todaySchedule!.dateYmd),
+            );
+            await _goalRepo.save(goal);
+          }
+        } catch (_) {
+          // Streak is stale until next generation — acceptable.
+          // Do not rethrow: the primary writes (schedule + log) succeeded.
         }
       }
     } catch (_) {
@@ -281,22 +300,29 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       );
 
       // Streak write-back (ENGINE-03): consistent with markSkipped — a deferred
-      // chunk is logged as skipped so computeStreak will break the streak the
-      // next time it runs. Persist the updated streakCount now so GoalRepository
-      // and the in-memory goal stay in sync for the current session.
+      // chunk is logged as skipped so computeStreak will break the streak.
+      // Wrapped in its own try/catch so a goal-save failure does NOT trigger
+      // the outer catch (WR-01). Streak staleness is tolerable; a
+      // log/schedule divergence is not.
       if (chunk.goalId != null && chunk.goalId!.isNotEmpty) {
-        final goal = await _goalRepo.getById(chunk.goalId!);
-        if (goal != null && goal.goalType == GoalType.habit) {
-          final due = ScheduleGeneratorService.computeDueWeekdays(
-            goal.frequencyPerWeek ?? 7,
-          );
-          final updatedLogs = await _logRepo.getByGoalId(goal.id);
-          goal.streakCount = ScheduleGeneratorService.computeStreak(
-            goal.id,
-            due,
-            updatedLogs,
-          );
-          await _goalRepo.save(goal);
+        try {
+          final goal = await _goalRepo.getById(chunk.goalId!);
+          if (goal != null && goal.goalType == GoalType.habit) {
+            final due = ScheduleGeneratorService.computeDueWeekdays(
+              goal.frequencyPerWeek ?? 7,
+            );
+            final updatedLogs = await _logRepo.getByGoalId(goal.id);
+            goal.streakCount = ScheduleGeneratorService.computeStreak(
+              goal.id,
+              due,
+              updatedLogs,
+              today: DateTime.parse(_todaySchedule!.dateYmd),
+            );
+            await _goalRepo.save(goal);
+          }
+        } catch (_) {
+          // Streak is stale until next generation — acceptable.
+          // Do not rethrow: the primary writes (schedule + log) succeeded.
         }
       }
     } catch (_) {
