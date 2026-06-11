@@ -547,7 +547,17 @@ Plans:
   2. Changing a goal's priority in the review adjustments section results in a measurably different ordering in the next morning's generated schedule.
   3. Opening the quarterly review from the Home screen on a cold launch (without visiting other tabs first) displays the correct goal list and chart data — no empty review from unloaded state.
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+
+**Wave 1**
+
+- [x] 11-01-PLAN.md — Donut 3-set slice classification + DataSection pass-through (REVIEW-01); GoalsNotifier.reorderAllWithPriority linear-spread write-back + Wave 0 tests (REVIEW-02 data layer)
+
+**Wave 2** *(blocked on 11-01)*
+
+- [ ] 11-02-PLAN.md — Cold-launch _loadData (archived goals + commitments, allLogs.isEmpty guard) + adjustments reorderAllWithPriority call-site swap + cold-launch regression test (REVIEW-03, REVIEW-02 end-to-end)
 
 ---
 
