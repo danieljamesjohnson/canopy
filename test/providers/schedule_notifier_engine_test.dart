@@ -98,9 +98,10 @@ class _CountingListener {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // Monday 2026-06-09 used as a consistent test date (weekday = 1 = Monday).
+  // Monday 2026-06-08 used as a consistent test date (weekday = 1 = Monday).
   // This is a Monday so habits with Mon/Wed/Fri spread (3x/week) are due.
-  final testDate = DateTime(2026, 6, 9); // Monday
+  // Verified: DateTime(2026, 6, 8).weekday == 1 (Monday).
+  final testDate = DateTime(2026, 6, 8); // Monday
 
   // ---------------------------------------------------------------------------
   // ENGINE-05: lighterDay plumbing
@@ -213,18 +214,25 @@ void main() {
           frequencyPerWeek: 3,
         );
 
-        // Seed prior completed logs (Wed and Fri last week).
+        // Seed prior completed logs for the prior Mon and Wed due days.
+        // Week of 2026-06-01: Mon=06-01 (weekday 1), Wed=06-03 (weekday 3),
+        // Fri=06-05 (weekday 5). Today is Mon 2026-06-08 (weekday 1, the next
+        // Monday). After completing today the streak walks: Mon 06-08 (just
+        // appended, completed=1), Fri 06-05 (completed=2), Wed 06-03
+        // (completed=3), Mon 06-01 (completed=4) → but we only seed Fri+Wed
+        // so the walk finds: 06-08 (today, just appended) → 06-05 (Fri, ✓) →
+        // 06-03 (Wed, ✓) → no more logs → streak=3.
         final logRepo = InMemoryCompletionLogRepository();
         await logRepo.append(CompletionLog(
           chunkId: 'c-wed',
           goalId: goal.id,
-          dateYmd: '2026-06-03', // Wednesday
+          dateYmd: '2026-06-03', // Wednesday (weekday 3, due day for 3x/week)
           eventIndex: CompletionEvent.completed.index,
         ));
         await logRepo.append(CompletionLog(
           chunkId: 'c-fri',
           goalId: goal.id,
-          dateYmd: '2026-06-06', // Friday
+          dateYmd: '2026-06-05', // Friday (weekday 5, due day for 3x/week)
           eventIndex: CompletionEvent.completed.index,
         ));
 
@@ -241,7 +249,7 @@ void main() {
         );
         final schedule = DailySchedule(
           id: 'sched-1',
-          dateYmd: '2026-06-09',
+          dateYmd: '2026-06-08',
           moodIndex: 4,
           chunks: [chunk],
         );
@@ -294,13 +302,13 @@ void main() {
         await logRepo.append(CompletionLog(
           chunkId: 'c-wed-2',
           goalId: goal.id,
-          dateYmd: '2026-06-03',
+          dateYmd: '2026-06-03', // Wednesday (weekday 3, due day)
           eventIndex: CompletionEvent.completed.index,
         ));
         await logRepo.append(CompletionLog(
           chunkId: 'c-fri-2',
           goalId: goal.id,
-          dateYmd: '2026-06-06',
+          dateYmd: '2026-06-05', // Friday (weekday 5, due day)
           eventIndex: CompletionEvent.completed.index,
         ));
 
@@ -316,7 +324,7 @@ void main() {
         );
         final schedule = DailySchedule(
           id: 'sched-2',
-          dateYmd: '2026-06-09',
+          dateYmd: '2026-06-08',
           moodIndex: 4,
           chunks: [chunk],
         );

@@ -92,6 +92,7 @@ class _InMemoryScheduleNotifier extends ScheduleNotifier {
     required int moodIndex,
     required List<Goal> goals,
     required List<CommitmentBlock> blocks,
+    bool lighterDay = true,
   }) async {
     final now = DateTime.now();
     final date = DateTime(now.year, now.month, now.day);
@@ -102,6 +103,7 @@ class _InMemoryScheduleNotifier extends ScheduleNotifier {
       blocks: blocks,
       moodIndex: moodIndex,
       date: date,
+      lighterDay: lighterDay,
     );
 
     // Store the schedule directly in memory (no Hive write).

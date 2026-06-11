@@ -6,8 +6,10 @@ import '../data/models/daily_schedule.dart';
 import '../data/models/goal.dart';
 import '../data/repositories/completion_log_repository.dart';
 import '../data/repositories/daily_schedule_repository.dart';
+import '../data/repositories/goal_repository.dart';
 import '../data/repositories/hive_completion_log_repository.dart';
 import '../data/repositories/hive_daily_schedule_repository.dart';
+import '../data/repositories/hive_goal_repository.dart';
 import '../services/schedule_generator.dart';
 
 class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
@@ -23,13 +25,16 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     DateTime Function() now = DateTime.now,
     DailyScheduleRepository? repo,
     CompletionLogRepository? logRepo,
+    GoalRepository? goalRepo,
   })  : _now = now,
         _repo = repo ?? HiveDailyScheduleRepository(),
-        _logRepo = logRepo ?? HiveCompletionLogRepository();
+        _logRepo = logRepo ?? HiveCompletionLogRepository(),
+        _goalRepo = goalRepo ?? HiveGoalRepository();
 
   final DateTime Function() _now;
   final DailyScheduleRepository _repo;
   final CompletionLogRepository _logRepo;
+  final GoalRepository _goalRepo;
   final ScheduleGeneratorService _generator = ScheduleGeneratorService();
 
   DailySchedule? _todaySchedule;
@@ -93,16 +98,28 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     required int moodIndex,
     required List<Goal> goals,
     required List<CommitmentBlock> blocks,
+    bool lighterDay = true,
   }) async {
     final now = _now();
     final date = DateTime(now.year, now.month, now.day); // midnight local
     final dateYmd = DateFormat('yyyy-MM-dd').format(now);
+
+    // Fetch completion logs for all active (non-archived) goals.
+    // Uses getByGoalId per goal — not getAll — to avoid loading irrelevant logs.
+    // Empty goalId guard: archived goals are excluded by the where filter,
+    // so we never call getByGoalId('') for commitment chunks.
+    final allLogs = <CompletionLog>[];
+    for (final goal in goals.where((g) => !g.isArchived)) {
+      allLogs.addAll(await _logRepo.getByGoalId(goal.id));
+    }
 
     final chunks = _generator.generate(
       goals: goals,
       blocks: blocks,
       moodIndex: moodIndex,
       date: date,
+      completionLogs: allLogs,
+      lighterDay: lighterDay,
     );
 
     // Silent replace: delete existing schedule for today if any.
@@ -144,6 +161,27 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
           eventIndex: CompletionEvent.completed.index,
         ),
       );
+
+      // Streak write-back (ENGINE-03): recompute and persist streakCount for
+      // habit goals. Guard: goalId must be a non-empty UUID (commitment chunks
+      // have goalId == '' or null; never call getByGoalId('') — T-09-08).
+      if (chunk.goalId != null && chunk.goalId!.isNotEmpty) {
+        final goal = await _goalRepo.getById(chunk.goalId!);
+        if (goal != null && goal.goalType == GoalType.habit) {
+          final due = ScheduleGeneratorService.computeDueWeekdays(
+            goal.frequencyPerWeek ?? 7,
+          );
+          // Fetch logs AFTER appending the completion entry above so the
+          // just-appended entry is included in the streak computation.
+          final updatedLogs = await _logRepo.getByGoalId(goal.id);
+          goal.streakCount = ScheduleGeneratorService.computeStreak(
+            goal.id,
+            due,
+            updatedLogs,
+          );
+          await _goalRepo.save(goal);
+        }
+      }
     } catch (_) {
       // WR-05: if save or log-append fails, revert the in-memory flag so the
       // schedule, the persisted store, and the completion log do not diverge,
@@ -179,6 +217,25 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
           eventIndex: CompletionEvent.skipped.index,
         ),
       );
+
+      // Streak write-back (ENGINE-03): recompute and persist streakCount for
+      // habit goals. A skip on a due day will reset the streak to 0 because
+      // computeStreak breaks on the first non-completed due-day log (T-09-07).
+      if (chunk.goalId != null && chunk.goalId!.isNotEmpty) {
+        final goal = await _goalRepo.getById(chunk.goalId!);
+        if (goal != null && goal.goalType == GoalType.habit) {
+          final due = ScheduleGeneratorService.computeDueWeekdays(
+            goal.frequencyPerWeek ?? 7,
+          );
+          final updatedLogs = await _logRepo.getByGoalId(goal.id);
+          goal.streakCount = ScheduleGeneratorService.computeStreak(
+            goal.id,
+            due,
+            updatedLogs,
+          );
+          await _goalRepo.save(goal);
+        }
+      }
     } catch (_) {
       // WR-05: revert the in-memory flag on persistence/log failure so state
       // and log stay consistent, then re-throw for caller feedback.
