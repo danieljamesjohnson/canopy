@@ -15,6 +15,7 @@ The loop that must work first: **morning mood tap → schedule generation → ch
 Six phases across one milestone. Phases 1 through 4 deliver the working product. Phase 5 adds the long-horizon value proposition (quarterly review). Phase 6 makes the experience genuinely good on desktop and Web, not merely functional.
 
 Key non-negotiable constraints carried through all phases:
+
 - No AI API calls — rule-based scheduling only
 - Local storage only — no backend, no sync
 - All six Flutter platforms (iOS, Android, Web, Windows, macOS, Linux)
@@ -29,6 +30,7 @@ Key non-negotiable constraints carried through all phases:
 - [ ] **Phase 3: Schedule Generation and Morning Check-In** — Mood check-in, rule-based schedule generation, schedule display UI
 - [x] **Phase 4: Chunk Tracking and Notifications** — Swipe completion, CompletionLog, local notifications, data export
  (completed 2026-04-02)
+
 - [x] **Phase 5: Quarterly Review** — Aggregation, fl_chart visualizations, guided reflection, QuarterlySnapshot
 - [x] **Phase 6: Desktop and Web Polish** — Adaptive layouts, hover states, window constraints, Web URL and notification fallbacks (completed 2026-05-14)
 
@@ -43,17 +45,20 @@ Key non-negotiable constraints carried through all phases:
 **Depends on:** Nothing (first phase)
 
 **Requirements covered:**
+
 - Implicit foundation for all eight active requirements — no requirement can be implemented without this layer
 
 **Plans:** 4/4 plans complete
 
 Plans:
+
 - [x] 01-01-PLAN.md — Add dependencies, create project directory scaffold, minimal main.dart
 - [ ] 01-02-PLAN.md — Hive entity models (7 entities) + build_runner TypeAdapter generation
 - [ ] 01-03-PLAN.md — go_router with StatefulShellRoute, 6 stub screens, 4 ChangeNotifier stubs
 - [ ] 01-04-PLAN.md — Repository interfaces/stubs, database init, migration runner, main.dart wiring, unit tests
 
 **Deliverables:**
+
 - Database package selected (Isar if pub.dev score is high and commits are recent; hive_ce otherwise) and schema files created for all entities: Goal, CommitmentBlock, DailySchedule (with embedded ScheduledChunk list), CompletionLog, QuarterlySnapshot, AppSettings
 - Repository interfaces written (abstract classes) with one concrete implementation per entity — all other phases depend on these interfaces, not implementations
 - Migration runner in place so schema changes can be applied without data loss as the app evolves
@@ -63,6 +68,7 @@ Plans:
 - uuid and intl packages installed; all time stored as UTC integers (minutes from midnight) from the start
 
 **Key technical decisions:**
+
 - Isar vs hive_ce must be decided at the start of this phase by checking pub.dev. This is the one decision that cannot be deferred — it affects every schema file written in Phase 2 onward.
 - sqflite is eliminated regardless of Isar status — no native Web support.
 - All entity IDs use UUID v4 strings, not auto-increment integers — compatible with eventual sync in v2.
@@ -71,6 +77,7 @@ Plans:
 **Risk:** Choosing the wrong database. Mitigation: check Isar pub.dev at day one of Phase 1. A well-defined repository interface means the concrete implementation can be swapped with minimal blast radius if the initial choice is wrong.
 
 **Acceptance criteria:**
+
 1. `flutter run` on Android, iOS, Web, and Windows produces a blank screen with no errors and no deprecation warnings in the console
 2. The database initializes on first launch and the migration runner runs without errors on subsequent launches
 3. All repository interfaces have at least one method stub and a passing unit test that calls the stub against an in-memory implementation
@@ -86,10 +93,12 @@ Plans:
 **Depends on:** Phase 1
 
 **Requirements covered:**
+
 - User can define fixed commitment blocks that are always scheduled regardless of mood
 - User can set up goals across three types: time-target, outcome-focused, and habits/routines
 
 **Deliverables:**
+
 - Goal model fully implemented: name, type (time-target / outcome / habit — internal enum, never shown in UI), color, priority weight, weekly hour budget (time-target), deadline and outcome description (outcome), frequency and streak count (habit); soft-delete (archive) only — no hard delete
 - CommitmentBlock model: name, days of week, start time (minutes from midnight UTC), end time, color; commitment blocks are chunked automatically within their window at schedule generation time
 - GoalsNotifier and SettingsNotifier wired end-to-end — UI reads from and writes to Provider; no setState in goal/commitment screens
@@ -104,6 +113,7 @@ Plans:
 - REQUIREMENTS.md traceability updated with phase mapping
 
 **Key technical decisions:**
+
 - Goal type mutual exclusivity enforced in UI (single-select picker). A goal cannot be both a habit and a time-target. This is the app's opinion; the picker enforces it.
 - Onboarding must not mention "time-target", "outcome", or "habit" as labels. Plain-language descriptions only. The internal enum is a Dart implementation detail.
 - Dormant goal handling (no activity 3+ weeks): silently deprioritized in scheduling. Not surfaced until Phase 5 quarterly review. No UI change needed in this phase.
@@ -111,6 +121,7 @@ Plans:
 **Risk:** Onboarding taking more than 90 seconds. Mitigation: time the flow manually before the phase closes. If Screen 3 is causing friction, make it skippable with a single tap (it already is — enforce that the skip affordance is prominent).
 
 **Acceptance criteria:**
+
 1. User can create a goal of each type (time-target, outcome, habit) through the plain-language picker and the goal appears in the goals list with a visual type indicator
 2. User can create a CommitmentBlock with a name, days of week, and time window, and it persists across app restarts
 3. User can edit and archive any goal; archived goals do not appear in the main list but are accessible in an "Archived" section
@@ -120,6 +131,7 @@ Plans:
 **Plans:** 3/6 plans executed
 
 Plans:
+
 - [ ] 02-01-PLAN.md — Expand Goal model (fields 4-11), regenerate TypeAdapter, bump schemaVersion to 2
 - [ ] 02-02-PLAN.md — Implement GoalsNotifier, CommitmentsNotifier; wire SettingsNotifier to Hive persistence
 - [ ] 02-03-PLAN.md — GoalCard + GoalTypePicker widgets; GoalsScreen + GoalFormSheet + ArchivedGoalsScreen
@@ -136,12 +148,14 @@ Plans:
 **Depends on:** Phase 2
 
 **Requirements covered:**
+
 - App generates a daily schedule of Chunks (25-min focused sessions) each morning based on commitments, goals, and priorities
 - Schedule includes automatic 5-min short breaks after each chunk and a 25-min long break after every 3 chunks (mood 1–2) or 4 chunks (mood 3–5); breaks shown explicitly in the schedule
 - Morning check-in asks how the user is feeling; mood controls discretionary chunk count only; commitment blocks are always present; mood 1–2 triggers a reduced discretionary schedule
 - Schedule generation is rule-based (no AI API dependency in v1)
 
 **Deliverables:**
+
 - Schedule generation algorithm — pure Dart, synchronous, no async, completes in under 1 second:
   - Allocation sequence (fixed): (1) commitment blocks, (2) habits, (3) outcome goals by urgency score (priority_weight × chunks_remaining / days_remaining), (4) time-target goals (most behind weekly budget first), (5) leave 20% of discretionary capacity unscheduled
   - Capacity table: Mood 1 = 5–6 chunks, Mood 2 = 7–8, Mood 3 = 9–10, Mood 4 = 11–12, Mood 5 = 13–14; hard cap 16, minimum 3; schedule only 80% of discretionary capacity
@@ -158,6 +172,7 @@ Plans:
 - ScheduleNotifier wired end-to-end
 
 **Key technical decisions:**
+
 - Schedule display is a vertical card list, not a timeline. Clock times are shown only on commitment-anchored chunks. Showing clock times on discretionary chunks implies a false rigidity.
 - Short breaks auto-advance only if the user taps "Done" on the preceding work chunk in v1. No timer. This eliminates the need for the app to remain active or use background execution.
 - Long breaks are dismissible early with a single tap. No "complete" action required for either break type.
@@ -167,6 +182,7 @@ Plans:
 **Risk:** Algorithm calibration. The chunk count thresholds per mood are well-reasoned but not empirically validated. Mitigation: start using the app daily immediately after Phase 3 ships and adjust thresholds based on real experience before Phase 5.
 
 **Acceptance criteria:**
+
 1. Tapping a mood emoji on the check-in screen generates a daily schedule and navigates to the schedule screen within 1 second — measured on a mid-range Android device
 2. The generated schedule contains commitment block chunks at the correct anchored times regardless of mood selected
 3. Selecting mood 1 or 2 produces a schedule with habits only in the discretionary slots (no outcome or time-target goal chunks, except goals with a deadline of today)
@@ -176,6 +192,7 @@ Plans:
 **Plans:** 2/5 plans executed
 
 Plans:
+
 - [ ] 03-01-PLAN.md — ScheduleGeneratorService: pure Dart algorithm with TDD (allocation sequence, break insertion, capacity table)
 - [ ] 03-02-PLAN.md — ScheduleNotifier expansion + /schedule/checkin route wiring + main.dart init
 - [ ] 03-03-PLAN.md — CheckinScreen (mood emoji tap, background tint, follow-up toggle) + acknowledgment + swipe-up gesture
@@ -191,9 +208,11 @@ Plans:
 **Depends on:** Phase 3
 
 **Requirements covered:**
+
 - User can track which Chunks they complete throughout the day
 
 **Deliverables:**
+
 - Swipe gestures on schedule cards: swipe right to complete, swipe left to skip; tap opens a detail/edit bottom sheet
 - CompletionLog: append-only event log (event sourcing pattern) — each entry records chunk ID, goal ID, date, event type (completed / skipped / deferred), timestamp; CompletionLog records are never mutated or deleted
 - Skipped chunks move to a collapsed "Skipped today" section at the bottom of the schedule list (not removed from view)
@@ -205,6 +224,7 @@ Plans:
 - Data export: JSON export of all CompletionLog records; accessible from settings screen; produces a timestamped JSON file with all historical data
 
 **Key technical decisions:**
+
 - CompletionLog is strictly append-only. Mutating historical records would corrupt the retrospective data that Phase 5 depends on.
 - iOS notification permission is requested after the first check-in, not at launch. Requesting at launch before the user understands the app's value reduces grant rates.
 - Mid-day notifications default to opt-in (not opt-out). Mid-day nudges correlate with both engagement and uninstall rates; opt-in is safer for a personal tool.
@@ -214,6 +234,7 @@ Plans:
 **Risk:** Notification cross-platform reliability. iOS restricts background execution; Web has no local notification API. Mitigation: the notification-triggered generation pattern (app opens on tap → generation runs synchronously) avoids background execution entirely. The Web banner fallback covers the Web gap.
 
 **Acceptance criteria:**
+
 1. Swiping right on a work chunk card marks it complete, renders it in a desaturated "done" state, and appends a CompletionLog entry — verified by reading the log from the database
 2. Swiping left on a work chunk moves it to the "Skipped today" collapsed section at the bottom of the schedule
 3. A local notification fires at the configured morning time on Android and iOS; tapping it opens the app to the mood check-in screen
@@ -229,9 +250,11 @@ Plans:
 **Depends on:** Phase 4
 
 **Requirements covered:**
+
 - App performs a quarterly review: data summary + guided reflection to help user adjust goals and priorities
 
 **Deliverables:**
+
 - CompletionLog aggregation layer: functions to aggregate CompletionLog into per-goal totals, per-week chunk counts, completion rates, and streak records over a configurable date range
 - QuarterlySnapshot entity: persisted record of each quarterly review — date, goal totals, reflection answers, next-quarter priority adjustments; append-only (no overwriting past snapshots)
 - fl_chart integration:
@@ -246,6 +269,7 @@ Plans:
 - Skipped chunks counted as "time not spent" in aggregation and surfaced explicitly in the review — the data is transparent
 
 **Key technical decisions:**
+
 - fl_chart is not introduced until this phase. Charts in earlier phases were not needed and would have added dependency weight during the phases were iteration is fastest.
 - QuarterlySnapshot is append-only. Past reflections are historical records, not editable data.
 - The guided question set is fixed in v1. Configurable questions are a v2 consideration (OQ-13). A fixed set ships faster and can be refined based on actual use.
@@ -254,6 +278,7 @@ Plans:
 **Risk:** Quarterly review UX needing iteration. The data-first pattern is clear, but the question set and chart layout will need refinement after first use. Mitigation: the entire flow is self-contained — the question set can be updated without schema changes.
 
 **Acceptance criteria:**
+
 1. The quarterly review entry point appears on the schedule/home screen when the current date is within 7 days of the 90-day review window
 2. Section 1 displays a donut chart and bar chart populated with real CompletionLog data — not placeholder data
 3. The full reflection flow (Sections 1, 2, and 3) can be completed in under 5 minutes, verified by a manual walkthrough
@@ -269,9 +294,11 @@ Plans:
 **Depends on:** Phase 5
 
 **Requirements covered:**
+
 - Implicit: all active requirements apply to all six Flutter platforms; this phase ensures the desktop and Web experience meets the same standard as mobile
 
 **Deliverables:**
+
 - LayoutBuilder adaptive layouts: two-column layout on screens wider than 720dp (navigation rail + content); single-column on mobile; schedule card list fills available width correctly at all breakpoints
 - Hover states on desktop: chunk cards show checkbox and drag handle on hover; goal list items show edit/archive actions on hover; no hover state exists on touch targets on mobile
 - Drag handle always visible on desktop for ReorderableListView; long-press-only on mobile
@@ -283,6 +310,7 @@ Plans:
 - **Full app mood theming (deferred from Phase 3):** `ColorScheme.fromSeed` swap driven by today's mood with time-of-day brightness/saturation modulation; pre-check-in "curious" theme with breathing pulse on the check-in CTA; ~400–600ms warming transition into the chosen mood on tap. Palette: `#4A6275` / `#5C7A8A` / `#4A8C7A` / `#7AAF6A` / `#E8C547` (locked Phase 3).
 
 **Key technical decisions:**
+
 - Two-column layout threshold is 720dp (logical pixels). Below this, single-column. This covers most tablet portrait orientations in the single-column bucket, which is intentional — the schedule card list reads better in single-column.
 - window_manager is added only for desktop targets (Windows, macOS, Linux). It is not imported on mobile or Web — conditional imports or platform checks required.
 - Web Push API is not used in v1. The in-app banner is sufficient and avoids the permission and service worker complexity.
@@ -290,6 +318,7 @@ Plans:
 **Risk:** Layout assumptions baked into Phase 1–5 widgets being hard to retrofit. Mitigation: Phase 6 is explicitly planned (not an afterthought) and LayoutBuilder wrapping is low-risk incremental work. The risk is time, not correctness.
 
 **Acceptance criteria:**
+
 1. On a 1280×800 desktop window (Windows or macOS), the app renders a two-column layout with a navigation rail on the left and content on the right — no overflow errors in the console
 2. Hovering over a chunk card on desktop reveals a checkbox and drag handle without a click; removing the mouse restores the default card state
 3. The minimum window size constraint prevents resizing below 480px width on Windows — the window snaps back or refuses to resize below the minimum
@@ -300,6 +329,7 @@ Plans:
 **Plans:** 7/7 plans complete
 
 Plans:
+
 - [x] 06-01-PLAN.md — Wave 0 preflight: window_manager dep, AppSettings schema bump to v3, test helpers
 - [x] 06-02-PLAN.md — ThemeNotifier with HSL modulator and lifecycle ticker
 - [x] 06-03-PLAN.md — Conditional window_setup trio (re-export, io, stub)
@@ -370,6 +400,7 @@ Note: Commitment blocks are defined in Phase 2 and their scheduling logic is imp
 **Goal:** Close the gap between "all v1.0 phases complete" and "I open it every morning and it works" — fix the broken daily loop, then make the rule-based engine honor the goal model it already stores.
 
 **Milestone constraints (carried through all phases):**
+
 - Rule-based only — no LLM or AI API calls
 - Local Hive storage only — no backend, no sync
 - iOS is the primary daily driver — keep OS scheduled notifications
@@ -382,7 +413,7 @@ Note: Commitment blocks are defined in Phase 2 and their scheduling logic is imp
 
 ## v1.1 Phases
 
-- [ ] **Phase 7: Unbreak the Morning** — Loop plumbing so the daily loop cannot dead-end on any cold launch or resume
+- [x] **Phase 7: Unbreak the Morning** — Loop plumbing so the daily loop cannot dead-end on any cold launch or resume (completed 2026-06-11)
 - [ ] **Phase 8: A Schedule You Can Read** — Legible schedule: goal names, coherent ordering, chunk detail sheet, minimal companion focus mode
 - [ ] **Phase 9: An Engine That Budgets** — Rule-based generation that actually honors the goal model: capacity fill, weekly budgets, habit frequency, deadline pressure, priority
 - [ ] **Phase 10: Close the Day** — Discoverable end-of-day moment, deferral carry-in, commitment chunk attribution
@@ -393,74 +424,91 @@ Note: Commitment blocks are defined in Phase 2 and their scheduling logic is imp
 ## v1.1 Phase Details
 
 ### Phase 7: Unbreak the Morning
+
 **Goal:** The morning check-in always generates from the user's actual saved goals and commitments — on any cold launch or resume, any day.
 **Depends on:** Phase 6 (v1.0 complete)
 **Requirements:** LOOP-01, LOOP-02, LOOP-03, LOOP-04, LOOP-05
 **Success Criteria** (what must be TRUE):
+
   1. Cold launch → Home → "Start your day" → tap mood produces a non-empty schedule containing the user's real goals (not an empty list), even without visiting Goals or Commitments tabs first.
   2. Resuming the app on a new calendar day shows a fresh un-generated day rather than yesterday's schedule.
   3. When a schedule already exists, a persistent entry point on both Home and the Schedule screen lets the user re-run check-in or regenerate.
   4. When morning notifications are enabled, the notification fires without requiring the user to toggle the settings switch; tapping it navigates correctly via go_router (no crash).
   5. The user can type freely into a goal name or weekly-hours field without the cursor jumping to position 0.
-**Plans:** 2 plans
+
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 07-01-PLAN.md — Startup load of goals/commitments + day rollover + notification nav/auto-schedule/Linux guard + goal-form cursor fix (LOOP-01,02,04,05)
-- [ ] 07-02-PLAN.md — Persistent re-check-in/regenerate entry points + cold-launch regression test (LOOP-03,01)
+
+- [x] 07-01-PLAN.md — Startup load of goals/commitments + day rollover + notification nav/auto-schedule/Linux guard + goal-form cursor fix (LOOP-01,02,04,05)
+- [x] 07-02-PLAN.md — Persistent re-check-in/regenerate entry points + cold-launch regression test (LOOP-03,01)
+
 **UI hint**: yes
 
 ---
 
 ### Phase 8: A Schedule You Can Read
+
 **Goal:** The schedule communicates the plan — each chunk names its goal, the list reads in day order around commitments, and tapping a chunk opens a detail sheet with actions.
 **Depends on:** Phase 7
 **Requirements:** READ-01, READ-02, READ-03, READ-04
 **Success Criteria** (what must be TRUE):
+
   1. Every chunk card displays the goal's name as its title (not a generic type label like "Habit" or "Outcome goal"), with a rationale as secondary text.
   2. The schedule reads in coherent day order: commitment blocks appear at their anchored times, discretionary chunks fill around them, breaks never appear inside a commitment window, and there is no dangling trailing break.
   3. Tapping any chunk opens a detail sheet showing the goal name, why the chunk was scheduled, and complete / skip / defer action buttons.
   4. A minimal companion focus mode is accessible from the detail sheet or schedule: it highlights the current chunk and offers an optional 25-minute countdown that flows into a completion action and a break suggestion.
+
 **Plans:** TBD
 **UI hint**: yes
 
 ---
 
 ### Phase 9: An Engine That Budgets
+
 **Goal:** Schedule generation fills mood capacity and allocates chunks according to actual goal data — weekly hour budgets, habit frequency, deadline pressure, and user-set priority all drive the output.
 **Depends on:** Phase 7 (providers loaded at startup), feeds Phase 8's dynamic rationale strings
 **Requirements:** ENGINE-01, ENGINE-02, ENGINE-03, ENGINE-04, ENGINE-05, ENGINE-06
 **Success Criteria** (what must be TRUE):
+
   1. At mood 4 or 5 with three goals, the schedule contains more than three discretionary chunks — capacity is actually filled rather than one chunk per goal.
   2. A time-target goal that is most behind its weekly hour budget receives more chunks than a goal that is ahead — computed from CompletionLog, most-behind first.
   3. A habit set to 3x/week does not appear in the schedule on days it is not due; its streak count increments only on days it is both scheduled and completed.
   4. An outcome goal with a deadline three days away is scheduled ahead of one with a deadline three months away; the hardcoded `chunksRemaining = 2.0` placeholder is gone.
   5. Toggling "Want a lighter day?" measurably reduces the number of discretionary chunks in the generated schedule.
   6. A goal marked high priority is scheduled before a goal marked low priority when both compete for the same capacity slot; the priority control is visible and editable in the goal form.
+
 **Plans:** TBD
 
 ---
 
 ### Phase 10: Close the Day
+
 **Goal:** The daily loop has a discoverable end — users are offered an end-of-day summary, can defer chunks to tomorrow, and commitment time is attributed correctly in completion logs.
 **Depends on:** Phase 9
 **Requirements:** CLOSE-01, CLOSE-02, CLOSE-03
 **Success Criteria** (what must be TRUE):
+
   1. After approximately 6pm (or once at least 50% of chunks are resolved), the Home screen shows a time-aware end-of-day card; users can also opt into an evening reminder notification.
   2. Deferring a chunk from today's schedule causes it to appear in the next morning's generated schedule without requiring any manual action.
   3. Completing a commitment-block chunk logs a CompletionLog entry with a non-empty goal identifier (not an empty string), so commitment time appears correctly in aggregation.
+
 **Plans:** TBD
 **UI hint**: yes
 
 ---
 
 ### Phase 11: Honest Long Loop
+
 **Goal:** The quarterly review counts all logged time correctly and its priority adjustments demonstrably change the next day's schedule.
 **Depends on:** Phase 9 (independent of Phase 10)
 **Requirements:** REVIEW-01, REVIEW-02, REVIEW-03
 **Success Criteria** (what must be TRUE):
+
   1. The quarterly review's donut chart and totals include commitment-block time and archived goals' historical completions — the chart percentages add up to 100% of all logged chunks with no invisible slice.
   2. Changing a goal's priority in the review adjustments section results in a measurably different ordering in the next morning's generated schedule.
   3. Opening the quarterly review from the Home screen on a cold launch (without visiting other tabs first) displays the correct goal list and chart data — no empty review from unloaded state.
+
 **Plans:** TBD
 
 ---
@@ -469,7 +517,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Unbreak the Morning | 0/TBD | Not started | - |
+| 7. Unbreak the Morning | 2/2 | Complete   | 2026-06-11 |
 | 8. A Schedule You Can Read | 0/TBD | Not started | - |
 | 9. An Engine That Budgets | 0/TBD | Not started | - |
 | 10. Close the Day | 0/TBD | Not started | - |
