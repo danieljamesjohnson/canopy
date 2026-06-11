@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/daily_schedule.dart';
+import '../../data/models/goal.dart';
 import '../../data/models/scheduled_chunk.dart';
 import '../../providers/commitments_notifier.dart';
 import '../../providers/goals_notifier.dart';
@@ -70,18 +71,35 @@ class _CheckinScreenState extends State<CheckinScreen> {
     }
   }
 
-  String _buildAckText(DailySchedule schedule, int moodIndex) {
+  String _buildAckText(
+    DailySchedule schedule,
+    int moodIndex,
+    List<Goal> goals,
+  ) {
     final prefix = _moodPrefix[moodIndex] ?? '';
     final workChunks = schedule.chunks
         .where((c) => c.chunkType == ChunkType.work)
         .toList();
     final count = workChunks.length;
-    final firstName = workChunks.isNotEmpty ? workChunks.first.rationale : null;
+    // Prefer the goal's real name over the raw rationale label ("Habit");
+    // commitment chunks (no goalId) fall back to the block name.
+    final firstName =
+        workChunks.isNotEmpty ? _firstChunkName(workChunks.first, goals) : null;
     final countText = '$count chunk${count == 1 ? '' : 's'}.';
     final startText = firstName != null && firstName.isNotEmpty
         ? ' Starting with $firstName.'
         : '';
     return '$prefix $countText$startText';
+  }
+
+  /// Resolves the display label for a chunk: the goal's real name when tied to
+  /// a goal, otherwise the raw rationale (commitment block name).
+  String _firstChunkName(ScheduledChunk chunk, List<Goal> goals) {
+    if (chunk.goalId != null) {
+      final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
+      if (goal != null) return goal.name;
+    }
+    return chunk.rationale;
   }
 
   @override
@@ -236,7 +254,10 @@ class _CheckinScreenState extends State<CheckinScreen> {
     final mood = _selectedMood ?? 3;
     final bgColor = ThemeNotifier.moodSeeds[mood]!;
 
-    final ackText = schedule != null ? _buildAckText(schedule, mood) : '';
+    final goals = context.read<GoalsNotifier>().goals;
+    final ackText = schedule != null
+        ? _buildAckText(schedule, mood, goals)
+        : '';
 
     return GestureDetector(
       key: const ValueKey('acknowledgment'),
