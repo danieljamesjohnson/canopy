@@ -78,6 +78,11 @@ class ScheduleGeneratorService {
       for (final l in allLogs)
         if (l.goalId == goalId && l.event == CompletionEvent.completed) l.dateYmd,
     };
+    // CLOSE-02: deferred days do not break the streak — treated as "moved, not missed".
+    final deferredDates = <String>{
+      for (final l in allLogs)
+        if (l.goalId == goalId && l.event == CompletionEvent.deferred) l.dateYmd,
+    };
 
     final fmt = DateFormat('yyyy-MM-dd');
     int streak = 0;
@@ -87,8 +92,10 @@ class ScheduleGeneratorService {
         final ymd = fmt.format(day);
         if (completedDates.contains(ymd)) {
           streak++;
+        } else if (deferredDates.contains(ymd)) {
+          // CLOSE-02: deferred — count as continuing (move, not miss); do not increment.
         } else {
-          break; // due day with no completion (missed or skipped) — reset
+          break; // missed or skipped — reset
         }
       }
       day = day.subtract(const Duration(days: 1));
@@ -178,6 +185,13 @@ class ScheduleGeneratorService {
 
   /// Generate a schedule for [date] given [moodIndex] (1-5), active [goals],
   /// and recurring [blocks].
+  ///
+  /// [deferredGoalIds] — CLOSE-02 carry-in: goal IDs whose chunks were deferred
+  /// on the previous day but not completed. For each ID not already represented
+  /// in the generated discretionary work chunks, one additional slot is injected
+  /// (re-materialized as fresh demand for the same goal). Commitment goal IDs
+  /// are excluded by the caller (they have null goalId). Injection respects the
+  /// mood cap so it does not exceed capacity.
   List<ScheduledChunk> generate({
     required List<Goal> goals,
     required List<CommitmentBlock> blocks,
@@ -185,6 +199,7 @@ class ScheduleGeneratorService {
     required DateTime date,
     List<CompletionLog> completionLogs = const [],
     bool lighterDay = true,
+    Set<String> deferredGoalIds = const {}, // CLOSE-02 carry-in
   }) {
     final int cap = _effectiveCap(moodIndex, lighterDay);
     final bool isLowMood = moodIndex <= 2;
@@ -313,6 +328,41 @@ class ScheduleGeneratorService {
           );
           discretionaryCount++;
         }
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // CLOSE-02: Deferred carry-in injection.
+    // For each goalId in deferredGoalIds not already present in the generated
+    // discretionary work chunks, inject one additional slot as fresh demand,
+    // provided the goal is a real non-archived discretionary goal and the mood
+    // cap has not been reached. Commitment goals are excluded at the call site
+    // (they have null goalId and are not in deferredGoalIds).
+    // -------------------------------------------------------------------------
+    if (deferredGoalIds.isNotEmpty) {
+      // Build a set of goalIds already scheduled by Steps 2-4.
+      final scheduledGoalIds = workChunks
+          .where((c) => c.goalId != null)
+          .map((c) => c.goalId!)
+          .toSet();
+
+      for (final gid in deferredGoalIds) {
+        if (discretionaryCount >= cap) break;
+        if (scheduledGoalIds.contains(gid)) continue; // already scheduled
+        // Find the goal in the active goals list.
+        final goal = activeGoals.where((g) => g.id == gid).firstOrNull;
+        if (goal == null) continue; // goal not found or archived
+        // Inject one fresh-demand slot for this goal.
+        workChunks.add(
+          ScheduledChunk(
+            chunkTypeIndex: ChunkType.work.index,
+            goalId: gid,
+            durationMinutes: 25,
+            rationale: 'Carried over from yesterday',
+          ),
+        );
+        discretionaryCount++;
+        scheduledGoalIds.add(gid); // prevent duplicate if same id appears twice in set
       }
     }
 

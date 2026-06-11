@@ -270,13 +270,13 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  /// Marks the chunk with [chunkId] as deferred (Phase 8: visual skip only;
-  /// full cross-day carryover wired in Phase 10 CLOSE-02).
+  /// Marks the chunk with [chunkId] as deferred.
   ///
   /// Sets both [isDeferred] and [isSkipped] so the schedule_screen partition
   /// (`!c.isSkipped`) moves the chunk to the skipped section immediately.
-  /// Logs as [CompletionEvent.skipped] in Phase 8; a dedicated deferred event
-  /// is added in Phase 10.
+  /// CLOSE-02: logs as [CompletionEvent.deferred] (distinct from skipped) so
+  /// computeStreak treats this as a "move, not miss" and the generator can
+  /// carry the goal into the next morning's schedule via the single-hop look-up.
   Future<void> markDeferred(String chunkId) async {
     if (_todaySchedule == null) return;
     final chunk = _todaySchedule!.chunks
@@ -295,15 +295,15 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
           chunkId: chunkId,
           goalId: chunk.commitmentId ?? chunk.goalId ?? '',
           dateYmd: dateYmd,
-          eventIndex: CompletionEvent.skipped.index, // Phase 8: log as skipped
+          eventIndex: CompletionEvent.deferred.index, // CLOSE-02: real deferred event
         ),
       );
 
-      // Streak write-back (ENGINE-03): consistent with markSkipped — a deferred
-      // chunk is logged as skipped so computeStreak will break the streak.
-      // Wrapped in its own try/catch so a goal-save failure does NOT trigger
-      // the outer catch (WR-01). Streak staleness is tolerable; a
-      // log/schedule divergence is not.
+      // Streak write-back (ENGINE-03): deferred logs are non-breaking per
+      // CLOSE-02; computeStreak now treats deferred dates as "continue without
+      // increment" rather than a reset. Wrapped in its own try/catch so a
+      // goal-save failure does NOT trigger the outer catch (WR-01).
+      // Streak staleness is tolerable; a log/schedule divergence is not.
       if (chunk.goalId != null && chunk.goalId!.isNotEmpty) {
         try {
           final goal = await _goalRepo.getById(chunk.goalId!);

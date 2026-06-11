@@ -13,7 +13,6 @@
 //   7. Prior-day deferred commitment chunk is NOT carried.
 //   8. Two-days-ago deferral does NOT carry (single-hop only).
 
-import 'package:canopy/data/models/commitment_block.dart';
 import 'package:canopy/data/models/completion_log.dart';
 import 'package:canopy/data/models/daily_schedule.dart';
 import 'package:canopy/data/models/goal.dart';
@@ -227,7 +226,9 @@ void main() {
     test('streak survives a deferred due-day', () {
       // Goal: daily habit (freq=7, every day due)
       // Log: completed Mon, deferred Tue, completed Wed → today is Wed
-      // Expected streak: 3 (Wed completed + Tue deferred = non-breaking + Mon completed)
+      // Walk backward: Wed completed → streak=1, Tue deferred → continue (no
+      // increment, no reset), Mon completed → streak=2, Sun no log → break.
+      // Expected streak: 2 (deferred day is non-breaking but does NOT increment).
       final goalId = 'habit-streak-1';
       final dueWeekdays = ScheduleGeneratorService.computeDueWeekdays(7);
 
@@ -259,10 +260,12 @@ void main() {
         today: _wednesday,
       );
 
+      // Deferred Tue is non-breaking (walk continues), but does not increment.
+      // Mon completed → streak=2. Sun has no log → walk breaks.
       expect(
         streak,
-        equals(3),
-        reason: 'Streak must survive a deferred day (non-breaking: move, not miss)',
+        equals(2),
+        reason: 'Streak survives a deferred day (non-breaking; Tue does not increment)',
       );
     });
 
