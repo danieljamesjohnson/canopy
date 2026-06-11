@@ -88,10 +88,10 @@ class DonutChart extends StatelessWidget {
 
       if (archivedGoalMap.containsKey(entry.key)) {
         final goal = archivedGoalMap[entry.key]!;
-        final color = _colorForGoal(
-          goal,
-          goals.length + archivedGoals.indexOf(goal),
+        final archivedIndex = archivedGoals.indexWhere(
+          (g) => g.id == entry.key,
         );
+        final color = _colorForGoal(goal, goals.length + archivedIndex);
         final pct = totalValue > 0 ? entry.value / totalValue * 100 : 0.0;
         sections.add(
           PieChartSectionData(
