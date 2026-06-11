@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../data/models/goal.dart';
 import '../../../data/models/quarterly_snapshot.dart';
 import '../../../data/repositories/hive_quarterly_snapshot_repository.dart';
+import '../../../data/repositories/quarterly_snapshot_repository.dart';
 import '../../../providers/goals_notifier.dart';
 import '../../schedule/widgets/chunk_card.dart';
 import '../widgets/goal_adjustment_tile.dart';
@@ -14,7 +15,8 @@ import '../widgets/goal_adjustment_tile.dart';
 /// inline archive suggestions for underused goals, and a "Finish review" button
 /// that persists the [QuarterlySnapshot] and updates [GoalsNotifier] priorities.
 class AdjustmentsSection extends StatefulWidget {
-  const AdjustmentsSection({
+  // ignore: prefer_const_constructors_in_immutables
+  AdjustmentsSection({
     super.key,
     required this.goals,
     required this.completionRates,
@@ -22,7 +24,9 @@ class AdjustmentsSection extends StatefulWidget {
     required this.periodStartYmd,
     required this.periodEndYmd,
     required this.goalChunkTotals,
-  });
+    QuarterlySnapshotRepository? snapshotRepository,
+  }) : _snapshotRepository =
+           snapshotRepository ?? HiveQuarterlySnapshotRepository();
 
   final List<Goal> goals;
   final Map<String, double> completionRates;
@@ -30,6 +34,7 @@ class AdjustmentsSection extends StatefulWidget {
   final String periodStartYmd;
   final String periodEndYmd;
   final Map<String, int> goalChunkTotals;
+  final QuarterlySnapshotRepository _snapshotRepository;
 
   @override
   State<AdjustmentsSection> createState() => _AdjustmentsSectionState();
@@ -120,7 +125,7 @@ class _AdjustmentsSectionState extends State<AdjustmentsSection> {
         ..goalPrioritySnapshot = prioritySnapshot
         ..archivedGoalIds = _archivedIds.toList();
 
-      await HiveQuarterlySnapshotRepository().append(_pendingSnapshot!);
+      await widget._snapshotRepository.append(_pendingSnapshot!);
 
       if (mounted) {
         Navigator.of(context).pop();

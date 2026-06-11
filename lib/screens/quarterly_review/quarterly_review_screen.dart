@@ -222,6 +222,7 @@ class _QuarterlyReviewScreenState extends State<QuarterlyReviewScreen> {
                         periodStartYmd: _periodStartYmd,
                         periodEndYmd: _periodEndYmd,
                         goalChunkTotals: _goalChunkTotals,
+                        snapshotRepository: widget._snapshotRepository,
                       ),
                     ],
                   ),
