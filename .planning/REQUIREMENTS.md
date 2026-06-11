@@ -12,11 +12,11 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 
 ### Loop — Unbreak the Morning (LOOP)
 
-- [ ] **LOOP-01**: The morning check-in always generates today's schedule from the user's actual saved goals and commitments — on any cold launch or resume, regardless of which tabs were visited first.
-- [ ] **LOOP-02**: The schedule rolls over at the day boundary — resuming the app on a new day shows a fresh, un-generated day rather than yesterday's schedule.
-- [ ] **LOOP-03**: The user can re-run the check-in / regenerate today's schedule from a persistent entry point on Home and on the Schedule screen when a schedule already exists.
-- [ ] **LOOP-04**: When morning notifications are enabled, the notification is scheduled automatically (on app start / after onboarding) and tapping it opens the schedule via the correct router.
-- [ ] **LOOP-05**: The user can reliably enter and edit a goal in the goal form (no cursor/controller defect).
+- [x] **LOOP-01**: The morning check-in always generates today's schedule from the user's actual saved goals and commitments — on any cold launch or resume, regardless of which tabs were visited first.
+- [x] **LOOP-02**: The schedule rolls over at the day boundary — resuming the app on a new day shows a fresh, un-generated day rather than yesterday's schedule.
+- [x] **LOOP-03**: The user can re-run the check-in / regenerate today's schedule from a persistent entry point on Home and on the Schedule screen when a schedule already exists.
+- [x] **LOOP-04**: When morning notifications are enabled, the notification is scheduled automatically (on app start / after onboarding) and tapping it opens the schedule via the correct router.
+- [x] **LOOP-05**: The user can reliably enter and edit a goal in the goal form (no cursor/controller defect).
 
 ### Read — A Schedule You Can Read (READ)
 
@@ -68,11 +68,11 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LOOP-01 | Phase 7 | Pending |
-| LOOP-02 | Phase 7 | Pending |
-| LOOP-03 | Phase 7 | Pending |
-| LOOP-04 | Phase 7 | Pending |
-| LOOP-05 | Phase 7 | Pending |
+| LOOP-01 | Phase 7 | Complete |
+| LOOP-02 | Phase 7 | Complete |
+| LOOP-03 | Phase 7 | Complete |
+| LOOP-04 | Phase 7 | Complete |
+| LOOP-05 | Phase 7 | Complete |
 | READ-01 | Phase 8 | Complete |
 | READ-02 | Phase 8 | Complete |
 | READ-03 | Phase 8 | Complete |
