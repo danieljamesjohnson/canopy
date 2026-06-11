@@ -61,6 +61,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final midDayEnabled = settings.midDayNudgeEnabled;
     final midDayMinutes = settings.midDayNudgeMinutes;
     final eveningEnabled = settings.eveningReminderEnabled;
+    final eveningMinutes = settings.eveningReminderMinutes;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -169,7 +170,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Evening reminder'),
             subtitle: Text(
               eveningEnabled
-                  ? _formatMinutes(1200)
+                  ? _formatMinutes(eveningMinutes)
                   : 'Opt-in reminder to close your day',
             ),
             trailing: Switch(
@@ -179,7 +180,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     .read<SettingsNotifier>()
                     .setEveningReminderEnabled(val);
                 if (val) {
-                  await NotificationService.scheduleEveningReminder(1200);
+                  await NotificationService.scheduleEveningReminder(
+                    eveningMinutes,
+                  );
                 } else {
                   await NotificationService.cancelEveningReminder();
                 }

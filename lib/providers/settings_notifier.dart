@@ -89,4 +89,12 @@ class SettingsNotifier extends ChangeNotifier {
     await _repository.saveSettings(settings);
     notifyListeners();
   }
+
+  Future<void> setEveningReminderMinutes(int value) async {
+    _eveningReminderMinutes = value;
+    final settings = await _repository.getSettings() ?? AppSettings();
+    settings.eveningReminderMinutes = value;
+    await _repository.saveSettings(settings);
+    notifyListeners();
+  }
 }
