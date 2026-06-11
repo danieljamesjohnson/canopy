@@ -113,6 +113,19 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       allLogs.addAll(await _logRepo.getByGoalId(goal.id));
     }
 
+    // CLOSE-02: single-hop deferred carry-in from the immediately preceding day.
+    // Only discretionary (non-commitment) deferred chunks re-enter as fresh demand
+    // for their goal. Commitment chunks are anchored to their day and do not carry
+    // (goalId == null for commitment chunks, so the filter naturally excludes them).
+    final yesterday = date.subtract(const Duration(days: 1));
+    final yesterdayYmd = DateFormat('yyyy-MM-dd').format(yesterday);
+    final priorSchedule = await _repo.getByDate(yesterdayYmd);
+    final deferredGoalIds = priorSchedule?.chunks
+            .where((c) => c.isDeferred && !c.isCompleted && c.goalId != null)
+            .map((c) => c.goalId!)
+            .toSet() ??
+        {};
+
     final chunks = _generator.generate(
       goals: goals,
       blocks: blocks,
@@ -120,6 +133,7 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       date: date,
       completionLogs: allLogs,
       lighterDay: lighterDay,
+      deferredGoalIds: deferredGoalIds, // CLOSE-02 carry-in
     );
 
     // Silent replace: delete existing schedule for today if any.
