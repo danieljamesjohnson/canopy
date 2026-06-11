@@ -124,6 +124,11 @@ class _InMemoryScheduleNotifier extends ScheduleNotifier {
   @override
   DailySchedule? get todaySchedule => _inMemorySchedule;
 
+  /// Intentionally skips the LOOP-02 date-string comparison so that
+  /// LOOP-01 can assert on the generated schedule regardless of the
+  /// test's wall-clock date. Do NOT reuse this class for LOOP-02 tests
+  /// (day-rollover); those must use the real [ScheduleNotifier] so that
+  /// the dateYmd validation in [hasScheduleToday] is exercised.
   @override
   bool get hasScheduleToday => _inMemorySchedule != null;
 }
