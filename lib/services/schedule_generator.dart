@@ -150,40 +150,128 @@ class ScheduleGeneratorService {
     }
 
     // -------------------------------------------------------------------------
-    // Break insertion pass.
+    // Ordering + break insertion pass (READ-02).
     // -------------------------------------------------------------------------
     if (workChunks.isEmpty) return [];
 
-    final List<ScheduledChunk> result = [];
-    int workChunkCounter = 0;
+    // STEP A: Split into commitment (anchored) and discretionary streams.
+    final List<ScheduledChunk> commitmentChunks = workChunks
+        .where((c) => c.anchoredStartMinutes != null)
+        .toList()
+      ..sort((a, b) =>
+          a.anchoredStartMinutes!.compareTo(b.anchoredStartMinutes!));
+    final List<ScheduledChunk> discretionaryChunks = workChunks
+        .where((c) => c.anchoredStartMinutes == null)
+        .toList();
 
-    for (final chunk in workChunks) {
+    // STEP B: Assign synthetic start times to discretionary chunks.
+    _assignSyntheticStartTimes(
+      discretionaryChunks: discretionaryChunks,
+      commitmentChunks: commitmentChunks,
+      longBreakEvery: longBreakEvery,
+    );
+
+    // STEP C: Build result — commitment chunks (no breaks between them),
+    // then interleave breaks for discretionary chunks only.
+    // Break chunks get syntheticStartMinutes = workChunk.syntheticStartMinutes + 25
+    // so the sort in Step D keeps them positioned after their preceding work chunk.
+    final List<ScheduledChunk> result = [...commitmentChunks];
+    int breakCounter = 0;
+    for (final chunk in discretionaryChunks) {
       result.add(chunk);
-      workChunkCounter++;
-
-      if (workChunkCounter % longBreakEvery == 0) {
-        // Long break
-        result.add(
-          ScheduledChunk(
-            chunkTypeIndex: ChunkType.longBreak.index,
-            goalId: null,
-            durationMinutes: 25,
-            rationale: '',
-          ),
-        );
-      } else {
-        // Short break
-        result.add(
-          ScheduledChunk(
-            chunkTypeIndex: ChunkType.shortBreak.index,
-            goalId: null,
-            durationMinutes: 5,
-            rationale: '',
-          ),
-        );
+      breakCounter++;
+      final isLong = breakCounter % longBreakEvery == 0;
+      final breakChunk = ScheduledChunk(
+        chunkTypeIndex: isLong ? ChunkType.longBreak.index : ChunkType.shortBreak.index,
+        goalId: null,
+        durationMinutes: isLong ? 25 : 5,
+        rationale: '',
+      );
+      // Assign syntheticStartMinutes to the break so the sort positions it
+      // immediately after its preceding work chunk.
+      if (chunk.syntheticStartMinutes != null) {
+        breakChunk.syntheticStartMinutes = chunk.syntheticStartMinutes! + chunk.durationMinutes;
       }
+      result.add(breakChunk);
+    }
+
+    // STEP D: Sort flat list by effective start time.
+    result.sort((a, b) {
+      final aStart = a.anchoredStartMinutes ?? a.syntheticStartMinutes ?? 9999;
+      final bStart = b.anchoredStartMinutes ?? b.syntheticStartMinutes ?? 9999;
+      return aStart.compareTo(bStart);
+    });
+
+    // STEP E: Trim trailing non-work chunks (no dangling break at end).
+    while (result.isNotEmpty && result.last.chunkType != ChunkType.work) {
+      result.removeLast();
     }
 
     return result;
+  }
+
+  /// Assigns [syntheticStartMinutes] to each discretionary chunk by filling
+  /// the free time slots around anchored commitment windows.
+  ///
+  /// Day runs from [dayStart] (480 = 8:00 AM) to 1320 (22:00 / 10:00 PM).
+  /// Each discretionary work chunk is 25 minutes; breaks (short 5 min,
+  /// long 25 min) are accounted for when deciding whether a slot has room.
+  void _assignSyntheticStartTimes({
+    required List<ScheduledChunk> discretionaryChunks,
+    required List<ScheduledChunk> commitmentChunks,
+    required int longBreakEvery,
+  }) {
+    const int dayStart = 480; // 8:00 AM
+    const int dayEnd = 1320; // 10:00 PM
+
+    // Build merged commitment windows.
+    final windows = <({int start, int end})>[];
+    for (final c in commitmentChunks) {
+      final s = c.anchoredStartMinutes!;
+      final e = s + c.durationMinutes;
+      if (windows.isNotEmpty && windows.last.end == s) {
+        final prev = windows.removeLast();
+        windows.add((start: prev.start, end: e));
+      } else {
+        windows.add((start: s, end: e));
+      }
+    }
+
+    // Derive free slots from dayStart to dayEnd around commitment windows.
+    final slots = <({int start, int end})>[];
+    int cursor = dayStart;
+    for (final w in windows) {
+      if (cursor < w.start) {
+        slots.add((start: cursor, end: w.start));
+      }
+      cursor = w.end;
+    }
+    slots.add((start: cursor, end: dayEnd));
+
+    // Greedily pack discretionary chunks into free slots.
+    int discIdx = 0;
+    int breakCount = 0;
+    for (final slot in slots) {
+      cursor = slot.start;
+      while (cursor + 25 <= slot.end && discIdx < discretionaryChunks.length) {
+        discretionaryChunks[discIdx].syntheticStartMinutes = cursor;
+        cursor += 25;
+        discIdx++;
+        breakCount++;
+        final isLong = breakCount % longBreakEvery == 0;
+        final breakDur = isLong ? 25 : 5;
+        // Only advance cursor for break if there's room and more chunks follow.
+        if (cursor + breakDur <= slot.end && discIdx < discretionaryChunks.length) {
+          cursor += breakDur;
+        }
+      }
+    }
+    // Discretionary chunks that didn't fit retain syntheticStartMinutes == null
+    // and will be sorted to the end (9999) then trimmed is not needed here —
+    // they are simply omitted because the STEP C loop uses discretionaryChunks
+    // as-is; chunks with no slot assigned still get added but sort last.
+    // Per Open Question 1 (resolved): drop overflow by only iterating chunks
+    // with syntheticStartMinutes set. Filter in-place after packing.
+    discretionaryChunks.removeWhere((c) => c.syntheticStartMinutes == null);
   }
 }

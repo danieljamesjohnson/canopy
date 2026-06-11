@@ -55,6 +55,12 @@ void main() {
   int workCount(List<ScheduledChunk> chunks) =>
       chunks.where((c) => c.chunkType == ChunkType.work).length;
 
+  int workChunksOf(List<ScheduledChunk> result) =>
+      result.where((c) => c.chunkType == ChunkType.work).length;
+
+  bool hasTrailingBreak(List<ScheduledChunk> result) =>
+      result.isNotEmpty && result.last.chunkType != ChunkType.work;
+
   // ---------------------------------------------------------------------------
   // Test 1: mood=3, 0 goals, 0 blocks → empty list
   // ---------------------------------------------------------------------------
@@ -145,9 +151,10 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // Test 6: 4 work chunks, mood=3 → shortBreak after 1,2,3; longBreak after 4
+  // Test 6: 4 work chunks, mood=3 → shortBreak after 1,2,3; trailing break trimmed
+  // READ-02: no dangling trailing break on the final work chunk.
   // ---------------------------------------------------------------------------
-  test('Test 6: mood=3 break pattern with 4 work chunks', () {
+  test('Test 6: mood=3 break pattern with 4 work chunks (trailing break trimmed)', () {
     // Use 4 habits to generate exactly 4 work chunks
     final goals = List.generate(4, (i) => makeHabit(name: 'Habit $i'));
     final result = sut.generate(
@@ -156,8 +163,8 @@ void main() {
       moodIndex: 3,
       date: monday,
     );
-    // Verify chunk order: W SB W SB W SB W LB
-    expect(result.length, 8);
+    // Verify chunk order: W SB W SB W SB W (trailing long break trimmed)
+    expect(result.length, 7);
     expect(result[0].chunkType, ChunkType.work);
     expect(result[1].chunkType, ChunkType.shortBreak);
     expect(result[2].chunkType, ChunkType.work);
@@ -165,13 +172,15 @@ void main() {
     expect(result[4].chunkType, ChunkType.work);
     expect(result[5].chunkType, ChunkType.shortBreak);
     expect(result[6].chunkType, ChunkType.work);
-    expect(result[7].chunkType, ChunkType.longBreak);
+    // Trailing break was trimmed (READ-02)
+    expect(result.last.chunkType, ChunkType.work);
   });
 
   // ---------------------------------------------------------------------------
-  // Test 7: 3 work chunks, mood=1 → shortBreak after 1,2; longBreak after 3
+  // Test 7: 3 work chunks, mood=1 → shortBreak after 1,2; trailing break trimmed
+  // READ-02: no dangling trailing break on the final work chunk.
   // ---------------------------------------------------------------------------
-  test('Test 7: mood=1 break pattern with 3 work chunks (long every 3)', () {
+  test('Test 7: mood=1 break pattern with 3 work chunks (trailing break trimmed)', () {
     final goals = List.generate(3, (i) => makeHabit(name: 'Habit $i'));
     final result = sut.generate(
       goals: goals,
@@ -179,14 +188,15 @@ void main() {
       moodIndex: 1,
       date: monday,
     );
-    // Verify chunk order: W SB W SB W LB
-    expect(result.length, 6);
+    // Verify chunk order: W SB W SB W (trailing long break trimmed — READ-02)
+    expect(result.length, 5);
     expect(result[0].chunkType, ChunkType.work);
     expect(result[1].chunkType, ChunkType.shortBreak);
     expect(result[2].chunkType, ChunkType.work);
     expect(result[3].chunkType, ChunkType.shortBreak);
     expect(result[4].chunkType, ChunkType.work);
-    expect(result[5].chunkType, ChunkType.longBreak);
+    // Trailing break was trimmed (READ-02)
+    expect(result.last.chunkType, ChunkType.work);
   });
 
   // ---------------------------------------------------------------------------
@@ -214,5 +224,97 @@ void main() {
       date: monday,
     );
     expect(workCount(result), 1);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test 10: commitment block + discretionary habits → no breaks between
+  //          consecutive commitment chunks (READ-02 Pitfall 2)
+  // ---------------------------------------------------------------------------
+  test('Test 10: commitment block + discretionary — no breaks between commitment chunks', () {
+    // makeBlock() is Mon-Fri 540-600 → 2 anchored chunks at 540, 565
+    final block = makeBlock();
+    final result = sut.generate(
+      goals: [makeHabit()],
+      blocks: [block],
+      moodIndex: 3,
+      date: monday,
+    );
+    final idx540 = result.indexWhere((c) => c.anchoredStartMinutes == 540);
+    final idx565 = result.indexWhere((c) => c.anchoredStartMinutes == 565);
+    expect(idx540, greaterThanOrEqualTo(0), reason: 'chunk at 540 must be present');
+    expect(idx565, greaterThanOrEqualTo(0), reason: 'chunk at 565 must be present');
+    expect(idx565, idx540 + 1,
+        reason: 'No break between consecutive commitment chunks (READ-02)');
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test 11: 2 habits only → last element is work (trailing break trimmed)
+  // ---------------------------------------------------------------------------
+  test('Test 11: 2 habits only → trailing break trimmed (last chunk is work)', () {
+    final result = sut.generate(
+      goals: [makeHabit(name: 'A'), makeHabit(name: 'B')],
+      blocks: [],
+      moodIndex: 3,
+      date: monday,
+    );
+    expect(result, isNotEmpty);
+    expect(hasTrailingBreak(result), isFalse,
+        reason: 'Last element must be a work chunk, not a break (READ-02)');
+    expect(result.last.chunkType, ChunkType.work);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test 12: commitment block + 1 habit → discretionary chunk gets a
+  //          syntheticStartMinutes outside the commitment window; result
+  //          is sorted by effective start time
+  // ---------------------------------------------------------------------------
+  test('Test 12: commitment block + 1 habit → discretionary gets synthetic time; sorted', () {
+    // makeBlock() is 540-600 → commitment window occupies 540-600.
+    // The discretionary habit chunk must be placed in a free slot (≠ 540-600).
+    final block = makeBlock();
+    final result = sut.generate(
+      goals: [makeHabit()],
+      blocks: [block],
+      moodIndex: 3,
+      date: monday,
+    );
+    final workChunkList = result
+        .where((c) => c.chunkType == ChunkType.work)
+        .toList();
+    // At least the 2 commitment chunks + 1 discretionary habit.
+    expect(workChunkList.length, greaterThanOrEqualTo(3));
+    // The discretionary chunk (has goalId) must have syntheticStartMinutes set.
+    final discretionary = workChunkList
+        .where((c) => c.goalId != null)
+        .toList();
+    expect(discretionary, isNotEmpty, reason: 'Discretionary habit chunk must be present');
+    expect(discretionary.first.syntheticStartMinutes, isNotNull,
+        reason: 'Discretionary chunk must have syntheticStartMinutes assigned');
+    // Verify the result is sorted by effective start time.
+    final starts = result.map((c) =>
+        c.anchoredStartMinutes ?? c.syntheticStartMinutes ?? 9999).toList();
+    final sorted = [...starts]..sort();
+    expect(starts, equals(sorted), reason: 'Result must be sorted by effective start time');
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test 13: all-commitment day (no discretionary) → only work chunks; no breaks
+  // ---------------------------------------------------------------------------
+  test('Test 13: all-commitment day → commitment chunks only, no breaks', () {
+    // makeBlock() generates 2 commitment chunks; no discretionary goals.
+    final block = makeBlock();
+    final result = sut.generate(
+      goals: [],
+      blocks: [block],
+      moodIndex: 3,
+      date: monday,
+    );
+    // Result contains only work chunks — no breaks.
+    final hasAnyBreak = result.any((c) =>
+        c.chunkType == ChunkType.shortBreak ||
+        c.chunkType == ChunkType.longBreak);
+    expect(hasAnyBreak, isFalse,
+        reason: 'All-commitment day must not contain any break chunks (READ-02)');
+    expect(workChunksOf(result), equals(2));
   });
 }
