@@ -411,4 +411,42 @@ void main() {
         reason: 'longBreakEvery=4 with 6 chunks must emit at least one long break');
     expect(longBreaks.first.durationMinutes, 25);
   });
+
+  // ---------------------------------------------------------------------------
+  // Test WR-03: a discretionary chunk packed into a narrow pre-commitment gap
+  // must not cause a break to sort between two contiguous commitment chunks,
+  // and no break may sort into a position that splits the commitment window
+  // (READ-02 at slot boundaries).
+  // ---------------------------------------------------------------------------
+  test('WR-03: break never sorts between contiguous commitment chunks (narrow pre-gap)', () {
+    // Commitment block 540-590 (2 chunks: 540, 565). A free gap exists before
+    // it (480-540) into which discretionary chunks are packed; the trailing
+    // break footprint at the slot boundary must NOT be emitted so it cannot
+    // sort into the commitment window or between the contiguous 540/565 chunks.
+    final block = makeBlock(name: 'Morning', startMinutes: 540, endMinutes: 590);
+    final result = sut.generate(
+      goals: List.generate(2, (i) => makeHabit(name: 'Pre $i')),
+      blocks: [block],
+      moodIndex: 3,
+      date: monday,
+    );
+
+    // The two commitment chunks (anchored 540 and 565) must be adjacent in the
+    // final list — no break between them (READ-02).
+    final idx540 = result.indexWhere((c) => c.anchoredStartMinutes == 540);
+    final idx565 = result.indexWhere((c) => c.anchoredStartMinutes == 565);
+    expect(idx540, greaterThanOrEqualTo(0));
+    expect(idx565, greaterThanOrEqualTo(0));
+    expect(idx565, idx540 + 1,
+        reason: 'no break may sort between contiguous commitment chunks (WR-03)');
+
+    // No break chunk may sit inside the commitment window [540, 590).
+    for (final c in result) {
+      if (c.chunkType == ChunkType.work) continue;
+      final start = c.syntheticStartMinutes ?? 9999;
+      final insideWindow = start >= 540 && start < 590;
+      expect(insideWindow, isFalse,
+          reason: 'break at $start must not fall inside commitment window (WR-03)');
+    }
+  });
 }
