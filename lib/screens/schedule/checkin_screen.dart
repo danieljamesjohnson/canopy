@@ -52,23 +52,30 @@ class _CheckinScreenState extends State<CheckinScreen> {
   Future<void> _generate() async {
     if (_selectedMood == null || _isGenerating) return;
     setState(() => _isGenerating = true);
+    try {
+      await context.read<ScheduleNotifier>().generateToday(
+        moodIndex: _selectedMood!,
+        goals: context.read<GoalsNotifier>().goals,
+        blocks: context.read<CommitmentsNotifier>().blocks,
+        lighterDay: _lighterDay,
+      );
 
-    await context.read<ScheduleNotifier>().generateToday(
-      moodIndex: _selectedMood!,
-      goals: context.read<GoalsNotifier>().goals,
-      blocks: context.read<CommitmentsNotifier>().blocks,
-      lighterDay: _lighterDay,
-    );
+      // Request iOS notification permission after first successful check-in.
+      // No-op on Web and non-iOS platforms; iOS ignores if already granted.
+      await NotificationService.requestIOSPermissions();
 
-    // Request iOS notification permission after first successful check-in.
-    // No-op on Web and non-iOS platforms; iOS ignores if already granted.
-    await NotificationService.requestIOSPermissions();
-
-    if (mounted) {
-      setState(() {
-        _scheduleGenerated = true;
-        _isGenerating = false;
-      });
+      if (mounted) {
+        setState(() {
+          _scheduleGenerated = true;
+          _isGenerating = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isGenerating = false);
+        // Optionally surface feedback to the user here.
+      }
+      rethrow;
     }
   }
 
