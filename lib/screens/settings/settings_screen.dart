@@ -60,6 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final morningMinutes = settings.morningNotificationMinutes;
     final midDayEnabled = settings.midDayNudgeEnabled;
     final midDayMinutes = settings.midDayNudgeMinutes;
+    final eveningEnabled = settings.eveningReminderEnabled;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -160,6 +161,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     }
                   }
                 : null,
+          ),
+
+          // Evening reminder row
+          ListTile(
+            leading: const Icon(Icons.nights_stay_outlined),
+            title: const Text('Evening reminder'),
+            subtitle: Text(
+              eveningEnabled
+                  ? _formatMinutes(1200)
+                  : 'Opt-in reminder to close your day',
+            ),
+            trailing: Switch(
+              value: eveningEnabled,
+              onChanged: (val) async {
+                await context
+                    .read<SettingsNotifier>()
+                    .setEveningReminderEnabled(val);
+                if (val) {
+                  await NotificationService.scheduleEveningReminder(1200);
+                } else {
+                  await NotificationService.cancelEveningReminder();
+                }
+              },
+            ),
+            onTap: null, // no time picker this phase — fixed 8:00pm
           ),
 
           // Android battery note

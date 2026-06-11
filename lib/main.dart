@@ -93,6 +93,15 @@ void main() async {
     );
   }
 
+  // CLOSE-01: idempotently (re)schedule the evening reminder at startup when
+  // enabled. scheduleEveningReminder cancels ID 2 first, so it is safe to call
+  // on every cold launch without duplicating the notification.
+  if (settingsNotifier.eveningReminderEnabled) {
+    await NotificationService.scheduleEveningReminder(
+      settingsNotifier.eveningReminderMinutes,
+    );
+  }
+
   runApp(
     CanopyApp(
       settingsNotifier: settingsNotifier,

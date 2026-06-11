@@ -184,6 +184,58 @@ class NotificationService {
     await _plugin.cancel(id: 1);
   }
 
+  /// Schedules an opt-in evening reminder at [minutesFromMidnight].
+  ///
+  /// Cancels any existing evening reminder (ID 2) first.
+  static Future<void> scheduleEveningReminder(int minutesFromMidnight) async {
+    if (kIsWeb) return;
+    // T-10-05: zonedSchedule is not supported on Linux or Windows desktop —
+    // degrade gracefully so the app does not crash when running on those
+    // platforms. iOS and Android are the real targets.
+    if (Platform.isLinux || Platform.isWindows) return;
+    await _plugin.cancel(id: 2);
+    final hour = minutesFromMidnight ~/ 60;
+    final minute = minutesFromMidnight % 60;
+
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+    if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+
+    await _plugin.zonedSchedule(
+      id: 2,
+      title: 'Canopy',
+      body: 'Time to close the day. See how your chunks went.',
+      scheduledDate: scheduled,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'evening_reminder',
+          'Evening reminder',
+          channelDescription: 'Opt-in evening schedule reminder',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  /// Cancels the evening reminder (ID 2).
+  static Future<void> cancelEveningReminder() async {
+    if (kIsWeb) return;
+    await _plugin.cancel(id: 2);
+  }
+
   /// Requests notification permissions on Darwin platforms (iOS and macOS).
   ///
   /// Call this after the first successful mood check-in. No-op on Web and

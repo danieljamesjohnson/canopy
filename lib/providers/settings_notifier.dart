@@ -21,6 +21,12 @@ class SettingsNotifier extends ChangeNotifier {
   int _midDayNudgeMinutes = 720;
   int get midDayNudgeMinutes => _midDayNudgeMinutes;
 
+  bool _eveningReminderEnabled = false;
+  bool get eveningReminderEnabled => _eveningReminderEnabled;
+
+  int _eveningReminderMinutes = 1200;
+  int get eveningReminderMinutes => _eveningReminderMinutes;
+
   /// Reads persisted settings from Hive and caches the values.
   /// Call once at startup after HiveDatabase.init(), before runApp().
   Future<void> init() async {
@@ -30,6 +36,8 @@ class SettingsNotifier extends ChangeNotifier {
     _morningNotificationEnabled = settings?.morningNotificationEnabled ?? true;
     _midDayNudgeEnabled = settings?.midDayNudgeEnabled ?? false;
     _midDayNudgeMinutes = settings?.midDayNudgeMinutes ?? 720;
+    _eveningReminderEnabled = settings?.eveningReminderEnabled ?? false;
+    _eveningReminderMinutes = settings?.eveningReminderMinutes ?? 1200;
     notifyListeners();
   }
 
@@ -70,6 +78,14 @@ class SettingsNotifier extends ChangeNotifier {
     _midDayNudgeMinutes = value;
     final settings = await _repository.getSettings() ?? AppSettings();
     settings.midDayNudgeMinutes = value;
+    await _repository.saveSettings(settings);
+    notifyListeners();
+  }
+
+  Future<void> setEveningReminderEnabled(bool value) async {
+    _eveningReminderEnabled = value;
+    final settings = await _repository.getSettings() ?? AppSettings();
+    settings.eveningReminderEnabled = value;
     await _repository.saveSettings(settings);
     notifyListeners();
   }
