@@ -519,7 +519,19 @@ Plans:
   2. Deferring a chunk from today's schedule causes it to appear in the next morning's generated schedule without requiring any manual action.
   3. Completing a commitment-block chunk logs a CompletionLog entry with a non-empty goal identifier (not an empty string), so commitment time appears correctly in aggregation.
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+
+**Wave 1**
+
+- [ ] 10-01-PLAN.md — Schema foundation + commitment-time attribution: commitmentId HiveField 9, AppSettings evening fields, migration 4→5, generator Step 1 + log-site fix (CLOSE-03)
+
+**Wave 2** *(blocked on 10-01)*
+
+- [ ] 10-02-PLAN.md — Defer carryover: markDeferred logs deferred, non-breaking streak, deferredGoalIds generator input + single-hop carry-in (CLOSE-02)
+- [ ] 10-03-PLAN.md — End-of-day card + opt-in evening reminder: EndOfDayCard + Home trigger, id-2 notification, Settings toggle, app-start scheduling (CLOSE-01)
+
 **UI hint**: yes
 
 ---
@@ -546,7 +558,7 @@ Plans:
 | 7. Unbreak the Morning | 2/2 | Complete   | 2026-06-11 |
 | 8. A Schedule You Can Read | 3/3 | Complete    | 2026-06-11 |
 | 9. An Engine That Budgets | 3/3 | Complete   | 2026-06-11 |
-| 10. Close the Day | 0/TBD | Not started | - |
+| 10. Close the Day | 0/3 | Not started | - |
 | 11. Honest Long Loop | 0/TBD | Not started | - |
 
 ---
