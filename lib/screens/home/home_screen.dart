@@ -5,9 +5,11 @@ import 'package:provider/provider.dart';
 import '../../data/models/scheduled_chunk.dart';
 import '../../data/repositories/hive_completion_log_repository.dart';
 import '../../data/repositories/hive_quarterly_snapshot_repository.dart';
+import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
 import '../../providers/theme_notifier.dart';
 import '../../services/quarterly_aggregation_service.dart';
+import '../../utils/rationale_mapper.dart';
 import '../schedule/widgets/schedule_progress_bar.dart';
 import 'widgets/review_banner.dart';
 
@@ -140,35 +142,85 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             )
           else
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      nextChunk.rationale.isNotEmpty
-                          ? nextChunk.rationale
-                          : 'Work block',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+            Builder(
+              builder: (context) {
+                // READ-01: resolve the goal's real name as the title (mirrors
+                // the schedule cards) instead of showing the raw rationale
+                // label like "Habit". Commitment chunks (no goalId) fall back
+                // to the block name carried in rationale.
+                final goalName = _lookupGoalName(context, nextChunk);
+                final title = goalName ??
+                    (nextChunk.rationale.isNotEmpty
+                        ? nextChunk.rationale
+                        : 'Work block');
+                // Only show the secondary rationale line when we have a real
+                // goal name above it (avoids "Work / Work" duplication for
+                // commitment chunks).
+                final subtitle =
+                    goalName != null ? toDisplayRationale(nextChunk.rationale) : null;
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (subtitle != null && subtitle.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                subtitle,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${nextChunk.durationMinutes} min',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${nextChunk.durationMinutes} min',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
         ],
       ),
     );
+  }
+
+  /// Resolves the goal name for a chunk by looking up its goalId in
+  /// GoalsNotifier. Returns null for commitment-anchored chunks (no goalId)
+  /// so they fall back to the block name carried in chunk.rationale. Mirrors
+  /// ScheduleScreen._lookupGoalName so Home and Schedule read identically.
+  String? _lookupGoalName(BuildContext context, ScheduledChunk chunk) {
+    if (chunk.goalId == null) return null;
+    final goals = context.read<GoalsNotifier>().goals;
+    final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
+    return goal?.name;
   }
 
   Widget _buildEmptyState(BuildContext context) {
