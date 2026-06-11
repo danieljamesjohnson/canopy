@@ -6,7 +6,6 @@
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_detail_sheet.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
