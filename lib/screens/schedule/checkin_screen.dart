@@ -57,6 +57,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
       moodIndex: _selectedMood!,
       goals: context.read<GoalsNotifier>().goals,
       blocks: context.read<CommitmentsNotifier>().blocks,
+      lighterDay: _lighterDay,
     );
 
     // Request iOS notification permission after first successful check-in.
@@ -189,8 +190,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
               }).toList(),
             ),
             const SizedBox(height: 32),
-            // Follow-up toggle for mood 1-2
-            if (_selectedMood != null && _selectedMood! <= 2) ...[
+            // Follow-up toggle — visible for all moods once selected (ENGINE-05)
+            if (_selectedMood != null) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

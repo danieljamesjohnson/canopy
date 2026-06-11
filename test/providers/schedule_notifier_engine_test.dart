@@ -11,7 +11,6 @@ import 'package:canopy/data/models/completion_log.dart';
 import 'package:canopy/data/models/daily_schedule.dart';
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
-import 'package:canopy/data/repositories/completion_log_repository.dart';
 import 'package:canopy/data/repositories/daily_schedule_repository.dart';
 import 'package:canopy/data/repositories/goal_repository.dart';
 import 'package:canopy/data/repositories/in_memory_completion_log_repository.dart';
@@ -80,15 +79,6 @@ class _InMemoryGoalRepository implements GoalRepository {
   @override
   Future<List<Goal>> getActive() async =>
       _goals.where((g) => !g.isArchived).toList();
-}
-
-// ---------------------------------------------------------------------------
-// Tiny listener counter (mirrors schedule_notifier_defer_test.dart pattern)
-// ---------------------------------------------------------------------------
-
-class _CountingListener {
-  int count = 0;
-  void call() => count++;
 }
 
 // ---------------------------------------------------------------------------
