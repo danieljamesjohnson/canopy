@@ -279,6 +279,26 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
           eventIndex: CompletionEvent.skipped.index, // Phase 8: log as skipped
         ),
       );
+
+      // Streak write-back (ENGINE-03): consistent with markSkipped — a deferred
+      // chunk is logged as skipped so computeStreak will break the streak the
+      // next time it runs. Persist the updated streakCount now so GoalRepository
+      // and the in-memory goal stay in sync for the current session.
+      if (chunk.goalId != null && chunk.goalId!.isNotEmpty) {
+        final goal = await _goalRepo.getById(chunk.goalId!);
+        if (goal != null && goal.goalType == GoalType.habit) {
+          final due = ScheduleGeneratorService.computeDueWeekdays(
+            goal.frequencyPerWeek ?? 7,
+          );
+          final updatedLogs = await _logRepo.getByGoalId(goal.id);
+          goal.streakCount = ScheduleGeneratorService.computeStreak(
+            goal.id,
+            due,
+            updatedLogs,
+          );
+          await _goalRepo.save(goal);
+        }
+      }
     } catch (_) {
       // WR-05: revert BOTH flags on persistence/log failure so the schedule
       // partition and the completion log do not diverge, then re-throw.

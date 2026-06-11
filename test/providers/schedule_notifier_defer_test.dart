@@ -9,9 +9,11 @@
 
 import 'package:canopy/data/models/completion_log.dart';
 import 'package:canopy/data/models/daily_schedule.dart';
+import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/data/repositories/completion_log_repository.dart';
 import 'package:canopy/data/repositories/daily_schedule_repository.dart';
+import 'package:canopy/data/repositories/goal_repository.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -44,6 +46,30 @@ class _InMemoryScheduleRepository implements DailyScheduleRepository {
 
   @override
   Future<DailySchedule?> getTodaysSchedule() async => _stored;
+}
+
+class _InMemoryGoalRepository implements GoalRepository {
+  final List<Goal> _goals = [];
+
+  @override
+  Future<List<Goal>> getAll() async => List.unmodifiable(_goals);
+
+  @override
+  Future<Goal?> getById(String id) async =>
+      _goals.where((g) => g.id == id).firstOrNull;
+
+  @override
+  Future<void> save(Goal goal) async {
+    _goals.removeWhere((g) => g.id == goal.id);
+    _goals.add(goal);
+  }
+
+  @override
+  Future<void> delete(String id) async => _goals.removeWhere((g) => g.id == id);
+
+  @override
+  Future<List<Goal>> getActive() async =>
+      _goals.where((g) => !g.isArchived).toList();
 }
 
 class _InMemoryLogRepository implements CompletionLogRepository {
@@ -115,10 +141,16 @@ void main() {
         await scheduleRepo.save(schedule);
 
         // Construct ScheduleNotifier with injected fake repos (Plan 08-02).
+        // goalRepo must be injected so the WR-02 streak write-back does not
+        // fall through to the Hive-backed default (which is not initialised
+        // in unit tests). An empty repo causes getById to return null and the
+        // streak block is gracefully skipped.
+        final goalRepo = _InMemoryGoalRepository();
         final notifier = ScheduleNotifier(
           now: () => DateTime(2026, 3, 23),
           repo: scheduleRepo,
           logRepo: logRepo,
+          goalRepo: goalRepo,
         );
         await notifier.init();
 
