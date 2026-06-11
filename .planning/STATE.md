@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: verifying
-last_updated: "2026-06-11T02:46:35.701Z"
-last_activity: 2026-06-11 — Phase 7 executed, verified, reviewed, fixes applied
+status: executing
+last_updated: "2026-06-11T02:58:05.011Z"
+last_activity: 2026-06-11 -- Phase 8 execution started
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 5
+  completed_plans: 3
   percent: 20
 ---
 
@@ -17,17 +17,17 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-10T00:00:00.000Z
+**Last session:** 2026-06-11T02:58:05.007Z
 
 ---
 
 ## Current Position
 
-Phase: Phase 7 — Unbreak the Morning (COMPLETE — code-verified, iOS UAT pending)
-Plan: 07-01, 07-02 complete (2/2)
+Phase: 8 (A Schedule You Can Read) — EXECUTING
+Plan: 2 of 3
 Next: Phase 8 — A Schedule You Can Read
-Status: Phase 7 executed & verified (5/5 must-haves at code level; 91/91 tests pass). VERIFICATION status human_needed — 6 on-device iOS UAT items deferred (no iOS simulator on Linux).
-Last activity: 2026-06-11 — Phase 7 executed, verified, reviewed, fixes applied
+Status: Ready to execute
+Last activity: 2026-06-11 -- Phase 8 execution started
 
 Progress: [----------] 0% (0/5 phases complete)
 
@@ -88,6 +88,8 @@ Progress: [----------] 0% (0/5 phases complete)
 - [Phase 04-chunk-tracking-and-notifications]: flutter_local_notifications v21 uses all-named-parameter API; RESEARCH.md positional pattern updated accordingly
 - [Phase 04-chunk-tracking-and-notifications]: rootNavigatorKey passed as navigatorKey to GoRouter so notification tap callbacks can navigate without BuildContext (AC-3)
 - [Phase 04-chunk-tracking-and-notifications]: iOS notification permission deferred to post-first-check-in via NotificationService.requestIOSPermissions() in checkin_screen.dart
+- [Phase ?]: Break chunks interleaved after discretionary work chunks get syntheticStartMinutes = workChunk.syntheticStartMinutes + 25 so Step D sort keeps them correctly positioned
+- [Phase ?]: Overflow discretionary chunks (no free slot found) are dropped from result — syntheticStartMinutes stays null and removeWhere filters them before Step C build
 
 ## Performance Metrics
 
@@ -111,6 +113,7 @@ Progress: [----------] 0% (0/5 phases complete)
 | Phase 03-schedule-generation-and-morning-check-in P03-05 | 5 | 2 tasks | 0 files |
 | Phase 04-chunk-tracking-and-notifications P04-01 | 3 | 4 tasks | 2 files |
 | Phase 04-chunk-tracking-and-notifications P04-02 | 5 | 2 tasks | 9 files |
+| Phase 08-a-schedule-you-can-read P01 | 7 minutes | 3 tasks | 9 files |
 
 ## Blockers
 

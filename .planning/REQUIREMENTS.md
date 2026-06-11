@@ -11,6 +11,7 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 ## Milestone v1.1 Requirements
 
 ### Loop — Unbreak the Morning (LOOP)
+
 - [ ] **LOOP-01**: The morning check-in always generates today's schedule from the user's actual saved goals and commitments — on any cold launch or resume, regardless of which tabs were visited first.
 - [ ] **LOOP-02**: The schedule rolls over at the day boundary — resuming the app on a new day shows a fresh, un-generated day rather than yesterday's schedule.
 - [ ] **LOOP-03**: The user can re-run the check-in / regenerate today's schedule from a persistent entry point on Home and on the Schedule screen when a schedule already exists.
@@ -18,12 +19,14 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 - [ ] **LOOP-05**: The user can reliably enter and edit a goal in the goal form (no cursor/controller defect).
 
 ### Read — A Schedule You Can Read (READ)
+
 - [ ] **READ-01**: Each scheduled chunk displays its goal's name as the title, with the rationale as secondary text.
-- [ ] **READ-02**: Chunks are ordered coherently in day order around anchored commitment blocks; breaks never appear inside a commitment window, and there is no dangling trailing break.
+- [x] **READ-02**: Chunks are ordered coherently in day order around anchored commitment blocks; breaks never appear inside a commitment window, and there is no dangling trailing break.
 - [ ] **READ-03**: Tapping a chunk opens a detail sheet showing the goal, why it was scheduled, and complete / skip / defer actions.
 - [ ] **READ-04**: A minimal companion focus mode highlights the current chunk with an optional 25-minute countdown that flows into completion and a break suggestion. *(Owner decision: companion mode in scope; designed here, completion loop closed in CLOSE.)*
 
 ### Engine — An Engine That Budgets (ENGINE)
+
 - [ ] **ENGINE-01**: Schedule generation fills the mood capacity with multiple chunks per goal up to the mood cap, rather than one chunk per goal.
 - [ ] **ENGINE-02**: Time-target goals receive chunks proportional to how far behind their weekly hour budget they are (computed from CompletionLog; most-behind first; capped per accepted allocation policy).
 - [ ] **ENGINE-03**: Habits respect `frequencyPerWeek` (scheduled on the right number of days) and accrue a real `streakCount` computed from completion history.
@@ -32,11 +35,13 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 - [ ] **ENGINE-06**: The user can set a goal's priority (low / normal / high) in the goal form, and that priority influences scheduling.
 
 ### Close — Close the Day (CLOSE)
+
 - [ ] **CLOSE-01**: A discoverable end-of-day moment (time-aware Home card after ~6pm or once ≥50% of chunks are resolved) summarizes the day, with an optional opt-in evening reminder.
 - [ ] **CLOSE-02**: The user can defer a chunk to tomorrow, and deferred chunks carry into the next morning's generation.
 - [ ] **CLOSE-03**: Commitment chunks are attributed in completion logs (not recorded with an empty goal id).
 
 ### Review — Honest Long Loop (REVIEW)
+
 - [ ] **REVIEW-01**: The quarterly review's aggregation and charts count all logged time correctly, including commitment time and archived goals' history, with correct donut totals.
 - [ ] **REVIEW-02**: Priority adjustments made during the review demonstrably change subsequent schedule generation.
 - [ ] **REVIEW-03**: The review loads its own data independently, with no dependency on a previously-visited tab.
@@ -69,7 +74,7 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 | LOOP-04 | Phase 7 | Pending |
 | LOOP-05 | Phase 7 | Pending |
 | READ-01 | Phase 8 | Pending |
-| READ-02 | Phase 8 | Pending |
+| READ-02 | Phase 8 | Complete |
 | READ-03 | Phase 8 | Pending |
 | READ-04 | Phase 8 | Pending |
 | ENGINE-01 | Phase 9 | Pending |
