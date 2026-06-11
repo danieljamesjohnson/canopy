@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: verifying
-last_updated: "2026-06-11T03:31:13.509Z"
-last_activity: 2026-06-11
+status: executing
+last_updated: "2026-06-11T13:41:54.743Z"
+last_activity: 2026-06-11 -- Phase 9 Plan 01 (An Engine That Budgets) complete
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 8
+  completed_plans: 6
   percent: 40
 ---
 
@@ -17,17 +17,17 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-11T03:13:06.430Z
+**Last session:** 2026-06-11T13:40:24Z
 
 ---
 
 ## Current Position
 
-Phase: 8 — A Schedule You Can Read (COMPLETE — verified 16/16, code-level)
-Plan: 08-01, 08-02, 08-03 complete (3/3)
+Phase: 9 (An Engine That Budgets) — EXECUTING
+Plan: 2 of 3
 Next: Phase 9 — An Engine That Budgets
-Status: Phase 8 executed, verified (16/16 must-haves), code-reviewed (6 warnings fixed), UI-audited. Post-verify web smoke test surfaced a READ-01 seam: Phase 8 only updated the Schedule screen, so Home "Up next", the check-in/ack "Starting with X" text, and the skipped section still showed the raw rationale ("Habit") instead of the goal name. Fixed all four surfaces via a shared toDisplayRationale() + goal-name lookup (end-of-day summary already correct). 105/105 tests pass. On-device iOS UAT deferred (no iOS simulator on Linux): tap-vs-swipe gesture arena + focus countdown visuals.
-Last activity: 2026-06-11 — Phase 8 verified + cross-screen READ-01 legibility seams fixed
+Status: Ready to execute
+Last activity: 2026-06-11 -- Phase 9 Plan 01 (An Engine That Budgets) complete
 
 Progress: [████------] 40% (2/5 phases complete)
 
@@ -92,6 +92,10 @@ Progress: [████------] 40% (2/5 phases complete)
 - [Phase ?]: Overflow discretionary chunks (no free slot found) are dropped from result — syntheticStartMinutes stays null and removeWhere filters them before Step C build
 - [Phase ?]: Timer.periodic in StatefulWidget (not ChangeNotifier) for FocusScreen — screen-local state avoids 1500 notifyListeners calls per session
 - [Phase ?]: state.extra is! String guard in /focus route builder — T-08-05 mitigation; malformed extra returns harmless Scaffold not crash
+- [Phase 09-01]: computeDueWeekdays and computeStreak exposed as public static methods on ScheduleGeneratorService so Plan 03 (ScheduleNotifier) can call them without duplicating logic
+- [Phase 09-01]: Floor-div weekday spread i*7~/freq+1 used exclusively — round-based formula gives wrong results (freq=3 → Mon/Wed/SAT instead of Mon/Wed/Fri)
+- [Phase 09-01]: lighterDay=true default in generate(); lighter day drops one mood tier (next-lower cap) for moods 3-5
+- [Phase 09-01]: chunksRemaining=2.0 placeholder removed; urgency = priority / daysRemaining (max 1)
 
 ## Performance Metrics
 
@@ -118,6 +122,7 @@ Progress: [████------] 40% (2/5 phases complete)
 | Phase 08-a-schedule-you-can-read P01 | 7 minutes | 3 tasks | 9 files |
 | Phase 08-a-schedule-you-can-read P02 | 6 minutes | 2 tasks | 7 files |
 | Phase 08-a-schedule-you-can-read P03 | 3 minutes | 2 tasks | 4 files |
+| Phase 09-an-engine-that-budgets P01 | 9min | 2 tasks | 3 files |
 
 ## Blockers
 
