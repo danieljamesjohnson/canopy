@@ -8,6 +8,21 @@ Canopy is a personal time budgeting app that generates a daily schedule built ar
 
 Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
 
+## Current Milestone: v1.1 "Actually Daily"
+
+**Goal:** Close the gap between "all v1.0 phases complete" and "I open it every morning and it works" — fix the broken daily loop, then make the rule-based engine honor the goal model it already stores. Rule-based only (no LLM).
+
+**Why this milestone:** v1.0 shipped every feature on paper but the daily-use loop is broken at step one (morning check-in generates from empty data on cold launch), the scheduling engine implements ~40% of its own spec, and several "complete" deliverables are UI shells wired to nothing. See `.planning/NEXT-MILESTONE-PROPOSAL.md` for the full reality check and runtime-verified evidence.
+
+**Target outcomes:**
+- Morning never dead-ends — check-in always generates from your actual saved goals & commitments, on any cold launch or resume.
+- The schedule is legible — every chunk names its goal and why it's there, ordered coherently around commitments.
+- The schedule reflects the budget — mood capacity is filled; weekly-hour goals, habit frequency, and priority all actually drive generation.
+- The day closes — discoverable end-of-day moment, deferral, real streaks, plus a minimal companion focus-session mode.
+- Long-loop honesty — the quarterly review counts time correctly and its adjustments demonstrably change tomorrow's schedule.
+
+**Owner decisions (binding):** companion/focus-session mode is in scope; allocation policy accepted as proposed; iOS is the daily driver (keep OS scheduled notifications).
+
 ## Requirements
 
 ### Validated
@@ -62,5 +77,22 @@ Generate a usable daily schedule every morning — one that reflects your real g
 | Break structure | 5-min after each chunk, 25-min long break every 3–4 chunks (mood-adaptive); breaks shown in schedule | — Pending |
 | Local storage only | Personal tool, no server complexity in v1 | — Pending |
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-02-24 — added commitment blocks, break structure, mood-adaptive capacity model*
+*Last updated: 2026-06-10 — started milestone v1.1 "Actually Daily" (fix the broken daily loop + make the rule-based engine real)*
