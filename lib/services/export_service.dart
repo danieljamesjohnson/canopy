@@ -13,6 +13,7 @@ class ExportService {
               'id': e.id,
               'chunkId': e.chunkId,
               'goalId': e.goalId,
+              'commitmentId': e.commitmentId,
               'dateYmd': e.dateYmd,
               'event': e.event.name,
               'recordedAt': e.recordedAt.toIso8601String(),

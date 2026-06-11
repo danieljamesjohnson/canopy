@@ -170,7 +170,8 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       await _logRepo.append(
         CompletionLog(
           chunkId: chunkId,
-          goalId: chunk.commitmentId ?? chunk.goalId ?? '',
+          goalId: chunk.goalId ?? '',
+          commitmentId: chunk.commitmentId,
           dateYmd: dateYmd,
           eventIndex: CompletionEvent.completed.index,
         ),
@@ -239,7 +240,8 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       await _logRepo.append(
         CompletionLog(
           chunkId: chunkId,
-          goalId: chunk.commitmentId ?? chunk.goalId ?? '',
+          goalId: chunk.goalId ?? '',
+          commitmentId: chunk.commitmentId,
           dateYmd: dateYmd,
           eventIndex: CompletionEvent.skipped.index,
         ),
@@ -307,7 +309,8 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       await _logRepo.append(
         CompletionLog(
           chunkId: chunkId,
-          goalId: chunk.commitmentId ?? chunk.goalId ?? '',
+          goalId: chunk.goalId ?? '',
+          commitmentId: chunk.commitmentId,
           dateYmd: dateYmd,
           eventIndex: CompletionEvent.deferred.index, // CLOSE-02: real deferred event
         ),

@@ -3,12 +3,13 @@
 // Verifies that:
 //   1. Generating a schedule with a CommitmentBlock produces work chunks whose
 //      commitmentId equals the block's id and whose goalId is null.
-//   2. markComplete on a commitment chunk appends a CompletionLog whose goalId
-//      equals the CommitmentBlock.id (non-empty).
-//   3. markSkipped on a commitment chunk appends a CompletionLog whose goalId
-//      equals the CommitmentBlock.id (non-empty).
+//   2. markComplete on a commitment chunk appends a CompletionLog whose
+//      commitmentId equals the CommitmentBlock.id (and whose attributionId
+//      resolves to it); goalId is empty for commitment logs.
+//   3. markSkipped on a commitment chunk appends a CompletionLog whose
+//      commitmentId equals the CommitmentBlock.id.
 //   4. A discretionary (goal) chunk still logs its own goalId unchanged
-//      (commitmentId null → falls through to goalId).
+//      (commitmentId null → attributionId falls through to goalId).
 //
 // Uses the in-memory log-repo test seam established in Phase 9 tests.
 // No Hive bootstrap required.
@@ -230,7 +231,7 @@ void main() {
     }
 
     test(
-      'markComplete on a commitment chunk logs CompletionLog.goalId == block.id (non-empty)',
+      'markComplete on a commitment chunk logs commitmentId == block.id (attributionId resolves to it)',
       () async {
         const blockId = 'block-test-id';
         final ctx = await buildNotifier(blockId: blockId);
@@ -242,14 +243,19 @@ void main() {
 
         final log = logs.first;
         expect(
-          log.goalId,
+          log.commitmentId,
           equals(blockId),
-          reason: 'markComplete must log the CommitmentBlock.id as goalId (not empty)',
+          reason: 'markComplete must log the CommitmentBlock.id as commitmentId',
+        );
+        expect(
+          log.attributionId,
+          equals(blockId),
+          reason: 'attributionId must resolve to the CommitmentBlock.id (non-empty)',
         );
         expect(
           log.goalId,
-          isNotEmpty,
-          reason: 'goalId must be non-empty for commitment chunks',
+          isEmpty,
+          reason: 'goalId must be empty for commitment chunks — the id lives in commitmentId',
         );
         expect(
           log.eventIndex,
@@ -260,7 +266,7 @@ void main() {
     );
 
     test(
-      'markSkipped on a commitment chunk logs CompletionLog.goalId == block.id (non-empty)',
+      'markSkipped on a commitment chunk logs commitmentId == block.id (attributionId resolves to it)',
       () async {
         const blockId = 'block-test-id';
         final ctx = await buildNotifier(blockId: blockId);
@@ -272,14 +278,19 @@ void main() {
 
         final log = logs.first;
         expect(
-          log.goalId,
+          log.commitmentId,
           equals(blockId),
-          reason: 'markSkipped must log the CommitmentBlock.id as goalId (not empty)',
+          reason: 'markSkipped must log the CommitmentBlock.id as commitmentId',
+        );
+        expect(
+          log.attributionId,
+          equals(blockId),
+          reason: 'attributionId must resolve to the CommitmentBlock.id (non-empty)',
         );
         expect(
           log.goalId,
-          isNotEmpty,
-          reason: 'goalId must be non-empty for commitment chunks',
+          isEmpty,
+          reason: 'goalId must be empty for commitment chunks — the id lives in commitmentId',
         );
       },
     );

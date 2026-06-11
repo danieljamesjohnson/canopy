@@ -112,11 +112,11 @@ class GoalsNotifier extends ChangeNotifier {
   /// Reorders goals within a [type] group.
   ///
   /// [oldIndex] and [newIndex] are indices within the type-filtered list.
-  /// After reorder, sortOrder values are updated and saved.
+  /// [newIndex] is the post-removal target index (as supplied by
+  /// `ReorderableListView.onReorderItem`), so no off-by-one adjustment is
+  /// applied here. After reorder, sortOrder values are updated and saved.
   Future<void> reorder(GoalType type, int oldIndex, int newIndex) async {
     final group = _goals.where((g) => g.goalType == type).toList();
-
-    if (newIndex > oldIndex) newIndex -= 1;
 
     final item = group.removeAt(oldIndex);
     group.insert(newIndex, item);

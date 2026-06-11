@@ -170,7 +170,7 @@ void main() {
       );
     });
 
-    test('markDeferred on a commitment chunk logs commitmentId as goalId', () async {
+    test('markDeferred on a commitment chunk logs commitmentId (attributionId resolves to block id)', () async {
       final logRepo = InMemoryCompletionLogRepository();
       final scheduleRepo = _InMemoryScheduleRepository();
       final goalRepo = _InMemoryGoalRepository([]);
@@ -212,9 +212,19 @@ void main() {
         reason: 'markDeferred must log CompletionEvent.deferred',
       );
       expect(
-        logs.first.goalId,
+        logs.first.commitmentId,
         equals(blockId),
-        reason: 'Commitment chunk deferred log must use commitmentId as goalId',
+        reason: 'Commitment chunk deferred log must record the block id in commitmentId',
+      );
+      expect(
+        logs.first.attributionId,
+        equals(blockId),
+        reason: 'attributionId must resolve to the commitment block id',
+      );
+      expect(
+        logs.first.goalId,
+        isEmpty,
+        reason: 'goalId must be empty for commitment chunks',
       );
     });
   });

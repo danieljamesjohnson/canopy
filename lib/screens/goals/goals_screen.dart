@@ -200,7 +200,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                   ),
                 ),
         ),
-        onReorder: (oldIndex, newIndex) =>
+        onReorderItem: (oldIndex, newIndex) =>
             notifier.reorder(type, oldIndex, newIndex),
       ),
     );

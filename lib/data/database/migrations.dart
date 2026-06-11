@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-const int currentSchemaVersion = 5;
+const int currentSchemaVersion = 6;
 
 typedef MigrationFn = Future<void> Function();
 
@@ -12,6 +12,7 @@ final List<MigrationFn> _migrations = [
   _migration2to3,
   _migration3to4,
   _migration4to5,
+  _migration5to6,
 ];
 
 Future<void> _migration0to1() async {
@@ -48,6 +49,15 @@ Future<void> _migration4to5() async {
   // and eveningReminderMinutes (HiveField 8, int, default 1200).
   // All additive nullable/defaulted fields — Hive CE binary reader returns
   // null/false/0 for missing fields in existing records.
+  // No data transformation needed.
+}
+
+Future<void> _migration5to6() async {
+  // CompletionLog gains commitmentId (HiveField 6, String?, default null) so the
+  // commitment-block id no longer rides in goalId. Additive nullable field —
+  // Hive CE binary reader returns null for missing HiveField(6) in existing
+  // records; the CompletionLog.attributionId fallback (commitmentId ?? goalId)
+  // keeps historical commitment logs resolving to the same aggregation key.
   // No data transformation needed.
 }
 

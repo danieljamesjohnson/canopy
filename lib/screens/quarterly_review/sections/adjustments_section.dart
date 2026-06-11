@@ -204,8 +204,7 @@ class _AdjustmentsSectionState extends State<AdjustmentsSection> {
                     dragHandleVisible: !isMobileTouch,
                   );
                 },
-                onReorder: (oldIndex, newIndex) {
-                  if (newIndex > oldIndex) newIndex -= 1;
+                onReorderItem: (oldIndex, newIndex) {
                   setState(() {
                     final visible = _orderedGoals
                         .where((g) => !_archivedIds.contains(g.id))

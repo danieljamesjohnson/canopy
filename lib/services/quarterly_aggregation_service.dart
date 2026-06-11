@@ -5,7 +5,10 @@ import '../data/models/quarterly_snapshot.dart';
 ///
 /// No Flutter imports — fully unit-testable without widget test infrastructure.
 class QuarterlyAggregationService {
-  /// Returns completed chunk counts per goalId for logs within [startYmd]..[endYmd] (inclusive).
+  /// Returns completed chunk counts per attribution id for logs within
+  /// [startYmd]..[endYmd] (inclusive). Commitment logs are keyed by their
+  /// commitment block id, goal logs by their goal id (see
+  /// [CompletionLog.attributionId]).
   Map<String, int> completedByGoal(
     List<CompletionLog> logs,
     String startYmd,
@@ -14,7 +17,7 @@ class QuarterlyAggregationService {
     final result = <String, int>{};
     for (final log in _inRange(logs, startYmd, endYmd)) {
       if (log.event == CompletionEvent.completed) {
-        result[log.goalId] = (result[log.goalId] ?? 0) + 1;
+        result[log.attributionId] = (result[log.attributionId] ?? 0) + 1;
       }
     }
     return result;
@@ -103,9 +106,9 @@ class QuarterlyAggregationService {
     final total = <String, int>{};
 
     for (final log in _inRange(logs, startYmd, endYmd)) {
-      total[log.goalId] = (total[log.goalId] ?? 0) + 1;
+      total[log.attributionId] = (total[log.attributionId] ?? 0) + 1;
       if (log.event == CompletionEvent.completed) {
-        completed[log.goalId] = (completed[log.goalId] ?? 0) + 1;
+        completed[log.attributionId] = (completed[log.attributionId] ?? 0) + 1;
       }
     }
 

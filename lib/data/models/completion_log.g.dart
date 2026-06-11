@@ -20,6 +20,7 @@ class CompletionLogAdapter extends TypeAdapter<CompletionLog> {
       id: fields[0] as String?,
       chunkId: fields[1] as String,
       goalId: fields[2] as String,
+      commitmentId: fields[6] as String?,
       dateYmd: fields[3] as String,
       eventIndex: (fields[4] as num).toInt(),
     )..recordedAt = fields[5] as DateTime;
@@ -28,7 +29,7 @@ class CompletionLogAdapter extends TypeAdapter<CompletionLog> {
   @override
   void write(BinaryWriter writer, CompletionLog obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -40,7 +41,9 @@ class CompletionLogAdapter extends TypeAdapter<CompletionLog> {
       ..writeByte(4)
       ..write(obj.eventIndex)
       ..writeByte(5)
-      ..write(obj.recordedAt);
+      ..write(obj.recordedAt)
+      ..writeByte(6)
+      ..write(obj.commitmentId);
   }
 
   @override

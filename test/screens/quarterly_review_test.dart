@@ -384,7 +384,7 @@ void main() {
       await pumpWithMood(
         tester,
         ReorderableListView(
-          onReorder: (oldIdx, newIdx) {},
+          onReorderItem: (oldIdx, newIdx) {},
           children: [
             GoalAdjustmentTile(
               key: const ValueKey('g1'),
@@ -404,7 +404,7 @@ void main() {
       await pumpWithMood(
         tester,
         ReorderableListView(
-          onReorder: (oldIdx, newIdx) {},
+          onReorderItem: (oldIdx, newIdx) {},
           children: [
             GoalAdjustmentTile(
               key: const ValueKey('g1'),

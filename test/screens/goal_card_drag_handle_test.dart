@@ -56,7 +56,7 @@ Widget _reorderableSection(List<Goal> goals) {
               ),
             ),
     ),
-    onReorder: (oldIdx, newIdx) {},
+    onReorderItem: (oldIdx, newIdx) {},
   );
 }
 
