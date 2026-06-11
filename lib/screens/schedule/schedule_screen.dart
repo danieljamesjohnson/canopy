@@ -7,6 +7,7 @@ import '../../data/models/daily_schedule.dart';
 import '../../data/models/scheduled_chunk.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
+import '../../utils/rationale_mapper.dart';
 import 'widgets/chunk_card.dart';
 import 'widgets/chunk_detail_sheet.dart';
 import 'widgets/schedule_progress_bar.dart';
@@ -155,7 +156,12 @@ class ScheduleScreen extends StatelessWidget {
         childrenPadding: EdgeInsets.zero,
         children: skippedChunks.map((chunk) {
           final goalColor = _lookupGoalColor(context, chunk);
-          return ChunkCard(chunk: chunk, goalColor: goalColor);
+          return ChunkCard(
+            chunk: chunk,
+            goalColor: goalColor,
+            goalName: _lookupGoalName(context, chunk),
+            displayRationale: _toDisplayRationale(chunk.rationale),
+          );
         }).toList(),
       ),
     );
@@ -181,21 +187,10 @@ class ScheduleScreen extends StatelessWidget {
   }
 
   /// Maps the raw generator rationale string to a human-readable display
-  /// string per the READ-01 Rationale Strings table (Phase 8 static mapping;
-  /// Phase 9 replaces with budget-driven dynamic strings).
-  static String _toDisplayRationale(String rationale) {
-    switch (rationale) {
-      case 'Habit':
-        return 'Daily habit';
-      case 'Outcome goal':
-        return 'Working toward your goal';
-      case 'Weekly goal':
-        return 'Your weekly time goal';
-      default:
-        // Commitment block names and unknown values pass through unchanged.
-        return rationale;
-    }
-  }
+  /// string. Delegates to the shared [toDisplayRationale] helper so the
+  /// schedule, detail sheet, and focus screen render rationales identically.
+  static String _toDisplayRationale(String rationale) =>
+      toDisplayRationale(rationale);
 
   /// Opens the ChunkDetailSheet for the given work chunk. Added in Task 2
   /// (Plan 08-02); referenced here so _buildSwipeableCard can wire the onTap.

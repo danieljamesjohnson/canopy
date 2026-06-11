@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/scheduled_chunk.dart';
 import '../../providers/schedule_notifier.dart';
+import '../../utils/rationale_mapper.dart';
 import '../schedule/widgets/chunk_card.dart';
 import '../../providers/goals_notifier.dart';
 
@@ -150,9 +151,12 @@ class _FocusScreenState extends State<FocusScreen> {
       if (goal?.color != null) goalColor = hexToColor(goal!.color!);
     }
 
-    // Derive display strings.
+    // Derive display strings. Map the raw rationale through the shared helper
+    // so the focus screen reads identically to the schedule cards (READ-01).
     final displayGoalName = goalName ?? chunk?.rationale ?? 'Work block';
-    final displayRationale = chunk?.rationale ?? '';
+    final displayRationale = chunk == null
+        ? ''
+        : toDisplayRationale(chunk.rationale);
     final effectiveGoalColor = goalColor ?? colorScheme.primary;
 
     return Scaffold(
