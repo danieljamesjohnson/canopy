@@ -75,8 +75,8 @@ the existing codebase.
 |------|--------------------|-------------|--------|-------------|
 | Card heading | `titleMedium` | ~16sp | w700 (bold) | 1.4 |
 | Card body / subtitle | `bodySmall` | ~12sp | w400 (regular) | 1.4 |
-| Label / section heading | `bodyMedium` w600 | ~14sp | w600 (semibold) | 1.0 |
-| Button label | `labelLarge` (Material default) | ~14sp | w500 (medium) | 1.0 |
+| Label / section heading | `bodyMedium` | ~14sp | w400 (regular) | 1.0 |
+| Button label | `labelLarge` (Material default) | ~14sp | w400 (regular, inherited) | 1.0 |
 
 **Concrete rules for the end-of-day card:**
 - Card heading text: `Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)` — same as `ReviewBanner` title.
