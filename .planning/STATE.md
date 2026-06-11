@@ -23,13 +23,13 @@ progress:
 
 ## Current Position
 
-Phase: 9
-Plan: Not started
-Next: Phase 8 — A Schedule You Can Read
-Status: Phase complete — ready for verification
-Last activity: 2026-06-11
+Phase: 8 — A Schedule You Can Read (COMPLETE — verified 16/16, code-level)
+Plan: 08-01, 08-02, 08-03 complete (3/3)
+Next: Phase 9 — An Engine That Budgets
+Status: Phase 8 executed, verified (16/16 must-haves), code-reviewed (6 warnings fixed), UI-audited (2 READ-01 consistency fixes applied). 105/105 tests pass. On-device iOS UAT deferred (no iOS simulator on Linux): tap-vs-swipe gesture arena + focus countdown visuals.
+Last activity: 2026-06-11 — Phase 8 executed, verified, reviewed, UI-audited
 
-Progress: [----------] 0% (0/5 phases complete)
+Progress: [████------] 40% (2/5 phases complete)
 
 ---
 
