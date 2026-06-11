@@ -216,14 +216,18 @@ void main() {
             commitmentBlocks: [block],
           ),
         );
-        // Find all '%' text widgets and parse their values
+        // Find all '%' text widgets and sum their rounded values.
+        // Individual percentages use toStringAsFixed(0) (nearest integer), so
+        // the sum may be 99–101 due to rounding — inRange is the correct check.
         final pctWidgets = tester.widgetList<Text>(find.textContaining('%'));
         int sum = 0;
         for (final w in pctWidgets) {
           final raw = w.data ?? '';
           sum += int.tryParse(raw.replaceAll('%', '').trim()) ?? 0;
         }
-        expect(sum, equals(100));
+        expect(sum, inInclusiveRange(99, 101),
+            reason:
+                'Rounded per-slice percentages may sum to 99-101 due to toStringAsFixed(0) rounding');
       },
     );
   });

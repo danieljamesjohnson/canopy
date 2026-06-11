@@ -151,12 +151,17 @@ class _QuarterlyReviewScreenState extends State<QuarterlyReviewScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
                       // Section 1: Data
+                      // REVIEW-03 (Plan 02): _archivedGoals and _commitmentBlocks
+                      // will be wired in Plan 02 — passed as empty lists here
+                      // so the constructor compiles until Plan 02 lands.
                       DataSection(
                         totalCompleted: _totalCompleted,
                         goalChunkTotals: _goalChunkTotals,
                         notSpentCount: _notSpentCount,
                         weeklyData: _weeklyData,
                         goals: goals,
+                        archivedGoals: const [],
+                        commitmentBlocks: const [],
                         onNext: () => _advanceToSection(1),
                       ),
 

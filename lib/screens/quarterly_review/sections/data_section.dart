@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../data/models/commitment_block.dart';
 import '../../../data/models/goal.dart';
 import '../../schedule/widgets/chunk_card.dart';
 import '../widgets/bar_chart_weekly.dart';
@@ -17,6 +18,8 @@ class DataSection extends StatelessWidget {
     required this.notSpentCount,
     required this.weeklyData,
     required this.goals,
+    required this.archivedGoals,
+    required this.commitmentBlocks,
     required this.onNext,
   });
 
@@ -34,6 +37,12 @@ class DataSection extends StatelessWidget {
 
   /// Active goals for chart legend and top-3 display.
   final List<Goal> goals;
+
+  /// Archived goals with historical completions in the period.
+  final List<Goal> archivedGoals;
+
+  /// Commitment blocks whose ids may appear in goalChunkTotals keys.
+  final List<CommitmentBlock> commitmentBlocks;
 
   /// Called when user taps "Next: Reflect".
   final VoidCallback onNext;
@@ -80,6 +89,8 @@ class DataSection extends StatelessWidget {
             goalChunkTotals: goalChunkTotals,
             notSpentCount: notSpentCount,
             goals: goals,
+            archivedGoals: archivedGoals,
+            commitmentBlocks: commitmentBlocks,
           ),
           const SizedBox(height: 24),
 
