@@ -531,7 +531,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 7. Unbreak the Morning | 2/2 | Complete   | 2026-06-11 |
-| 8. A Schedule You Can Read | 3/3 | Complete   | 2026-06-11 |
+| 8. A Schedule You Can Read | 3/3 | Complete    | 2026-06-11 |
 | 9. An Engine That Budgets | 0/TBD | Not started | - |
 | 10. Close the Day | 0/TBD | Not started | - |
 | 11. Honest Long Loop | 0/TBD | Not started | - |
