@@ -15,11 +15,21 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
   /// injectable for unit tests to simulate day-boundary crossings without
   /// waiting for real wall-clock time. Mirrors ThemeNotifier's constructor
   /// style (lines 43-49 of theme_notifier.dart).
-  ScheduleNotifier({DateTime Function() now = DateTime.now}) : _now = now;
+  ///
+  /// [repo] and [logRepo] are optional injectable repositories for testing.
+  /// Production code omits them and the notifier creates the Hive-backed
+  /// implementations. Test code passes in-memory fakes to avoid Hive bootstrap.
+  ScheduleNotifier({
+    DateTime Function() now = DateTime.now,
+    DailyScheduleRepository? repo,
+    CompletionLogRepository? logRepo,
+  })  : _now = now,
+        _repo = repo ?? HiveDailyScheduleRepository(),
+        _logRepo = logRepo ?? HiveCompletionLogRepository();
 
   final DateTime Function() _now;
-  final DailyScheduleRepository _repo = HiveDailyScheduleRepository();
-  final CompletionLogRepository _logRepo = HiveCompletionLogRepository();
+  final DailyScheduleRepository _repo;
+  final CompletionLogRepository _logRepo;
   final ScheduleGeneratorService _generator = ScheduleGeneratorService();
 
   DailySchedule? _todaySchedule;
@@ -156,6 +166,37 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
         goalId: chunk.goalId ?? '',
         dateYmd: dateYmd,
         eventIndex: CompletionEvent.skipped.index,
+      ),
+    );
+
+    notifyListeners();
+  }
+
+  /// Marks the chunk with [chunkId] as deferred (Phase 8: visual skip only;
+  /// full cross-day carryover wired in Phase 10 CLOSE-02).
+  ///
+  /// Sets both [isDeferred] and [isSkipped] so the schedule_screen partition
+  /// (`!c.isSkipped`) moves the chunk to the skipped section immediately.
+  /// Logs as [CompletionEvent.skipped] in Phase 8; a dedicated deferred event
+  /// is added in Phase 10.
+  Future<void> markDeferred(String chunkId) async {
+    if (_todaySchedule == null) return;
+    final chunk = _todaySchedule!.chunks
+        .where((c) => c.id == chunkId)
+        .firstOrNull;
+    if (chunk == null || chunk.isDeferred) return;
+
+    chunk.isDeferred = true;
+    chunk.isSkipped = true; // drives existing schedule_screen partition
+    await _repo.save(_todaySchedule!);
+
+    final dateYmd = _todaySchedule!.dateYmd;
+    await _logRepo.append(
+      CompletionLog(
+        chunkId: chunkId,
+        goalId: chunk.goalId ?? '',
+        dateYmd: dateYmd,
+        eventIndex: CompletionEvent.skipped.index, // Phase 8: log as skipped
       ),
     );
 

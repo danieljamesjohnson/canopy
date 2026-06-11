@@ -93,12 +93,9 @@ void main() {
     test(
       'markDeferred sets isDeferred=true + isSkipped=true and notifies listeners',
       () async {
-        // These fakes are prepared for when Plan 08-02 adds constructor injection
-        // to ScheduleNotifier. The scheduleRepo seeds today's schedule; logRepo
-        // is provided so markDeferred can append a CompletionLog entry.
-        // ignore: unused_local_variable
+        // Plan 08-02: constructor injection added — pass fake repos so init()
+        // does not touch Hive.
         final scheduleRepo = _InMemoryScheduleRepository();
-        // ignore: unused_local_variable
         final logRepo = _InMemoryLogRepository();
 
         // Build a schedule with one work chunk pre-seeded into the repo.
@@ -117,15 +114,12 @@ void main() {
         );
         await scheduleRepo.save(schedule);
 
-        // Construct ScheduleNotifier with the injected fakes.
-        // Plan 08-02 will add constructor injection of _repo/_logRepo;
-        // until then this test fails via NoSuchMethodError on markDeferred.
-        // ignore: invalid_use_of_protected_member
+        // Construct ScheduleNotifier with injected fake repos (Plan 08-02).
         final notifier = ScheduleNotifier(
           now: () => DateTime(2026, 3, 23),
+          repo: scheduleRepo,
+          logRepo: logRepo,
         );
-        // Override repos via the injected fake (Plan 08-02 adds injection support
-        // or exposes a test constructor). Until then, test fails RED.
         await notifier.init();
 
         final listener = _CountingListener();
@@ -135,9 +129,8 @@ void main() {
           notifier.dispose();
         });
 
-        // Use dynamic dispatch so this compiles before markDeferred exists.
-        // Throws NoSuchMethodError → test is RED until Plan 08-02 adds the method.
-        await (notifier as dynamic).markDeferred('chunk-1');
+        // Plan 08-02: markDeferred now exists — direct call (no dynamic dispatch).
+        await notifier.markDeferred('chunk-1');
 
         // After markDeferred:
         final updatedChunk = notifier.todaySchedule?.chunks
