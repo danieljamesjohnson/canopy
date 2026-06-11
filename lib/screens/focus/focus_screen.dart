@@ -38,6 +38,13 @@ class _FocusScreenState extends State<FocusScreen> {
   bool _isDone = false;
   bool _markedComplete = false;
 
+  /// One-shot guard for the resolved-on-arrival auto-pop (WR-04). Because
+  /// `build` watches the notifier, a resolved chunk would otherwise re-register
+  /// a post-frame pop on every rebuild, letting two callbacks both pass the
+  /// `mounted` check and pop twice (dropping the user past /schedule). Set
+  /// before scheduling the pop so at most one pop is ever enqueued.
+  bool _popScheduled = false;
+
   @override
   void dispose() {
     _timer?.cancel(); // CRITICAL: prevent setState-after-dispose (Pitfall 1)
@@ -124,7 +131,10 @@ class _FocusScreenState extends State<FocusScreen> {
 
     // If the chunk is already resolved on arrival, pop immediately.
     // Guard: WidgetsBinding post-frame so we don't pop during build.
-    if (chunk != null && (chunk.isCompleted || chunk.isSkipped)) {
+    if (chunk != null &&
+        (chunk.isCompleted || chunk.isSkipped) &&
+        !_popScheduled) {
+      _popScheduled = true; // WR-04: enqueue at most one pop across rebuilds.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) Navigator.of(context).pop();
       });
