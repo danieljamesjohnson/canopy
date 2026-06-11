@@ -11,6 +11,7 @@ import '../../providers/theme_notifier.dart';
 import '../../services/quarterly_aggregation_service.dart';
 import '../../utils/rationale_mapper.dart';
 import '../schedule/widgets/schedule_progress_bar.dart';
+import 'widgets/end_of_day_card.dart';
 import 'widgets/review_banner.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -41,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
   };
 
   bool _bannerDismissed = false;
+  bool _eodCardDismissed = false;
   bool _inReviewWindow = false;
 
   @override
@@ -104,6 +106,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ReviewBanner(
               onStart: () => context.push('/review'),
               onDismiss: () => setState(() => _bannerDismissed = true),
+            ),
+          if (!_eodCardDismissed && _shouldShowEodCard(schedule.chunks))
+            EndOfDayCard(
+              chunks: schedule.chunks,
+              onDismiss: () => setState(() => _eodCardDismissed = true),
+              onGoToSummary: () => context.push('/summary'),
             ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -211,6 +219,12 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  /// Returns true when the end-of-day card trigger is met (active-schedule
+  /// branch only). Delegates to the top-level [shouldShowEodCard] so the
+  /// trigger logic is unit-testable without a widget pump.
+  bool _shouldShowEodCard(List<ScheduledChunk> chunks) =>
+      shouldShowEodCard(chunks);
 
   /// Resolves the goal name for a chunk by looking up its goalId in
   /// GoalsNotifier. Returns null for commitment-anchored chunks (no goalId)
