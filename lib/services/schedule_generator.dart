@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:canopy/data/models/commitment_block.dart';
+import 'package:canopy/data/models/completion_log.dart';
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 
@@ -37,6 +38,8 @@ class ScheduleGeneratorService {
     required List<CommitmentBlock> blocks,
     required int moodIndex,
     required DateTime date,
+    List<CompletionLog> completionLogs = const [],
+    bool lighterDay = true,
   }) {
     final int cap = _moodCap[moodIndex] ?? 8;
     final bool isLowMood = moodIndex <= 2;

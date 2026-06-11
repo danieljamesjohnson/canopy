@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:canopy/data/models/completion_log.dart';
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/models/commitment_block.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
@@ -52,6 +53,30 @@ void main() {
         endMinutes: endMinutes,
       );
 
+  Goal makeTimeTarget({
+    String name = 'Time-target goal',
+    double? weeklyHourBudget,
+    double? priorityWeight,
+  }) =>
+      Goal(
+        name: name,
+        goalTypeIndex: GoalType.timeTarget.index,
+        weeklyHourBudget: weeklyHourBudget,
+        priorityWeight: priorityWeight,
+      );
+
+  CompletionLog makeLog({
+    required String goalId,
+    required String dateYmd,
+    CompletionEvent event = CompletionEvent.completed,
+  }) =>
+      CompletionLog(
+        chunkId: 'chunk-$dateYmd',
+        goalId: goalId,
+        dateYmd: dateYmd,
+        eventIndex: event.index,
+      );
+
   int workCount(List<ScheduledChunk> chunks) =>
       chunks.where((c) => c.chunkType == ChunkType.work).length;
 
@@ -70,6 +95,7 @@ void main() {
       blocks: [],
       moodIndex: 3,
       date: monday,
+      completionLogs: [],
     );
     expect(result, isEmpty);
   });
@@ -85,6 +111,7 @@ void main() {
       blocks: [block],
       moodIndex: 3,
       date: monday,
+      completionLogs: [],
     );
     final workChunks = result.where((c) => c.chunkType == ChunkType.work).toList();
     expect(workChunks.length, 2);
@@ -101,6 +128,7 @@ void main() {
       blocks: [block],
       moodIndex: 3,
       date: saturday,
+      completionLogs: [],
     );
     expect(result, isEmpty);
   });
@@ -114,6 +142,7 @@ void main() {
       blocks: [],
       moodIndex: 1,
       date: monday,
+      completionLogs: [],
     );
     final works = result.where((c) => c.chunkType == ChunkType.work).toList();
     expect(works.length, 1);
@@ -129,6 +158,7 @@ void main() {
       blocks: [],
       moodIndex: 1,
       date: monday,
+      completionLogs: [],
     );
     final works = result.where((c) => c.chunkType == ChunkType.work).toList();
     expect(works.length, 2);
@@ -146,6 +176,7 @@ void main() {
       blocks: [],
       moodIndex: 5,
       date: monday,
+      completionLogs: [],
     );
     expect(workCount(result), lessThanOrEqualTo(11));
   });
@@ -162,6 +193,7 @@ void main() {
       blocks: [],
       moodIndex: 3,
       date: monday,
+      completionLogs: [],
     );
     // Verify chunk order: W SB W SB W SB W (trailing long break trimmed)
     expect(result.length, 7);
@@ -187,6 +219,7 @@ void main() {
       blocks: [],
       moodIndex: 1,
       date: monday,
+      completionLogs: [],
     );
     // Verify chunk order: W SB W SB W (trailing long break trimmed — READ-02)
     expect(result.length, 5);
@@ -208,6 +241,7 @@ void main() {
       blocks: [],
       moodIndex: 3,
       date: monday,
+      completionLogs: [],
     );
     // Should produce 1 work chunk without throwing
     expect(workCount(result), 1);
@@ -222,6 +256,7 @@ void main() {
       blocks: [],
       moodIndex: 3,
       date: monday,
+      completionLogs: [],
     );
     expect(workCount(result), 1);
   });
@@ -238,6 +273,7 @@ void main() {
       blocks: [block],
       moodIndex: 3,
       date: monday,
+      completionLogs: [],
     );
     final idx540 = result.indexWhere((c) => c.anchoredStartMinutes == 540);
     final idx565 = result.indexWhere((c) => c.anchoredStartMinutes == 565);
@@ -256,6 +292,7 @@ void main() {
       blocks: [],
       moodIndex: 3,
       date: monday,
+      completionLogs: [],
     );
     expect(result, isNotEmpty);
     expect(hasTrailingBreak(result), isFalse,
@@ -277,6 +314,7 @@ void main() {
       blocks: [block],
       moodIndex: 3,
       date: monday,
+      completionLogs: [],
     );
     final workChunkList = result
         .where((c) => c.chunkType == ChunkType.work)
@@ -308,6 +346,7 @@ void main() {
       blocks: [block],
       moodIndex: 3,
       date: monday,
+      completionLogs: [],
     );
     // Result contains only work chunks — no breaks.
     final hasAnyBreak = result.any((c) =>
@@ -337,6 +376,7 @@ void main() {
       blocks: [blockA, blockB],
       moodIndex: 3,
       date: monday,
+      completionLogs: [],
     );
 
     // Compute the actual occupied range from the anchored commitment chunks.
@@ -389,6 +429,7 @@ void main() {
       blocks: [],
       moodIndex: 3,
       date: monday,
+      completionLogs: [],
     );
 
     // No chunk's [start, start+duration) may overlap the next chunk's start.
@@ -429,6 +470,7 @@ void main() {
       blocks: [block],
       moodIndex: 3,
       date: monday,
+      completionLogs: [],
     );
 
     // The two commitment chunks (anchored 540 and 565) must be adjacent in the
@@ -448,5 +490,168 @@ void main() {
       expect(insideWindow, isFalse,
           reason: 'break at $start must not fall inside commitment window (WR-03)');
     }
+  });
+
+  // ---------------------------------------------------------------------------
+  // T-09-01: ENGINE-01 — mood 4, 3 time-target goals → more than 3 chunks
+  // ---------------------------------------------------------------------------
+  test('T-09-01: mood 4, 3 time-target goals → more than 3 discretionary chunks', () {
+    // 3 goals, each 10hr/week budget, Monday (daysLeft=7), 0 completions
+    // demand = ceil(10*60/25/7) = ceil(3.43) = 4 per goal → total 12, capped at 9
+    final goals = [
+      makeTimeTarget(name: 'G1', weeklyHourBudget: 10),
+      makeTimeTarget(name: 'G2', weeklyHourBudget: 10),
+      makeTimeTarget(name: 'G3', weeklyHourBudget: 10),
+    ];
+    final result = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 4,
+      date: monday,
+      completionLogs: [],
+    );
+    expect(workChunksOf(result), greaterThan(3));
+  });
+
+  // ---------------------------------------------------------------------------
+  // T-09-02: ENGINE-02 — most-behind time-target goal gets more chunks
+  // ---------------------------------------------------------------------------
+  test('T-09-02: most-behind time-target goal gets >= ahead goal chunk count', () {
+    // Goal A: 5hr budget, 2 completed chunks this week (completedHrs=~0.83h) → remaining ~4.17h
+    // Goal B: 5hr budget, 0 completed chunks → remaining 5h (most behind)
+    // Expected: B gets >= A's chunks and strictly more in this setup
+    final goalA = makeTimeTarget(name: 'A', weeklyHourBudget: 5);
+    final goalB = makeTimeTarget(name: 'B', weeklyHourBudget: 5);
+    // Monday = start of week; log 2 completions for goal A this week
+    final logs = [
+      makeLog(goalId: goalA.id, dateYmd: '2026-03-23'), // today, Monday
+      makeLog(goalId: goalA.id, dateYmd: '2026-03-23'),
+    ];
+    final result = sut.generate(
+      goals: [goalA, goalB],
+      blocks: [],
+      moodIndex: 5,
+      date: monday,
+      completionLogs: logs,
+    );
+    final aChunks = result.where((c) => c.chunkType == ChunkType.work && c.goalId == goalA.id).length;
+    final bChunks = result.where((c) => c.chunkType == ChunkType.work && c.goalId == goalB.id).length;
+    expect(bChunks, greaterThanOrEqualTo(aChunks),
+        reason: 'Goal B (most behind) must get >= chunks than Goal A (ahead)');
+  });
+
+  // ---------------------------------------------------------------------------
+  // T-09-03a: ENGINE-03 — 3x/week habit NOT on non-due weekday (Tuesday)
+  // ---------------------------------------------------------------------------
+  test('T-09-03a: 3x/week habit absent on non-due weekday (Tuesday), present on due day', () {
+    // freq=3 → due weekdays = {1,3,5} = Mon/Wed/Fri
+    // Tuesday = weekday 2 → NOT due → 0 chunks
+    final tuesday = DateTime(2026, 3, 24); // weekday 2
+    final habit = Goal(
+      name: 'Habit 3x',
+      goalTypeIndex: GoalType.habit.index,
+      frequencyPerWeek: 3,
+    );
+    final resultTuesday = sut.generate(
+      goals: [habit],
+      blocks: [],
+      moodIndex: 4,
+      date: tuesday,
+      completionLogs: [],
+    );
+    expect(
+      resultTuesday.where((c) => c.chunkType == ChunkType.work && c.goalId == habit.id).length,
+      0,
+      reason: 'Habit must not appear on Tuesday (not a due day for freq=3)',
+    );
+    // Monday = weekday 1 → IS due → 1 chunk
+    final resultMonday = sut.generate(
+      goals: [habit],
+      blocks: [],
+      moodIndex: 4,
+      date: monday,
+      completionLogs: [],
+    );
+    expect(
+      resultMonday.where((c) => c.chunkType == ChunkType.work && c.goalId == habit.id).length,
+      1,
+      reason: 'Habit must appear on Monday (due day for freq=3)',
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // T-09-04: ENGINE-04 — near-deadline outcome precedes far-deadline outcome
+  // ---------------------------------------------------------------------------
+  test('T-09-04: near-deadline outcome chunk precedes far-deadline outcome chunk', () {
+    final nearDeadline = monday.add(const Duration(days: 3));
+    final farDeadline = monday.add(const Duration(days: 90));
+    final nearGoal = makeOutcome(name: 'Near', deadline: nearDeadline, priorityWeight: 0.5);
+    final farGoal = makeOutcome(name: 'Far', deadline: farDeadline, priorityWeight: 0.5);
+    final result = sut.generate(
+      goals: [farGoal, nearGoal], // intentionally reversed in input
+      blocks: [],
+      moodIndex: 4,
+      date: monday,
+      completionLogs: [],
+    );
+    final works = result.where((c) => c.chunkType == ChunkType.work).toList();
+    final nearIdx = works.indexWhere((c) => c.goalId == nearGoal.id);
+    final farIdx = works.indexWhere((c) => c.goalId == farGoal.id);
+    expect(nearIdx, greaterThanOrEqualTo(0), reason: 'near-deadline goal must be scheduled');
+    expect(farIdx, greaterThanOrEqualTo(0), reason: 'far-deadline goal must be scheduled');
+    expect(nearIdx, lessThan(farIdx),
+        reason: 'near-deadline outcome must precede far-deadline outcome');
+  });
+
+  // ---------------------------------------------------------------------------
+  // T-09-05: ENGINE-05 — lighter-day reduces discretionary chunk count
+  // ---------------------------------------------------------------------------
+  test('T-09-05: lighterDay=true yields strictly fewer chunks than lighterDay=false at mood 5', () {
+    // At mood 5: lighterDay=false → cap=11; lighterDay=true → cap drops to mood 4 → cap=9
+    final goals = List.generate(12, (i) => makeHabit(name: 'Habit $i'));
+    final resultHeavier = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 5,
+      date: monday,
+      completionLogs: [],
+      lighterDay: false,
+    );
+    final resultLighter = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 5,
+      date: monday,
+      completionLogs: [],
+      lighterDay: true,
+    );
+    expect(workChunksOf(resultLighter), lessThan(workChunksOf(resultHeavier)),
+        reason: 'lighter day must reduce discretionary chunk count');
+  });
+
+  // ---------------------------------------------------------------------------
+  // T-09-06: ENGINE-06 — high-priority goal wins 1-slot competition
+  // ---------------------------------------------------------------------------
+  test('T-09-06: high-priority time-target goal wins 1-slot competition over low-priority', () {
+    // mood=1, lighterDay=false: cap=6, no outcome goals → only habits and time-targets NOT included
+    // Use mood=3 and set up exactly 1 remaining capacity slot.
+    // mood=3 cap with lighterDay=true → uses mood=2 cap=6.
+    // Fill 5 slots with habits, leave 1 remaining slot for time-targets.
+    // High-priority goal (0.75) vs low-priority goal (0.25) — high must win the slot.
+    final habits = List.generate(5, (i) => makeHabit(name: 'Habit $i'));
+    final highPriGoal = makeTimeTarget(name: 'High', weeklyHourBudget: 10, priorityWeight: 0.75);
+    final lowPriGoal = makeTimeTarget(name: 'Low', weeklyHourBudget: 10, priorityWeight: 0.25);
+    final result = sut.generate(
+      goals: [...habits, highPriGoal, lowPriGoal],
+      blocks: [],
+      moodIndex: 3,
+      date: monday,
+      completionLogs: [],
+      lighterDay: true, // cap=6, habits fill 5 → 1 slot left
+    );
+    final highChunks = result.where((c) => c.chunkType == ChunkType.work && c.goalId == highPriGoal.id).length;
+    final lowChunks = result.where((c) => c.chunkType == ChunkType.work && c.goalId == lowPriGoal.id).length;
+    expect(highChunks, greaterThan(0), reason: 'high-priority goal must win the capacity slot');
+    expect(lowChunks, 0, reason: 'low-priority goal must be excluded when capacity is filled by high-priority');
   });
 }
