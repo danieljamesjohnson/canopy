@@ -72,9 +72,6 @@ void main() {
     eventIndex: event.index,
   );
 
-  int workCount(List<ScheduledChunk> chunks) =>
-      chunks.where((c) => c.chunkType == ChunkType.work).length;
-
   int workChunksOf(List<ScheduledChunk> result) =>
       result.where((c) => c.chunkType == ChunkType.work).length;
 
@@ -178,7 +175,7 @@ void main() {
       date: monday,
       completionLogs: [],
     );
-    expect(workCount(result), lessThanOrEqualTo(11));
+    expect(workChunksOf(result), lessThanOrEqualTo(11));
   });
 
   // ---------------------------------------------------------------------------
@@ -250,7 +247,7 @@ void main() {
       completionLogs: [],
     );
     // Should produce 1 work chunk without throwing
-    expect(workCount(result), 1);
+    expect(workChunksOf(result), 1);
   });
 
   // ---------------------------------------------------------------------------
@@ -266,7 +263,7 @@ void main() {
         date: monday,
         completionLogs: [],
       );
-      expect(workCount(result), 1);
+      expect(workChunksOf(result), 1);
     },
   );
 
