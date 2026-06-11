@@ -4,7 +4,13 @@ import '../data/repositories/goal_repository.dart';
 import '../data/repositories/hive_goal_repository.dart';
 
 class GoalsNotifier extends ChangeNotifier {
-  final GoalRepository _repository = HiveGoalRepository();
+  /// Construct a GoalsNotifier. [repository] defaults to
+  /// `HiveGoalRepository()` (production). Pass an in-memory repository
+  /// in tests to avoid Hive initialisation.
+  GoalsNotifier({GoalRepository? repository})
+    : _repository = repository ?? HiveGoalRepository();
+
+  final GoalRepository _repository;
 
   List<Goal> _goals = [];
 
@@ -85,8 +91,7 @@ class GoalsNotifier extends ChangeNotifier {
   /// [oldIndex] and [newIndex] are indices within the type-filtered list.
   /// After reorder, sortOrder values are updated and saved.
   Future<void> reorder(GoalType type, int oldIndex, int newIndex) async {
-    final group =
-        _goals.where((g) => g.goalType == type).toList();
+    final group = _goals.where((g) => g.goalType == type).toList();
 
     if (newIndex > oldIndex) newIndex -= 1;
 

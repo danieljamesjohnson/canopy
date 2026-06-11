@@ -4,7 +4,13 @@ import '../data/repositories/commitment_block_repository.dart';
 import '../data/repositories/hive_commitment_block_repository.dart';
 
 class CommitmentsNotifier extends ChangeNotifier {
-  final CommitmentBlockRepository _repository = HiveCommitmentBlockRepository();
+  /// Construct a CommitmentsNotifier. [repository] defaults to
+  /// `HiveCommitmentBlockRepository()` (production). Pass an in-memory
+  /// repository in tests to avoid Hive initialisation.
+  CommitmentsNotifier({CommitmentBlockRepository? repository})
+    : _repository = repository ?? HiveCommitmentBlockRepository();
+
+  final CommitmentBlockRepository _repository;
 
   List<CommitmentBlock> _blocks = [];
 

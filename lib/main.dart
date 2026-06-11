@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,7 +11,7 @@ import 'providers/commitments_notifier.dart';
 import 'providers/schedule_notifier.dart';
 import 'providers/settings_notifier.dart';
 import 'providers/theme_notifier.dart';
-import 'router.dart' show rootNavigatorKey, createRouter;
+import 'router.dart' show createRouter;
 import 'services/notification_service.dart';
 
 void main() async {
@@ -46,28 +47,56 @@ void main() async {
   final themeNotifier = ThemeNotifier();
   await themeNotifier.init();
 
+  // LOOP-01: construct GoalsNotifier and CommitmentsNotifier before runApp and
+  // await their load methods so the scheduling engine always receives the
+  // user's real saved data on any cold launch — not empty in-memory lists.
+  // Registered via ChangeNotifierProvider.value (not lazy create:) so the
+  // same pre-loaded instances are exposed to the widget tree.
+  final goalsNotifier = GoalsNotifier();
+  await goalsNotifier.loadGoals();
+
+  final commitmentsNotifier = CommitmentsNotifier();
+  await commitmentsNotifier.loadBlocks();
+
   // Initialize notification service before runApp.
   // Web: no-op (in-app banner used instead).
   await NotificationService.initialize();
 
+  // LOOP-04: capture the GoRouter instance so the notification tap callback
+  // can navigate via router.go() instead of Navigator.pushNamed() — named
+  // routes do not exist under go_router and previously caused a crash.
+  final router = createRouter(settingsNotifier);
+
   // Wire notification tap → navigate to check-in screen (AC-3).
-  // Uses rootNavigatorKey from router.dart to navigate without a BuildContext.
+  // Uses the GoRouter instance to navigate without a BuildContext.
   NotificationService.onTapCallback = (NotificationResponse response) {
-    final context = rootNavigatorKey.currentContext;
-    if (context == null) return;
     // Navigate to check-in if no schedule exists, otherwise show schedule.
     if (scheduleNotifier.hasScheduleToday) {
-      rootNavigatorKey.currentState?.pushNamed('/schedule');
+      router.go('/schedule');
     } else {
-      rootNavigatorKey.currentState?.pushNamed('/schedule/checkin');
+      router.go('/schedule/checkin');
     }
   };
 
-  runApp(CanopyApp(
-    settingsNotifier: settingsNotifier,
-    scheduleNotifier: scheduleNotifier,
-    themeNotifier: themeNotifier,
-  ));
+  // LOOP-04: auto-schedule the morning notification at startup when enabled,
+  // so it fires without the user toggling the Settings switch off/on.
+  // scheduleMorningNotification is idempotent (cancels ID 0 first).
+  if (settingsNotifier.morningNotificationEnabled) {
+    await NotificationService.scheduleMorningNotification(
+      settingsNotifier.morningNotificationMinutes,
+    );
+  }
+
+  runApp(
+    CanopyApp(
+      settingsNotifier: settingsNotifier,
+      scheduleNotifier: scheduleNotifier,
+      themeNotifier: themeNotifier,
+      goalsNotifier: goalsNotifier,
+      commitmentsNotifier: commitmentsNotifier,
+      router: router,
+    ),
+  );
 }
 
 class CanopyApp extends StatelessWidget {
@@ -76,21 +105,28 @@ class CanopyApp extends StatelessWidget {
     required this.settingsNotifier,
     required this.scheduleNotifier,
     required this.themeNotifier,
+    required this.goalsNotifier,
+    required this.commitmentsNotifier,
+    required this.router,
   });
 
   final SettingsNotifier settingsNotifier;
   final ScheduleNotifier scheduleNotifier;
   final ThemeNotifier themeNotifier;
+  final GoalsNotifier goalsNotifier;
+  final CommitmentsNotifier commitmentsNotifier;
+  final GoRouter router;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<GoalsNotifier>(create: (_) => GoalsNotifier()),
-        ChangeNotifierProvider<CommitmentsNotifier>(
-            create: (_) => CommitmentsNotifier()),
-        // Use value providers for notifiers constructed before runApp so init()
-        // can be awaited without double-construction.
+        // Use value providers for all notifiers constructed before runApp so
+        // init()/load() can be awaited without double-construction.
+        ChangeNotifierProvider<GoalsNotifier>.value(value: goalsNotifier),
+        ChangeNotifierProvider<CommitmentsNotifier>.value(
+          value: commitmentsNotifier,
+        ),
         ChangeNotifierProvider<ScheduleNotifier>.value(value: scheduleNotifier),
         ChangeNotifierProvider<SettingsNotifier>.value(value: settingsNotifier),
         ChangeNotifierProvider<ThemeNotifier>.value(value: themeNotifier),
@@ -107,7 +143,7 @@ class CanopyApp extends StatelessWidget {
           // taps a mood (or when the 20-min tick redraws modulation).
           themeAnimationDuration: const Duration(milliseconds: 500),
           themeAnimationCurve: Curves.easeOutCubic,
-          routerConfig: createRouter(settingsNotifier),
+          routerConfig: router,
         ),
       ),
     );
