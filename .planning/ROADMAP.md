@@ -459,7 +459,13 @@ Plans:
   3. Tapping any chunk opens a detail sheet showing the goal name, why the chunk was scheduled, and complete / skip / defer action buttons.
   4. A minimal companion focus mode is accessible from the detail sheet or schedule: it highlights the current chunk and offers an optional 25-minute countdown that flows into a completion action and a break suggestion.
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — Schema (isDeferred HiveField 8 + transient syntheticStartMinutes), generator ordering/breaks (READ-02), and Wave 0 test stubs
+- [ ] 08-02-PLAN.md — Goal-name card title + readable rationale (READ-01); ChunkDetailSheet + markDeferred (READ-03)
+- [ ] 08-03-PLAN.md — Minimal focus mode: FocusScreen countdown + /focus route + entry affordance (READ-04)
+
 **UI hint**: yes
 
 ---
