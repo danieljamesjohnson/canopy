@@ -132,19 +132,29 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     if (chunk == null || chunk.isCompleted) return;
 
     chunk.isCompleted = true;
-    await _repo.save(_todaySchedule!);
+    try {
+      await _repo.save(_todaySchedule!);
 
-    final dateYmd = _todaySchedule!.dateYmd;
-    await _logRepo.append(
-      CompletionLog(
-        chunkId: chunkId,
-        goalId: chunk.goalId ?? '',
-        dateYmd: dateYmd,
-        eventIndex: CompletionEvent.completed.index,
-      ),
-    );
-
-    notifyListeners();
+      final dateYmd = _todaySchedule!.dateYmd;
+      await _logRepo.append(
+        CompletionLog(
+          chunkId: chunkId,
+          goalId: chunk.goalId ?? '',
+          dateYmd: dateYmd,
+          eventIndex: CompletionEvent.completed.index,
+        ),
+      );
+    } catch (_) {
+      // WR-05: if save or log-append fails, revert the in-memory flag so the
+      // schedule, the persisted store, and the completion log do not diverge,
+      // then re-throw so the caller can surface feedback.
+      chunk.isCompleted = false;
+      rethrow;
+    } finally {
+      // Always reflect the committed in-memory state, even on failure (the
+      // revert above), so the UI never shows a partially-applied state.
+      notifyListeners();
+    }
   }
 
   /// Marks the chunk with [chunkId] as skipped, saves the updated schedule,
@@ -157,19 +167,26 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     if (chunk == null || chunk.isSkipped) return;
 
     chunk.isSkipped = true;
-    await _repo.save(_todaySchedule!);
+    try {
+      await _repo.save(_todaySchedule!);
 
-    final dateYmd = _todaySchedule!.dateYmd;
-    await _logRepo.append(
-      CompletionLog(
-        chunkId: chunkId,
-        goalId: chunk.goalId ?? '',
-        dateYmd: dateYmd,
-        eventIndex: CompletionEvent.skipped.index,
-      ),
-    );
-
-    notifyListeners();
+      final dateYmd = _todaySchedule!.dateYmd;
+      await _logRepo.append(
+        CompletionLog(
+          chunkId: chunkId,
+          goalId: chunk.goalId ?? '',
+          dateYmd: dateYmd,
+          eventIndex: CompletionEvent.skipped.index,
+        ),
+      );
+    } catch (_) {
+      // WR-05: revert the in-memory flag on persistence/log failure so state
+      // and log stay consistent, then re-throw for caller feedback.
+      chunk.isSkipped = false;
+      rethrow;
+    } finally {
+      notifyListeners();
+    }
   }
 
   /// Marks the chunk with [chunkId] as deferred (Phase 8: visual skip only;
@@ -188,18 +205,26 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
 
     chunk.isDeferred = true;
     chunk.isSkipped = true; // drives existing schedule_screen partition
-    await _repo.save(_todaySchedule!);
+    try {
+      await _repo.save(_todaySchedule!);
 
-    final dateYmd = _todaySchedule!.dateYmd;
-    await _logRepo.append(
-      CompletionLog(
-        chunkId: chunkId,
-        goalId: chunk.goalId ?? '',
-        dateYmd: dateYmd,
-        eventIndex: CompletionEvent.skipped.index, // Phase 8: log as skipped
-      ),
-    );
-
-    notifyListeners();
+      final dateYmd = _todaySchedule!.dateYmd;
+      await _logRepo.append(
+        CompletionLog(
+          chunkId: chunkId,
+          goalId: chunk.goalId ?? '',
+          dateYmd: dateYmd,
+          eventIndex: CompletionEvent.skipped.index, // Phase 8: log as skipped
+        ),
+      );
+    } catch (_) {
+      // WR-05: revert BOTH flags on persistence/log failure so the schedule
+      // partition and the completion log do not diverge, then re-throw.
+      chunk.isDeferred = false;
+      chunk.isSkipped = false;
+      rethrow;
+    } finally {
+      notifyListeners();
+    }
   }
 }
