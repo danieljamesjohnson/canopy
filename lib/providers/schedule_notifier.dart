@@ -63,14 +63,6 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  /// Encodes today's local date as a YYYYMMDD int (e.g., 20260513).
-  /// Mirrors ThemeNotifier._ymdToday(). Kept for parity; not currently used
-  /// outside this class but exposed for testability.
-  int ymdToday() {
-    final n = _now();
-    return n.year * 10000 + n.month * 100 + n.day;
-  }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
