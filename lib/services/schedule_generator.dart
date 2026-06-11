@@ -173,24 +173,32 @@ class ScheduleGeneratorService {
 
     // STEP C: Build result — commitment chunks (no breaks between them),
     // then interleave breaks for discretionary chunks only.
-    // Break chunks get syntheticStartMinutes = workChunk.syntheticStartMinutes + 25
-    // so the sort in Step D keeps them positioned after their preceding work chunk.
+    //
+    // WR-01: the break for each discretionary chunk is driven entirely by the
+    // reservedBreakMinutes recorded during packing — the single source of truth
+    // for the cadence. We do NOT recompute the long-break cadence here with an
+    // independent counter (which could diverge from the reserved slot and emit
+    // a 25-min long break where only 5 minutes were reserved, overlapping the
+    // next chunk after the sort). A null reservation means the packing pass
+    // reserved no break room after this chunk, so no break is emitted.
     final List<ScheduledChunk> result = [...commitmentChunks];
-    int breakCounter = 0;
     for (final chunk in discretionaryChunks) {
       result.add(chunk);
-      breakCounter++;
-      final isLong = breakCounter % longBreakEvery == 0;
+      final reserved = chunk.reservedBreakMinutes;
+      if (reserved == null) continue; // no break room was reserved
+      final isLong = reserved >= 25;
       final breakChunk = ScheduledChunk(
-        chunkTypeIndex: isLong ? ChunkType.longBreak.index : ChunkType.shortBreak.index,
+        chunkTypeIndex:
+            isLong ? ChunkType.longBreak.index : ChunkType.shortBreak.index,
         goalId: null,
-        durationMinutes: isLong ? 25 : 5,
+        durationMinutes: reserved,
         rationale: '',
       );
-      // Assign syntheticStartMinutes to the break so the sort positions it
-      // immediately after its preceding work chunk.
+      // Position the break immediately after its preceding work chunk so the
+      // Step D sort keeps it adjacent (and within the reserved footprint).
       if (chunk.syntheticStartMinutes != null) {
-        breakChunk.syntheticStartMinutes = chunk.syntheticStartMinutes! + chunk.durationMinutes;
+        breakChunk.syntheticStartMinutes =
+            chunk.syntheticStartMinutes! + chunk.durationMinutes;
       }
       result.add(breakChunk);
     }
@@ -266,6 +274,12 @@ class ScheduleGeneratorService {
     slots.add((start: cursor, end: dayEnd));
 
     // Greedily pack discretionary chunks into free slots.
+    //
+    // WR-01: this packing pass is the SINGLE source of truth for the long-break
+    // cadence. For each placed chunk we record, on the chunk itself, the exact
+    // break duration reserved after it (reservedBreakMinutes) so STEP C emits
+    // that same break instead of recomputing the cadence with an independent
+    // counter that could diverge.
     int discIdx = 0;
     int breakCount = 0;
     for (final slot in slots) {
@@ -273,14 +287,18 @@ class ScheduleGeneratorService {
       while (cursor + 25 <= slot.end && discIdx < discretionaryChunks.length) {
         discretionaryChunks[discIdx].syntheticStartMinutes = cursor;
         cursor += 25;
-        discIdx++;
         breakCount++;
         final isLong = breakCount % longBreakEvery == 0;
         final breakDur = isLong ? 25 : 5;
-        // Only advance cursor for break if there's room and more chunks follow.
-        if (cursor + breakDur <= slot.end && discIdx < discretionaryChunks.length) {
+        // Reserve the break footprint only when it fits AND more discretionary
+        // chunks remain to be placed. Record the reserved duration so STEP C
+        // emits the matching break; leaving it null means STEP C emits none.
+        if (cursor + breakDur <= slot.end &&
+            discIdx + 1 < discretionaryChunks.length) {
+          discretionaryChunks[discIdx].reservedBreakMinutes = breakDur;
           cursor += breakDur;
         }
+        discIdx++;
       }
     }
     // Discretionary chunks that didn't fit retain syntheticStartMinutes == null

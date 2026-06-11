@@ -54,5 +54,11 @@ class ScheduledChunk extends HiveObject {
   // Used as sort key for discretionary chunks in ScheduleGeneratorService.
   int? syntheticStartMinutes;
 
+  // Duration (minutes) of the break reserved AFTER this discretionary work
+  // chunk during the packing pass; NOT stored in Hive. Single source of truth
+  // for the long-break cadence so the break emitted in STEP C matches the slot
+  // room reserved during packing (WR-01). null = no break reserved.
+  int? reservedBreakMinutes;
+
   ChunkType get chunkType => ChunkType.values[chunkTypeIndex];
 }

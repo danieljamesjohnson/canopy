@@ -373,4 +373,42 @@ void main() {
     expect(starts, equals(sorted),
         reason: 'overlapping-block merge must keep the result monotonically sorted');
   });
+
+  // ---------------------------------------------------------------------------
+  // Test WR-01: the break duration reserved during packing must match the
+  // break duration emitted. With longBreakEvery=4 (mood 3-5), the 4th
+  // discretionary break is a long (25-min) break; the synthetic times must
+  // leave 25 minutes of room before the next chunk so no two chunks overlap
+  // after the sort (the packing/emit cadence counters cannot diverge).
+  // ---------------------------------------------------------------------------
+  test('WR-01: emitted long break matches reserved slot — no overlapping synthetic times', () {
+    // 6 habits at mood 3 (longBreakEvery=4). The break after chunk 4 is long.
+    final goals = List.generate(6, (i) => makeHabit(name: 'Habit $i'));
+    final result = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 3,
+      date: monday,
+    );
+
+    // No chunk's [start, start+duration) may overlap the next chunk's start.
+    for (int i = 0; i + 1 < result.length; i++) {
+      final a = result[i];
+      final b = result[i + 1];
+      final aStart = a.anchoredStartMinutes ?? a.syntheticStartMinutes ?? 9999;
+      final bStart = b.anchoredStartMinutes ?? b.syntheticStartMinutes ?? 9999;
+      expect(aStart + a.durationMinutes, lessThanOrEqualTo(bStart),
+          reason: 'chunk $i (${a.chunkType}, dur ${a.durationMinutes}) at '
+              '$aStart must not overlap chunk ${i + 1} at $bStart — reserved '
+              'slot must match emitted break duration (WR-01)');
+    }
+
+    // A long break (25 min) must actually be emitted, confirming the cadence
+    // is exercised and the emitted duration equals the reserved duration.
+    final longBreaks =
+        result.where((c) => c.chunkType == ChunkType.longBreak).toList();
+    expect(longBreaks, isNotEmpty,
+        reason: 'longBreakEvery=4 with 6 chunks must emit at least one long break');
+    expect(longBreaks.first.durationMinutes, 25);
+  });
 }
