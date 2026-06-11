@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-const int currentSchemaVersion = 4;
+const int currentSchemaVersion = 5;
 
 typedef MigrationFn = Future<void> Function();
 
@@ -11,6 +11,7 @@ final List<MigrationFn> _migrations = [
   _migration1to2,
   _migration2to3,
   _migration3to4,
+  _migration4to5,
 ];
 
 Future<void> _migration0to1() async {
@@ -38,6 +39,15 @@ Future<void> _migration3to4() async {
   // Phase 8: ScheduledChunk expanded with isDeferred (HiveField 8, bool, default false).
   // Additive bool field — Hive CE binary reader returns false for missing
   // HiveField(8) in existing ScheduledChunk records.
+  // No data transformation needed.
+}
+
+Future<void> _migration4to5() async {
+  // Phase 10: ScheduledChunk gains commitmentId (HiveField 9, String?, default null)
+  // and AppSettings gains eveningReminderEnabled (HiveField 7, bool, default false)
+  // and eveningReminderMinutes (HiveField 8, int, default 1200).
+  // All additive nullable/defaulted fields — Hive CE binary reader returns
+  // null/false/0 for missing fields in existing records.
   // No data transformation needed.
 }
 

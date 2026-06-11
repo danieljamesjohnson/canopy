@@ -36,4 +36,12 @@ class AppSettings extends HiveObject {
   /// the no-carry-forward rule (D-10). Null = no mood ever set yet.
   @HiveField(6)
   int? lastMoodSetYmdInt;
+
+  /// Evening reminder opt-in (default false — opt-in per CLOSE-01).
+  @HiveField(7)
+  bool eveningReminderEnabled = false;
+
+  /// Evening reminder time in minutes from midnight (default 1200 = 8:00pm).
+  @HiveField(8)
+  int eveningReminderMinutes = 1200;
 }

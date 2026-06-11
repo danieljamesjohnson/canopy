@@ -17,6 +17,7 @@ class ScheduledChunk extends HiveObject {
     required this.durationMinutes,
     this.anchoredStartMinutes,
     this.rationale = '',
+    this.commitmentId,
   }) : id = id ?? _uuid.v4();
 
   @HiveField(0)
@@ -49,6 +50,12 @@ class ScheduledChunk extends HiveObject {
 
   @HiveField(8)
   bool isDeferred = false;
+
+  /// CommitmentBlock.id for commitment-anchored chunks; null for discretionary chunks.
+  /// Populated by ScheduleGeneratorService.generate() (Step 1).
+  /// Logged by markComplete / markSkipped / markDeferred via commitmentId ?? '' guard.
+  @HiveField(9)
+  String? commitmentId;
 
   // Synthetic start time assigned during generation; NOT stored in Hive.
   // Used as sort key for discretionary chunks in ScheduleGeneratorService.
