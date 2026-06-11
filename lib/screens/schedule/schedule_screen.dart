@@ -8,6 +8,7 @@ import '../../data/models/scheduled_chunk.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
 import 'widgets/chunk_card.dart';
+import 'widgets/chunk_detail_sheet.dart';
 import 'widgets/schedule_progress_bar.dart';
 import 'widgets/swipeable_chunk_card.dart';
 
@@ -98,7 +99,24 @@ class ScheduleScreen extends StatelessWidget {
 
   Widget _buildSwipeableCard(BuildContext context, ScheduledChunk chunk) {
     final goalColor = _lookupGoalColor(context, chunk);
-    return SwipeableChunkCard(chunk: chunk, goalColor: goalColor);
+    final goalName = _lookupGoalName(context, chunk);
+    final displayRationale = _toDisplayRationale(chunk.rationale);
+    return SwipeableChunkCard(
+      chunk: chunk,
+      goalColor: goalColor,
+      goalName: goalName,
+      displayRationale: displayRationale,
+      // onTap wired in Task 2 (_openDetailSheet). Resolved chunks stay null.
+      onTap: (chunk.isCompleted || chunk.isSkipped)
+          ? null
+          : () => _openDetailSheet(
+                context,
+                chunk,
+                goalColor,
+                goalName,
+                displayRationale,
+              ),
+    );
   }
 
   Widget _buildSkippedSection(
@@ -132,6 +150,59 @@ class ScheduleScreen extends StatelessWidget {
     final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
     if (goal?.color != null) return hexToColor(goal!.color!);
     return null;
+  }
+
+  /// Resolves goal name for a chunk by looking up its goalId in GoalsNotifier.
+  /// Returns null for commitment-anchored chunks (no goalId) so they display
+  /// the block name from chunk.rationale instead.
+  String? _lookupGoalName(BuildContext context, ScheduledChunk chunk) {
+    if (chunk.goalId == null) return null;
+    final goals = context.read<GoalsNotifier>().goals;
+    final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
+    return goal?.name;
+  }
+
+  /// Maps the raw generator rationale string to a human-readable display
+  /// string per the READ-01 Rationale Strings table (Phase 8 static mapping;
+  /// Phase 9 replaces with budget-driven dynamic strings).
+  static String _toDisplayRationale(String rationale) {
+    switch (rationale) {
+      case 'Habit':
+        return 'Daily habit';
+      case 'Outcome goal':
+        return 'Working toward your goal';
+      case 'Weekly goal':
+        return 'Your weekly time goal';
+      default:
+        // Commitment block names and unknown values pass through unchanged.
+        return rationale;
+    }
+  }
+
+  /// Opens the ChunkDetailSheet for the given work chunk. Added in Task 2
+  /// (Plan 08-02); referenced here so _buildSwipeableCard can wire the onTap.
+  void _openDetailSheet(
+    BuildContext context,
+    ScheduledChunk chunk,
+    Color? goalColor,
+    String? goalName,
+    String displayRationale,
+  ) {
+    final notifier = context.read<ScheduleNotifier>();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => ChunkDetailSheet(
+        chunk: chunk,
+        notifier: notifier,
+        goalColor: goalColor,
+        goalName: goalName,
+        displayRationale: displayRationale,
+      ),
+    );
   }
 
   Widget _buildEmptyState(BuildContext context) {

@@ -20,13 +20,33 @@ String _formatMinutes(int minutes) {
 /// A card widget that renders one of three visual variants depending on
 /// [chunk.chunkType]: work, shortBreak, or longBreak.
 class ChunkCard extends StatelessWidget {
-  const ChunkCard({super.key, required this.chunk, this.goalColor});
+  const ChunkCard({
+    super.key,
+    required this.chunk,
+    this.goalColor,
+    this.goalName,
+    this.displayRationale,
+    this.onTap,
+  });
 
   final ScheduledChunk chunk;
 
   /// The goal's color for the left bar. Null → falls back to theme primary.
   /// Pass null for commitment-anchored work chunks (no goalId).
   final Color? goalColor;
+
+  /// The resolved goal name to display as the primary title. Null → falls
+  /// back to chunk.rationale. Only relevant for work chunks.
+  final String? goalName;
+
+  /// Pre-mapped human-readable rationale (e.g. 'Daily habit'). Displayed as
+  /// secondary bodySmall text beneath the goal name. Only relevant for work
+  /// chunks when goalName is non-null.
+  final String? displayRationale;
+
+  /// Tap callback for opening the detail sheet. Only wired for non-resolved
+  /// work chunks from the screen; null for break cards and resolved chunks.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +56,13 @@ class ChunkCard extends StatelessWidget {
       case ChunkType.longBreak:
         return _buildLongBreak(context);
       case ChunkType.work:
-        return _HoverableChunkContent(chunk: chunk, goalColor: goalColor);
+        return _HoverableChunkContent(
+          chunk: chunk,
+          goalColor: goalColor,
+          goalName: goalName,
+          displayRationale: displayRationale,
+          onTap: onTap,
+        );
     }
   }
 
@@ -104,10 +130,19 @@ class ChunkCard extends StatelessWidget {
 /// and swipe-gesture share identical state writes; they're orthogonal input
 /// modalities terminating at the same idempotent notifier method.
 class _HoverableChunkContent extends StatefulWidget {
-  const _HoverableChunkContent({required this.chunk, this.goalColor});
+  const _HoverableChunkContent({
+    required this.chunk,
+    this.goalColor,
+    this.goalName,
+    this.displayRationale,
+    this.onTap,
+  });
 
   final ScheduledChunk chunk;
   final Color? goalColor;
+  final String? goalName;
+  final String? displayRationale;
+  final VoidCallback? onTap;
 
   @override
   State<_HoverableChunkContent> createState() => _HoverableChunkContentState();
@@ -141,7 +176,9 @@ class _HoverableChunkContentState extends State<_HoverableChunkContent> {
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
-      child: Card(
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Card(
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         clipBehavior: Clip.antiAlias,
@@ -185,11 +222,12 @@ class _HoverableChunkContentState extends State<_HoverableChunkContent> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    chunk.rationale.isNotEmpty
-                                        ? chunk.rationale
-                                        : 'Work block',
+                                    widget.goalName ??
+                                        (chunk.rationale.isNotEmpty
+                                            ? chunk.rationale
+                                            : 'Work block'),
                                     style: theme.textTheme.titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                        ?.copyWith(fontWeight: FontWeight.w600),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -202,7 +240,19 @@ class _HoverableChunkContentState extends State<_HoverableChunkContent> {
                                 ),
                               ],
                             ),
-                            if (chunk.anchoredStartMinutes != null) ...[
+                            // Secondary text: readable rationale (when goalName
+                            // is provided) or anchored time for commitment chunks.
+                            if (widget.goalName != null &&
+                                widget.displayRationale != null &&
+                                widget.displayRationale!.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                widget.displayRationale!,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ] else if (chunk.anchoredStartMinutes != null) ...[
                               const SizedBox(height: 2),
                               Text(
                                 _formatMinutes(chunk.anchoredStartMinutes!),
@@ -270,6 +320,7 @@ class _HoverableChunkContentState extends State<_HoverableChunkContent> {
               ),
           ],
         ),
+        ), // end GestureDetector
       ),
     );
   }

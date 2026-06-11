@@ -16,6 +16,9 @@ class SwipeableChunkCard extends StatelessWidget {
     super.key,
     required this.chunk,
     this.goalColor,
+    this.goalName,
+    this.displayRationale,
+    this.onTap,
   });
 
   final ScheduledChunk chunk;
@@ -23,9 +26,18 @@ class SwipeableChunkCard extends StatelessWidget {
   /// The goal's color for the left bar. Null → falls back to theme primary.
   final Color? goalColor;
 
+  /// The resolved goal name to display as primary title on work cards.
+  final String? goalName;
+
+  /// Pre-mapped human-readable rationale. Passed through to ChunkCard.
+  final String? displayRationale;
+
+  /// Tap callback. Null for break cards and resolved work chunks.
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
-    // Break cards are not swipeable.
+    // Break cards are not swipeable and do not receive goal name or tap.
     if (chunk.chunkType != ChunkType.work) {
       return ChunkCard(chunk: chunk, goalColor: goalColor);
     }
@@ -61,7 +73,14 @@ class SwipeableChunkCard extends StatelessWidget {
         padding: const EdgeInsets.only(right: 20),
         child: const Icon(Icons.arrow_forward, color: Colors.white, size: 28),
       ),
-      child: ChunkCard(chunk: chunk, goalColor: goalColor),
+      child: ChunkCard(
+        chunk: chunk,
+        goalColor: goalColor,
+        goalName: goalName,
+        displayRationale: displayRationale,
+        // Resolved chunks are not tappable — null out the callback.
+        onTap: (chunk.isCompleted || chunk.isSkipped) ? null : onTap,
+      ),
     );
   }
 }
