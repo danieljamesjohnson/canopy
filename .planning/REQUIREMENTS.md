@@ -37,7 +37,7 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 ### Close — Close the Day (CLOSE)
 
 - [ ] **CLOSE-01**: A discoverable end-of-day moment (time-aware Home card after ~6pm or once ≥50% of chunks are resolved) summarizes the day, with an optional opt-in evening reminder.
-- [ ] **CLOSE-02**: The user can defer a chunk to tomorrow, and deferred chunks carry into the next morning's generation.
+- [x] **CLOSE-02**: The user can defer a chunk to tomorrow, and deferred chunks carry into the next morning's generation.
 - [x] **CLOSE-03**: Commitment chunks are attributed in completion logs (not recorded with an empty goal id).
 
 ### Review — Honest Long Loop (REVIEW)
@@ -84,7 +84,7 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 | ENGINE-05 | Phase 9 | Complete |
 | ENGINE-06 | Phase 9 | Complete |
 | CLOSE-01 | Phase 10 | Pending |
-| CLOSE-02 | Phase 10 | Pending |
+| CLOSE-02 | Phase 10 | Complete |
 | CLOSE-03 | Phase 10 | Complete |
 | REVIEW-01 | Phase 11 | Pending |
 | REVIEW-02 | Phase 11 | Pending |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: executing
-last_updated: "2026-06-11T20:45:07Z"
-last_activity: 2026-06-11 -- Phase 10 Plan 01 complete (CLOSE-03 commitment attribution)
+last_updated: "2026-06-11T20:53:31Z"
+last_activity: 2026-06-11 -- Phase 10 Plan 02 complete (CLOSE-02 defer-to-tomorrow carryover)
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 11
-  completed_plans: 9
-  percent: 64
+  completed_plans: 10
+  percent: 73
 ---
 
 # Execution State
@@ -24,12 +24,12 @@ progress:
 ## Current Position
 
 Phase: 10 (Close the Day) — EXECUTING
-Plan: 2 of 3
-Next: Phase 10 Plan 02 — Defer-to-Tomorrow Carryover (CLOSE-02)
+Plan: 3 of 3
+Next: Phase 10 Plan 03 — End-of-Day Card + Evening Reminder (CLOSE-01)
 Status: Executing Phase 10
-Last activity: 2026-06-11 -- Phase 10 Plan 01 complete (CLOSE-03 commitment attribution)
+Last activity: 2026-06-11 -- Phase 10 Plan 02 complete (CLOSE-02 defer-to-tomorrow carryover)
 
-Progress: [██████----] 60% (3/5 phases complete, 9/11 plans done)
+Progress: [███████---] 73% (3/5 phases complete, 10/11 plans done)
 
 ---
 
@@ -100,6 +100,8 @@ Progress: [██████----] 60% (3/5 phases complete, 9/11 plans done)
 - [Phase 10-01]: commitmentId stored as HiveField 9 on ScheduledChunk; goalId == null preserved so goalId == Goal-id invariant stays intact for existing guards
 - [Phase 10-01]: All three mark* sites (markComplete, markSkipped, markDeferred) use chunk.commitmentId ?? chunk.goalId ?? '' for consistent attribution
 - [Phase 10-01]: evening-reminder HiveFields 7-8 co-located in single migration 4→5 so Wave 2 plans are free of schema churn
+- [Phase 10-02]: Deferred days contribute 0 to streak count (non-breaking, no-increment); skip still resets; deferredGoalIds injection after Steps 2-4 consumes residual capacity only
+- [Phase 10-02]: goalId != null filter in carry-in lookup naturally excludes commitment chunks (their goalId is null per Plan 01 design); no separate commitmentId check needed
 
 ## Performance Metrics
 
@@ -130,6 +132,7 @@ Progress: [██████----] 60% (3/5 phases complete, 9/11 plans done)
 | Phase 09-an-engine-that-budgets P02 | 25min | 1 tasks | 2 files |
 | Phase 09-an-engine-that-budgets P03 | 5min | 2 tasks | 4 files |
 | Phase 10-close-the-day P10-01 | 5min | 2 tasks | 8 files |
+| Phase 10-close-the-day P10-02 | 5min | 2 tasks | 3 files |
 
 ## Blockers
 
@@ -139,4 +142,4 @@ None.
 
 ## Stopped At
 
-Phase 10 Plan 01 complete. Next: Phase 10 Plan 02 (10-02-PLAN.md) — Defer-to-Tomorrow Carryover (CLOSE-02)
+Phase 10 Plan 02 complete. Next: Phase 10 Plan 03 (10-03-PLAN.md) — End-of-Day Card + Evening Reminder (CLOSE-01)

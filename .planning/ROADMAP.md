@@ -529,7 +529,7 @@ Plans:
 
 **Wave 2** *(blocked on 10-01)*
 
-- [ ] 10-02-PLAN.md — Defer carryover: markDeferred logs deferred, non-breaking streak, deferredGoalIds generator input + single-hop carry-in (CLOSE-02)
+- [x] 10-02-PLAN.md — Defer carryover: markDeferred logs deferred, non-breaking streak, deferredGoalIds generator input + single-hop carry-in (CLOSE-02)
 - [ ] 10-03-PLAN.md — End-of-day card + opt-in evening reminder: EndOfDayCard + Home trigger, id-2 notification, Settings toggle, app-start scheduling (CLOSE-01)
 
 **UI hint**: yes
