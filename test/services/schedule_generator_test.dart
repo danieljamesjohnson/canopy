@@ -146,7 +146,7 @@ void main() {
     );
     final works = result.where((c) => c.chunkType == ChunkType.work).toList();
     expect(works.length, 1);
-    expect(works.first.rationale, 'Habit');
+    expect(works.first.rationale, 'Daily habit');
   });
 
   // ---------------------------------------------------------------------------
@@ -162,7 +162,7 @@ void main() {
     );
     final works = result.where((c) => c.chunkType == ChunkType.work).toList();
     expect(works.length, 2);
-    expect(works.map((c) => c.rationale), containsAll(['Habit']));
+    expect(works.map((c) => c.rationale), containsAll(['Daily habit']));
   });
 
   // ---------------------------------------------------------------------------

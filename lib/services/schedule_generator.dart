@@ -12,9 +12,9 @@ import 'package:canopy/data/models/scheduled_chunk.dart';
 ///
 /// Allocation order:
 ///   1. Commitment blocks (anchored work chunks, not counted against cap)
-///   2. Habits (always included, counted against cap)
-///   3. Outcome goals (mood 3-5 only, or deadline==today; sorted by urgency)
-///   4. Time-target goals (mood 3-5 only; sorted by priorityWeight)
+///   2. Habits (frequency-aware; scheduled on due weekdays only)
+///   3. Outcome goals (mood 3-5 only, or deadline pressure; sorted by urgency)
+///   4. Time-target goals (mood 3-5 only; multi-chunk demand, most-behind first)
 ///
 /// After allocation, a break insertion pass interleaves shortBreak / longBreak
 /// chunks between every work chunk. longBreakEvery = 3 for mood 1-2, 4 for 3-5.
@@ -31,6 +31,138 @@ class ScheduleGeneratorService {
     5: 11,
   };
 
+  /// Effective cap after applying lighter-day reduction.
+  ///
+  /// When [lighterDay] is true, drops one mood tier (next-lower cap).
+  /// mood=1 lighter has no lower tier — same cap.
+  int _effectiveCap(int moodIndex, bool lighterDay) {
+    if (!lighterDay) return _moodCap[moodIndex] ?? 8;
+    final lowerMood = (moodIndex - 1).clamp(1, 5);
+    return _moodCap[lowerMood] ?? _moodCap[moodIndex]!;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Public static helpers — exposed for Plan 03 (ScheduleNotifier streak write-back).
+  // ---------------------------------------------------------------------------
+
+  /// Returns the set of due weekdays (Monday=1 through Sunday=7) for a habit
+  /// with the given [freq] sessions per week, using an even floor-div spread.
+  ///
+  /// Examples: freq=3 → {1,3,5} = Mon/Wed/Fri; freq=7 → {1,2,3,4,5,6,7} (daily).
+  ///
+  /// IMPORTANT: uses integer floor-division only — do NOT use round()-based
+  /// formula which gives wrong results (freq=3 → Mon/Wed/SAT instead of Fri).
+  static Set<int> computeDueWeekdays(int freq) {
+    assert(freq >= 1 && freq <= 7);
+    return {for (int i = 0; i < freq; i++) i * 7 ~/ freq + 1};
+  }
+
+  /// Computes the habit streak from [allLogs], walking backward from most recent.
+  ///
+  /// Skips non-due weekdays (frequency-aware); increments streak on completed
+  /// due days; breaks on any other event (skipped/deferred) on a due day.
+  static int computeStreak(
+    String goalId,
+    Set<int> dueWeekdays,
+    List<CompletionLog> allLogs,
+  ) {
+    final goalLogs = allLogs
+        .where((l) => l.goalId == goalId)
+        .toList()
+      ..sort((a, b) => b.dateYmd.compareTo(a.dateYmd)); // most recent first
+    int streak = 0;
+    for (final log in goalLogs) {
+      final dt = DateTime.parse(log.dateYmd);
+      if (!dueWeekdays.contains(dt.weekday)) continue; // not a due day — skip
+      if (log.event == CompletionEvent.completed) {
+        streak++;
+      } else {
+        break; // skipped or missed due day → streak resets to 0
+      }
+    }
+    return streak;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private budget helpers.
+  // ---------------------------------------------------------------------------
+
+  /// Returns the Monday of the week containing [date].
+  DateTime _weekStart(DateTime date) =>
+      date.subtract(Duration(days: date.weekday - 1));
+
+  /// Counts completed (not skipped) time-target chunks this week for [goalId].
+  int _completedChunksThisWeek(
+    String goalId,
+    List<CompletionLog> logs,
+    DateTime today,
+  ) {
+    final weekStart = _weekStart(today);
+    return logs.where((l) {
+      if (l.goalId != goalId) return false;
+      if (l.event != CompletionEvent.completed) return false;
+      final logDate = DateTime.parse(l.dateYmd);
+      return !logDate.isBefore(weekStart) && !logDate.isAfter(today);
+    }).length;
+  }
+
+  /// Remaining weekly hours for [goal], clamped to [0, weeklyHourBudget].
+  double _remainingHours(Goal goal, List<CompletionLog> logs, DateTime date) {
+    if (goal.weeklyHourBudget == null) return 0;
+    final completedHrs =
+        _completedChunksThisWeek(goal.id, logs, date) * 25.0 / 60.0;
+    return (goal.weeklyHourBudget! - completedHrs)
+        .clamp(0.0, goal.weeklyHourBudget!);
+  }
+
+  /// Demand chunks for a time-target goal today: ceil(remaining×60/25/daysLeft).
+  /// Capped at 4 per day. [daysLeft] is clamped to [1,7] — never zero.
+  int _demandForTimeTarget(
+    Goal goal,
+    List<CompletionLog> logs,
+    DateTime date,
+  ) {
+    final remaining = _remainingHours(goal, logs, date);
+    if (remaining <= 0) return 0;
+    final daysLeft = (7 - date.weekday + 1).clamp(1, 7);
+    return (remaining * 60.0 / 25.0 / daysLeft).ceil().clamp(0, 4);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private rationale helpers.
+  // ---------------------------------------------------------------------------
+
+  String _habitRationale(Goal goal, int streak) {
+    if (streak > 0) return 'Streak: $streak day${streak == 1 ? "" : "s"}';
+    final freq = goal.frequencyPerWeek ?? 7;
+    return freq == 7 ? 'Daily habit' : '${freq}x/week';
+  }
+
+  String _outcomeRationale(Goal goal, DateTime date) {
+    if (goal.deadline == null) return 'Working toward your goal';
+    final days = goal.deadline!.difference(date).inDays.clamp(0, 9999);
+    if (days == 0) return 'Deadline today';
+    if (days == 1) return 'Deadline tomorrow';
+    return 'Deadline in $days day${days == 1 ? "" : "s"}';
+  }
+
+  String _timeTargetRationale(
+    Goal goal,
+    List<CompletionLog> logs,
+    DateTime date,
+  ) {
+    final completed = _completedChunksThisWeek(goal.id, logs, date);
+    final completedHrs = completed * 25.0 / 60.0;
+    final remaining =
+        ((goal.weeklyHourBudget ?? 0.0) - completedHrs).clamp(0.0, double.infinity);
+    if (remaining < 0.1) return 'On track this week';
+    return '${remaining.toStringAsFixed(1)}h behind this week';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Main generation method.
+  // ---------------------------------------------------------------------------
+
   /// Generate a schedule for [date] given [moodIndex] (1-5), active [goals],
   /// and recurring [blocks].
   List<ScheduledChunk> generate({
@@ -41,7 +173,7 @@ class ScheduleGeneratorService {
     List<CompletionLog> completionLogs = const [],
     bool lighterDay = true,
   }) {
-    final int cap = _moodCap[moodIndex] ?? 8;
+    final int cap = _effectiveCap(moodIndex, lighterDay);
     final bool isLowMood = moodIndex <= 2;
     final int longBreakEvery = isLowMood ? 3 : 4;
 
@@ -70,85 +202,103 @@ class ScheduleGeneratorService {
     }
 
     // -------------------------------------------------------------------------
-    // Step 2: Habits — always included regardless of mood.
+    // Step 2: Habits — scheduled on due weekdays only; streak from logs.
     // -------------------------------------------------------------------------
     final activeGoals = goals.where((g) => !g.isArchived).toList();
 
     for (final goal in activeGoals) {
       if (discretionaryCount >= cap) break;
       if (goal.goalType != GoalType.habit) continue;
+      final effectiveFreq = goal.frequencyPerWeek ?? 7;
+      final dueWeekdays = computeDueWeekdays(effectiveFreq);
+      if (!dueWeekdays.contains(date.weekday)) continue; // not due today
+      final streak = computeStreak(goal.id, dueWeekdays, completionLogs);
       workChunks.add(
         ScheduledChunk(
           chunkTypeIndex: ChunkType.work.index,
           goalId: goal.id,
           durationMinutes: 25,
-          rationale: 'Habit',
+          rationale: _habitRationale(goal, streak),
         ),
       );
       discretionaryCount++;
     }
 
     // -------------------------------------------------------------------------
-    // Step 3: Outcome goals (mood 3-5 only, unless deadline==today).
+    // Step 3: Outcome goals.
+    // Mood 3–5: all outcomes sorted by urgency.
+    // Mood 1–2 + lighterDay OFF: outcomes with deadlines, urgency sorted.
+    // Mood 1–2 + lighterDay ON: only deadline==today.
     // -------------------------------------------------------------------------
     final outcomeGoals = activeGoals
         .where((g) => g.goalType == GoalType.outcome)
         .toList();
 
-    // Compute urgency score for each outcome goal.
-    double urgencyScore(Goal g, DateTime d) {
-      if (g.deadline == null) {
-        return (g.priorityWeight ?? 0.5) * 0.1;
-      }
-      final daysRemaining = max(1, g.deadline!.difference(d).inDays);
-      // Phase 3 uses placeholder chunksRemaining = 2.0
-      return (g.priorityWeight ?? 0.5) * 2.0 / daysRemaining.toDouble();
+    double urgencyScore(Goal g) {
+      if (g.deadline == null) return (g.priorityWeight ?? 0.5) * 0.1;
+      final daysRemaining = max(1, g.deadline!.difference(date).inDays);
+      return (g.priorityWeight ?? 0.5) / daysRemaining.toDouble();
     }
 
-    outcomeGoals.sort((a, b) =>
-        urgencyScore(b, date).compareTo(urgencyScore(a, date)));
+    outcomeGoals.sort((a, b) => urgencyScore(b).compareTo(urgencyScore(a)));
 
     for (final goal in outcomeGoals) {
       if (discretionaryCount >= cap) break;
-      // Include if: mood 3-5 OR deadline == today
-      final bool deadlineToday = goal.deadline != null &&
+      final deadlineToday = goal.deadline != null &&
           goal.deadline!.year == date.year &&
           goal.deadline!.month == date.month &&
           goal.deadline!.day == date.day;
-      if (!isLowMood || deadlineToday) {
-        workChunks.add(
-          ScheduledChunk(
-            chunkTypeIndex: ChunkType.work.index,
-            goalId: goal.id,
-            durationMinutes: 25,
-            rationale: 'Outcome goal',
-          ),
-        );
-        discretionaryCount++;
+      final bool include;
+      if (!isLowMood) {
+        include = true; // mood 3–5: all outcomes
+      } else if (lighterDay) {
+        include = deadlineToday; // mood 1–2 lighter ON: only deadline today
+      } else {
+        include = goal.deadline != null; // mood 1–2 lighter OFF: all with deadlines
       }
+      if (!include) continue;
+      workChunks.add(
+        ScheduledChunk(
+          chunkTypeIndex: ChunkType.work.index,
+          goalId: goal.id,
+          durationMinutes: 25,
+          rationale: _outcomeRationale(goal, date),
+        ),
+      );
+      discretionaryCount++;
     }
 
     // -------------------------------------------------------------------------
     // Step 4: Time-target goals (mood 3-5 only).
+    // Multi-chunk demand per goal; sorted most-behind first; priority tiebreaker.
     // -------------------------------------------------------------------------
     if (!isLowMood) {
       final timeTargetGoals = activeGoals
           .where((g) => g.goalType == GoalType.timeTarget)
           .toList()
-        ..sort((a, b) =>
-            (b.priorityWeight ?? 0.5).compareTo(a.priorityWeight ?? 0.5));
+        ..sort((a, b) {
+          final remA = _remainingHours(a, completionLogs, date);
+          final remB = _remainingHours(b, completionLogs, date);
+          if ((remA - remB).abs() > 0.01) return remB.compareTo(remA); // most behind first
+          return (b.priorityWeight ?? 0.5)
+              .compareTo(a.priorityWeight ?? 0.5); // tiebreaker
+        });
 
       for (final goal in timeTargetGoals) {
         if (discretionaryCount >= cap) break;
-        workChunks.add(
-          ScheduledChunk(
-            chunkTypeIndex: ChunkType.work.index,
-            goalId: goal.id,
-            durationMinutes: 25,
-            rationale: 'Weekly goal',
-          ),
-        );
-        discretionaryCount++;
+        final demand = _demandForTimeTarget(goal, completionLogs, date);
+        for (int i = 0; i < demand; i++) {
+          if (discretionaryCount >= cap) break;
+          workChunks.add(
+            ScheduledChunk(
+              chunkTypeIndex: ChunkType.work.index,
+              goalId: goal.id,
+              durationMinutes: 25,
+              rationale: _timeTargetRationale(goal, completionLogs, date),
+            ),
+          );
+          discretionaryCount++;
+        }
       }
     }
 
