@@ -49,7 +49,7 @@ Exceptions:
 - Work card internal vertical padding: 12 dp (`EdgeInsets.symmetric(vertical: 12)`) — already established; keep.
 - Colored left bar width: 5 dp (established in `chunk_card.dart`; do not change).
 - Touch target minimum: 44 dp height for all tappable cards (enforced by Card + 12dp vertical padding on titleMedium).
-- Bottom sheet drag handle area: 28 dp minimum top padding before first content.
+- Drag handle padding: `EdgeInsets.only(top: 12, bottom: 8)` — both values are multiples of 4; no additional top-padding token is needed.
 
 **Source:** `chunk_card.dart` lines 47, 145–174; `schedule_screen.dart` lines 109, 163, 186.
 
@@ -60,18 +60,16 @@ Exceptions:
 All roles map directly to Material 3 `TextTheme` roles. Use `Theme.of(context).textTheme.*`.
 Do not introduce custom `TextStyle` sizes — rely on the theme's scale.
 
+Exactly 4 TextTheme roles are used across the whole phase. Two weights: w400 (regular) and w600 (semibold), plus w300 reserved for the focus timer only.
+
 | Role | TextTheme Role | Weight Override | Line Height | Usage |
 |------|---------------|-----------------|-------------|-------|
-| Chunk title (goal name) | `titleMedium` | `FontWeight.w600` (semibold) | theme default (~1.4) | Goal name as card primary text — READ-01 |
-| Chunk secondary (rationale / time) | `bodySmall` | none (theme default w400) | theme default (~1.3) | Readable rationale, anchored time string |
-| Sheet heading | `titleLarge` | `FontWeight.w600` (semibold) | theme default | Goal name at top of detail bottom sheet |
-| Sheet body | `bodyMedium` | none (w400) | 1.5 | Why-scheduled rationale in detail sheet |
-| Focus mode goal name | `headlineMedium` | `FontWeight.w600` | 1.2 | Prominent goal name on focus screen |
-| Focus mode timer | `displaySmall` | `FontWeight.w300` (light) | 1.0 | Countdown digits — large, calm |
-| Action button labels | `labelLarge` | none (theme default) | theme default | Complete / Skip / Defer button text |
-| Progress bar label | `bodySmall` | none (w400) | theme default | "X of Y Chunks" — already established |
+| Labels / secondary | `bodySmall` | none (theme default w400) | theme default (~1.3) | Durations, "min break", anchored time string, "X of Y Chunks" progress label |
+| Body text | `bodyMedium` | none (w400) | 1.5 | Rationale in detail sheet; break suggestion on focus screen |
+| Card title / sheet heading / focus goal name | `titleMedium` | `FontWeight.w600` (semibold) | theme default (~1.4) | Goal name as card primary text (READ-01); goal name at top of detail sheet; goal name on focus screen — use w600 wherever emphasis is needed |
+| Focus timer countdown | `displaySmall` | `FontWeight.w300` (light) | 1.0 | Countdown digits — large, calm |
 
-Rule: exactly 4 semantic text sizes in use (bodySmall, bodyMedium/titleMedium, titleLarge/headlineMedium, displaySmall). Two weights: w400 (regular) and w600 (semibold), plus w300 reserved for the focus timer only.
+Action button labels use the Flutter `FilledButton` / `OutlinedButton` / `TextButton` default label style (`labelLarge`) — this is a widget default, not an additional semantic size.
 
 **Source:** `chunk_card.dart` lines 192–195, 198–203, 208–212; `schedule_screen.dart` lines 172–182; CONTEXT.md — "Claude's Discretion" area for focus mode styling.
 
@@ -207,20 +205,20 @@ A subtle divider (`Divider(height: 1, indent: 16, endIndent: 16)`) between the l
 
 ```
 ┌──────────────────────────────────────────┐
-│  [drag handle — centered, 28dp top pad]  │
+│  [drag handle — centered, top: 12dp]     │
 │                                          │
 │  [goal color bar, 4dp wide, left edge   │
 │   of a Card inside the sheet]           │
 │                                          │
-│  Goal Name                 titleLarge    │
+│  Goal Name                 titleMedium   │
 │  Rationale text            bodyMedium    │
 │  Anchored time (if any)    bodySmall     │
 │                                          │
 │  ──────────────────────────────────────  │
 │                                          │
-│  [FilledButton]  Complete                │
-│  [OutlinedButton] Skip                  │
-│  [TextButton]    Defer                  │
+│  [FilledButton]  Mark complete           │
+│  [OutlinedButton] Skip chunk            │
+│  [TextButton]    Defer to later         │
 │                                          │
 └──────────────────────────────────────────┘
 ```
@@ -229,15 +227,19 @@ A subtle divider (`Divider(height: 1, indent: 16, endIndent: 16)`) between the l
 
 **Goal color mini-bar:** `Container(width: 4, height: 48, decoration: BoxDecoration(color: goalColor ?? colorScheme.primary, borderRadius: BorderRadius.circular(2)))` to the left of the goal name + rationale block, inside a `Row`.
 
+**Sheet heading typography:** Goal name rendered with `titleMedium` + `FontWeight.w600`. Rationale rendered with `bodyMedium` at line-height 1.5.
+
 **Action buttons:**
 
 | Button | Type | Icon | Action |
 |--------|------|------|--------|
-| Complete | `FilledButton.icon` | `Icons.check_circle_outline` | `scheduleNotifier.markComplete(chunk.id); Navigator.pop(context)` |
-| Skip | `OutlinedButton.icon` | `Icons.skip_next_outlined` | `scheduleNotifier.markSkipped(chunk.id); Navigator.pop(context)` |
-| Defer | `TextButton.icon` | `Icons.schedule_outlined` | `scheduleNotifier.markDeferred(chunk.id); Navigator.pop(context)` |
+| Mark complete | `FilledButton.icon` | `Icons.check_circle_outline` | `scheduleNotifier.markComplete(chunk.id); Navigator.pop(context)` |
+| Skip chunk | `OutlinedButton.icon` | `Icons.skip_next_outlined` | `scheduleNotifier.markSkipped(chunk.id); Navigator.pop(context)` |
+| Defer to later | `TextButton.icon` | `Icons.schedule_outlined` | `scheduleNotifier.markDeferred(chunk.id); Navigator.pop(context)` |
 
 All three buttons span full width (`SizedBox(width: double.infinity, child: ...)`), stacked vertically with `sm` (8 dp) gaps between them.
+
+**Two-tap confirmation for destructive actions:** Opening the sheet and then tapping "Skip chunk" or "Defer to later" IS the full confirmation flow. No separate confirm dialog is shown. The two steps (open sheet → tap action) serve as the intentional double-confirmation. This applies to both Skip chunk and Defer to later.
 
 **"Start focus" entry point:** `TextButton.icon(icon: Icon(Icons.center_focus_strong_outlined), label: Text('Start focus'))` placed above the action buttons, right-aligned or full-width. Taps `context.push('/focus', extra: chunk.id)` and closes the sheet.
 
@@ -264,7 +266,7 @@ All three buttons span full width (`SizedBox(width: double.infinity, child: ...)
 │                                             │
 │  [top 1/3 area]                             │
 │  Goal color bar (full-width, 4dp height)    │
-│  Goal name           headlineMedium w600    │
+│  Goal name           titleMedium w600       │
 │  Rationale           bodyMedium             │
 │                                             │
 │  [center area]                              │
@@ -335,7 +337,7 @@ Phase 8 adds tap-to-open-sheet on work cards. The `Dismissible` in `SwipeableChu
 Two valid entry paths to `/focus`:
 
 1. **Via detail sheet** "Start focus" button: `context.push('/focus', extra: chunk.id)`.
-2. **Via schedule screen** "Focus" action: A `FloatingActionButton.small` or an `IconButton` in the AppBar actions that passes the first unresolved work chunk id. Implementation choice is at executor's discretion; the route and parameter contract is fixed.
+2. **Via schedule screen** "Focus" action: A `FloatingActionButton.small` or an `IconButton` in the AppBar actions that passes the first unresolved work chunk id. If the `IconButton` variant is used, declare `tooltip: 'Start focus'` on the `IconButton`. Implementation choice is at executor's discretion; the route and parameter contract is fixed.
 
 ---
 
@@ -344,9 +346,9 @@ Two valid entry paths to `/focus`:
 | Element | Copy |
 |---------|------|
 | Schedule screen AppBar title | `'Today'` (existing — do not change) |
-| Detail sheet — Complete button | `'Complete'` |
-| Detail sheet — Skip button | `'Skip'` |
-| Detail sheet — Defer button | `'Defer'` |
+| Detail sheet — Mark complete button | `'Mark complete'` |
+| Detail sheet — Skip chunk button | `'Skip chunk'` |
+| Detail sheet — Defer to later button | `'Defer to later'` |
 | Detail sheet — Start focus | `'Start focus'` |
 | Focus AppBar title | *(empty — no title in focus mode)* |
 | Focus — timer not started | `'Start 25 min timer'` |
