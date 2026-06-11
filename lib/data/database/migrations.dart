@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-const int currentSchemaVersion = 3;
+const int currentSchemaVersion = 4;
 
 typedef MigrationFn = Future<void> Function();
 
@@ -10,6 +10,7 @@ final List<MigrationFn> _migrations = [
   _migration0to1,
   _migration1to2,
   _migration2to3,
+  _migration3to4,
 ];
 
 Future<void> _migration0to1() async {
@@ -31,6 +32,13 @@ Future<void> _migration2to3() async {
   // no-carry-forward rollover seam (D-10).
   // No data transformation needed — Hive binary reader returns null for missing
   // nullable fields in existing records (per Phase 2 _migration1to2 pattern).
+}
+
+Future<void> _migration3to4() async {
+  // Phase 8: ScheduledChunk expanded with isDeferred (HiveField 8, bool, default false).
+  // Additive bool field — Hive CE binary reader returns false for missing
+  // HiveField(8) in existing ScheduledChunk records.
+  // No data transformation needed.
 }
 
 Future<void> runMigrations(SharedPreferences prefs) async {

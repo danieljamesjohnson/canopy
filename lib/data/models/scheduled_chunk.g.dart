@@ -25,13 +25,14 @@ class ScheduledChunkAdapter extends TypeAdapter<ScheduledChunk> {
         rationale: fields[5] == null ? '' : fields[5] as String,
       )
       ..isCompleted = fields[6] as bool
-      ..isSkipped = fields[7] as bool;
+      ..isSkipped = fields[7] as bool
+      ..isDeferred = fields[8] as bool;
   }
 
   @override
   void write(BinaryWriter writer, ScheduledChunk obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +48,9 @@ class ScheduledChunkAdapter extends TypeAdapter<ScheduledChunk> {
       ..writeByte(6)
       ..write(obj.isCompleted)
       ..writeByte(7)
-      ..write(obj.isSkipped);
+      ..write(obj.isSkipped)
+      ..writeByte(8)
+      ..write(obj.isDeferred);
   }
 
   @override

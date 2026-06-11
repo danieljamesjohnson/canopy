@@ -47,5 +47,12 @@ class ScheduledChunk extends HiveObject {
   @HiveField(7)
   bool isSkipped = false;
 
+  @HiveField(8)
+  bool isDeferred = false;
+
+  // Synthetic start time assigned during generation; NOT stored in Hive.
+  // Used as sort key for discretionary chunks in ScheduleGeneratorService.
+  int? syntheticStartMinutes;
+
   ChunkType get chunkType => ChunkType.values[chunkTypeIndex];
 }
