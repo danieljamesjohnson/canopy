@@ -44,6 +44,11 @@ class ScheduleScreen extends StatelessWidget {
         backgroundColor: moodColor,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Re-check-in',
+            onPressed: () => context.push('/schedule/checkin'),
+          ),
           if (_resolvedWorkChunkRatio(schedule) >= 0.5)
             PopupMenuButton<String>(
               onSelected: (value) {
@@ -81,11 +86,13 @@ class ScheduleScreen extends StatelessWidget {
   /// Returns the ratio of resolved (completed or skipped) work chunks to
   /// total work chunks. Returns 0.0 when there are no work chunks.
   double _resolvedWorkChunkRatio(DailySchedule schedule) {
-    final workChunks =
-        schedule.chunks.where((c) => c.chunkType == ChunkType.work).toList();
+    final workChunks = schedule.chunks
+        .where((c) => c.chunkType == ChunkType.work)
+        .toList();
     if (workChunks.isEmpty) return 0.0;
-    final resolved =
-        workChunks.where((c) => c.isCompleted || c.isSkipped).length;
+    final resolved = workChunks
+        .where((c) => c.isCompleted || c.isSkipped)
+        .length;
     return resolved / workChunks.length;
   }
 
@@ -104,8 +111,8 @@ class ScheduleScreen extends StatelessWidget {
         title: Text(
           'Skipped today (${skippedChunks.length})',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         initiallyExpanded: false,
         tilePadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -137,8 +144,7 @@ class ScheduleScreen extends StatelessWidget {
               content: const Text(
                 'Start your morning check-in to build today\'s schedule.',
               ),
-              backgroundColor:
-                  Theme.of(context).colorScheme.primaryContainer,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
               contentTextStyle: TextStyle(
                 color: Theme.of(context).colorScheme.onPrimaryContainer,
               ),
@@ -156,8 +162,11 @@ class ScheduleScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.wb_sunny_outlined,
-                        size: 64, color: Colors.amber),
+                    const Icon(
+                      Icons.wb_sunny_outlined,
+                      size: 64,
+                      color: Colors.amber,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Plan your day in 30 seconds.',
@@ -168,10 +177,8 @@ class ScheduleScreen extends StatelessWidget {
                     Text(
                       'Tell us how you\'re feeling and we\'ll build your schedule.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),

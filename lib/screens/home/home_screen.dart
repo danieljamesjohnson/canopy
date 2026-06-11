@@ -84,7 +84,16 @@ class _HomeScreenState extends State<HomeScreen> {
         .firstOrNull;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Canopy')),
+      appBar: AppBar(
+        title: const Text('Canopy'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Re-check-in',
+            onPressed: () => context.push('/schedule/checkin'),
+          ),
+        ],
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
