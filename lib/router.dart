@@ -10,6 +10,7 @@ import 'screens/goals/archived_goals_screen.dart';
 import 'screens/goals/goals_screen.dart';
 import 'screens/schedule/checkin_screen.dart';
 import 'screens/schedule/schedule_screen.dart';
+import 'screens/focus/focus_screen.dart';
 import 'screens/quarterly_review/quarterly_review_screen.dart';
 import 'screens/settings/past_reviews_screen.dart';
 import 'screens/settings/settings_screen.dart';
@@ -110,6 +111,19 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
       GoRoute(
         path: '/summary',
         builder: (context, state) => const EndOfDaySummaryScreen(),
+      ),
+      // Focus mode is outside the shell — no bottom nav shown (same pattern
+      // as /summary). Receives chunkId via state.extra (String).
+      // Guard: if extra is not a String, return a harmless empty Scaffold
+      // instead of an unsafe cast crash (T-08-05 / ASVS V5).
+      GoRoute(
+        path: '/focus',
+        builder: (context, state) {
+          if (state.extra is! String) {
+            return const Scaffold(body: SizedBox.shrink());
+          }
+          return FocusScreen(chunkId: state.extra as String);
+        },
       ),
     ],
   );

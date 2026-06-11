@@ -50,6 +50,24 @@ class ScheduleScreen extends StatelessWidget {
             tooltip: 'Re-check-in',
             onPressed: () => context.push('/schedule/checkin'),
           ),
+          // Focus entry affordance — passes first unresolved work chunk id.
+          IconButton(
+            icon: const Icon(Icons.center_focus_strong_outlined),
+            tooltip: 'Start focus',
+            onPressed: () {
+              final firstChunk = schedule.chunks
+                  .where(
+                    (c) =>
+                        c.chunkType == ChunkType.work &&
+                        !c.isCompleted &&
+                        !c.isSkipped,
+                  )
+                  .firstOrNull;
+              if (firstChunk != null) {
+                context.push('/focus', extra: firstChunk.id);
+              }
+            },
+          ),
           if (_resolvedWorkChunkRatio(schedule) >= 0.5)
             PopupMenuButton<String>(
               onSelected: (value) {
