@@ -491,7 +491,20 @@ Plans:
   5. Toggling "Want a lighter day?" measurably reduces the number of discretionary chunks in the generated schedule.
   6. A goal marked high priority is scheduled before a goal marked low priority when both compete for the same capacity slot; the priority control is visible and editable in the goal form.
 
-**Plans:** TBD
+**Plans:** 3 plans in 2 waves
+
+Plans:
+
+**Wave 1** *(parallel — no shared files)*
+
+- [ ] 09-01-PLAN.md — Engine rewrite: Steps 1–4 honor budget/frequency/deadline/priority/lighter-day; shared in-memory log seam; Wave 0 tests T-09-01..06 (ENGINE-01,02,03,04,05)
+- [ ] 09-02-PLAN.md — Priority Low/Normal/High SegmentedButton in the goal form (ENGINE-06 UI)
+
+**Wave 2** *(blocked on 09-01)*
+
+- [ ] 09-03-PLAN.md — Notifier threads logs + lighterDay into generate(); GoalRepository streak write-back; check-in toggle plumbed + visible for all moods (ENGINE-03 streak, ENGINE-05, ENGINE-06 end-to-end)
+
+**UI hint**: yes
 
 ---
 
@@ -532,7 +545,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 7. Unbreak the Morning | 2/2 | Complete   | 2026-06-11 |
 | 8. A Schedule You Can Read | 3/3 | Complete    | 2026-06-11 |
-| 9. An Engine That Budgets | 0/TBD | Not started | - |
+| 9. An Engine That Budgets | 0/3 | Planned | - |
 | 10. Close the Day | 0/TBD | Not started | - |
 | 11. Honest Long Loop | 0/TBD | Not started | - |
 

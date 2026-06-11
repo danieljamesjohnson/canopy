@@ -655,7 +655,7 @@ Path: `/home/dan/development/flutter/bin/flutter` [VERIFIED: flutter --version]
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Lighter-day threshold at mood 1–2 OFF ("heavier"):**
    - What we know: CONTEXT says "adds back deadline-critical outcome work"
