@@ -417,7 +417,7 @@ Note: Commitment blocks are defined in Phase 2 and their scheduling logic is imp
 - [x] **Phase 8: A Schedule You Can Read** — Legible schedule: goal names, coherent ordering, chunk detail sheet, minimal companion focus mode (completed 2026-06-11)
 - [x] **Phase 9: An Engine That Budgets** — Rule-based generation that actually honors the goal model: capacity fill, weekly budgets, habit frequency, deadline pressure, priority (completed 2026-06-11)
 - [x] **Phase 10: Close the Day** — Discoverable end-of-day moment, deferral carry-in, commitment chunk attribution (completed 2026-06-11)
-- [ ] **Phase 11: Honest Long Loop** — Quarterly review data correctness and priority-adjustment feedback into generation
+- [x] **Phase 11: Honest Long Loop** — Quarterly review data correctness and priority-adjustment feedback into generation (completed 2026-06-11)
 
 ---
 
@@ -547,7 +547,7 @@ Plans:
   2. Changing a goal's priority in the review adjustments section results in a measurably different ordering in the next morning's generated schedule.
   3. Opening the quarterly review from the Home screen on a cold launch (without visiting other tabs first) displays the correct goal list and chart data — no empty review from unloaded state.
 
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 
@@ -557,7 +557,7 @@ Plans:
 
 **Wave 2** *(blocked on 11-01)*
 
-- [ ] 11-02-PLAN.md — Cold-launch _loadData (archived goals + commitments, allLogs.isEmpty guard) + adjustments reorderAllWithPriority call-site swap + cold-launch regression test (REVIEW-03, REVIEW-02 end-to-end)
+- [x] 11-02-PLAN.md — Cold-launch _loadData (archived goals + commitments, allLogs.isEmpty guard) + adjustments reorderAllWithPriority call-site swap + cold-launch regression test (REVIEW-03, REVIEW-02 end-to-end)
 
 ---
 
@@ -569,7 +569,7 @@ Plans:
 | 8. A Schedule You Can Read | 3/3 | Complete    | 2026-06-11 |
 | 9. An Engine That Budgets | 3/3 | Complete   | 2026-06-11 |
 | 10. Close the Day | 1/3 | In Progress | - |
-| 11. Honest Long Loop | 0/TBD | Not started | - |
+| 11. Honest Long Loop | 2/2 | Complete   | 2026-06-11 |
 
 ---
 

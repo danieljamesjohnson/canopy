@@ -2,22 +2,22 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: executing
-last_updated: "2026-06-11T22:26:00Z"
+status: verifying
+last_updated: "2026-06-11T22:23:16.675Z"
 last_activity: 2026-06-11 -- Phase 11 Plan 01 complete
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 13
-  completed_plans: 12
-  percent: 85
+  completed_plans: 13
+  percent: 100
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-11T21:48:21.555Z
+**Last session:** 2026-06-11T22:23:16.670Z
 
 ---
 
@@ -26,7 +26,7 @@ progress:
 Phase: 11 (Honest Long Loop) — EXECUTING
 Plan: 2 of 2
 Next: Phase 11 Plan 02 — Screen wiring + cold-launch fix (REVIEW-01/02/03)
-Status: Executing Phase 11
+Status: Phase complete — ready for verification
 Last activity: 2026-06-11 -- Phase 11 Plan 01 complete
 
 Progress: [████████--] 85% (4/5 phases in progress, 12/13 plans done)
@@ -110,6 +110,9 @@ Progress: [████████--] 85% (4/5 phases in progress, 12/13 plans 
 - [Phase 11-01]: reorderAllWithPriority linear spread: high=0.75, low=0.25, formula = high - (high-low)*i/(n-1); n=1 → 0.75
 - [Phase 11-01]: Zero-value slices omitted for all slice types including Time not spent (UI-SPEC §Donut Chart Slice Contract)
 - [Phase 11-01]: quarterly_review_screen.dart DataSection call site uses archivedGoals: const [] stub — Plan 02 wires actual data
+- [Phase ?]: allLogs.isEmpty replaces (totalCompleted == 0 && goals.isEmpty) guard in QuarterlyReviewScreen (REVIEW-03)
+- [Phase ?]: AdjustmentsSection._finish() calls reorderAllWithPriority so priorityWeight persists for next morning's generation (REVIEW-02)
+- [Phase ?]: QuarterlyReviewScreen accepts injectable CompletionLogRepository + QuarterlySnapshotRepository for test isolation; Hive is default
 
 ## Performance Metrics
 
@@ -143,6 +146,7 @@ Progress: [████████--] 85% (4/5 phases in progress, 12/13 plans 
 | Phase 10-close-the-day P10-02 | 5min | 2 tasks | 3 files |
 | Phase 10-close-the-day P10-03 | 10min | 2 tasks | 7 files |
 | Phase 11-honest-long-loop P11-01 | 18min | 3 tasks | 6 files |
+| Phase 11-honest-long-loop P02 | 6min | 2 tasks | 4 files |
 
 ## Blockers
 
