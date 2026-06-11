@@ -415,7 +415,7 @@ Note: Commitment blocks are defined in Phase 2 and their scheduling logic is imp
 
 - [x] **Phase 7: Unbreak the Morning** — Loop plumbing so the daily loop cannot dead-end on any cold launch or resume (completed 2026-06-11)
 - [x] **Phase 8: A Schedule You Can Read** — Legible schedule: goal names, coherent ordering, chunk detail sheet, minimal companion focus mode (completed 2026-06-11)
-- [ ] **Phase 9: An Engine That Budgets** — Rule-based generation that actually honors the goal model: capacity fill, weekly budgets, habit frequency, deadline pressure, priority
+- [x] **Phase 9: An Engine That Budgets** — Rule-based generation that actually honors the goal model: capacity fill, weekly budgets, habit frequency, deadline pressure, priority (completed 2026-06-11)
 - [ ] **Phase 10: Close the Day** — Discoverable end-of-day moment, deferral carry-in, commitment chunk attribution
 - [ ] **Phase 11: Honest Long Loop** — Quarterly review data correctness and priority-adjustment feedback into generation
 
@@ -491,7 +491,7 @@ Plans:
   5. Toggling "Want a lighter day?" measurably reduces the number of discretionary chunks in the generated schedule.
   6. A goal marked high priority is scheduled before a goal marked low priority when both compete for the same capacity slot; the priority control is visible and editable in the goal form.
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 
@@ -502,7 +502,7 @@ Plans:
 
 **Wave 2** *(blocked on 09-01)*
 
-- [ ] 09-03-PLAN.md — Notifier threads logs + lighterDay into generate(); GoalRepository streak write-back; check-in toggle plumbed + visible for all moods (ENGINE-03 streak, ENGINE-05, ENGINE-06 end-to-end)
+- [x] 09-03-PLAN.md — Notifier threads logs + lighterDay into generate(); GoalRepository streak write-back; check-in toggle plumbed + visible for all moods (ENGINE-03 streak, ENGINE-05, ENGINE-06 end-to-end)
 
 **UI hint**: yes
 
@@ -545,7 +545,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 7. Unbreak the Morning | 2/2 | Complete   | 2026-06-11 |
 | 8. A Schedule You Can Read | 3/3 | Complete    | 2026-06-11 |
-| 9. An Engine That Budgets | 2/3 | In Progress|  |
+| 9. An Engine That Budgets | 3/3 | Complete   | 2026-06-11 |
 | 10. Close the Day | 0/TBD | Not started | - |
 | 11. Honest Long Loop | 0/TBD | Not started | - |
 
