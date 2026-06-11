@@ -42,7 +42,7 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 
 ### Review — Honest Long Loop (REVIEW)
 
-- [ ] **REVIEW-01**: The quarterly review's aggregation and charts count all logged time correctly, including commitment time and archived goals' history, with correct donut totals.
+- [x] **REVIEW-01**: The quarterly review's aggregation and charts count all logged time correctly, including commitment time and archived goals' history, with correct donut totals.
 - [x] **REVIEW-02**: Priority adjustments made during the review demonstrably change subsequent schedule generation.
 - [x] **REVIEW-03**: The review loads its own data independently, with no dependency on a previously-visited tab.
 
@@ -86,7 +86,7 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 | CLOSE-01 | Phase 10 | Complete |
 | CLOSE-02 | Phase 10 | Complete |
 | CLOSE-03 | Phase 10 | Complete |
-| REVIEW-01 | Phase 11 | Pending |
+| REVIEW-01 | Phase 11 | Complete |
 | REVIEW-02 | Phase 11 | Complete |
 | REVIEW-03 | Phase 11 | Complete |
 
