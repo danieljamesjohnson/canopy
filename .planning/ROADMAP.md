@@ -416,7 +416,7 @@ Note: Commitment blocks are defined in Phase 2 and their scheduling logic is imp
 - [x] **Phase 7: Unbreak the Morning** — Loop plumbing so the daily loop cannot dead-end on any cold launch or resume (completed 2026-06-11)
 - [x] **Phase 8: A Schedule You Can Read** — Legible schedule: goal names, coherent ordering, chunk detail sheet, minimal companion focus mode (completed 2026-06-11)
 - [x] **Phase 9: An Engine That Budgets** — Rule-based generation that actually honors the goal model: capacity fill, weekly budgets, habit frequency, deadline pressure, priority (completed 2026-06-11)
-- [ ] **Phase 10: Close the Day** — Discoverable end-of-day moment, deferral carry-in, commitment chunk attribution
+- [x] **Phase 10: Close the Day** — Discoverable end-of-day moment, deferral carry-in, commitment chunk attribution (completed 2026-06-11)
 - [ ] **Phase 11: Honest Long Loop** — Quarterly review data correctness and priority-adjustment feedback into generation
 
 ---
@@ -530,7 +530,7 @@ Plans:
 **Wave 2** *(blocked on 10-01)*
 
 - [x] 10-02-PLAN.md — Defer carryover: markDeferred logs deferred, non-breaking streak, deferredGoalIds generator input + single-hop carry-in (CLOSE-02)
-- [ ] 10-03-PLAN.md — End-of-day card + opt-in evening reminder: EndOfDayCard + Home trigger, id-2 notification, Settings toggle, app-start scheduling (CLOSE-01)
+- [x] 10-03-PLAN.md — End-of-day card + opt-in evening reminder: EndOfDayCard + Home trigger, id-2 notification, Settings toggle, app-start scheduling (CLOSE-01)
 
 **UI hint**: yes
 

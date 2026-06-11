@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: executing
-last_updated: "2026-06-11T20:53:31Z"
-last_activity: 2026-06-11 -- Phase 10 Plan 02 complete (CLOSE-02 defer-to-tomorrow carryover)
+last_updated: "2026-06-11T21:00:00Z"
+last_activity: 2026-06-11 -- Phase 10 Plan 03 complete (CLOSE-01 end-of-day card + evening reminder)
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 11
-  completed_plans: 10
-  percent: 73
+  completed_plans: 11
+  percent: 100
 ---
 
 # Execution State
@@ -23,11 +23,11 @@ progress:
 
 ## Current Position
 
-Phase: 10 (Close the Day) — EXECUTING
-Plan: 3 of 3
-Next: Phase 10 Plan 03 — End-of-Day Card + Evening Reminder (CLOSE-01)
-Status: Executing Phase 10
-Last activity: 2026-06-11 -- Phase 10 Plan 02 complete (CLOSE-02 defer-to-tomorrow carryover)
+Phase: 10 (Close the Day) — COMPLETE
+Plan: 3 of 3 (all plans done)
+Next: Phase 11 — Quarterly Review Aggregation
+Status: Phase 10 complete; all 3 plans delivered
+Last activity: 2026-06-11 -- Phase 10 Plan 03 complete (CLOSE-01 end-of-day card + evening reminder)
 
 Progress: [███████---] 73% (3/5 phases complete, 10/11 plans done)
 
@@ -102,6 +102,9 @@ Progress: [███████---] 73% (3/5 phases complete, 10/11 plans done)
 - [Phase 10-01]: evening-reminder HiveFields 7-8 co-located in single migration 4→5 so Wave 2 plans are free of schema churn
 - [Phase 10-02]: Deferred days contribute 0 to streak count (non-breaking, no-increment); skip still resets; deferredGoalIds injection after Steps 2-4 consumes residual capacity only
 - [Phase 10-02]: goalId != null filter in carry-in lookup naturally excludes commitment chunks (their goalId is null per Plan 01 design); no separate commitmentId check needed
+- [Phase 10-03]: shouldShowEodCard extracted as top-level function in end_of_day_card.dart (not private on _HomeScreenState) for direct widget-test exercisability without full HomeScreen pump
+- [Phase 10-03]: onTap: null on evening reminder ListTile; fixed 8pm (1200 minutes) per CONTEXT.md decision; no time-picker UI this phase
+- [Phase 10-03]: EndOfDayCard insertion strictly inside the active-schedule branch (hasScheduleToday == true path); _buildEmptyState is unchanged
 
 ## Performance Metrics
 
@@ -133,6 +136,7 @@ Progress: [███████---] 73% (3/5 phases complete, 10/11 plans done)
 | Phase 09-an-engine-that-budgets P03 | 5min | 2 tasks | 4 files |
 | Phase 10-close-the-day P10-01 | 5min | 2 tasks | 8 files |
 | Phase 10-close-the-day P10-02 | 5min | 2 tasks | 3 files |
+| Phase 10-close-the-day P10-03 | 10min | 2 tasks | 7 files |
 
 ## Blockers
 
@@ -142,4 +146,4 @@ None.
 
 ## Stopped At
 
-Phase 10 Plan 02 complete. Next: Phase 10 Plan 03 (10-03-PLAN.md) — End-of-Day Card + Evening Reminder (CLOSE-01)
+Phase 10 complete (all 3 plans done). Next: Phase 11 — Quarterly Review Aggregation (REVIEW-01)
