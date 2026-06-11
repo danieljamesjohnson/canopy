@@ -402,7 +402,11 @@ Note: Commitment blocks are defined in Phase 2 and their scheduling logic is imp
   3. When a schedule already exists, a persistent entry point on both Home and the Schedule screen lets the user re-run check-in or regenerate.
   4. When morning notifications are enabled, the notification fires without requiring the user to toggle the settings switch; tapping it navigates correctly via go_router (no crash).
   5. The user can type freely into a goal name or weekly-hours field without the cursor jumping to position 0.
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Startup load of goals/commitments + day rollover + notification nav/auto-schedule/Linux guard + goal-form cursor fix (LOOP-01,02,04,05)
+- [ ] 07-02-PLAN.md — Persistent re-check-in/regenerate entry points + cold-launch regression test (LOOP-03,01)
 **UI hint**: yes
 
 ---
