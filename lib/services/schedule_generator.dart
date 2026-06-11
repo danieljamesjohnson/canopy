@@ -225,26 +225,43 @@ class ScheduleGeneratorService {
     const int dayEnd = 1320; // 10:00 PM
 
     // Build merged commitment windows.
+    //
+    // WR-02: a proper interval merge. Sort the raw windows by start, then merge
+    // any window that overlaps OR touches the running window
+    // (next.start <= current.end), taking end = max(prev.end, next.end). The
+    // previous adjacency-only merge (windows.last.end == s) left two
+    // overlapping same-day commitment blocks unmerged, which let the cursor
+    // move backward and produced a negative-width free slot.
+    final rawWindows = <({int start, int end})>[
+      for (final c in commitmentChunks)
+        (
+          start: c.anchoredStartMinutes!,
+          end: c.anchoredStartMinutes! + c.durationMinutes
+        ),
+    ]..sort((a, b) => a.start.compareTo(b.start));
+
     final windows = <({int start, int end})>[];
-    for (final c in commitmentChunks) {
-      final s = c.anchoredStartMinutes!;
-      final e = s + c.durationMinutes;
-      if (windows.isNotEmpty && windows.last.end == s) {
+    for (final w in rawWindows) {
+      if (windows.isNotEmpty && w.start <= windows.last.end) {
         final prev = windows.removeLast();
-        windows.add((start: prev.start, end: e));
+        windows
+            .add((start: prev.start, end: w.end > prev.end ? w.end : prev.end));
       } else {
-        windows.add((start: s, end: e));
+        windows.add((start: w.start, end: w.end));
       }
     }
 
     // Derive free slots from dayStart to dayEnd around commitment windows.
+    // Clamp the cursor so it never moves backward (WR-02): with merged windows
+    // this is already monotonic, but the clamp is defensive against any future
+    // window source and guarantees no negative-width slot is ever emitted.
     final slots = <({int start, int end})>[];
     int cursor = dayStart;
     for (final w in windows) {
       if (cursor < w.start) {
         slots.add((start: cursor, end: w.start));
       }
-      cursor = w.end;
+      cursor = cursor > w.end ? cursor : w.end;
     }
     slots.add((start: cursor, end: dayEnd));
 

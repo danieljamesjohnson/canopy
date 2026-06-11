@@ -317,4 +317,60 @@ void main() {
         reason: 'All-commitment day must not contain any break chunks (READ-02)');
     expect(workChunksOf(result), equals(2));
   });
+
+  // ---------------------------------------------------------------------------
+  // Test WR-02: two OVERLAPPING same-day commitment blocks must merge into one
+  // window so no discretionary chunk is placed at a time that overlaps a
+  // commitment window (no negative-width free slot / no backward cursor).
+  // ---------------------------------------------------------------------------
+  test('WR-02: overlapping commitment blocks merge — no discretionary overlaps window', () {
+    // Block A 540-620 → anchored chunks at 540,565,590 (footprint 540-615).
+    // Block B 600-660 → anchored chunks at 600,625 (footprint 600-650).
+    // The windows overlap (600 < 615) so they merge into the occupied range
+    // [540, 650). Without a proper interval merge the unmerged windows let the
+    // free-slot cursor move backward and a discretionary chunk could be placed
+    // inside the commitment range.
+    final blockA = makeBlock(name: 'A', startMinutes: 540, endMinutes: 620);
+    final blockB = makeBlock(name: 'B', startMinutes: 600, endMinutes: 660);
+    final result = sut.generate(
+      goals: List.generate(3, (i) => makeHabit(name: 'Habit $i')),
+      blocks: [blockA, blockB],
+      moodIndex: 3,
+      date: monday,
+    );
+
+    // Compute the actual occupied range from the anchored commitment chunks.
+    final anchored = result
+        .where((c) => c.chunkType == ChunkType.work && c.anchoredStartMinutes != null)
+        .toList();
+    final windowStart = anchored
+        .map((c) => c.anchoredStartMinutes!)
+        .reduce((a, b) => a < b ? a : b);
+    final windowEnd = anchored
+        .map((c) => c.anchoredStartMinutes! + c.durationMinutes)
+        .reduce((a, b) => a > b ? a : b);
+
+    // No discretionary (goalId != null) work chunk may overlap that range.
+    final discretionary = result
+        .where((c) => c.chunkType == ChunkType.work && c.goalId != null)
+        .toList();
+    expect(discretionary, isNotEmpty,
+        reason: 'discretionary habits should still be placed');
+    for (final c in discretionary) {
+      final start = c.syntheticStartMinutes!;
+      final overlaps = start < windowEnd && (start + 25) > windowStart;
+      expect(overlaps, isFalse,
+          reason: 'discretionary chunk at $start must not overlap merged '
+              'commitment window [$windowStart, $windowEnd)');
+    }
+
+    // Result must remain sorted by effective start time (no backward cursor /
+    // no negative-width slot).
+    final starts = result
+        .map((c) => c.anchoredStartMinutes ?? c.syntheticStartMinutes ?? 9999)
+        .toList();
+    final sorted = [...starts]..sort();
+    expect(starts, equals(sorted),
+        reason: 'overlapping-block merge must keep the result monotonically sorted');
+  });
 }
