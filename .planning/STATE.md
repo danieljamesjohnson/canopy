@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Actually Daily
-status: planning
-last_updated: "2026-06-10T00:00:00.000Z"
-last_activity: 2026-06-10
+status: in_progress
+last_updated: "2026-06-11T00:00:00.000Z"
+last_activity: 2026-06-11
 progress:
   total_phases: 5
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 2
+  percent: 20
 ---
 
 # Execution State
@@ -23,10 +23,11 @@ progress:
 
 ## Current Position
 
-Phase: Phase 7 — Unbreak the Morning (not started)
-Plan: —
-Status: Roadmap created; ready to plan Phase 7
-Last activity: 2026-06-10 — Milestone v1.1 roadmap written (phases 7–11)
+Phase: Phase 7 — Unbreak the Morning (COMPLETE — code-verified, iOS UAT pending)
+Plan: 07-01, 07-02 complete (2/2)
+Next: Phase 8 — A Schedule You Can Read
+Status: Phase 7 executed & verified (5/5 must-haves at code level; 91/91 tests pass). VERIFICATION status human_needed — 6 on-device iOS UAT items deferred (no iOS simulator on Linux).
+Last activity: 2026-06-11 — Phase 7 executed, verified, reviewed, fixes applied
 
 Progress: [----------] 0% (0/5 phases complete)
 
