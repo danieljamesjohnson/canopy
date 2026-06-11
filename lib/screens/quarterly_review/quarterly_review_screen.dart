@@ -99,7 +99,9 @@ class _QuarterlyReviewScreenState extends State<QuarterlyReviewScreen> {
     // Determine period start
     String startYmd;
     if (latestSnapshot != null) {
-      startYmd = latestSnapshot.periodEndYmd;
+      final prevEnd = DateTime.parse(latestSnapshot.periodEndYmd);
+      final nextDay = prevEnd.add(const Duration(days: 1));
+      startYmd = _toYmd(nextDay);
     } else if (allLogs.isNotEmpty) {
       final sorted = allLogs.map((l) => l.dateYmd).toList()..sort();
       startYmd = sorted.first;
