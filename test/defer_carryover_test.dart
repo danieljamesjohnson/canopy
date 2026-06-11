@@ -523,42 +523,6 @@ void main() {
       );
     });
 
-    test('completed-deferred chunk is NOT carried into next schedule', () async {
-      final goalId = 'disc-goal-complete-defer';
-      final goal = _makeOutcomeGoal(id: goalId);
-
-      // Prior day: deferred AND completed chunk (user completed it after deferring)
-      final priorChunk = ScheduledChunk(
-        id: 'prior-chunk-completed-defer',
-        chunkTypeIndex: ChunkType.work.index,
-        goalId: goalId,
-        durationMinutes: 25,
-        rationale: 'Working toward your goal',
-      );
-      priorChunk.isDeferred = true;
-      priorChunk.isCompleted = true; // completed — should NOT carry
-
-      final ctx = await buildNotifierWithPriorDay(
-        priorChunks: [priorChunk],
-        goals: [goal],
-      );
-
-      await ctx.notifier.generateToday(
-        moodIndex: 3,
-        goals: [goal],
-        blocks: [],
-        lighterDay: false,
-      );
-
-      final todaySchedule = ctx.notifier.todaySchedule;
-      expect(todaySchedule, isNotNull);
-      // We can't assert zero chunks for this goal since normal generation may
-      // schedule it anyway (it's an outcome goal). We verify that the carry-in
-      // does not add duplicate slots by checking the normal path.
-      // Actually for this test, pass an ARCHIVED goal that won't be generated
-      // normally, so only carry-in would create a slot.
-    });
-
     test('completed-deferred chunk of archived goal is NOT carried', () async {
       // Use an archived goal so it won't be scheduled via normal generation.
       // If carry-in incorrectly carries completed chunks, it would appear.
