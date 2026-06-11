@@ -187,6 +187,9 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       // schedule, the persisted store, and the completion log do not diverge,
       // then re-throw so the caller can surface feedback.
       chunk.isCompleted = false;
+      // Re-persist the reverted state so disk and memory stay in sync.
+      // Best-effort: if this also fails we still rethrow the original error.
+      try { await _repo.save(_todaySchedule!); } catch (_) {}
       rethrow;
     } finally {
       // Always reflect the committed in-memory state, even on failure (the
@@ -240,6 +243,8 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       // WR-05: revert the in-memory flag on persistence/log failure so state
       // and log stay consistent, then re-throw for caller feedback.
       chunk.isSkipped = false;
+      // Re-persist the reverted state so disk and memory stay in sync.
+      try { await _repo.save(_todaySchedule!); } catch (_) {}
       rethrow;
     } finally {
       notifyListeners();
@@ -279,6 +284,8 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       // partition and the completion log do not diverge, then re-throw.
       chunk.isDeferred = false;
       chunk.isSkipped = false;
+      // Re-persist the reverted state so disk and memory stay in sync.
+      try { await _repo.save(_todaySchedule!); } catch (_) {}
       rethrow;
     } finally {
       notifyListeners();
