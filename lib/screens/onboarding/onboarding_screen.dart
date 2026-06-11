@@ -6,6 +6,7 @@ import '../../data/models/goal.dart';
 import '../../providers/commitments_notifier.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/settings_notifier.dart';
+import '../../services/notification_service.dart';
 import '../goals/widgets/goal_type_picker.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -81,6 +82,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     // (4) ALWAYS last — triggers router redirect
     await settingsNotifier.setOnboardingComplete(true);
+
+    // LOOP-04: schedule the morning notification after onboarding completes
+    // so it fires without the user toggling the Settings switch off/on.
+    if (settingsNotifier.morningNotificationEnabled) {
+      await NotificationService.scheduleMorningNotification(
+        settingsNotifier.morningNotificationMinutes,
+      );
+    }
   }
 
   @override
@@ -223,8 +232,8 @@ class _Screen1State extends State<_Screen1> {
           Text(
             "We'll build your schedule around it.",
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 24),
           GoalTypePicker(
@@ -295,8 +304,10 @@ class _Screen2State extends State<_Screen2> {
   }) async {
     final result = await showTimePicker(
       context: context,
-      initialTime:
-          TimeOfDay(hour: currentMinutes ~/ 60, minute: currentMinutes % 60),
+      initialTime: TimeOfDay(
+        hour: currentMinutes ~/ 60,
+        minute: currentMinutes % 60,
+      ),
     );
     if (result != null && mounted) {
       onSet(result.hour * 60 + result.minute);
@@ -334,8 +345,8 @@ class _Screen2State extends State<_Screen2> {
           Text(
             "We'll always schedule around it, whatever your mood.",
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -354,8 +365,8 @@ class _Screen2State extends State<_Screen2> {
           Text(
             'Days',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -420,10 +431,7 @@ class _Screen2State extends State<_Screen2> {
                 ),
               ),
               const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: _onNext,
-                child: const Text('Add it'),
-              ),
+              ElevatedButton(onPressed: _onNext, child: const Text('Add it')),
             ],
           ),
         ],
@@ -491,8 +499,8 @@ class _Screen3State extends State<_Screen3> {
           Text(
             'Like exercise, journaling, or coffee time.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -511,8 +519,8 @@ class _Screen3State extends State<_Screen3> {
           Text(
             'Frequency',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -621,8 +629,8 @@ class _TimeTile extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 2),
             Text(

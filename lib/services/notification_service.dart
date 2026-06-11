@@ -85,6 +85,10 @@ class NotificationService {
     int minutesFromMidnight,
   ) async {
     if (kIsWeb) return;
+    // LOOP-04: zonedSchedule is not supported on Linux or Windows desktop —
+    // degrade gracefully so the app does not crash when running on those
+    // platforms. iOS and Android are the real targets.
+    if (Platform.isLinux || Platform.isWindows) return;
     await _plugin.cancel(id: 0);
     final hour = minutesFromMidnight ~/ 60;
     final minute = minutesFromMidnight % 60;

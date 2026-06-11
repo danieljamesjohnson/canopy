@@ -6,11 +6,7 @@ import '../../providers/goals_notifier.dart';
 import 'widgets/goal_type_picker.dart';
 
 class GoalFormSheet extends StatefulWidget {
-  const GoalFormSheet({
-    super.key,
-    required this.scrollController,
-    this.goal,
-  });
+  const GoalFormSheet({super.key, required this.scrollController, this.goal});
 
   final ScrollController scrollController;
   final Goal? goal;
@@ -22,6 +18,11 @@ class GoalFormSheet extends StatefulWidget {
 class _GoalFormSheetState extends State<GoalFormSheet> {
   GoalType? _selectedType;
   late TextEditingController _nameController;
+  // LOOP-05: hoisted from build() to State so the cursor position is preserved
+  // across rebuilds. Controllers constructed inside build() are recreated on
+  // every setState(), which resets the selection to position 0.
+  late TextEditingController _weeklyHoursController;
+  late TextEditingController _descriptionController;
   double? _priorityWeight;
   double? _weeklyHourBudget;
   DateTime? _deadline;
@@ -45,11 +46,21 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
     } else {
       _nameController = TextEditingController();
     }
+    _weeklyHoursController = TextEditingController(
+      text: _weeklyHourBudget != null
+          ? _weeklyHourBudget!.toStringAsFixed(1)
+          : '',
+    );
+    _descriptionController = TextEditingController(
+      text: _outcomeDescription ?? '',
+    );
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _weeklyHoursController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -59,14 +70,15 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
   Future<void> _save() async {
     if (!_canSave) return;
     final notifier = context.read<GoalsNotifier>();
-    final color =
-        widget.goal?.color ?? notifier.autoColor();
+    final color = widget.goal?.color ?? notifier.autoColor();
 
-    final goal = widget.goal ?? Goal(
-      name: _nameController.text.trim(),
-      goalTypeIndex: _selectedType!.index,
-      color: color,
-    );
+    final goal =
+        widget.goal ??
+        Goal(
+          name: _nameController.text.trim(),
+          goalTypeIndex: _selectedType!.index,
+          color: color,
+        );
 
     goal
       ..name = _nameController.text.trim()
@@ -150,6 +162,10 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
                 _deadline = null;
                 _outcomeDescription = null;
                 _frequencyPerWeek = null;
+                // Also clear the hoisted controllers so the fields visually
+                // reset without recreating the controller (LOOP-05).
+                _weeklyHoursController.clear();
+                _descriptionController.clear();
               }),
             ),
             const SizedBox(height: 16),
@@ -170,18 +186,16 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
             // Type-specific fields
             if (_selectedType == GoalType.timeTarget) ...[
               TextField(
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(
                   labelText: 'Weekly hours target',
                   hintText: 'e.g. 5.0',
                   border: OutlineInputBorder(),
                   suffixText: 'hrs/week',
                 ),
-                controller: TextEditingController(
-                  text: _weeklyHourBudget != null
-                      ? _weeklyHourBudget!.toStringAsFixed(1)
-                      : '',
-                ),
+                controller: _weeklyHoursController,
                 onChanged: (v) {
                   setState(() {
                     _weeklyHourBudget = double.tryParse(v);
@@ -215,9 +229,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 3,
-                controller: TextEditingController(
-                  text: _outcomeDescription ?? '',
-                ),
+                controller: _descriptionController,
                 onChanged: (v) =>
                     setState(() => _outcomeDescription = v.isEmpty ? null : v),
                 textCapitalization: TextCapitalization.sentences,
@@ -240,8 +252,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
                 max: 7,
                 divisions: 6,
                 label: '${_frequencyPerWeek ?? 7}x/week',
-                onChanged: (v) =>
-                    setState(() => _frequencyPerWeek = v.round()),
+                onChanged: (v) => setState(() => _frequencyPerWeek = v.round()),
               ),
               const SizedBox(height: 16),
             ],
@@ -250,9 +261,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
             if (_isEditMode) ...[
               TextButton(
                 onPressed: _archive,
-                style: TextButton.styleFrom(
-                  foregroundColor: colorScheme.error,
-                ),
+                style: TextButton.styleFrom(foregroundColor: colorScheme.error),
                 child: const Text('Archive'),
               ),
               const SizedBox(height: 8),
