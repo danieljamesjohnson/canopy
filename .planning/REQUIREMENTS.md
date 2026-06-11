@@ -32,7 +32,7 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 - [x] **ENGINE-03**: Habits respect `frequencyPerWeek` (scheduled on the right number of days) and accrue a real `streakCount` computed from completion history.
 - [x] **ENGINE-04**: Outcome goals are scheduled by deadline pressure, replacing the hardcoded `chunksRemaining = 2.0` placeholder.
 - [x] **ENGINE-05**: The "Want a lighter day?" toggle measurably reduces the discretionary schedule.
-- [ ] **ENGINE-06**: The user can set a goal's priority (low / normal / high) in the goal form, and that priority influences scheduling.
+- [x] **ENGINE-06**: The user can set a goal's priority (low / normal / high) in the goal form, and that priority influences scheduling.
 
 ### Close — Close the Day (CLOSE)
 
@@ -82,7 +82,7 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 | ENGINE-03 | Phase 9 | Complete |
 | ENGINE-04 | Phase 9 | Complete |
 | ENGINE-05 | Phase 9 | Complete |
-| ENGINE-06 | Phase 9 | Pending |
+| ENGINE-06 | Phase 9 | Complete |
 | CLOSE-01 | Phase 10 | Pending |
 | CLOSE-02 | Phase 10 | Pending |
 | CLOSE-03 | Phase 10 | Pending |

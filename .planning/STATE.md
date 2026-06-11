@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: executing
-last_updated: "2026-06-11T13:41:54.743Z"
+last_updated: "2026-06-11T13:51:16.753Z"
 last_activity: 2026-06-11 -- Phase 9 Plan 01 (An Engine That Budgets) complete
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
   percent: 40
 ---
 
@@ -17,14 +17,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-11T13:40:24Z
+**Last session:** 2026-06-11T13:51:16.749Z
 
 ---
 
 ## Current Position
 
 Phase: 9 (An Engine That Budgets) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Next: Phase 9 — An Engine That Budgets
 Status: Ready to execute
 Last activity: 2026-06-11 -- Phase 9 Plan 01 (An Engine That Budgets) complete
@@ -96,6 +96,7 @@ Progress: [████------] 40% (2/5 phases complete)
 - [Phase 09-01]: Floor-div weekday spread i*7~/freq+1 used exclusively — round-based formula gives wrong results (freq=3 → Mon/Wed/SAT instead of Mon/Wed/Fri)
 - [Phase 09-01]: lighterDay=true default in generate(); lighter day drops one mood tier (next-lower cap) for moods 3-5
 - [Phase 09-01]: chunksRemaining=2.0 placeholder removed; urgency = priority / daysRemaining (max 1)
+- [Phase ?]: ENGINE-06 UI half: SegmentedButton<double> priority control (Low/Normal/High → 0.25/0.5/0.75) added to GoalFormSheet for all goal types, wired to existing _priorityWeight state and save path
 
 ## Performance Metrics
 
@@ -123,6 +124,7 @@ Progress: [████------] 40% (2/5 phases complete)
 | Phase 08-a-schedule-you-can-read P02 | 6 minutes | 2 tasks | 7 files |
 | Phase 08-a-schedule-you-can-read P03 | 3 minutes | 2 tasks | 4 files |
 | Phase 09-an-engine-that-budgets P01 | 9min | 2 tasks | 3 files |
+| Phase 09-an-engine-that-budgets P02 | 25min | 1 tasks | 2 files |
 
 ## Blockers
 
