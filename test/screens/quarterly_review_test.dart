@@ -442,7 +442,9 @@ void main() {
           goalChunkTotals: const {'g1': 20, 'g2': 10},
         ),
         extraProviders: [
-          ChangeNotifierProvider<GoalsNotifier>(create: (_) => GoalsNotifier()),
+          ChangeNotifierProvider<GoalsNotifier>(
+            create: (_) => GoalsNotifier(repository: _InMemoryGoalRepository()),
+          ),
         ],
       );
       expect(find.text('Set your priorities for next quarter'), findsOneWidget);
@@ -460,7 +462,9 @@ void main() {
           goalChunkTotals: const {'g1': 20, 'g2': 10},
         ),
         extraProviders: [
-          ChangeNotifierProvider<GoalsNotifier>(create: (_) => GoalsNotifier()),
+          ChangeNotifierProvider<GoalsNotifier>(
+            create: (_) => GoalsNotifier(repository: _InMemoryGoalRepository()),
+          ),
         ],
       );
       await tester.ensureVisible(find.text('Finish review'));
