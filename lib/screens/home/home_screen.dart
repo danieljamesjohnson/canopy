@@ -44,11 +44,23 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _bannerDismissed = false;
   bool _eodCardDismissed = false;
   bool _inReviewWindow = false;
+  String? _lastScheduleDateYmd;
 
   @override
   void initState() {
     super.initState();
     _checkReviewWindow();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final notifier = context.read<ScheduleNotifier>();
+    final newDateYmd = notifier.todaySchedule?.dateYmd;
+    if (newDateYmd != _lastScheduleDateYmd) {
+      _lastScheduleDateYmd = newDateYmd;
+      _eodCardDismissed = false; // new schedule → show card again
+    }
   }
 
   Future<void> _checkReviewWindow() async {
