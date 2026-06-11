@@ -97,8 +97,11 @@ class EndOfDayCard extends StatelessWidget {
 /// Trigger: current local hour >= 18 (6pm) OR (work chunks non-empty AND
 /// resolved / total >= 0.5). Extracted as a top-level function so widget
 /// tests can exercise the logic in isolation.
-bool shouldShowEodCard(List<ScheduledChunk> chunks) {
-  final hour = DateTime.now().hour;
+bool shouldShowEodCard(
+  List<ScheduledChunk> chunks, {
+  DateTime Function() now = DateTime.now,
+}) {
+  final hour = now().hour;
   if (hour >= 18) return true;
   final workChunks =
       chunks.where((c) => c.chunkType == ChunkType.work).toList();
