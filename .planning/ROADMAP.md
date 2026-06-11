@@ -459,7 +459,7 @@ Plans:
   3. Tapping any chunk opens a detail sheet showing the goal name, why the chunk was scheduled, and complete / skip / defer action buttons.
   4. A minimal companion focus mode is accessible from the detail sheet or schedule: it highlights the current chunk and offers an optional 25-minute countdown that flows into a completion action and a break suggestion.
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 Plans:
 **Wave 1**
 
@@ -467,7 +467,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 08-02-PLAN.md — Goal-name card title + readable rationale (READ-01); ChunkDetailSheet + markDeferred (READ-03)
+- [x] 08-02-PLAN.md — Goal-name card title + readable rationale (READ-01); ChunkDetailSheet + markDeferred (READ-03)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -531,7 +531,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 7. Unbreak the Morning | 2/2 | Complete   | 2026-06-11 |
-| 8. A Schedule You Can Read | 1/3 | In Progress|  |
+| 8. A Schedule You Can Read | 2/3 | In Progress|  |
 | 9. An Engine That Budgets | 0/TBD | Not started | - |
 | 10. Close the Day | 0/TBD | Not started | - |
 | 11. Honest Long Loop | 0/TBD | Not started | - |
