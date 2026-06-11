@@ -18,7 +18,6 @@ import 'package:canopy/data/models/completion_log.dart';
 import 'package:canopy/data/models/daily_schedule.dart';
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
-import 'package:canopy/data/repositories/completion_log_repository.dart';
 import 'package:canopy/data/repositories/daily_schedule_repository.dart';
 import 'package:canopy/data/repositories/goal_repository.dart';
 import 'package:canopy/data/repositories/in_memory_completion_log_repository.dart';
@@ -195,7 +194,7 @@ void main() {
   group('CLOSE-03 notifier: commitment chunk logs non-empty CommitmentBlock.id', () {
     // Helper that sets up a notifier pre-seeded with one commitment chunk.
     Future<({ScheduleNotifier notifier, InMemoryCompletionLogRepository logRepo, ScheduledChunk chunk})>
-        _buildNotifier({required String blockId}) async {
+        buildNotifier({required String blockId}) async {
       final logRepo = InMemoryCompletionLogRepository();
       final scheduleRepo = _InMemoryScheduleRepository();
       final goalRepo = _InMemoryGoalRepository([]);
@@ -234,7 +233,7 @@ void main() {
       'markComplete on a commitment chunk logs CompletionLog.goalId == block.id (non-empty)',
       () async {
         const blockId = 'block-test-id';
-        final ctx = await _buildNotifier(blockId: blockId);
+        final ctx = await buildNotifier(blockId: blockId);
 
         await ctx.notifier.markComplete(ctx.chunk.id);
 
@@ -264,7 +263,7 @@ void main() {
       'markSkipped on a commitment chunk logs CompletionLog.goalId == block.id (non-empty)',
       () async {
         const blockId = 'block-test-id';
-        final ctx = await _buildNotifier(blockId: blockId);
+        final ctx = await buildNotifier(blockId: blockId);
 
         await ctx.notifier.markSkipped(ctx.chunk.id);
 

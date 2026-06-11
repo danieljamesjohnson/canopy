@@ -156,7 +156,7 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       await _logRepo.append(
         CompletionLog(
           chunkId: chunkId,
-          goalId: chunk.goalId ?? '',
+          goalId: chunk.commitmentId ?? chunk.goalId ?? '',
           dateYmd: dateYmd,
           eventIndex: CompletionEvent.completed.index,
         ),
@@ -225,7 +225,7 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       await _logRepo.append(
         CompletionLog(
           chunkId: chunkId,
-          goalId: chunk.goalId ?? '',
+          goalId: chunk.commitmentId ?? chunk.goalId ?? '',
           dateYmd: dateYmd,
           eventIndex: CompletionEvent.skipped.index,
         ),
@@ -293,7 +293,7 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       await _logRepo.append(
         CompletionLog(
           chunkId: chunkId,
-          goalId: chunk.goalId ?? '',
+          goalId: chunk.commitmentId ?? chunk.goalId ?? '',
           dateYmd: dateYmd,
           eventIndex: CompletionEvent.skipped.index, // Phase 8: log as skipped
         ),

@@ -205,6 +205,7 @@ class ScheduleGeneratorService {
           ScheduledChunk(
             chunkTypeIndex: ChunkType.work.index,
             goalId: null,
+            commitmentId: block.id, // CLOSE-03: real block id for attribution
             durationMinutes: 25,
             anchoredStartMinutes: cursor,
             rationale: block.name,
