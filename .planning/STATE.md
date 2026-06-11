@@ -26,8 +26,8 @@ progress:
 Phase: 8 — A Schedule You Can Read (COMPLETE — verified 16/16, code-level)
 Plan: 08-01, 08-02, 08-03 complete (3/3)
 Next: Phase 9 — An Engine That Budgets
-Status: Phase 8 executed, verified (16/16 must-haves), code-reviewed (6 warnings fixed), UI-audited (2 READ-01 consistency fixes applied). 105/105 tests pass. On-device iOS UAT deferred (no iOS simulator on Linux): tap-vs-swipe gesture arena + focus countdown visuals.
-Last activity: 2026-06-11 — Phase 8 executed, verified, reviewed, UI-audited
+Status: Phase 8 executed, verified (16/16 must-haves), code-reviewed (6 warnings fixed), UI-audited. Post-verify web smoke test surfaced a READ-01 seam: Phase 8 only updated the Schedule screen, so Home "Up next", the check-in/ack "Starting with X" text, and the skipped section still showed the raw rationale ("Habit") instead of the goal name. Fixed all four surfaces via a shared toDisplayRationale() + goal-name lookup (end-of-day summary already correct). 105/105 tests pass. On-device iOS UAT deferred (no iOS simulator on Linux): tap-vs-swipe gesture arena + focus countdown visuals.
+Last activity: 2026-06-11 — Phase 8 verified + cross-screen READ-01 legibility seams fixed
 
 Progress: [████------] 40% (2/5 phases complete)
 
