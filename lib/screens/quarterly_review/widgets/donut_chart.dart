@@ -81,36 +81,47 @@ class DonutChart extends StatelessWidget {
       legendEntries.add((color: color, label: goal.name, pct: pct));
     }
 
-    // Classify remaining keys: archived goals, commitment chunks, or unknown.
+    // Classify remaining keys: accumulate commitment / other totals here.
+    // Archived goals are emitted in a separate alphabetically-sorted pass below
+    // so the legend order is deterministic (UI-SPEC §Legend order).
     for (final entry in goalChunkTotals.entries) {
       if (activeGoalIds.contains(entry.key)) continue; // already handled above
       if (entry.value == 0) continue; // omit zero-value slices
 
       if (archivedGoalMap.containsKey(entry.key)) {
-        final goal = archivedGoalMap[entry.key]!;
-        final archivedIndex = archivedGoals.indexWhere(
-          (g) => g.id == entry.key,
-        );
-        final color = _colorForGoal(goal, goals.length + archivedIndex);
-        final pct = totalValue > 0 ? entry.value / totalValue * 100 : 0.0;
-        sections.add(
-          PieChartSectionData(
-            value: entry.value.toDouble(),
-            color: color,
-            radius: 50,
-            showTitle: false,
-          ),
-        );
-        legendEntries.add((
-          color: color,
-          label: '${goal.name} (archived)',
-          pct: pct,
-        ));
+        continue; // emitted in the sorted archived pass below
       } else if (commitmentIds.contains(entry.key)) {
         commitmentTotal += entry.value;
       } else {
         otherTotal += entry.value;
       }
+    }
+
+    // Archived goal slices — sorted alphabetically by name for stable legend
+    // order (a HashMap iteration order would otherwise be non-deterministic).
+    final archivedWithChunks =
+        archivedGoals.where((g) => (goalChunkTotals[g.id] ?? 0) > 0).toList()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
+    for (var i = 0; i < archivedWithChunks.length; i++) {
+      final goal = archivedWithChunks[i];
+      final count = goalChunkTotals[goal.id]!;
+      final color = _colorForGoal(goal, goals.length + i);
+      final pct = totalValue > 0 ? count / totalValue * 100 : 0.0;
+      sections.add(
+        PieChartSectionData(
+          value: count.toDouble(),
+          color: color,
+          radius: 50,
+          showTitle: false,
+        ),
+      );
+      legendEntries.add((
+        color: color,
+        label: '${goal.name} (archived)',
+        pct: pct,
+      ));
     }
 
     // Aggregated Commitments slice — only if non-zero.
@@ -192,7 +203,7 @@ class DonutChart extends StatelessWidget {
             children: legendEntries
                 .map(
                   (e) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
                       children: [
                         CircleAvatar(radius: 6, backgroundColor: e.color),
