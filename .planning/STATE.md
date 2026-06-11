@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Actually Daily
 status: planning
-last_updated: "2026-06-11T00:08:47.588Z"
-last_activity: 2026-06-11
+last_updated: "2026-06-10T00:00:00.000Z"
+last_activity: 2026-06-10
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,16 +17,20 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-05-12T15:01:55.550Z
+**Last session:** 2026-06-10T00:00:00.000Z
 
 ---
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Phase 7 — Unbreak the Morning (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-11 — Milestone v1.1 started
+Status: Roadmap created; ready to plan Phase 7
+Last activity: 2026-06-10 — Milestone v1.1 roadmap written (phases 7–11)
+
+Progress: [----------] 0% (0/5 phases complete)
+
+---
 
 ## Completed Plans
 
@@ -115,4 +119,4 @@ None.
 
 ## Stopped At
 
-Completed 05-quarterly-review / phase verified 2026-05-12 (code + human UAT against bundled 13-week dev scenario).
+Roadmap written for milestone v1.1 (phases 7–11). Next: `/gsd-plan-phase 7`

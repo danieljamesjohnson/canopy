@@ -246,7 +246,7 @@ Plans:
 - Skipped chunks counted as "time not spent" in aggregation and surfaced explicitly in the review — the data is transparent
 
 **Key technical decisions:**
-- fl_chart is not introduced until this phase. Charts in earlier phases were not needed and would have added dependency weight during the phases where iteration is fastest.
+- fl_chart is not introduced until this phase. Charts in earlier phases were not needed and would have added dependency weight during the phases were iteration is fastest.
 - QuarterlySnapshot is append-only. Past reflections are historical records, not editable data.
 - The guided question set is fixed in v1. Configurable questions are a v2 consideration (OQ-13). A fixed set ships faster and can be refined based on actual use.
 - Skipped chunks are counted as not done in aggregation. Excluding them would make the data less honest.
@@ -359,3 +359,144 @@ All eight active requirements from PROJECT.md are mapped to exactly one phase. N
 | Schedule generation is rule-based (no AI API) | Phase 3 |
 
 Note: Commitment blocks are defined in Phase 2 and their scheduling logic is implemented in Phase 3. Both phases are required; the requirement is assigned to Phase 2 (definition) as the primary mapping since Phase 3 consumes what Phase 2 produces.
+
+---
+
+---
+
+# Milestone v1.1 — "Actually Daily"
+
+**Added:** 2026-06-10
+**Goal:** Close the gap between "all v1.0 phases complete" and "I open it every morning and it works" — fix the broken daily loop, then make the rule-based engine honor the goal model it already stores.
+
+**Milestone constraints (carried through all phases):**
+- Rule-based only — no LLM or AI API calls
+- Local Hive storage only — no backend, no sync
+- iOS is the primary daily driver — keep OS scheduled notifications
+- Additive-only Hive migrations — no destructive schema changes
+- Flutter 3.44.1 / Dart 3.12.1 is installed; `flutter analyze` clean; 90/90 tests passing at milestone start
+
+**Sequencing:** 7 → 8 → 9 → 10 → 11. Phases 7–8 have no design unknowns and make the app daily-usable on their own — they do not wait on Phase 9. Phase 9 depends on Phase 7 (providers loaded at startup) and feeds Phase 8's dynamic rationale strings. Phases 10 and 11 are independent of each other after Phase 9.
+
+---
+
+## v1.1 Phases
+
+- [ ] **Phase 7: Unbreak the Morning** — Loop plumbing so the daily loop cannot dead-end on any cold launch or resume
+- [ ] **Phase 8: A Schedule You Can Read** — Legible schedule: goal names, coherent ordering, chunk detail sheet, minimal companion focus mode
+- [ ] **Phase 9: An Engine That Budgets** — Rule-based generation that actually honors the goal model: capacity fill, weekly budgets, habit frequency, deadline pressure, priority
+- [ ] **Phase 10: Close the Day** — Discoverable end-of-day moment, deferral carry-in, commitment chunk attribution
+- [ ] **Phase 11: Honest Long Loop** — Quarterly review data correctness and priority-adjustment feedback into generation
+
+---
+
+## v1.1 Phase Details
+
+### Phase 7: Unbreak the Morning
+**Goal:** The morning check-in always generates from the user's actual saved goals and commitments — on any cold launch or resume, any day.
+**Depends on:** Phase 6 (v1.0 complete)
+**Requirements:** LOOP-01, LOOP-02, LOOP-03, LOOP-04, LOOP-05
+**Success Criteria** (what must be TRUE):
+  1. Cold launch → Home → "Start your day" → tap mood produces a non-empty schedule containing the user's real goals (not an empty list), even without visiting Goals or Commitments tabs first.
+  2. Resuming the app on a new calendar day shows a fresh un-generated day rather than yesterday's schedule.
+  3. When a schedule already exists, a persistent entry point on both Home and the Schedule screen lets the user re-run check-in or regenerate.
+  4. When morning notifications are enabled, the notification fires without requiring the user to toggle the settings switch; tapping it navigates correctly via go_router (no crash).
+  5. The user can type freely into a goal name or weekly-hours field without the cursor jumping to position 0.
+**Plans:** TBD
+**UI hint**: yes
+
+---
+
+### Phase 8: A Schedule You Can Read
+**Goal:** The schedule communicates the plan — each chunk names its goal, the list reads in day order around commitments, and tapping a chunk opens a detail sheet with actions.
+**Depends on:** Phase 7
+**Requirements:** READ-01, READ-02, READ-03, READ-04
+**Success Criteria** (what must be TRUE):
+  1. Every chunk card displays the goal's name as its title (not a generic type label like "Habit" or "Outcome goal"), with a rationale as secondary text.
+  2. The schedule reads in coherent day order: commitment blocks appear at their anchored times, discretionary chunks fill around them, breaks never appear inside a commitment window, and there is no dangling trailing break.
+  3. Tapping any chunk opens a detail sheet showing the goal name, why the chunk was scheduled, and complete / skip / defer action buttons.
+  4. A minimal companion focus mode is accessible from the detail sheet or schedule: it highlights the current chunk and offers an optional 25-minute countdown that flows into a completion action and a break suggestion.
+**Plans:** TBD
+**UI hint**: yes
+
+---
+
+### Phase 9: An Engine That Budgets
+**Goal:** Schedule generation fills mood capacity and allocates chunks according to actual goal data — weekly hour budgets, habit frequency, deadline pressure, and user-set priority all drive the output.
+**Depends on:** Phase 7 (providers loaded at startup), feeds Phase 8's dynamic rationale strings
+**Requirements:** ENGINE-01, ENGINE-02, ENGINE-03, ENGINE-04, ENGINE-05, ENGINE-06
+**Success Criteria** (what must be TRUE):
+  1. At mood 4 or 5 with three goals, the schedule contains more than three discretionary chunks — capacity is actually filled rather than one chunk per goal.
+  2. A time-target goal that is most behind its weekly hour budget receives more chunks than a goal that is ahead — computed from CompletionLog, most-behind first.
+  3. A habit set to 3x/week does not appear in the schedule on days it is not due; its streak count increments only on days it is both scheduled and completed.
+  4. An outcome goal with a deadline three days away is scheduled ahead of one with a deadline three months away; the hardcoded `chunksRemaining = 2.0` placeholder is gone.
+  5. Toggling "Want a lighter day?" measurably reduces the number of discretionary chunks in the generated schedule.
+  6. A goal marked high priority is scheduled before a goal marked low priority when both compete for the same capacity slot; the priority control is visible and editable in the goal form.
+**Plans:** TBD
+
+---
+
+### Phase 10: Close the Day
+**Goal:** The daily loop has a discoverable end — users are offered an end-of-day summary, can defer chunks to tomorrow, and commitment time is attributed correctly in completion logs.
+**Depends on:** Phase 9
+**Requirements:** CLOSE-01, CLOSE-02, CLOSE-03
+**Success Criteria** (what must be TRUE):
+  1. After approximately 6pm (or once at least 50% of chunks are resolved), the Home screen shows a time-aware end-of-day card; users can also opt into an evening reminder notification.
+  2. Deferring a chunk from today's schedule causes it to appear in the next morning's generated schedule without requiring any manual action.
+  3. Completing a commitment-block chunk logs a CompletionLog entry with a non-empty goal identifier (not an empty string), so commitment time appears correctly in aggregation.
+**Plans:** TBD
+**UI hint**: yes
+
+---
+
+### Phase 11: Honest Long Loop
+**Goal:** The quarterly review counts all logged time correctly and its priority adjustments demonstrably change the next day's schedule.
+**Depends on:** Phase 9 (independent of Phase 10)
+**Requirements:** REVIEW-01, REVIEW-02, REVIEW-03
+**Success Criteria** (what must be TRUE):
+  1. The quarterly review's donut chart and totals include commitment-block time and archived goals' historical completions — the chart percentages add up to 100% of all logged chunks with no invisible slice.
+  2. Changing a goal's priority in the review adjustments section results in a measurably different ordering in the next morning's generated schedule.
+  3. Opening the quarterly review from the Home screen on a cold launch (without visiting other tabs first) displays the correct goal list and chart data — no empty review from unloaded state.
+**Plans:** TBD
+
+---
+
+## v1.1 Progress Table
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 7. Unbreak the Morning | 0/TBD | Not started | - |
+| 8. A Schedule You Can Read | 0/TBD | Not started | - |
+| 9. An Engine That Budgets | 0/TBD | Not started | - |
+| 10. Close the Day | 0/TBD | Not started | - |
+| 11. Honest Long Loop | 0/TBD | Not started | - |
+
+---
+
+## v1.1 Coverage Map
+
+All 21 v1.1 requirements mapped to exactly one phase. No orphaned requirements.
+
+| Requirement | Phase |
+|-------------|-------|
+| LOOP-01 | Phase 7 |
+| LOOP-02 | Phase 7 |
+| LOOP-03 | Phase 7 |
+| LOOP-04 | Phase 7 |
+| LOOP-05 | Phase 7 |
+| READ-01 | Phase 8 |
+| READ-02 | Phase 8 |
+| READ-03 | Phase 8 |
+| READ-04 | Phase 8 |
+| ENGINE-01 | Phase 9 |
+| ENGINE-02 | Phase 9 |
+| ENGINE-03 | Phase 9 |
+| ENGINE-04 | Phase 9 |
+| ENGINE-05 | Phase 9 |
+| ENGINE-06 | Phase 9 |
+| CLOSE-01 | Phase 10 |
+| CLOSE-02 | Phase 10 |
+| CLOSE-03 | Phase 10 |
+| REVIEW-01 | Phase 11 |
+| REVIEW-02 | Phase 11 |
+| REVIEW-03 | Phase 11 |

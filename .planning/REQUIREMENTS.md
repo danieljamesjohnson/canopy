@@ -63,7 +63,27 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| _Filled by roadmap_ | | |
+| LOOP-01 | Phase 7 | Pending |
+| LOOP-02 | Phase 7 | Pending |
+| LOOP-03 | Phase 7 | Pending |
+| LOOP-04 | Phase 7 | Pending |
+| LOOP-05 | Phase 7 | Pending |
+| READ-01 | Phase 8 | Pending |
+| READ-02 | Phase 8 | Pending |
+| READ-03 | Phase 8 | Pending |
+| READ-04 | Phase 8 | Pending |
+| ENGINE-01 | Phase 9 | Pending |
+| ENGINE-02 | Phase 9 | Pending |
+| ENGINE-03 | Phase 9 | Pending |
+| ENGINE-04 | Phase 9 | Pending |
+| ENGINE-05 | Phase 9 | Pending |
+| ENGINE-06 | Phase 9 | Pending |
+| CLOSE-01 | Phase 10 | Pending |
+| CLOSE-02 | Phase 10 | Pending |
+| CLOSE-03 | Phase 10 | Pending |
+| REVIEW-01 | Phase 11 | Pending |
+| REVIEW-02 | Phase 11 | Pending |
+| REVIEW-03 | Phase 11 | Pending |
 
 ---
 *Open detail-level questions deferred to discuss-phase for the Engine phase: discretionary↔clock interleave rule (proposal default: simple day-order interleave) and streak semantics (proposal default: consecutive scheduled days completed, frequency-aware).*
