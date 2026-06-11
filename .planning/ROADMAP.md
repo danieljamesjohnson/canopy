@@ -525,7 +525,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 10-01-PLAN.md — Schema foundation + commitment-time attribution: commitmentId HiveField 9, AppSettings evening fields, migration 4→5, generator Step 1 + log-site fix (CLOSE-03)
+- [x] 10-01-PLAN.md — Schema foundation + commitment-time attribution: commitmentId HiveField 9, AppSettings evening fields, migration 4→5, generator Step 1 + log-site fix (CLOSE-03)
 
 **Wave 2** *(blocked on 10-01)*
 
@@ -558,7 +558,7 @@ Plans:
 | 7. Unbreak the Morning | 2/2 | Complete   | 2026-06-11 |
 | 8. A Schedule You Can Read | 3/3 | Complete    | 2026-06-11 |
 | 9. An Engine That Budgets | 3/3 | Complete   | 2026-06-11 |
-| 10. Close the Day | 0/3 | Not started | - |
+| 10. Close the Day | 1/3 | In Progress | - |
 | 11. Honest Long Loop | 0/TBD | Not started | - |
 
 ---

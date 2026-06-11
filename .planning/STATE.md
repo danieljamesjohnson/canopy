@@ -3,33 +3,33 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: executing
-last_updated: "2026-06-11T20:38:48.233Z"
-last_activity: 2026-06-11 -- Phase 9 Plan 01 (An Engine That Budgets) complete
+last_updated: "2026-06-11T20:45:07Z"
+last_activity: 2026-06-11 -- Phase 10 Plan 01 complete (CLOSE-03 commitment attribution)
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
-  percent: 60
+  total_plans: 11
+  completed_plans: 9
+  percent: 64
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-11T20:25:36.178Z
+**Last session:** 2026-06-11T20:45:07Z
 
 ---
 
 ## Current Position
 
-Phase: 9 (An Engine That Budgets) — EXECUTING
-Plan: 3 of 3
-Next: Phase 9 — An Engine That Budgets
-Status: Ready to execute
-Last activity: 2026-06-11 -- Phase 9 Plan 01 (An Engine That Budgets) complete
+Phase: 10 (Close the Day) — EXECUTING
+Plan: 2 of 3
+Next: Phase 10 Plan 02 — Defer-to-Tomorrow Carryover (CLOSE-02)
+Status: Executing Phase 10
+Last activity: 2026-06-11 -- Phase 10 Plan 01 complete (CLOSE-03 commitment attribution)
 
-Progress: [████------] 40% (2/5 phases complete)
+Progress: [██████----] 60% (3/5 phases complete, 9/11 plans done)
 
 ---
 
@@ -97,6 +97,9 @@ Progress: [████------] 40% (2/5 phases complete)
 - [Phase 09-01]: lighterDay=true default in generate(); lighter day drops one mood tier (next-lower cap) for moods 3-5
 - [Phase 09-01]: chunksRemaining=2.0 placeholder removed; urgency = priority / daysRemaining (max 1)
 - [Phase ?]: ENGINE-06 UI half: SegmentedButton<double> priority control (Low/Normal/High → 0.25/0.5/0.75) added to GoalFormSheet for all goal types, wired to existing _priorityWeight state and save path
+- [Phase 10-01]: commitmentId stored as HiveField 9 on ScheduledChunk; goalId == null preserved so goalId == Goal-id invariant stays intact for existing guards
+- [Phase 10-01]: All three mark* sites (markComplete, markSkipped, markDeferred) use chunk.commitmentId ?? chunk.goalId ?? '' for consistent attribution
+- [Phase 10-01]: evening-reminder HiveFields 7-8 co-located in single migration 4→5 so Wave 2 plans are free of schema churn
 
 ## Performance Metrics
 
@@ -126,6 +129,7 @@ Progress: [████------] 40% (2/5 phases complete)
 | Phase 09-an-engine-that-budgets P01 | 9min | 2 tasks | 3 files |
 | Phase 09-an-engine-that-budgets P02 | 25min | 1 tasks | 2 files |
 | Phase 09-an-engine-that-budgets P03 | 5min | 2 tasks | 4 files |
+| Phase 10-close-the-day P10-01 | 5min | 2 tasks | 8 files |
 
 ## Blockers
 
@@ -135,4 +139,4 @@ None.
 
 ## Stopped At
 
-Roadmap written for milestone v1.1 (phases 7–11). Next: `/gsd-plan-phase 7`
+Phase 10 Plan 01 complete. Next: Phase 10 Plan 02 (10-02-PLAN.md) — Defer-to-Tomorrow Carryover (CLOSE-02)
