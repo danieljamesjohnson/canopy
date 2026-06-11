@@ -42,6 +42,18 @@ Future<void> _migration3to4() async {
 }
 
 Future<void> runMigrations(SharedPreferences prefs) async {
+  // WR-06: invariant — there must be exactly one migration entry per schema
+  // version bump. If currentSchemaVersion is ever incremented without
+  // appending a matching migration to _migrations, the loop below would index
+  // _migrations[i] out of range and throw RangeError at startup for every
+  // existing user. Asserting here fails loudly in debug/CI rather than at
+  // user startup.
+  assert(
+    _migrations.length == currentSchemaVersion,
+    '_migrations.length (${_migrations.length}) must equal '
+    'currentSchemaVersion ($currentSchemaVersion) — a version bump is missing '
+    'its migration entry.',
+  );
   final int storedVersion = prefs.getInt('schemaVersion') ?? 0;
   // WR-08: refuse to silently downgrade the persisted schemaVersion.
   // If `storedVersion > currentSchemaVersion`, the app was rolled back
