@@ -183,6 +183,24 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
             ),
             const SizedBox(height: 16),
 
+            // Priority control — shown for all goal types
+            Row(
+              children: [
+                Text('Priority', style: theme.textTheme.bodyMedium),
+              ],
+            ),
+            SegmentedButton<double>(
+              segments: const [
+                ButtonSegment(value: 0.25, label: Text('Low')),
+                ButtonSegment(value: 0.5, label: Text('Normal')),
+                ButtonSegment(value: 0.75, label: Text('High')),
+              ],
+              selected: {_priorityWeight ?? 0.5},
+              onSelectionChanged: (Set<double> val) =>
+                  setState(() => _priorityWeight = val.first),
+            ),
+            const SizedBox(height: 16),
+
             // Type-specific fields
             if (_selectedType == GoalType.timeTarget) ...[
               TextField(
