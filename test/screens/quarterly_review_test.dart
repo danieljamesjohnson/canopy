@@ -1,6 +1,14 @@
 import 'package:canopy/data/models/commitment_block.dart';
+import 'package:canopy/data/models/completion_log.dart';
 import 'package:canopy/data/models/goal.dart';
+import 'package:canopy/data/models/quarterly_snapshot.dart';
+import 'package:canopy/data/repositories/commitment_block_repository.dart';
+import 'package:canopy/data/repositories/goal_repository.dart';
+import 'package:canopy/data/repositories/in_memory_completion_log_repository.dart';
+import 'package:canopy/data/repositories/quarterly_snapshot_repository.dart';
+import 'package:canopy/providers/commitments_notifier.dart';
 import 'package:canopy/providers/goals_notifier.dart';
+import 'package:canopy/screens/quarterly_review/quarterly_review_screen.dart';
 import 'package:canopy/screens/quarterly_review/sections/adjustments_section.dart';
 import 'package:canopy/screens/quarterly_review/sections/data_section.dart';
 import 'package:canopy/screens/quarterly_review/sections/reflection_section.dart';
@@ -12,6 +20,80 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import '../test_helpers/mood_pump.dart';
+
+// ---------------------------------------------------------------------------
+// In-memory GoalRepository — no Hive. Mirrors cold_launch_morning_loop_test.dart.
+// ---------------------------------------------------------------------------
+class _InMemoryGoalRepository implements GoalRepository {
+  final Map<String, Goal> _store = {};
+
+  @override
+  Future<List<Goal>> getAll() async => _store.values.toList();
+
+  @override
+  Future<Goal?> getById(String id) async => _store[id];
+
+  @override
+  Future<void> save(Goal goal) async => _store[goal.id] = goal;
+
+  @override
+  Future<void> delete(String id) async => _store.remove(id);
+
+  @override
+  Future<List<Goal>> getActive() async =>
+      _store.values.where((g) => !g.isArchived).toList();
+}
+
+// ---------------------------------------------------------------------------
+// In-memory CommitmentBlockRepository — holds seeded blocks; no Hive.
+// ---------------------------------------------------------------------------
+class _InMemoryCommitmentBlockRepository implements CommitmentBlockRepository {
+  final List<CommitmentBlock> _blocks;
+
+  _InMemoryCommitmentBlockRepository(this._blocks);
+
+  @override
+  Future<List<CommitmentBlock>> getAll() async => List.of(_blocks);
+
+  @override
+  Future<CommitmentBlock?> getById(String id) async =>
+      _blocks.where((b) => b.id == id).firstOrNull;
+
+  @override
+  Future<void> save(CommitmentBlock block) async {}
+
+  @override
+  Future<void> delete(String id) async {}
+
+  @override
+  Future<List<CommitmentBlock>> getByDayOfWeek(int day) async =>
+      _blocks.where((b) => b.daysOfWeek.contains(day)).toList();
+}
+
+// ---------------------------------------------------------------------------
+// In-memory QuarterlySnapshotRepository — empty by default; no Hive.
+// ---------------------------------------------------------------------------
+class _InMemorySnapshotRepository implements QuarterlySnapshotRepository {
+  final List<QuarterlySnapshot> _store = [];
+
+  @override
+  Future<List<QuarterlySnapshot>> getAll() async => List.of(_store);
+
+  @override
+  Future<QuarterlySnapshot?> getById(String id) async =>
+      _store.where((s) => s.id == id).firstOrNull;
+
+  @override
+  Future<void> append(QuarterlySnapshot snapshot) async => _store.add(snapshot);
+
+  @override
+  Future<QuarterlySnapshot?> getLatest() async {
+    if (_store.isEmpty) return null;
+    return _store.reduce(
+      (a, b) => a.completedAt.isAfter(b.completedAt) ? a : b,
+    );
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Stub helpers
@@ -225,9 +307,12 @@ void main() {
           final raw = w.data ?? '';
           sum += int.tryParse(raw.replaceAll('%', '').trim()) ?? 0;
         }
-        expect(sum, inInclusiveRange(99, 101),
-            reason:
-                'Rounded per-slice percentages may sum to 99-101 due to toStringAsFixed(0) rounding');
+        expect(
+          sum,
+          inInclusiveRange(99, 101),
+          reason:
+              'Rounded per-slice percentages may sum to 99-101 due to toStringAsFixed(0) rounding',
+        );
       },
     );
   });
@@ -398,5 +483,146 @@ void main() {
       );
       expect(find.textContaining('most energy'), findsOneWidget);
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // REVIEW-03: Cold-launch regression test for QuarterlyReviewScreen.
+  //
+  // Pumps QuarterlyReviewScreen directly (no other tab visited first) with
+  // in-memory providers seeded with an active goal, an archived goal, and a
+  // commitment block — each having at least one completion log attributed to
+  // their id. Asserts that the chart legend rows for all three categories
+  // render and the empty state is absent.
+  //
+  // RED: This test FAILS until Task 2 lands the _loadData fix that loads
+  // archived goals + commitment blocks (REVIEW-03).
+  // ---------------------------------------------------------------------------
+  group('QuarterlyReviewScreen cold-launch (REVIEW-03)', () {
+    testWidgets(
+      'loads active goal, archived goal, and commitment legend rows without prior tab visit',
+      (tester) async {
+        // ----------------------------------------------------------------
+        // 1. Seed goals: one active, one archived.
+        // ----------------------------------------------------------------
+        final goalRepo = _InMemoryGoalRepository();
+        final activeGoal = Goal(
+          name: 'Morning Run',
+          goalTypeIndex: GoalType.habit.index,
+          color: '#4CAF50',
+        );
+        final archivedGoal = Goal(
+          name: 'Old Habit',
+          goalTypeIndex: GoalType.habit.index,
+          color: '#9C27B0',
+        );
+        archivedGoal.isArchived = true;
+        await goalRepo.save(activeGoal);
+        await goalRepo.save(archivedGoal);
+
+        final goalsNotifier = GoalsNotifier(repository: goalRepo);
+        await goalsNotifier
+            .loadGoals(); // loads only active goals (isArchived==false)
+
+        // ----------------------------------------------------------------
+        // 2. Seed a commitment block.
+        // ----------------------------------------------------------------
+        final commitmentBlock = CommitmentBlock(
+          name: 'Work',
+          daysOfWeek: [1, 2, 3, 4, 5],
+          startMinutes: 540,
+          endMinutes: 600,
+        );
+        final commitmentsNotifier = CommitmentsNotifier(
+          repository: _InMemoryCommitmentBlockRepository([commitmentBlock]),
+        );
+        await commitmentsNotifier.loadBlocks();
+
+        // ----------------------------------------------------------------
+        // 3. Seed completion logs attributed to each category.
+        //    Date is today to fall within the review period.
+        // ----------------------------------------------------------------
+        final today = DateTime.now();
+        final todayYmd =
+            '${today.year.toString().padLeft(4, '0')}-'
+            '${today.month.toString().padLeft(2, '0')}-'
+            '${today.day.toString().padLeft(2, '0')}';
+
+        final logRepo = InMemoryCompletionLogRepository();
+        await logRepo.append(
+          CompletionLog(
+            chunkId: 'chunk-active',
+            goalId: activeGoal.id,
+            dateYmd: todayYmd,
+            eventIndex: CompletionEvent.completed.index,
+          ),
+        );
+        await logRepo.append(
+          CompletionLog(
+            chunkId: 'chunk-archived',
+            goalId: archivedGoal.id,
+            dateYmd: todayYmd,
+            eventIndex: CompletionEvent.completed.index,
+          ),
+        );
+        await logRepo.append(
+          CompletionLog(
+            chunkId: 'chunk-commitment',
+            goalId: commitmentBlock.id,
+            dateYmd: todayYmd,
+            eventIndex: CompletionEvent.completed.index,
+          ),
+        );
+
+        // ----------------------------------------------------------------
+        // 4. Pump QuarterlyReviewScreen directly — no Goals/Commitments tab
+        //    screen is visited first (cold-launch simulation).
+        // ----------------------------------------------------------------
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider<GoalsNotifier>.value(value: goalsNotifier),
+              ChangeNotifierProvider<CommitmentsNotifier>.value(
+                value: commitmentsNotifier,
+              ),
+            ],
+            child: MaterialApp(
+              home: QuarterlyReviewScreen(
+                completionLogRepository: logRepo,
+                snapshotRepository: _InMemorySnapshotRepository(),
+              ),
+            ),
+          ),
+        );
+
+        // Let all async operations (initState + _loadData) settle.
+        await tester.pumpAndSettle();
+
+        // ----------------------------------------------------------------
+        // 5. Assert all three legend categories render.
+        //    Use findsAtLeastNWidgets(1) since the goal name may appear in
+        //    multiple places (chart legend + reflection suggestions).
+        // ----------------------------------------------------------------
+        expect(
+          find.text('Morning Run'),
+          findsAtLeastNWidgets(1),
+          reason: 'Active goal legend row must appear on cold launch',
+        );
+        expect(
+          find.text('Old Habit (archived)'),
+          findsAtLeastNWidgets(1),
+          reason: 'Archived goal legend row must appear on cold launch',
+        );
+        expect(
+          find.text('Commitments'),
+          findsAtLeastNWidgets(1),
+          reason: 'Commitments legend row must appear on cold launch',
+        );
+        expect(
+          find.text('Not enough data yet'),
+          findsNothing,
+          reason: 'Empty state must NOT show when completion logs exist',
+        );
+      },
+    );
   });
 }

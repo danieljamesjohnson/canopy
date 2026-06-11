@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/repositories/completion_log_repository.dart';
 import '../../data/repositories/hive_completion_log_repository.dart';
 import '../../data/repositories/hive_quarterly_snapshot_repository.dart';
+import '../../data/repositories/quarterly_snapshot_repository.dart';
 import '../../providers/goals_notifier.dart';
 import '../../services/quarterly_aggregation_service.dart';
 import 'sections/adjustments_section.dart';
@@ -15,8 +17,20 @@ import 'sections/reflection_section.dart';
 ///   3. AdjustmentsSection — drag reorder + archive + persist snapshot
 ///
 /// Route: `/review` — outside StatefulShellRoute, no bottom nav bar.
+///
+/// [completionLogRepository] and [snapshotRepository] are optional injectable
+/// repositories for testing without Hive initialisation.
 class QuarterlyReviewScreen extends StatefulWidget {
-  const QuarterlyReviewScreen({super.key});
+  // ignore: prefer_const_constructors_in_immutables
+  QuarterlyReviewScreen({
+    super.key,
+    CompletionLogRepository? completionLogRepository,
+    QuarterlySnapshotRepository? snapshotRepository,
+  }) : _completionLogRepository = completionLogRepository,
+       _snapshotRepository = snapshotRepository;
+
+  final CompletionLogRepository? _completionLogRepository;
+  final QuarterlySnapshotRepository? _snapshotRepository;
 
   @override
   State<QuarterlyReviewScreen> createState() => _QuarterlyReviewScreenState();
@@ -55,8 +69,12 @@ class _QuarterlyReviewScreenState extends State<QuarterlyReviewScreen> {
 
   Future<void> _loadData() async {
     final goals = context.read<GoalsNotifier>().goals;
-    final allLogs = await HiveCompletionLogRepository().getAll();
-    final latestSnapshot = await HiveQuarterlySnapshotRepository().getLatest();
+    final logRepo =
+        widget._completionLogRepository ?? HiveCompletionLogRepository();
+    final snapshotRepo =
+        widget._snapshotRepository ?? HiveQuarterlySnapshotRepository();
+    final allLogs = await logRepo.getAll();
+    final latestSnapshot = await snapshotRepo.getLatest();
     final service = QuarterlyAggregationService();
     final today = DateTime.now();
     final todayYmd = _toYmd(today);

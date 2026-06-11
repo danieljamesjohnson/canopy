@@ -18,8 +18,7 @@ import 'widgets/responsive_shell.dart';
 
 /// Root navigator key exposed so main.dart can use it for notification tap
 /// navigation without a BuildContext (notification callbacks have no context).
-final GlobalKey<NavigatorState> rootNavigatorKey =
-    GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 GoRouter createRouter(SettingsNotifier settingsNotifier) {
   return GoRouter(
@@ -100,7 +99,7 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
       // Quarterly review is outside the shell — full-screen experience.
       GoRoute(
         path: '/review',
-        builder: (context, state) => const QuarterlyReviewScreen(),
+        builder: (context, state) => QuarterlyReviewScreen(),
       ),
       // Commitments is outside the shell — settings-style focused screen.
       GoRoute(
@@ -128,4 +127,3 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
     ],
   );
 }
-
