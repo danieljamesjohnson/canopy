@@ -91,8 +91,9 @@ class _CheckinScreenState extends State<CheckinScreen> {
     final count = workChunks.length;
     // Prefer the goal's real name over the raw rationale label ("Habit");
     // commitment chunks (no goalId) fall back to the block name.
-    final firstName =
-        workChunks.isNotEmpty ? _firstChunkName(workChunks.first, goals) : null;
+    final firstName = workChunks.isNotEmpty
+        ? _firstChunkName(workChunks.first, goals)
+        : null;
     final countText = '$count chunk${count == 1 ? '' : 's'}.';
     final startText = firstName != null && firstName.isNotEmpty
         ? ' Starting with $firstName.'

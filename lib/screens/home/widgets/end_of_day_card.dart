@@ -22,8 +22,9 @@ class EndOfDayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final workChunks =
-        chunks.where((c) => c.chunkType == ChunkType.work).toList();
+    final workChunks = chunks
+        .where((c) => c.chunkType == ChunkType.work)
+        .toList();
     final total = workChunks.length;
     final resolved = workChunks
         .where((c) => c.isCompleted || c.isSkipped || c.isDeferred)
@@ -53,9 +54,7 @@ class EndOfDayCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               'How did today go?',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -70,8 +69,8 @@ class EndOfDayCard extends StatelessWidget {
                       Text(
                         '$resolved of $total chunks done',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -103,8 +102,9 @@ bool shouldShowEodCard(
 }) {
   final hour = now().hour;
   if (hour >= 18) return true;
-  final workChunks =
-      chunks.where((c) => c.chunkType == ChunkType.work).toList();
+  final workChunks = chunks
+      .where((c) => c.chunkType == ChunkType.work)
+      .toList();
   if (workChunks.isEmpty) return false;
   final resolved = workChunks
       .where((c) => c.isCompleted || c.isSkipped || c.isDeferred)

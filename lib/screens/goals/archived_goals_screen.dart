@@ -39,29 +39,29 @@ class _ArchivedGoalsScreenState extends State<ArchivedGoalsScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _archivedGoals.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.archive_outlined,
-                        size: 64,
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No archived goals',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.archive_outlined,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.outline,
                   ),
-                )
-              : ListView.builder(
-                  itemCount: _archivedGoals.length,
-                  itemBuilder: (context, index) {
-                    return GoalCard(goal: _archivedGoals[index]);
-                  },
-                ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No archived goals',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              itemCount: _archivedGoals.length,
+              itemBuilder: (context, index) {
+                return GoalCard(goal: _archivedGoals[index]);
+              },
+            ),
     );
   }
 }

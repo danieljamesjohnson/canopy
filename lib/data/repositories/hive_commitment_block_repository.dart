@@ -3,7 +3,8 @@ import '../models/commitment_block.dart';
 import 'commitment_block_repository.dart';
 
 class HiveCommitmentBlockRepository implements CommitmentBlockRepository {
-  Box<CommitmentBlock> get _box => Hive.box<CommitmentBlock>('commitment_blocks');
+  Box<CommitmentBlock> get _box =>
+      Hive.box<CommitmentBlock>('commitment_blocks');
 
   @override
   Future<List<CommitmentBlock>> getAll() async => _box.values.toList();

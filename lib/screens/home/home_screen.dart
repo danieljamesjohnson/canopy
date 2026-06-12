@@ -169,18 +169,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 // label like "Habit". Commitment chunks (no goalId) fall back
                 // to the block name carried in rationale.
                 final goalName = _lookupGoalName(context, nextChunk);
-                final title = goalName ??
+                final title =
+                    goalName ??
                     (nextChunk.rationale.isNotEmpty
                         ? nextChunk.rationale
                         : 'Work block');
                 // Only show the secondary rationale line when we have a real
                 // goal name above it (avoids "Work / Work" duplication for
                 // commitment chunks).
-                final subtitle =
-                    goalName != null ? toDisplayRationale(nextChunk.rationale) : null;
+                final subtitle = goalName != null
+                    ? toDisplayRationale(nextChunk.rationale)
+                    : null;
                 return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -201,13 +205,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 subtitle,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
+                                style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                     ),
                                 overflow: TextOverflow.ellipsis,
                               ),

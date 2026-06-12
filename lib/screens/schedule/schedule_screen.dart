@@ -129,12 +129,12 @@ class ScheduleScreen extends StatelessWidget {
       onTap: (chunk.isCompleted || chunk.isSkipped)
           ? null
           : () => _openDetailSheet(
-                context,
-                chunk,
-                goalColor,
-                goalName,
-                displayRationale,
-              ),
+              context,
+              chunk,
+              goalColor,
+              goalName,
+              displayRationale,
+            ),
     );
   }
 

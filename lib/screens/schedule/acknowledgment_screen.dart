@@ -45,13 +45,15 @@ class AcknowledgmentScreen extends StatelessWidget {
     if (schedule == null) return _moodPrefix[mood] ?? '';
 
     final prefix = _moodPrefix[mood] ?? '';
-    final workChunks =
-        schedule.chunks.where((c) => c.chunkType == ChunkType.work).toList();
+    final workChunks = schedule.chunks
+        .where((c) => c.chunkType == ChunkType.work)
+        .toList();
     final count = workChunks.length;
     // Prefer the goal's real name ("vibe code") over the raw rationale label
     // ("Habit"); commitment chunks (no goalId) fall back to the block name.
-    final firstName =
-        workChunks.isNotEmpty ? _firstChunkName(workChunks.first, goals) : null;
+    final firstName = workChunks.isNotEmpty
+        ? _firstChunkName(workChunks.first, goals)
+        : null;
     final countText = '$count chunk${count == 1 ? '' : 's'}.';
     final startText = firstName != null && firstName.isNotEmpty
         ? ' Starting with $firstName.'

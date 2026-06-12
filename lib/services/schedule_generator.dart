@@ -24,13 +24,7 @@ class ScheduleGeneratorService {
   ///
   /// Raw max:  mood 1=6, 2=8, 3=10, 4=12, 5=14
   /// 80% cap:  mood 1=4, 2=6, 3=8,  4=9,  5=11
-  static const Map<int, int> _moodCap = {
-    1: 4,
-    2: 6,
-    3: 8,
-    4: 9,
-    5: 11,
-  };
+  static const Map<int, int> _moodCap = {1: 4, 2: 6, 3: 8, 4: 9, 5: 11};
 
   /// Effective cap after applying lighter-day reduction.
   ///
@@ -76,12 +70,14 @@ class ScheduleGeneratorService {
     // Index all completed dates for O(1) lookup.
     final completedDates = <String>{
       for (final l in allLogs)
-        if (l.goalId == goalId && l.event == CompletionEvent.completed) l.dateYmd,
+        if (l.goalId == goalId && l.event == CompletionEvent.completed)
+          l.dateYmd,
     };
     // CLOSE-02: deferred days do not break the streak — treated as "moved, not missed".
     final deferredDates = <String>{
       for (final l in allLogs)
-        if (l.goalId == goalId && l.event == CompletionEvent.deferred) l.dateYmd,
+        if (l.goalId == goalId && l.event == CompletionEvent.deferred)
+          l.dateYmd,
     };
 
     final fmt = DateFormat('yyyy-MM-dd');
@@ -131,17 +127,15 @@ class ScheduleGeneratorService {
     if (goal.weeklyHourBudget == null) return 0;
     final completedHrs =
         _completedChunksThisWeek(goal.id, logs, date) * 25.0 / 60.0;
-    return (goal.weeklyHourBudget! - completedHrs)
-        .clamp(0.0, goal.weeklyHourBudget!);
+    return (goal.weeklyHourBudget! - completedHrs).clamp(
+      0.0,
+      goal.weeklyHourBudget!,
+    );
   }
 
   /// Demand chunks for a time-target goal today: ceil(remaining×60/25/daysLeft).
   /// Capped at 4 per day. [daysLeft] is clamped to [1,7] — never zero.
-  int _demandForTimeTarget(
-    Goal goal,
-    List<CompletionLog> logs,
-    DateTime date,
-  ) {
+  int _demandForTimeTarget(Goal goal, List<CompletionLog> logs, DateTime date) {
     final remaining = _remainingHours(goal, logs, date);
     if (remaining <= 0) return 0;
     final daysLeft = (7 - date.weekday + 1).clamp(1, 7);
@@ -173,8 +167,10 @@ class ScheduleGeneratorService {
   ) {
     final completed = _completedChunksThisWeek(goal.id, logs, date);
     final completedHrs = completed * 25.0 / 60.0;
-    final remaining =
-        ((goal.weeklyHourBudget ?? 0.0) - completedHrs).clamp(0.0, double.infinity);
+    final remaining = ((goal.weeklyHourBudget ?? 0.0) - completedHrs).clamp(
+      0.0,
+      double.infinity,
+    );
     if (remaining < 0.1) return 'On track this week';
     return '${remaining.toStringAsFixed(1)}h behind this week';
   }
@@ -241,7 +237,12 @@ class ScheduleGeneratorService {
       final effectiveFreq = goal.frequencyPerWeek ?? 7;
       final dueWeekdays = computeDueWeekdays(effectiveFreq);
       if (!dueWeekdays.contains(date.weekday)) continue; // not due today
-      final streak = computeStreak(goal.id, dueWeekdays, completionLogs, today: date);
+      final streak = computeStreak(
+        goal.id,
+        dueWeekdays,
+        completionLogs,
+        today: date,
+      );
       workChunks.add(
         ScheduledChunk(
           chunkTypeIndex: ChunkType.work.index,
@@ -273,7 +274,8 @@ class ScheduleGeneratorService {
 
     for (final goal in outcomeGoals) {
       if (discretionaryCount >= cap) break;
-      final deadlineToday = goal.deadline != null &&
+      final deadlineToday =
+          goal.deadline != null &&
           goal.deadline!.year == date.year &&
           goal.deadline!.month == date.month &&
           goal.deadline!.day == date.day;
@@ -283,7 +285,8 @@ class ScheduleGeneratorService {
       } else if (lighterDay) {
         include = deadlineToday; // mood 1–2 lighter ON: only deadline today
       } else {
-        include = goal.deadline != null; // mood 1–2 lighter OFF: all with deadlines
+        include =
+            goal.deadline != null; // mood 1–2 lighter OFF: all with deadlines
       }
       if (!include) continue;
       workChunks.add(
@@ -302,16 +305,18 @@ class ScheduleGeneratorService {
     // Multi-chunk demand per goal; sorted most-behind first; priority tiebreaker.
     // -------------------------------------------------------------------------
     if (!isLowMood) {
-      final timeTargetGoals = activeGoals
-          .where((g) => g.goalType == GoalType.timeTarget)
-          .toList()
-        ..sort((a, b) {
-          final remA = _remainingHours(a, completionLogs, date);
-          final remB = _remainingHours(b, completionLogs, date);
-          if ((remA - remB).abs() > 0.01) return remB.compareTo(remA); // most behind first
-          return (b.priorityWeight ?? 0.5)
-              .compareTo(a.priorityWeight ?? 0.5); // tiebreaker
-        });
+      final timeTargetGoals =
+          activeGoals.where((g) => g.goalType == GoalType.timeTarget).toList()
+            ..sort((a, b) {
+              final remA = _remainingHours(a, completionLogs, date);
+              final remB = _remainingHours(b, completionLogs, date);
+              if ((remA - remB).abs() > 0.01) {
+                return remB.compareTo(remA); // most behind first
+              }
+              return (b.priorityWeight ?? 0.5).compareTo(
+                a.priorityWeight ?? 0.5,
+              ); // tiebreaker
+            });
 
       for (final goal in timeTargetGoals) {
         if (discretionaryCount >= cap) break;
@@ -362,7 +367,9 @@ class ScheduleGeneratorService {
           ),
         );
         discretionaryCount++;
-        scheduledGoalIds.add(gid); // prevent duplicate if same id appears twice in set
+        scheduledGoalIds.add(
+          gid,
+        ); // prevent duplicate if same id appears twice in set
       }
     }
 
@@ -372,11 +379,10 @@ class ScheduleGeneratorService {
     if (workChunks.isEmpty) return [];
 
     // STEP A: Split into commitment (anchored) and discretionary streams.
-    final List<ScheduledChunk> commitmentChunks = workChunks
-        .where((c) => c.anchoredStartMinutes != null)
-        .toList()
-      ..sort((a, b) =>
-          a.anchoredStartMinutes!.compareTo(b.anchoredStartMinutes!));
+    final List<ScheduledChunk> commitmentChunks =
+        workChunks.where((c) => c.anchoredStartMinutes != null).toList()..sort(
+          (a, b) => a.anchoredStartMinutes!.compareTo(b.anchoredStartMinutes!),
+        );
     final List<ScheduledChunk> discretionaryChunks = workChunks
         .where((c) => c.anchoredStartMinutes == null)
         .toList();
@@ -405,8 +411,9 @@ class ScheduleGeneratorService {
       if (reserved == null) continue; // no break room was reserved
       final isLong = reserved >= 25;
       final breakChunk = ScheduledChunk(
-        chunkTypeIndex:
-            isLong ? ChunkType.longBreak.index : ChunkType.shortBreak.index,
+        chunkTypeIndex: isLong
+            ? ChunkType.longBreak.index
+            : ChunkType.shortBreak.index,
         goalId: null,
         durationMinutes: reserved,
         rationale: '',
@@ -461,7 +468,7 @@ class ScheduleGeneratorService {
       for (final c in commitmentChunks)
         (
           start: c.anchoredStartMinutes!,
-          end: c.anchoredStartMinutes! + c.durationMinutes
+          end: c.anchoredStartMinutes! + c.durationMinutes,
         ),
     ]..sort((a, b) => a.start.compareTo(b.start));
 
@@ -469,8 +476,10 @@ class ScheduleGeneratorService {
     for (final w in rawWindows) {
       if (windows.isNotEmpty && w.start <= windows.last.end) {
         final prev = windows.removeLast();
-        windows
-            .add((start: prev.start, end: w.end > prev.end ? w.end : prev.end));
+        windows.add((
+          start: prev.start,
+          end: w.end > prev.end ? w.end : prev.end,
+        ));
       } else {
         windows.add((start: w.start, end: w.end));
       }

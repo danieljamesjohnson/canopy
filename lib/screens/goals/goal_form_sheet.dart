@@ -185,9 +185,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
 
             // Priority control — shown for all goal types
             Row(
-              children: [
-                Text('Priority', style: theme.textTheme.bodyMedium),
-              ],
+              children: [Text('Priority', style: theme.textTheme.bodyMedium)],
             ),
             SegmentedButton<double>(
               segments: const [

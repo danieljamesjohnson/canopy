@@ -20,7 +20,8 @@ class HiveQuarterlySnapshotRepository implements QuarterlySnapshotRepository {
   @override
   Future<QuarterlySnapshot?> getLatest() async {
     if (_box.isEmpty) return null;
-    return _box.values.reduce((a, b) =>
-        a.completedAt.isAfter(b.completedAt) ? a : b);
+    return _box.values.reduce(
+      (a, b) => a.completedAt.isAfter(b.completedAt) ? a : b,
+    );
   }
 }

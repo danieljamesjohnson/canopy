@@ -44,9 +44,9 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
     AppSettingsRepository? repository,
     DateTime Function() now = DateTime.now,
     bool timeModulationEnabled = true,
-  })  : _repo = repository ?? HiveAppSettingsRepository(),
-        _now = now,
-        _timeModulationEnabled = timeModulationEnabled;
+  }) : _repo = repository ?? HiveAppSettingsRepository(),
+       _now = now,
+       _timeModulationEnabled = timeModulationEnabled;
 
   /// Pre-check-in pale slate-blue per UI-SPEC §Pre-Check-in 'Curious' Seed.
   /// HSL approx H210/S20/L56.
@@ -78,9 +78,9 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
   /// (mood seed or curious seed, with time-of-day HSL modulation when
   /// enabled).
   ThemeData get currentTheme => ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: _effectiveSeed()),
-      );
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(seedColor: _effectiveSeed()),
+  );
 
   /// Loads persisted mood seed + lastMoodSetYmd from Hive, registers the
   /// lifecycle observer, starts the 20-minute modulation ticker, and
@@ -105,9 +105,7 @@ class ThemeNotifier extends ChangeNotifier with WidgetsBindingObserver {
       _lastMoodSetYmd = settings?.lastMoodSetYmdInt;
       _resetIfDayChanged();
     } catch (e, st) {
-      debugPrint(
-        'ThemeNotifier.init failed (defaulting to curious): $e\n$st',
-      );
+      debugPrint('ThemeNotifier.init failed (defaulting to curious): $e\n$st');
       _moodSeed = null;
       _lastMoodSetYmd = null;
     }

@@ -26,10 +26,10 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     DailyScheduleRepository? repo,
     CompletionLogRepository? logRepo,
     GoalRepository? goalRepo,
-  })  : _now = now,
-        _repo = repo ?? HiveDailyScheduleRepository(),
-        _logRepo = logRepo ?? HiveCompletionLogRepository(),
-        _goalRepo = goalRepo ?? HiveGoalRepository();
+  }) : _now = now,
+       _repo = repo ?? HiveDailyScheduleRepository(),
+       _logRepo = logRepo ?? HiveCompletionLogRepository(),
+       _goalRepo = goalRepo ?? HiveGoalRepository();
 
   final DateTime Function() _now;
   final DailyScheduleRepository _repo;
@@ -120,7 +120,8 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     final yesterday = date.subtract(const Duration(days: 1));
     final yesterdayYmd = DateFormat('yyyy-MM-dd').format(yesterday);
     final priorSchedule = await _repo.getByDate(yesterdayYmd);
-    final deferredGoalIds = priorSchedule?.chunks
+    final deferredGoalIds =
+        priorSchedule?.chunks
             .where((c) => c.isDeferred && !c.isCompleted && c.goalId != null)
             .map((c) => c.goalId!)
             .toSet() ??
@@ -214,7 +215,9 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       chunk.isCompleted = false;
       // Re-persist the reverted state so disk and memory stay in sync.
       // Best-effort: if this also fails we still rethrow the original error.
-      try { await _repo.save(_todaySchedule!); } catch (_) {}
+      try {
+        await _repo.save(_todaySchedule!);
+      } catch (_) {}
       rethrow;
     } finally {
       // Always reflect the committed in-memory state, even on failure (the
@@ -279,7 +282,9 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       // and log stay consistent, then re-throw for caller feedback.
       chunk.isSkipped = false;
       // Re-persist the reverted state so disk and memory stay in sync.
-      try { await _repo.save(_todaySchedule!); } catch (_) {}
+      try {
+        await _repo.save(_todaySchedule!);
+      } catch (_) {}
       rethrow;
     } finally {
       notifyListeners();
@@ -312,7 +317,8 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
           goalId: chunk.goalId ?? '',
           commitmentId: chunk.commitmentId,
           dateYmd: dateYmd,
-          eventIndex: CompletionEvent.deferred.index, // CLOSE-02: real deferred event
+          eventIndex:
+              CompletionEvent.deferred.index, // CLOSE-02: real deferred event
         ),
       );
 
@@ -348,7 +354,9 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       chunk.isDeferred = false;
       chunk.isSkipped = false;
       // Re-persist the reverted state so disk and memory stay in sync.
-      try { await _repo.save(_todaySchedule!); } catch (_) {}
+      try {
+        await _repo.save(_todaySchedule!);
+      } catch (_) {}
       rethrow;
     } finally {
       notifyListeners();

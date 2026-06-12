@@ -18,14 +18,13 @@ class EndOfDaySummaryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final schedule = context.watch<ScheduleNotifier>().todaySchedule;
     if (schedule == null) {
-      return const Scaffold(
-        body: Center(child: Text('No schedule today.')),
-      );
+      return const Scaffold(body: Center(child: Text('No schedule today.')));
     }
 
     final goals = context.read<GoalsNotifier>().goals;
-    final workChunks =
-        schedule.chunks.where((c) => c.chunkType == ChunkType.work).toList();
+    final workChunks = schedule.chunks
+        .where((c) => c.chunkType == ChunkType.work)
+        .toList();
     final completed = workChunks.where((c) => c.isCompleted).length;
     final skipped = workChunks.where((c) => c.isSkipped).length;
     final total = workChunks.length;
@@ -37,8 +36,14 @@ class EndOfDaySummaryScreen extends StatelessWidget {
       final gid = chunk.goalId ?? '';
       if (gid.isEmpty) continue;
       final goal = goals.where((g) => g.id == gid).firstOrNull;
-      final entry = byGoal[gid] ??
-          (done: 0, total: 0, name: goal?.name ?? 'Unknown', colorHex: goal?.color);
+      final entry =
+          byGoal[gid] ??
+          (
+            done: 0,
+            total: 0,
+            name: goal?.name ?? 'Unknown',
+            colorHex: goal?.color,
+          );
       byGoal[gid] = (
         done: entry.done + (chunk.isCompleted ? 1 : 0),
         total: entry.total + 1,
@@ -88,7 +93,11 @@ class EndOfDaySummaryScreen extends StatelessWidget {
               if (byGoal.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.only(
-                      top: 16, left: 16, right: 16, bottom: 4),
+                    top: 16,
+                    left: 16,
+                    right: 16,
+                    bottom: 4,
+                  ),
                   child: Text(
                     'By goal',
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -120,8 +129,7 @@ class EndOfDaySummaryScreen extends StatelessWidget {
               // Section C — Skipped count (only if any skipped)
               if (skipped > 0)
                 Padding(
-                  padding: const EdgeInsets.only(
-                      top: 8, left: 16, right: 16),
+                  padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
                   child: Text(
                     '$skipped chunk${skipped == 1 ? '' : 's'} set aside today.',
                     style: theme.textTheme.bodyMedium?.copyWith(

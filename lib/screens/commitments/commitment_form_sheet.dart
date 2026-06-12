@@ -32,7 +32,7 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
     _nameController = TextEditingController(text: block?.name ?? '');
     _selectedDays = block != null ? Set<int>.from(block.daysOfWeek) : {};
     _startMinutes = block?.startMinutes ?? 9 * 60; // 9:00am
-    _endMinutes = block?.endMinutes ?? 17 * 60;    // 5:00pm
+    _endMinutes = block?.endMinutes ?? 17 * 60; // 5:00pm
     _color = block?.color ?? '#607D8B';
   }
 
@@ -54,11 +54,7 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
     return '$displayHour:${minute.toString().padLeft(2, '0')}$period';
   }
 
-  Widget _timeTile(
-    String label,
-    int minutes,
-    void Function(int) onSet,
-  ) {
+  Widget _timeTile(String label, int minutes, void Function(int) onSet) {
     return InkWell(
       onTap: () async {
         final result = await showTimePicker(
@@ -82,8 +78,8 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 2),
             Text(
@@ -167,8 +163,8 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
           Text(
             'Days',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
           Wrap(

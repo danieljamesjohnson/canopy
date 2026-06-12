@@ -9,15 +9,17 @@ import '../data/models/completion_log.dart';
 class ExportService {
   static Future<void> exportCompletionLog(List<CompletionLog> logs) async {
     final data = logs
-        .map((e) => {
-              'id': e.id,
-              'chunkId': e.chunkId,
-              'goalId': e.goalId,
-              'commitmentId': e.commitmentId,
-              'dateYmd': e.dateYmd,
-              'event': e.event.name,
-              'recordedAt': e.recordedAt.toIso8601String(),
-            })
+        .map(
+          (e) => {
+            'id': e.id,
+            'chunkId': e.chunkId,
+            'goalId': e.goalId,
+            'commitmentId': e.commitmentId,
+            'dateYmd': e.dateYmd,
+            'event': e.event.name,
+            'recordedAt': e.recordedAt.toIso8601String(),
+          },
+        )
         .toList();
 
     final jsonString = const JsonEncoder.withIndent('  ').convert(data);
@@ -26,15 +28,17 @@ class ExportService {
 
     if (kIsWeb) {
       // Web: use XFile.fromData with name parameter
-      await SharePlus.instance.share(ShareParams(
-        files: [
-          XFile.fromData(
-            Uint8List.fromList(utf8.encode(jsonString)),
-            name: fileName,
-            mimeType: 'application/json',
-          )
-        ],
-      ));
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              Uint8List.fromList(utf8.encode(jsonString)),
+              name: fileName,
+              mimeType: 'application/json',
+            ),
+          ],
+        ),
+      );
       return;
     }
 
@@ -42,8 +46,6 @@ class ExportService {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/$fileName');
     await file.writeAsString(jsonString);
-    await SharePlus.instance.share(ShareParams(
-      files: [XFile(file.path)],
-    ));
+    await SharePlus.instance.share(ShareParams(files: [XFile(file.path)]));
   }
 }

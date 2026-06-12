@@ -142,9 +142,7 @@ class ChunkDetailSheet extends StatelessWidget {
               child: TextButton.icon(
                 icon: const Icon(Icons.schedule_outlined),
                 label: const Text('Defer to later'),
-                style: TextButton.styleFrom(
-                  foregroundColor: colorScheme.error,
-                ),
+                style: TextButton.styleFrom(foregroundColor: colorScheme.error),
                 onPressed: () {
                   notifier.markDeferred(chunk.id);
                   context.pop();

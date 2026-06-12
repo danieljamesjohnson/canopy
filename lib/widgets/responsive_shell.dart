@@ -52,7 +52,10 @@ class ResponsiveShell extends StatelessWidget {
   void _goBranch(int index) {
     // Preserves existing router.dart semantics (the goBranch initialLocation
     // flag re-pops to the branch's root if the user taps the active tab).
-    navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex);
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
   }
 
   @override

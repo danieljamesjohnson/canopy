@@ -69,10 +69,8 @@ class _TypeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final backgroundColor =
-        isSelected ? colorScheme.primaryContainer : null;
-    final borderColor =
-        isSelected ? colorScheme.primary : Colors.transparent;
+    final backgroundColor = isSelected ? colorScheme.primaryContainer : null;
+    final borderColor = isSelected ? colorScheme.primary : Colors.transparent;
 
     return Card(
       color: backgroundColor,
@@ -85,10 +83,7 @@ class _TypeCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: ListTile(
           contentPadding: const EdgeInsets.all(16),
-          leading: Icon(
-            icon,
-            color: isSelected ? colorScheme.primary : null,
-          ),
+          leading: Icon(icon, color: isSelected ? colorScheme.primary : null),
           title: Text(title),
           subtitle: Text(subtitle),
         ),

@@ -16,8 +16,9 @@ class ScheduleProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final workChunks =
-        schedule.chunks.where((c) => c.chunkType == ChunkType.work).toList();
+    final workChunks = schedule.chunks
+        .where((c) => c.chunkType == ChunkType.work)
+        .toList();
     final total = workChunks.length;
     final completed = workChunks.where((c) => c.isCompleted).length;
     final progress = total == 0 ? 0.0 : completed / total;
@@ -30,9 +31,9 @@ class ScheduleProgressBar extends StatelessWidget {
         children: [
           Text(
             '$completed of $total Chunks',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
           LinearProgressIndicator(

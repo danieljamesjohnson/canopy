@@ -179,147 +179,152 @@ class _HoverableChunkContentState extends State<_HoverableChunkContent> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            // Colored left bar
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: 5,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: barColor,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            children: [
+              // Colored left bar
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 5,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: barColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      bottomLeft: Radius.circular(12),
+                    ),
                   ),
                 ),
               ),
-            ),
-            // Content
-            Padding(
-              padding: const EdgeInsets.only(left: 5),
-              child: Opacity(
-                opacity: contentOpacity,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    widget.goalName ??
-                                        (chunk.rationale.isNotEmpty
-                                            ? chunk.rationale
-                                            : 'Work block'),
-                                    style: theme.textTheme.titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.w600),
-                                    overflow: TextOverflow.ellipsis,
+              // Content
+              Padding(
+                padding: const EdgeInsets.only(left: 5),
+                child: Opacity(
+                  opacity: contentOpacity,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      widget.goalName ??
+                                          (chunk.rationale.isNotEmpty
+                                              ? chunk.rationale
+                                              : 'Work block'),
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${chunk.durationMinutes} min',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              // Secondary text: readable rationale (when goalName
+                              // is provided) or anchored time for commitment chunks.
+                              if (widget.goalName != null &&
+                                  widget.displayRationale != null &&
+                                  widget.displayRationale!.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.displayRationale!,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                              ] else if (chunk.anchoredStartMinutes !=
+                                  null) ...[
+                                const SizedBox(height: 2),
                                 Text(
-                                  '${chunk.durationMinutes} min',
+                                  _formatMinutes(chunk.anchoredStartMinutes!),
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],
-                            ),
-                            // Secondary text: readable rationale (when goalName
-                            // is provided) or anchored time for commitment chunks.
-                            if (widget.goalName != null &&
-                                widget.displayRationale != null &&
-                                widget.displayRationale!.isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                widget.displayRationale!,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ] else if (chunk.anchoredStartMinutes != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                _formatMinutes(chunk.anchoredStartMinutes!),
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      chunk.isCompleted
-                          ? Icon(
-                              Icons.check_circle,
-                              color: Colors.green.shade600,
-                            )
-                          : chunk.isSkipped
-                          ? Icon(
-                              Icons.arrow_forward,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            )
-                          : Icon(
-                              Icons.radio_button_unchecked,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                    ],
+                        const SizedBox(width: 8),
+                        chunk.isCompleted
+                            ? Icon(
+                                Icons.check_circle,
+                                color: Colors.green.shade600,
+                              )
+                            : chunk.isSkipped
+                            ? Icon(
+                                Icons.arrow_forward,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              )
+                            : Icon(
+                                Icons.radio_button_unchecked,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            // Hover-revealed action icons (desktop only — onEnter/onExit
-            // never fires on touch-only mobile pointer events, so this stays
-            // at opacity 0 on Android/iOS).
-            //
-            // WR-02: skip the overlay entirely on resolved chunks. The
-            // mark-complete / mark-skipped IconButtons would be `onPressed:
-            // null` (disabled) at full opacity on hover otherwise — looking
-            // tappable but doing nothing.
-            if (!isResolved)
-              Positioned(
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: AnimatedOpacity(
-                  opacity: _hovered ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 120),
-                  curve: Curves.easeOut,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.check_circle_outline),
-                        tooltip: 'Mark complete',
-                        onPressed: onMarkComplete,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.skip_next_outlined),
-                        tooltip: 'Skip',
-                        onPressed: onMarkSkipped,
-                      ),
-                    ],
+              // Hover-revealed action icons (desktop only — onEnter/onExit
+              // never fires on touch-only mobile pointer events, so this stays
+              // at opacity 0 on Android/iOS).
+              //
+              // WR-02: skip the overlay entirely on resolved chunks. The
+              // mark-complete / mark-skipped IconButtons would be `onPressed:
+              // null` (disabled) at full opacity on hover otherwise — looking
+              // tappable but doing nothing.
+              if (!isResolved)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: AnimatedOpacity(
+                    opacity: _hovered ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 120),
+                    curve: Curves.easeOut,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.check_circle_outline),
+                          tooltip: 'Mark complete',
+                          onPressed: onMarkComplete,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.skip_next_outlined),
+                          tooltip: 'Skip',
+                          onPressed: onMarkSkipped,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
         ), // end GestureDetector
       ),
     );
