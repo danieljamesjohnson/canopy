@@ -12,14 +12,14 @@ Rule-based only — no LLM. All requirements are user-observable capabilities th
 
 ### Navigation & Information Architecture (NAV)
 
-- [ ] **NAV-01**: After onboarding completes — and on any normal launch with onboarding done — the app lands on **Home**, not the Goals screen.
+- [x] **NAV-01**: After onboarding completes — and on any normal launch with onboarding done — the app lands on **Home**, not the Goals screen.
 - [ ] **NAV-02**: Home leads with the live day (current chunk + what's next) and does not merely duplicate the Schedule as a static "Up next" card; the Home↔Schedule relationship is resolved so the user always has one obvious place to see "what am I doing now."
 
 ### Schedule Legibility (SCHED)
 
 - [x] **SCHED-01**: Every chunk in the schedule — discretionary goals as well as commitments — displays a real clock time (start time, plus end time or duration) instead of the goal's frequency metadata ("5x/week").
-- [ ] **SCHED-02**: The schedule surfaces a clear "now / next" framing: what you're doing right now, when it ends, and what's next, anchored to the current time.
-- [ ] **SCHED-03**: A chunk's complete and skip actions are clear, labeled affordances discoverable without hover — not an ambiguous unlabeled circle.
+- [x] **SCHED-02**: The schedule surfaces a clear "now / next" framing: what you're doing right now, when it ends, and what's next, anchored to the current time.
+- [x] **SCHED-03**: A chunk's complete and skip actions are clear, labeled affordances discoverable without hover — not an ambiguous unlabeled circle.
 
 ### Goal Form (GOALFORM)
 
@@ -67,11 +67,11 @@ Other deferred:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NAV-01 | Phase 12 | Pending |
+| NAV-01 | Phase 12 | Complete |
 | NAV-02 | Phase 12 | Pending |
 | SCHED-01 | Phase 12 | Complete |
-| SCHED-02 | Phase 12 | Pending |
-| SCHED-03 | Phase 12 | Pending |
+| SCHED-02 | Phase 12 | Complete |
+| SCHED-03 | Phase 12 | Complete |
 | GOALFORM-01 | Phase 13 | Pending |
 | CHECKIN-01 | Phase 13 | Pending |
 | CHECKIN-02 | Phase 13 | Pending |

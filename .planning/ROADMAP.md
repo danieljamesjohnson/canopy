@@ -644,7 +644,7 @@ All 21 v1.1 requirements mapped to exactly one phase. No orphaned requirements.
   4. The schedule has a clear "now" marker and a "next" indicator anchored to the current time, so the user can orient without scanning the whole list.
   5. Each chunk row has labeled complete and skip actions that are visible without hover on both touch and mouse surfaces.
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 
@@ -654,7 +654,7 @@ Plans:
 
 **Wave 2** *(blocked on 12-01; 12-02 and 12-03 are file-disjoint and run in parallel)*
 
-- [ ] 12-02-PLAN.md — Router redirect to /home, clock-time display, always-visible Complete/Skip buttons, NowMarker (NAV-01, SCHED-01 UI, SCHED-02, SCHED-03)
+- [x] 12-02-PLAN.md — Router redirect to /home, clock-time display, always-visible Complete/Skip buttons, NowMarker (NAV-01, SCHED-01 UI, SCHED-02, SCHED-03)
 - [ ] 12-03-PLAN.md — Home Now/Next active-day refactor + ActiveChunkCard + See full schedule link (NAV-02)
 
 **UI hint**: yes
@@ -699,7 +699,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 12. Home as Landing, Schedule as Plan | 1/3 | In Progress|  |
+| 12. Home as Landing, Schedule as Plan | 2/3 | In Progress|  |
 | 13. Check-in and Goal Form | 0/? | Not started | - |
 | 14. Goals Screen and Priority End-to-End | 0/? | Not started | - |
 

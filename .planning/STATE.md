@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Phases
 status: executing
-last_updated: "2026-06-12T14:15:18.832Z"
+last_updated: "2026-06-12T14:28:49.142Z"
 last_activity: 2026-06-12 -- Phase 12 execution started
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -17,14 +17,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-12T14:15:18.827Z
+**Last session:** 2026-06-12T14:28:49.137Z
 
 ---
 
 ## Current Position
 
 Phase: 12 (Home as Landing, Schedule as Plan) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-06-12 -- Phase 12 execution started
 
@@ -110,6 +110,10 @@ Last activity: 2026-06-12 -- Phase 12 execution started
 - [Phase ?]: QuarterlyReviewScreen accepts injectable CompletionLogRepository + QuarterlySnapshotRepository for test isolation; Hive is default
 - [Phase ?]: [Phase 12-01]: syntheticStartMinutes promoted from transient to @HiveField(10); Hive CE returns null for existing records, no transformation needed
 - [Phase ?]: [Phase 12-01]: displayStartMinutes getter = anchoredStartMinutes ?? syntheticStartMinutes; always use in UI, never access backing fields directly
+- [Phase ?]: [Phase 12-02]: Tooltip wrapper used for Complete/Skip buttons since FilledButton.icon lacks tooltip parameter in Flutter 3.18
+- [Phase ?]: [Phase 12-02]: NowMarker omitted when no unresolved work chunk exists (nowMarkerIndex stays null per RESEARCH Open Question 1)
+- [Phase ?]: [Phase 12-02]: Swipe gestures and always-visible buttons coexist — orthogonal input modalities per UI-SPEC Chunk Action Contract
+- [Phase ?]: [Phase 12-02]: _checkReviewWindow wrapped in try/catch to prevent unhandled Hive box-not-open errors in test environments
 
 ## Performance Metrics
 
@@ -145,6 +149,7 @@ Last activity: 2026-06-12 -- Phase 12 execution started
 | Phase 11-honest-long-loop P11-01 | 18min | 3 tasks | 6 files |
 | Phase 11-honest-long-loop P02 | 6min | 2 tasks | 4 files |
 | Phase 12-home-as-landing-schedule-as-plan P12-01 | 3 minutes | 2 tasks | 4 files |
+| Phase 12-home-as-landing-schedule-as-plan P12-02 | 15 minutes | 3 tasks | 8 files |
 
 ## Blockers
 
