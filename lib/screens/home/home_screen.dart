@@ -336,7 +336,7 @@ class BreathingPulseCta extends StatefulWidget {
   const BreathingPulseCta({
     super.key,
     required this.enabled,
-    required this.onPressed,
+    this.onPressed,
     required this.child,
   });
 
@@ -345,11 +345,11 @@ class BreathingPulseCta extends StatefulWidget {
   /// midpoint (no animation).
   final bool enabled;
 
-  /// Forwarded to outer taps where the parent does not already supply the
-  /// callback on [child]. Kept for completeness; callers should attach the
-  /// callback directly to their [child] widget as well to ensure tap
-  /// targets remain valid.
-  final VoidCallback onPressed;
+  /// Optional outer-tap callback. When non-null, a [GestureDetector] wraps
+  /// the animated container so that tapping anywhere in the glow ring also
+  /// fires the callback. Callers should still attach the callback to [child]
+  /// directly to keep the inner tap target valid on all platforms.
+  final VoidCallback? onPressed;
 
   /// The CTA being decorated (typically an [OutlinedButton]).
   final Widget child;
@@ -425,18 +425,21 @@ class _BreathingPulseCtaState extends State<BreathingPulseCta>
       builder: (context, child) {
         final t = _controller.value;
         final blur = 8.0 + 8.0 * t;
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: primary.withValues(alpha: 0.25),
-                blurRadius: blur,
-                spreadRadius: 1,
-              ),
-            ],
+        return GestureDetector(
+          onTap: widget.onPressed,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(
+                  color: primary.withValues(alpha: 0.25),
+                  blurRadius: blur,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: child,
           ),
-          child: child,
         );
       },
       child: widget.child,
