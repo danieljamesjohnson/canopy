@@ -637,19 +637,20 @@ All 21 v1.1 requirements mapped to exactly one phase. No orphaned requirements.
 **Depends on:** Phase 11 (v1.1 complete)
 **Requirements:** NAV-01, NAV-02, SCHED-01, SCHED-02, SCHED-03
 **Success Criteria** (what must be TRUE):
+
   1. Completing onboarding and relaunching the app from a cold start both land on Home, not the Goals screen.
   2. Home leads with an active-day view — the current chunk with its start/end time and the next chunk — so the user never needs to navigate to Schedule just to answer "what am I doing now."
   3. Every chunk in the schedule (commitment and discretionary) shows a real clock time (e.g. "9:25 AM – 9:50 AM"), not a frequency label like "5x/week."
   4. The schedule has a clear "now" marker and a "next" indicator anchored to the current time, so the user can orient without scanning the whole list.
   5. Each chunk row has labeled complete and skip actions that are visible without hover on both touch and mouse surfaces.
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 
 **Wave 1**
 
-- [ ] 12-01-PLAN.md — Persist syntheticStartMinutes as HiveField(10), displayStartMinutes getter, schema 6→7 no-op migration + regression test (SCHED-01 data layer)
+- [x] 12-01-PLAN.md — Persist syntheticStartMinutes as HiveField(10), displayStartMinutes getter, schema 6→7 no-op migration + regression test (SCHED-01 data layer)
 
 **Wave 2** *(blocked on 12-01; 12-02 and 12-03 are file-disjoint and run in parallel)*
 
@@ -666,10 +667,12 @@ Plans:
 **Depends on:** Phase 12
 **Requirements:** CHECKIN-01, CHECKIN-02, GOALFORM-01
 **Success Criteria** (what must be TRUE):
+
   1. The check-in screen's text and controls are readable against the mood-themed background at all five mood levels — no amber-wash contrast failure.
   2. All interactive elements on the check-in screen (mood options, confirm button) have visible hover and pressed states on desktop and web.
   3. The lighter-day choice is not an always-visible inline toggle; it appears after the user taps "Let's go," framed as a push-forward vs. lighter-day decision, with an unambiguous on/off state.
   4. The add/edit goal sheet fits within the viewport — Priority selector and Save button are visible and tappable without in-sheet scrolling on a standard phone screen height.
+
 **Plans:** TBD
 **UI hint**: yes
 
@@ -681,10 +684,12 @@ Plans:
 **Depends on:** Phase 13
 **Requirements:** GOALS-01, GOALS-02, PRIORITY-01
 **Success Criteria** (what must be TRUE):
+
   1. The Goals screen's purpose is explicit — a heading or framing copy makes clear this is where the user decides what to focus on — and the reorder affordance is obvious (not an ambiguous "two slashes").
   2. Low, normal, and high priority are visually distinct and consistently applied across the Goals screen and schedule cards — changing a goal's priority produces a visible, unambiguous difference in how it is displayed.
   3. Elevating a goal from low to high priority and regenerating the schedule produces measurably more or earlier chunks for that goal — the change is observable by the user without inspecting code.
   4. Lowering a goal from high to low priority and regenerating produces fewer or later chunks — the effect is symmetric and consistent.
+
 **Plans:** TBD
 **UI hint**: yes
 
@@ -694,7 +699,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 12. Home as Landing, Schedule as Plan | 0/3 | Planned | - |
+| 12. Home as Landing, Schedule as Plan | 1/3 | In Progress|  |
 | 13. Check-in and Goal Form | 0/? | Not started | - |
 | 14. Goals Screen and Priority End-to-End | 0/? | Not started | - |
 

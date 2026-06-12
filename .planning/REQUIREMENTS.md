@@ -17,7 +17,7 @@ Rule-based only — no LLM. All requirements are user-observable capabilities th
 
 ### Schedule Legibility (SCHED)
 
-- [ ] **SCHED-01**: Every chunk in the schedule — discretionary goals as well as commitments — displays a real clock time (start time, plus end time or duration) instead of the goal's frequency metadata ("5x/week").
+- [x] **SCHED-01**: Every chunk in the schedule — discretionary goals as well as commitments — displays a real clock time (start time, plus end time or duration) instead of the goal's frequency metadata ("5x/week").
 - [ ] **SCHED-02**: The schedule surfaces a clear "now / next" framing: what you're doing right now, when it ends, and what's next, anchored to the current time.
 - [ ] **SCHED-03**: A chunk's complete and skip actions are clear, labeled affordances discoverable without hover — not an ambiguous unlabeled circle.
 
@@ -44,11 +44,13 @@ Rule-based only — no LLM. All requirements are user-observable capabilities th
 ## Future Requirements (deferred)
 
 From SEED-001 (engine hypotheses not yet dogfooded — defer to a later "engine honesty" milestone):
+
 - Low-mood days should not zero out time-target goals (SEED-001 #2).
 - Habits should not monopolize the discretionary cap ahead of other goals (SEED-001 #3).
 - Streak semantics revisited once real daily-use history exists (SEED-001 #6).
 
 Other deferred:
+
 - LLM-assisted scheduling and conversational re-planning (v2).
 - Calendar sync; user-pinned specific days/times beyond simple frequency.
 
@@ -67,7 +69,7 @@ Other deferred:
 |-------------|-------|--------|
 | NAV-01 | Phase 12 | Pending |
 | NAV-02 | Phase 12 | Pending |
-| SCHED-01 | Phase 12 | Pending |
+| SCHED-01 | Phase 12 | Complete |
 | SCHED-02 | Phase 12 | Pending |
 | SCHED-03 | Phase 12 | Pending |
 | GOALFORM-01 | Phase 13 | Pending |

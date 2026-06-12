@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Phases
-status: planning
-last_updated: "2026-06-12T14:07:27.173Z"
-last_activity: 2026-06-12 — Milestone v1.2 roadmap created (3 phases, 11 requirements)
+status: executing
+last_updated: "2026-06-12T14:15:18.832Z"
+last_activity: 2026-06-12 -- Phase 12 execution started
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
   percent: 0
 ---
 
@@ -17,16 +17,16 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-12T13:51:05.510Z
+**Last session:** 2026-06-12T14:15:18.827Z
 
 ---
 
 ## Current Position
 
-Phase: 12 — Home as Landing, Schedule as Plan
-Plan: Not started
-Status: Roadmap defined — ready for Phase 12 planning
-Last activity: 2026-06-12 — Milestone v1.2 roadmap created (3 phases, 11 requirements)
+Phase: 12 (Home as Landing, Schedule as Plan) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-06-12 -- Phase 12 execution started
 
 ## Completed Plans
 
@@ -108,6 +108,8 @@ Last activity: 2026-06-12 — Milestone v1.2 roadmap created (3 phases, 11 requi
 - [Phase ?]: allLogs.isEmpty replaces (totalCompleted == 0 && goals.isEmpty) guard in QuarterlyReviewScreen (REVIEW-03)
 - [Phase ?]: AdjustmentsSection._finish() calls reorderAllWithPriority so priorityWeight persists for next morning's generation (REVIEW-02)
 - [Phase ?]: QuarterlyReviewScreen accepts injectable CompletionLogRepository + QuarterlySnapshotRepository for test isolation; Hive is default
+- [Phase ?]: [Phase 12-01]: syntheticStartMinutes promoted from transient to @HiveField(10); Hive CE returns null for existing records, no transformation needed
+- [Phase ?]: [Phase 12-01]: displayStartMinutes getter = anchoredStartMinutes ?? syntheticStartMinutes; always use in UI, never access backing fields directly
 
 ## Performance Metrics
 
@@ -142,6 +144,7 @@ Last activity: 2026-06-12 — Milestone v1.2 roadmap created (3 phases, 11 requi
 | Phase 10-close-the-day P10-03 | 10min | 2 tasks | 7 files |
 | Phase 11-honest-long-loop P11-01 | 18min | 3 tasks | 6 files |
 | Phase 11-honest-long-loop P02 | 6min | 2 tasks | 4 files |
+| Phase 12-home-as-landing-schedule-as-plan P12-01 | 3 minutes | 2 tasks | 4 files |
 
 ## Blockers
 
