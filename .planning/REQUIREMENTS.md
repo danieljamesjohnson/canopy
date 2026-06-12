@@ -1,66 +1,63 @@
 # Canopy — Requirements
 
-**Milestone:** v1.1 "Actually Daily"
-**Created:** 2026-06-10
-**Source:** `.planning/NEXT-MILESTONE-PROPOSAL.md` (reality check + runtime-verified evidence)
+**Milestone:** v1.2 "Make It Usable"
+**Created:** 2026-06-12
+**Source:** First real dogfood — `.planning/seeds/SEED-002-ui-basics-rework-dogfood.md` (Dan's walkthrough, transcript + frames at `.planning/research/dogfood-2026-06-12/`) + confirmed items from `.planning/seeds/SEED-001-engine-product-critique.md`.
 
-Rule-based only — no LLM in this milestone. All requirements are user-observable capabilities that close the gap between v1.0's "complete on paper" state and a genuinely usable daily companion.
+Rule-based only — no LLM. All requirements are user-observable capabilities that close the gap between v1.1's "complete on paper" state and a UI that is legible and usable day-to-day.
 
 ---
 
-## Milestone v1.1 Requirements
+## Milestone v1.2 Requirements
 
-### Loop — Unbreak the Morning (LOOP)
+### Navigation & Information Architecture (NAV)
 
-- [x] **LOOP-01**: The morning check-in always generates today's schedule from the user's actual saved goals and commitments — on any cold launch or resume, regardless of which tabs were visited first.
-- [x] **LOOP-02**: The schedule rolls over at the day boundary — resuming the app on a new day shows a fresh, un-generated day rather than yesterday's schedule.
-- [x] **LOOP-03**: The user can re-run the check-in / regenerate today's schedule from a persistent entry point on Home and on the Schedule screen when a schedule already exists.
-- [x] **LOOP-04**: When morning notifications are enabled, the notification is scheduled automatically (on app start / after onboarding) and tapping it opens the schedule via the correct router.
-- [x] **LOOP-05**: The user can reliably enter and edit a goal in the goal form (no cursor/controller defect).
+- [ ] **NAV-01**: After onboarding completes — and on any normal launch with onboarding done — the app lands on **Home**, not the Goals screen.
+- [ ] **NAV-02**: Home leads with the live day (current chunk + what's next) and does not merely duplicate the Schedule as a static "Up next" card; the Home↔Schedule relationship is resolved so the user always has one obvious place to see "what am I doing now."
 
-### Read — A Schedule You Can Read (READ)
+### Schedule Legibility (SCHED)
 
-- [x] **READ-01**: Each scheduled chunk displays its goal's name as the title, with the rationale as secondary text.
-- [x] **READ-02**: Chunks are ordered coherently in day order around anchored commitment blocks; breaks never appear inside a commitment window, and there is no dangling trailing break.
-- [x] **READ-03**: Tapping a chunk opens a detail sheet showing the goal, why it was scheduled, and complete / skip / defer actions.
-- [x] **READ-04**: A minimal companion focus mode highlights the current chunk with an optional 25-minute countdown that flows into completion and a break suggestion. *(Owner decision: companion mode in scope; designed here, completion loop closed in CLOSE.)*
+- [ ] **SCHED-01**: Every chunk in the schedule — discretionary goals as well as commitments — displays a real clock time (start time, plus end time or duration) instead of the goal's frequency metadata ("5x/week").
+- [ ] **SCHED-02**: The schedule surfaces a clear "now / next" framing: what you're doing right now, when it ends, and what's next, anchored to the current time.
+- [ ] **SCHED-03**: A chunk's complete and skip actions are clear, labeled affordances discoverable without hover — not an ambiguous unlabeled circle.
 
-### Engine — An Engine That Budgets (ENGINE)
+### Goal Form (GOALFORM)
 
-- [x] **ENGINE-01**: Schedule generation fills the mood capacity with multiple chunks per goal up to the mood cap, rather than one chunk per goal.
-- [x] **ENGINE-02**: Time-target goals receive chunks proportional to how far behind their weekly hour budget they are (computed from CompletionLog; most-behind first; capped per accepted allocation policy).
-- [x] **ENGINE-03**: Habits respect `frequencyPerWeek` (scheduled on the right number of days) and accrue a real `streakCount` computed from completion history.
-- [x] **ENGINE-04**: Outcome goals are scheduled by deadline pressure, replacing the hardcoded `chunksRemaining = 2.0` placeholder.
-- [x] **ENGINE-05**: The "Want a lighter day?" toggle measurably reduces the discretionary schedule.
-- [x] **ENGINE-06**: The user can set a goal's priority (low / normal / high) in the goal form, and that priority influences scheduling.
+- [ ] **GOALFORM-01**: The add/edit goal sheet fits the viewport so every field — including Priority — and the Save/confirm action are reachable without the sheet being clipped or requiring awkward in-sheet scrolling.
 
-### Close — Close the Day (CLOSE)
+### Goals Screen (GOALS)
 
-- [x] **CLOSE-01**: A discoverable end-of-day moment (time-aware Home card after ~6pm or once ≥50% of chunks are resolved) summarizes the day, with an optional opt-in evening reminder.
-- [x] **CLOSE-02**: The user can defer a chunk to tomorrow, and deferred chunks carry into the next morning's generation.
-- [x] **CLOSE-03**: Commitment chunks are attributed in completion logs (not recorded with an empty goal id).
+- [ ] **GOALS-01**: The Goals screen makes its purpose explicit as a prioritization view — what your goals are and how focused you are — with an obvious reorder affordance.
+- [ ] **GOALS-02**: A goal's priority (low / normal / high) has a clear, consistent visual language that reads correctly and distinctly at each level.
 
-### Review — Honest Long Loop (REVIEW)
+### Check-in (CHECKIN)
 
-- [x] **REVIEW-01**: The quarterly review's aggregation and charts count all logged time correctly, including commitment time and archived goals' history, with correct donut totals.
-- [x] **REVIEW-02**: Priority adjustments made during the review demonstrably change subsequent schedule generation.
-- [x] **REVIEW-03**: The review loads its own data independently, with no dependency on a previously-visited tab.
+- [ ] **CHECKIN-01**: The check-in screen meets contrast/legibility standards — the mood theme background no longer makes text and controls hard to read — and interactive elements have appropriate hover/pressed states.
+- [ ] **CHECKIN-02**: The lighter-day choice has a clearly readable on/off state and is presented at the right moment — after the user commits to the day ("Let's go"), framed as push-forward vs. lighter day — rather than an always-present inline toggle whose state can't be read. *(SEED-001 #1)*
+
+### Priority Drives Scheduling (PRIORITY)
+
+- [ ] **PRIORITY-01**: A goal's priority measurably influences schedule generation beyond a tiebreaker — higher-priority goals receive proportionally more or earlier chunks — so changing a goal's priority visibly changes the generated schedule. *(SEED-001 #4)*
 
 ---
 
 ## Future Requirements (deferred)
 
-- LLM-assisted scheduling and conversational re-planning (v2 — the deterministic engine from this milestone becomes the auditable baseline).
-- Calendar sync (Google Calendar, etc.).
-- User-pinned specific days/times for habits and commitments beyond simple frequency.
-- "Bonus" overflow chunks when capacity exceeds demand (current policy: leave unscheduled for a calmer day).
+From SEED-001 (engine hypotheses not yet dogfooded — defer to a later "engine honesty" milestone):
+- Low-mood days should not zero out time-target goals (SEED-001 #2).
+- Habits should not monopolize the discretionary cap ahead of other goals (SEED-001 #3).
+- Streak semantics revisited once real daily-use history exists (SEED-001 #6).
+
+Other deferred:
+- LLM-assisted scheduling and conversational re-planning (v2).
+- Calendar sync; user-pinned specific days/times beyond simple frequency.
 
 ## Out of Scope (this milestone)
 
-- Any AI/LLM API dependency — explicitly excluded; the milestone proves the rule-based core first.
+- Any AI/LLM API dependency.
 - Backend / multi-device sync — local Hive storage only.
-- Re-architecture of the stack — Hive / Provider / go_router are sound; this milestone is rewiring and finishing, not rebuilding.
-- Multi-user / team features — personal tool only.
+- Re-architecture of the stack — Hive / Provider / go_router are sound; this is UI rework + one targeted engine change (priority).
+- Multi-user / team features.
 
 ---
 
@@ -68,27 +65,17 @@ Rule-based only — no LLM in this milestone. All requirements are user-observab
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LOOP-01 | Phase 7 | Complete |
-| LOOP-02 | Phase 7 | Complete |
-| LOOP-03 | Phase 7 | Complete |
-| LOOP-04 | Phase 7 | Complete |
-| LOOP-05 | Phase 7 | Complete |
-| READ-01 | Phase 8 | Complete |
-| READ-02 | Phase 8 | Complete |
-| READ-03 | Phase 8 | Complete |
-| READ-04 | Phase 8 | Complete |
-| ENGINE-01 | Phase 9 | Complete |
-| ENGINE-02 | Phase 9 | Complete |
-| ENGINE-03 | Phase 9 | Complete |
-| ENGINE-04 | Phase 9 | Complete |
-| ENGINE-05 | Phase 9 | Complete |
-| ENGINE-06 | Phase 9 | Complete |
-| CLOSE-01 | Phase 10 | Complete |
-| CLOSE-02 | Phase 10 | Complete |
-| CLOSE-03 | Phase 10 | Complete |
-| REVIEW-01 | Phase 11 | Complete |
-| REVIEW-02 | Phase 11 | Complete |
-| REVIEW-03 | Phase 11 | Complete |
+| NAV-01 | TBD | Pending |
+| NAV-02 | TBD | Pending |
+| SCHED-01 | TBD | Pending |
+| SCHED-02 | TBD | Pending |
+| SCHED-03 | TBD | Pending |
+| GOALFORM-01 | TBD | Pending |
+| GOALS-01 | TBD | Pending |
+| GOALS-02 | TBD | Pending |
+| CHECKIN-01 | TBD | Pending |
+| CHECKIN-02 | TBD | Pending |
+| PRIORITY-01 | TBD | Pending |
 
 ---
-*Open detail-level questions deferred to discuss-phase for the Engine phase: discretionary↔clock interleave rule (proposal default: simple day-order interleave) and streak semantics (proposal default: consecutive scheduled days completed, frequency-aware).*
+*Phase assignments filled in by the roadmap.*

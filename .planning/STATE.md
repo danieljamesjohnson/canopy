@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Phases
-status: verifying
-last_updated: "2026-06-11T22:49:02.027Z"
-last_activity: 2026-06-11 -- Phase 11 Plan 01 complete
+milestone: v1.2
+milestone_name: Make It Usable
+status: planning
+last_updated: "2026-06-12T13:30:21.214Z"
+last_activity: 2026-06-12
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 13
-  completed_plans: 13
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Execution State
@@ -23,15 +23,10 @@ progress:
 
 ## Current Position
 
-Phase: 11 (Honest Long Loop) — EXECUTING
-Plan: 2 of 2
-Next: Phase 11 Plan 02 — Screen wiring + cold-launch fix (REVIEW-01/02/03)
-Status: Phase complete — ready for verification
-Last activity: 2026-06-11 -- Phase 11 Plan 01 complete
-
-Progress: [████████--] 85% (4/5 phases in progress, 12/13 plans done)
-
----
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-06-12 — Milestone v1.2 started
 
 ## Completed Plans
 

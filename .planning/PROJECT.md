@@ -8,20 +8,21 @@ Canopy is a personal time budgeting app that generates a daily schedule built ar
 
 Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
 
-## Current Milestone: v1.1 "Actually Daily"
+## Current Milestone: v1.2 "Make It Usable"
 
-**Goal:** Close the gap between "all v1.0 phases complete" and "I open it every morning and it works" — fix the broken daily loop, then make the rule-based engine honor the goal model it already stores. Rule-based only (no LLM).
+**Goal:** Rework the UI foundations surfaced by the first real dogfood so Canopy is legible and usable day-to-day — fix the landing/information-architecture, make the schedule read as a real timed plan, redesign the goal form and check-in, clarify core affordances, and make priority actually drive scheduling. Rule-based only (no LLM).
 
-**Why this milestone:** v1.0 shipped every feature on paper but the daily-use loop is broken at step one (morning check-in generates from empty data on cold launch), the scheduling engine implements ~40% of its own spec, and several "complete" deliverables are UI shells wired to nothing. See `.planning/NEXT-MILESTONE-PROPOSAL.md` for the full reality check and runtime-verified evidence.
+**Why this milestone:** v1.1 shipped 21/21 requirements "complete on paper and in code," but the first end-to-end walkthrough (Dan, 2026-06-12) returned a blunt verdict: *"the basics just aren't here yet… quite a bit of rework on just the basics of the UI."* The dogfood is captured in `.planning/seeds/SEED-002-ui-basics-rework-dogfood.md` with transcript + annotated frames at `.planning/research/dogfood-2026-06-12/`. It also confirmed two engine concerns from `.planning/seeds/SEED-001-engine-product-critique.md` (#1 lighter-day default + unreadable toggle, #5 chunks show "5x/week" instead of times).
 
 **Target outcomes:**
-- Morning never dead-ends — check-in always generates from your actual saved goals & commitments, on any cold launch or resume.
-- The schedule is legible — every chunk names its goal and why it's there, ordered coherently around commitments.
-- The schedule reflects the budget — mood capacity is filled; weekly-hour goals, habit frequency, and priority all actually drive generation.
-- The day closes — discoverable end-of-day moment, deferral, real streaks, plus a minimal companion focus-session mode.
-- Long-loop honesty — the quarterly review counts time correctly and its adjustments demonstrably change tomorrow's schedule.
+- Home is the landing, and the schedule reads as a real plan — every chunk shows a clock time, with a clear "now / next" framing (not "5x/week").
+- The goal form fits the screen — Priority and Save are always reachable.
+- The Goals screen reads as a prioritization view with a legible priority visual language.
+- The check-in is legible (contrast/hover), and the lighter-day choice has a readable state shown at the right moment (after "Let's go"), not an always-on ambiguous toggle.
+- Core chunk affordances (complete / skip) are obvious, not an unlabeled circle.
+- Priority measurably changes the generated schedule (SEED-001 #4), not just a tiebreaker.
 
-**Owner decisions (binding):** companion/focus-session mode is in scope; allocation policy accepted as proposed; iOS is the daily driver (keep OS scheduled notifications).
+**Scope notes:** Driven by SEED-002 (A–F) + SEED-001 #1/#5/#4. Deferred to a later "engine honesty" milestone: SEED-001 #2 (low-mood zeros time-targets), #3 (habits monopolize the cap), #6 (streak semantics). Phase numbering continues from v1.1 (starts at Phase 12); v1.1 phase directories are preserved.
 
 ## Requirements
 
