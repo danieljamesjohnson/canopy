@@ -155,6 +155,7 @@ class DevDataLoader {
       id: json['id'] as String?,
       chunkId: json['chunkId'] as String,
       goalId: json['goalId'] as String,
+      commitmentId: json['commitmentId'] as String?,
       dateYmd: json['dateYmd'] as String,
       eventIndex: json['eventIndex'] as int,
     );
