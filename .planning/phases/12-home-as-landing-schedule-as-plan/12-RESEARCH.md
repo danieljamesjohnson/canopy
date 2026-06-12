@@ -492,17 +492,17 @@ All other claims in this research were verified directly in the codebase.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **NowMarker position when all work chunks are resolved**
    - What we know: The UI-SPEC says insert before "the first unresolved work chunk at or after current time, or before the first unresolved work chunk overall."
    - What's unclear: When all work chunks are resolved (all done today), should NowMarker appear at all?
-   - Recommendation: When `nextChunk == null` (all resolved), omit the NowMarker entirely. The "All done today!" text makes the NowMarker redundant.
+   - RESOLVED: When `nextChunk == null` (all resolved), omit the NowMarker entirely. The "All done today!" text makes the NowMarker redundant. (Implemented by plan 12-02 Task 3.)
 
 2. **ScheduleScreen vs. HomeScreen action button scope for SCHED-03**
    - What we know: The UI-SPEC requires always-visible buttons on both `ChunkCard` (ScheduleScreen) and `ActiveChunkCard` (HomeScreen).
    - What's unclear: Should the existing `SwipeableChunkCard` in ScheduleScreen retain swipe gestures alongside the always-visible buttons?
-   - Recommendation: Yes — per UI-SPEC §Chunk Action Contract: "always-visible buttons and swipe gestures are orthogonal and coexist." Swipe wrapping is in `SwipeableChunkCard`/`Dismissible` which is independent of `ChunkCard`'s internals.
+   - RESOLVED: Yes — per UI-SPEC §Chunk Action Contract: "always-visible buttons and swipe gestures are orthogonal and coexist." Swipe wrapping is in `SwipeableChunkCard`/`Dismissible` which is independent of `ChunkCard`'s internals. (Implemented by plan 12-02 Task 2.)
 
 ---
 

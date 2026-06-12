@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.2
-milestone_name: Make It Usable
+milestone_name: Phases
 status: planning
-last_updated: "2026-06-12T13:30:21.214Z"
-last_activity: 2026-06-12
+last_updated: "2026-06-12T14:07:27.173Z"
+last_activity: 2026-06-12 — Milestone v1.2 roadmap created (3 phases, 11 requirements)
 progress:
   total_phases: 3
   completed_phases: 0
@@ -17,7 +17,7 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-12
+**Last session:** 2026-06-12T13:51:05.510Z
 
 ---
 
