@@ -20,6 +20,7 @@ import 'package:canopy/providers/commitments_notifier.dart';
 import 'package:canopy/providers/goals_notifier.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/settings_notifier.dart';
+import 'package:canopy/providers/theme_notifier.dart';
 import 'package:canopy/router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,6 +66,17 @@ class _FakeScheduleNotifier extends ScheduleNotifier {
 /// be defensive against future additions.
 class _FakeCommitmentsNotifier extends CommitmentsNotifier {}
 
+/// Test double — overrides `init()` and `isPreCheckin` to avoid Hive/Timer.
+/// HomeScreen reads `context.watch<ThemeNotifier>().isPreCheckin` so this
+/// provider must be in the tree when the redirect lands on /home (NAV-01).
+class _FakeThemeNotifier extends ThemeNotifier {
+  @override
+  Future<void> init() async {}
+
+  @override
+  bool get isPreCheckin => false;
+}
+
 Future<GoRouter> _pumpRouter(
   WidgetTester tester, {
   required bool onboardingComplete,
@@ -92,6 +104,8 @@ Future<GoRouter> _pumpRouter(
             create: (_) => _FakeScheduleNotifier()),
         ChangeNotifierProvider<CommitmentsNotifier>(
             create: (_) => _FakeCommitmentsNotifier()),
+        ChangeNotifierProvider<ThemeNotifier>(
+            create: (_) => _FakeThemeNotifier()),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -159,16 +173,36 @@ void main() {
     );
 
     testWidgets(
-      'onboardingComplete=true → /onboarding deep link redirects to /goals',
+      'onboardingComplete=true → /onboarding deep link redirects to /home',
       (tester) async {
-        // The router's redirect callback (lib/router.dart:33) sends already-
-        // onboarded users away from /onboarding into the app shell.
+        // NAV-01: The router's redirect callback sends already-onboarded users
+        // away from /onboarding to /home (was /goals before Phase 12).
+        //
+        // We use _pumpRouter but verify the path immediately after the redirect
+        // runs (before HomeScreen.initState's async _checkReviewWindow can throw).
+        // The path read is synchronous; the assertion completes before the Hive
+        // Future resolves in FakeAsync. This matches the existing test pattern
+        // (a single tester.pump() is used, not pumpAndSettle).
         final router = await _pumpRouter(
           tester,
           onboardingComplete: true,
           initialPath: '/onboarding',
         );
-        expect(_currentPath(router), '/goals');
+        expect(_currentPath(router), '/home');
+      },
+    );
+
+    testWidgets(
+      'cold launch with onboardingComplete=true lands on /home',
+      (tester) async {
+        // NAV-01: createRouter uses initialLocation: '/home'. The redirect guard
+        // must not send already-onboarded users away from /home.
+        final router = await _pumpRouter(
+          tester,
+          onboardingComplete: true,
+          initialPath: '/home',
+        );
+        expect(_currentPath(router), '/home');
       },
     );
   });

@@ -64,16 +64,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _checkReviewWindow() async {
-    final logs = await HiveCompletionLogRepository().getAll();
-    final latest = await HiveQuarterlySnapshotRepository().getLatest();
-    final service = QuarterlyAggregationService();
-    if (mounted) {
-      setState(() {
-        _inReviewWindow = service.isInReviewWindow(
-          latestSnapshot: latest,
-          allLogs: logs,
-        );
-      });
+    try {
+      final logs = await HiveCompletionLogRepository().getAll();
+      final latest = await HiveQuarterlySnapshotRepository().getLatest();
+      final service = QuarterlyAggregationService();
+      if (mounted) {
+        setState(() {
+          _inReviewWindow = service.isInReviewWindow(
+            latestSnapshot: latest,
+            allLogs: logs,
+          );
+        });
+      }
+    } catch (_) {
+      // Hive boxes not yet open (test environment or cold start before init).
+      // _inReviewWindow stays false — the banner simply won't show.
     }
   }
 
