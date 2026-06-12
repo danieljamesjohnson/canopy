@@ -13,7 +13,7 @@ Rule-based only — no LLM. All requirements are user-observable capabilities th
 ### Navigation & Information Architecture (NAV)
 
 - [x] **NAV-01**: After onboarding completes — and on any normal launch with onboarding done — the app lands on **Home**, not the Goals screen.
-- [ ] **NAV-02**: Home leads with the live day (current chunk + what's next) and does not merely duplicate the Schedule as a static "Up next" card; the Home↔Schedule relationship is resolved so the user always has one obvious place to see "what am I doing now."
+- [x] **NAV-02**: Home leads with the live day (current chunk + what's next) and does not merely duplicate the Schedule as a static "Up next" card; the Home↔Schedule relationship is resolved so the user always has one obvious place to see "what am I doing now."
 
 ### Schedule Legibility (SCHED)
 
@@ -68,7 +68,7 @@ Other deferred:
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | NAV-01 | Phase 12 | Complete |
-| NAV-02 | Phase 12 | Pending |
+| NAV-02 | Phase 12 | Complete |
 | SCHED-01 | Phase 12 | Complete |
 | SCHED-02 | Phase 12 | Complete |
 | SCHED-03 | Phase 12 | Complete |

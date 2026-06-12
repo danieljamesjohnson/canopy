@@ -2,22 +2,22 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Phases
-status: executing
-last_updated: "2026-06-12T14:28:49.142Z"
+status: verifying
+last_updated: "2026-06-12T14:38:29.710Z"
 last_activity: 2026-06-12 -- Phase 12 execution started
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
-  percent: 0
+  completed_plans: 3
+  percent: 33
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-12T14:28:49.137Z
+**Last session:** 2026-06-12T14:34:50Z
 
 ---
 
@@ -25,8 +25,8 @@ progress:
 
 Phase: 12 (Home as Landing, Schedule as Plan) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-06-12 -- Phase 12 execution started
+Status: Phase complete — ready for verification
+Last activity: 2026-06-12 -- Completed 12-03-PLAN.md (ActiveChunkCard + HomeScreen Now/Next NAV-02)
 
 ## Completed Plans
 
@@ -114,6 +114,9 @@ Last activity: 2026-06-12 -- Phase 12 execution started
 - [Phase ?]: [Phase 12-02]: NowMarker omitted when no unresolved work chunk exists (nowMarkerIndex stays null per RESEARCH Open Question 1)
 - [Phase ?]: [Phase 12-02]: Swipe gestures and always-visible buttons coexist — orthogonal input modalities per UI-SPEC Chunk Action Contract
 - [Phase ?]: [Phase 12-02]: _checkReviewWindow wrapped in try/catch to prevent unhandled Hive box-not-open errors in test environments
+- [Phase 12-03]: Formatters extracted to lib/utils/time_format.dart without editing chunk_card.dart — file-disjoint parallelism preserved between 12-02 and 12-03
+- [Phase 12-03]: Tooltip wrapper used for Complete/Skip buttons in ActiveChunkCard — Flutter 3.18 FilledButton.icon lacks tooltip parameter (same pattern as 12-02)
+- [Phase 12-03]: Mood row relocated below Now/Next sections; Divider removed — section labels provide visual separation
 
 ## Performance Metrics
 
@@ -150,6 +153,7 @@ Last activity: 2026-06-12 -- Phase 12 execution started
 | Phase 11-honest-long-loop P02 | 6min | 2 tasks | 4 files |
 | Phase 12-home-as-landing-schedule-as-plan P12-01 | 3 minutes | 2 tasks | 4 files |
 | Phase 12-home-as-landing-schedule-as-plan P12-02 | 15 minutes | 3 tasks | 8 files |
+| Phase 12-home-as-landing-schedule-as-plan P03 | 4 minutes | 2 tasks | 4 files |
 
 ## Blockers
 
