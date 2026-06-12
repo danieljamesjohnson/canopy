@@ -5,7 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../data/repositories/hive_completion_log_repository.dart';
 import '../../dev/dev_data_loader.dart';
+import '../../providers/commitments_notifier.dart';
+import '../../providers/goals_notifier.dart';
+import '../../providers/schedule_notifier.dart';
 import '../../providers/settings_notifier.dart';
+import '../../providers/theme_notifier.dart';
 import '../../services/export_service.dart';
 import '../../services/notification_service.dart';
 
@@ -25,6 +29,113 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final suffix = h < 12 ? 'AM' : 'PM';
     final hour = h == 0 ? 12 : (h > 12 ? h - 12 : h);
     return '$hour:${m.toString().padLeft(2, '0')} $suffix';
+  }
+
+  /// Reloads every startup notifier from the (now-modified) Hive boxes so the
+  /// in-memory provider state matches disk after a dev wipe. Notifiers are
+  /// constructed in main() before runApp, so clearing a box does not update
+  /// them until these reload entry points run.
+  Future<void> _reloadNotifiers(BuildContext context) async {
+    // Capture every notifier synchronously before any await so we never reach
+    // through BuildContext across an async gap.
+    final goals = context.read<GoalsNotifier>();
+    final commitments = context.read<CommitmentsNotifier>();
+    final schedule = context.read<ScheduleNotifier>();
+    final settings = context.read<SettingsNotifier>();
+    final theme = context.read<ThemeNotifier>();
+    await goals.loadGoals();
+    await commitments.loadBlocks();
+    await schedule.init();
+    await settings.init();
+    await theme.init();
+  }
+
+  Future<bool> _confirm(
+    BuildContext context, {
+    required String title,
+    required String body,
+    required String confirmLabel,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              confirmLabel,
+              style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    return result == true;
+  }
+
+  void _snack(BuildContext context, String message, {bool error = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: error ? 6 : 4),
+      ),
+    );
+  }
+
+  Future<void> _handleResetSchedule(BuildContext context) async {
+    final ok = await _confirm(
+      context,
+      title: "Reset today's schedule?",
+      body:
+          "Clears today's generated plan (schedule + chunks). Your goals, "
+          'commitments, logs, and settings are kept — the next morning '
+          'check-in will regenerate from scratch.',
+      confirmLabel: 'Reset',
+    );
+    if (!ok || !context.mounted) return;
+    final result = await DevDataLoader.resetTodaySchedule();
+    if (!context.mounted) return;
+    if (!result.success) {
+      _snack(context, 'Reset failed: ${result.error}', error: true);
+      return;
+    }
+    await _reloadNotifiers(context);
+    if (!context.mounted) return;
+    _snack(context, "Today's schedule cleared. Run the morning check-in.");
+  }
+
+  Future<void> _handleFactoryReset(BuildContext context) async {
+    final ok = await _confirm(
+      context,
+      title: 'Factory reset?',
+      body:
+          'Wipes EVERYTHING — goals, commitments, schedules, chunks, logs, '
+          'snapshots, and settings — and returns the app to a fresh first '
+          'launch (onboarding). This cannot be undone.',
+      confirmLabel: 'Erase everything',
+    );
+    if (!ok || !context.mounted) return;
+    final result = await DevDataLoader.factoryReset();
+    if (!context.mounted) return;
+    if (!result.success) {
+      _snack(context, 'Factory reset failed: ${result.error}', error: true);
+      return;
+    }
+    await _reloadNotifiers(context);
+    if (!context.mounted) return;
+    _snack(
+      context,
+      'Wiped ${result.recordsCleared} records across '
+      '${result.boxesCleared} boxes. Starting fresh.',
+    );
+    context.go('/onboarding');
   }
 
   Future<void> _handleExport(BuildContext context) async {
@@ -360,6 +471,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   );
                 }
               },
+            ),
+
+          // Dev-only: clear just today's generated plan, keep goals. Re-run the
+          // morning check-in to regenerate. Stripped in release.
+          if (kDebugMode)
+            ListTile(
+              leading: const Icon(Icons.refresh),
+              title: const Text("Reset today's schedule"),
+              subtitle: const Text(
+                'Clears the generated plan; keeps goals & commitments',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _handleResetSchedule(context),
+            ),
+
+          // Dev-only: full wipe back to first-launch onboarding. Stripped in
+          // release.
+          if (kDebugMode)
+            ListTile(
+              leading: Icon(
+                Icons.restart_alt,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: const Text('Factory reset (fresh onboarding)'),
+              subtitle: const Text(
+                'Wipes everything and returns to first launch',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _handleFactoryReset(context),
             ),
         ],
       ),

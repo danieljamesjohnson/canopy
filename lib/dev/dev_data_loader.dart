@@ -3,9 +3,13 @@ import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:hive_ce/hive.dart';
 
+import '../data/models/app_settings.dart';
+import '../data/models/commitment_block.dart';
 import '../data/models/completion_log.dart';
+import '../data/models/daily_schedule.dart';
 import '../data/models/goal.dart';
 import '../data/models/quarterly_snapshot.dart';
+import '../data/models/scheduled_chunk.dart';
 import '../data/repositories/hive_completion_log_repository.dart';
 import '../data/repositories/hive_goal_repository.dart';
 import '../data/repositories/hive_quarterly_snapshot_repository.dart';
@@ -261,4 +265,78 @@ class DevDataLoader {
       return DevClearResult.failure(e);
     }
   }
+
+  /// Clears only today's generated plan: the daily_schedules and
+  /// scheduled_chunks boxes. Goals, commitments, logs, snapshots, and settings
+  /// are untouched — so the next morning check-in regenerates from scratch
+  /// against the SAME goals. Handy for iterating on the schedule generator
+  /// without rebuilding the goal set.
+  ///
+  /// Never throws — surfaces any failure via [DevResetResult.failure].
+  static Future<DevResetResult> resetTodaySchedule() async {
+    try {
+      const names = ['daily_schedules', 'scheduled_chunks'];
+      final schedulesBox = Hive.box<DailySchedule>('daily_schedules');
+      final chunksBox = Hive.box<ScheduledChunk>('scheduled_chunks');
+      final cleared = schedulesBox.length + chunksBox.length;
+      await schedulesBox.clear();
+      await chunksBox.clear();
+      return DevResetResult.success(
+        boxesCleared: names.length,
+        recordsCleared: cleared,
+      );
+    } catch (e) {
+      return DevResetResult.failure(e);
+    }
+  }
+
+  /// Factory reset: wipes ALL seven Hive boxes — including app_settings (the
+  /// onboarding flag) — returning the app to a genuine first-launch state.
+  /// After this completes, callers must reload the in-memory notifiers and
+  /// route to onboarding (the boxes are emptied, but the providers built at
+  /// startup still hold the old data until reloaded).
+  ///
+  /// Never throws — surfaces any failure via [DevResetResult.failure].
+  static Future<DevResetResult> factoryReset() async {
+    try {
+      final boxes = <Box>[
+        Hive.box<Goal>('goals'),
+        Hive.box<CommitmentBlock>('commitment_blocks'),
+        Hive.box<DailySchedule>('daily_schedules'),
+        Hive.box<ScheduledChunk>('scheduled_chunks'),
+        Hive.box<CompletionLog>('completion_logs'),
+        Hive.box<QuarterlySnapshot>('quarterly_snapshots'),
+        Hive.box<AppSettings>('app_settings'),
+      ];
+      int recordsCleared = 0;
+      for (final box in boxes) {
+        recordsCleared += box.length;
+        await box.clear();
+      }
+      return DevResetResult.success(
+        boxesCleared: boxes.length,
+        recordsCleared: recordsCleared,
+      );
+    } catch (e) {
+      return DevResetResult.failure(e);
+    }
+  }
+}
+
+/// Result type for the box-wipe reset helpers ([resetTodaySchedule],
+/// [factoryReset]).
+class DevResetResult {
+  DevResetResult.success({
+    required this.boxesCleared,
+    required this.recordsCleared,
+  }) : success = true,
+       error = null;
+  DevResetResult.failure(Object this.error)
+    : success = false,
+      boxesCleared = 0,
+      recordsCleared = 0;
+  final bool success;
+  final Object? error;
+  final int boxesCleared;
+  final int recordsCleared;
 }
