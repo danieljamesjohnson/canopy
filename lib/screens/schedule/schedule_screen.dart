@@ -8,6 +8,7 @@ import '../../data/models/scheduled_chunk.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
 import '../../utils/rationale_mapper.dart';
+import '../../utils/time_format.dart';
 import 'widgets/chunk_card.dart';
 import 'widgets/chunk_detail_sheet.dart';
 import 'widgets/now_marker.dart';

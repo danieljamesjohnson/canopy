@@ -8,7 +8,7 @@ import '../../../data/models/quarterly_snapshot.dart';
 import '../../../data/repositories/hive_quarterly_snapshot_repository.dart';
 import '../../../data/repositories/quarterly_snapshot_repository.dart';
 import '../../../providers/goals_notifier.dart';
-import '../../schedule/widgets/chunk_card.dart';
+import '../../../utils/time_format.dart';
 import '../widgets/goal_adjustment_tile.dart';
 
 /// Section 3 of the quarterly review: drag-to-reorder goal priorities,

@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/scheduled_chunk.dart';
 import '../../providers/schedule_notifier.dart';
 import '../../utils/rationale_mapper.dart';
-import '../schedule/widgets/chunk_card.dart';
+import '../../utils/time_format.dart';
 import '../../providers/goals_notifier.dart';
 
 /// Full-screen companion focus mode for a single work chunk.

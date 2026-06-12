@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/scheduled_chunk.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
-import '../schedule/widgets/chunk_card.dart';
+import '../../utils/time_format.dart';
 
 /// Full-screen end-of-day summary showing hero completed count, per-goal
 /// breakdown, skipped note, and a "See you tomorrow" close button.

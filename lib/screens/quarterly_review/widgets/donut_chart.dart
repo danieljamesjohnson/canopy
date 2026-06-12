@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../data/models/commitment_block.dart';
 import '../../../data/models/goal.dart';
 import '../../../providers/goals_notifier.dart';
-import '../../schedule/widgets/chunk_card.dart';
+import '../../../utils/time_format.dart';
 
 /// Donut chart showing per-goal chunk proportions and a "Time not spent" slice.
 ///

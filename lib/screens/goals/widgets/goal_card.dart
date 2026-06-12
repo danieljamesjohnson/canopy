@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/goal.dart';
-
-/// Converts a hex color string (e.g. '#4CAF50') to a Flutter Color.
-Color hexToColor(String hex) {
-  return Color(int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
-}
+import '../../../utils/time_format.dart';
 
 /// A Material Card displaying a goal with a colored left border, type icon,
 /// name, and an optional secondary stat (weekly hours or streak count).
