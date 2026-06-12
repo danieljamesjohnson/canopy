@@ -642,7 +642,20 @@ All 21 v1.1 requirements mapped to exactly one phase. No orphaned requirements.
   3. Every chunk in the schedule (commitment and discretionary) shows a real clock time (e.g. "9:25 AM – 9:50 AM"), not a frequency label like "5x/week."
   4. The schedule has a clear "now" marker and a "next" indicator anchored to the current time, so the user can orient without scanning the whole list.
   5. Each chunk row has labeled complete and skip actions that are visible without hover on both touch and mouse surfaces.
-**Plans:** TBD
+
+**Plans:** 3 plans
+
+Plans:
+
+**Wave 1**
+
+- [ ] 12-01-PLAN.md — Persist syntheticStartMinutes as HiveField(10), displayStartMinutes getter, schema 6→7 no-op migration + regression test (SCHED-01 data layer)
+
+**Wave 2** *(blocked on 12-01; 12-02 and 12-03 are file-disjoint and run in parallel)*
+
+- [ ] 12-02-PLAN.md — Router redirect to /home, clock-time display, always-visible Complete/Skip buttons, NowMarker (NAV-01, SCHED-01 UI, SCHED-02, SCHED-03)
+- [ ] 12-03-PLAN.md — Home Now/Next active-day refactor + ActiveChunkCard + See full schedule link (NAV-02)
+
 **UI hint**: yes
 
 ---
@@ -681,7 +694,7 @@ All 21 v1.1 requirements mapped to exactly one phase. No orphaned requirements.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 12. Home as Landing, Schedule as Plan | 0/? | Not started | - |
+| 12. Home as Landing, Schedule as Plan | 0/3 | Planned | - |
 | 13. Check-in and Goal Form | 0/? | Not started | - |
 | 14. Goals Screen and Priority End-to-End | 0/? | Not started | - |
 
