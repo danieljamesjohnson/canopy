@@ -115,17 +115,24 @@ class ScheduleScreen extends StatelessWidget {
     BuildContext context,
     List<ScheduledChunk> activeChunks,
   ) {
-    final nowMinutes =
-        DateTime.now().hour * 60 + DateTime.now().minute;
+    final now = DateTime.now();
+    final nowMinutes = now.hour * 60 + now.minute;
     int? nowMarkerIndex;
     for (int i = 0; i < activeChunks.length; i++) {
       final c = activeChunks[i];
-      if (c.chunkType == ChunkType.work && !c.isCompleted && !c.isSkipped) {
-        nowMarkerIndex ??= i; // fallback: first unresolved work chunk
-        if ((c.displayStartMinutes ?? 9999) >= nowMinutes) {
-          nowMarkerIndex = i;
-          break;
-        }
+      if (c.chunkType != ChunkType.work || c.isCompleted || c.isSkipped) {
+        continue;
+      }
+
+      final start = c.displayStartMinutes;
+      if (start == null || start < nowMinutes) {
+        // Chunk is either untimed or already in the past; treat it as current
+        // until we find one that is in the future.
+        nowMarkerIndex = i;
+      } else {
+        // First chunk at or after now — place marker here and stop.
+        nowMarkerIndex = i;
+        break;
       }
     }
 
