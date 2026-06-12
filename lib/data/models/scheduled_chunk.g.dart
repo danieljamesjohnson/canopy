@@ -24,6 +24,7 @@ class ScheduledChunkAdapter extends TypeAdapter<ScheduledChunk> {
         anchoredStartMinutes: (fields[4] as num?)?.toInt(),
         rationale: fields[5] == null ? '' : fields[5] as String,
         commitmentId: fields[9] as String?,
+        syntheticStartMinutes: (fields[10] as num?)?.toInt(),
       )
       ..isCompleted = fields[6] as bool
       ..isSkipped = fields[7] as bool
@@ -33,7 +34,7 @@ class ScheduledChunkAdapter extends TypeAdapter<ScheduledChunk> {
   @override
   void write(BinaryWriter writer, ScheduledChunk obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -53,7 +54,9 @@ class ScheduledChunkAdapter extends TypeAdapter<ScheduledChunk> {
       ..writeByte(8)
       ..write(obj.isDeferred)
       ..writeByte(9)
-      ..write(obj.commitmentId);
+      ..write(obj.commitmentId)
+      ..writeByte(10)
+      ..write(obj.syntheticStartMinutes);
   }
 
   @override

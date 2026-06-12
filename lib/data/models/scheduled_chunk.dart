@@ -18,6 +18,7 @@ class ScheduledChunk extends HiveObject {
     this.anchoredStartMinutes,
     this.rationale = '',
     this.commitmentId,
+    this.syntheticStartMinutes,
   }) : id = id ?? _uuid.v4();
 
   @HiveField(0)
@@ -57,9 +58,17 @@ class ScheduledChunk extends HiveObject {
   @HiveField(9)
   String? commitmentId;
 
-  // Synthetic start time assigned during generation; NOT stored in Hive.
-  // Used as sort key for discretionary chunks in ScheduleGeneratorService.
+  /// Synthetic start time assigned by ScheduleGeneratorService.
+  /// Persisted so clock times survive app restart.
+  @HiveField(10)
   int? syntheticStartMinutes;
+
+  /// Unified accessor for clock-time display.
+  /// Returns anchoredStartMinutes when set (commitment chunks), otherwise
+  /// syntheticStartMinutes (discretionary chunks). Null when neither is set.
+  /// Always use this getter in UI code — never access anchoredStartMinutes
+  /// or syntheticStartMinutes directly.
+  int? get displayStartMinutes => anchoredStartMinutes ?? syntheticStartMinutes;
 
   // Duration (minutes) of the break reserved AFTER this discretionary work
   // chunk during the packing pass; NOT stored in Hive. Single source of truth

@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-const int currentSchemaVersion = 6;
+const int currentSchemaVersion = 7;
 
 typedef MigrationFn = Future<void> Function();
 
@@ -13,6 +13,7 @@ final List<MigrationFn> _migrations = [
   _migration3to4,
   _migration4to5,
   _migration5to6,
+  _migration6to7,
 ];
 
 Future<void> _migration0to1() async {
@@ -59,6 +60,16 @@ Future<void> _migration5to6() async {
   // records; the CompletionLog.attributionId fallback (commitmentId ?? goalId)
   // keeps historical commitment logs resolving to the same aggregation key.
   // No data transformation needed.
+}
+
+Future<void> _migration6to7() async {
+  // ScheduledChunk gains syntheticStartMinutes (HiveField 10, int?, null).
+  // Additive nullable field — Hive CE binary reader returns null for missing
+  // HiveField(10) in existing records. No data transformation needed.
+  // Legacy schedules generated before this change will read syntheticStartMinutes
+  // back as null; the displayStartMinutes "duration only" fallback is the
+  // intended behavior until the next re-check-in regenerates and persists the
+  // field with the new adapter (RESEARCH Pitfall 4).
 }
 
 Future<void> runMigrations(SharedPreferences prefs) async {
