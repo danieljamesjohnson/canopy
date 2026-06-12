@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Mission Control: Backlog board is a regenerable cache (projection of .planning/ROADMAP.md)
+backlog/
