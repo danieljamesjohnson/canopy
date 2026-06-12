@@ -100,8 +100,11 @@ check-in screen, home/schedule information architecture, and chunk row UI.
 - **#7 "looks done on paper, isn't in practice" → STRONGLY CONFIRMED** (his whole verdict).
 
 ## Breadcrumbs
-- Walkthrough: `~/feedback-drop/canopy/inbox/2026-06-12_13-09-45/` (recording.mp4 +
-  `recording_review/` transcript + frames 0027, 0049, 0061, 0071).
+- **In-repo walkthrough package:** `.planning/research/dogfood-2026-06-12/` — see `INDEX.md`.
+  Includes `transcript.txt`, `annotated.md`, all 70 `frames/`, and 5 legible
+  `key-frames-cropped/` (0027 goal sheet, 0049 check-in, 0058 home, 0061 schedule, 0071
+  chunk hover). **Start with the cropped key frames + INDEX.md.**
+- Original drop: `~/feedback-drop/canopy/inbox/2026-06-12_13-09-45/` (recording.mp4).
 - Likely files: `lib/screens/goals/goal_form_sheet.dart` (D5), `lib/screens/goals/goals_screen.dart`
   (B3/B4), `lib/screens/schedule/checkin_screen.dart` (D6-8), `lib/screens/home/` +
   `lib/screens/schedule/schedule_screen.dart` (A/E9), `lib/screens/schedule/widgets/chunk_card.dart`
