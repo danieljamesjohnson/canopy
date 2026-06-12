@@ -26,8 +26,8 @@ Key non-negotiable constraints carried through all phases:
 ## Phases
 
 - [x] **Phase 1: Foundation** — Database, routing, Provider scaffold, and migration runner — no user-visible features (completed 2026-02-25)
-- [ ] **Phase 2: Goals and Commitments** — Three goal types CRUD, CommitmentBlock CRUD, three-screen onboarding
-- [ ] **Phase 3: Schedule Generation and Morning Check-In** — Mood check-in, rule-based schedule generation, schedule display UI
+- [x] **Phase 2: Goals and Commitments** — Three goal types CRUD, CommitmentBlock CRUD, three-screen onboarding
+- [x] **Phase 3: Schedule Generation and Morning Check-In** — Mood check-in, rule-based schedule generation, schedule display UI
 - [x] **Phase 4: Chunk Tracking and Notifications** — Swipe completion, CompletionLog, local notifications, data export
  (completed 2026-04-02)
 
@@ -600,3 +600,107 @@ All 21 v1.1 requirements mapped to exactly one phase. No orphaned requirements.
 | REVIEW-01 | Phase 11 |
 | REVIEW-02 | Phase 11 |
 | REVIEW-03 | Phase 11 |
+
+---
+
+---
+
+# Milestone v1.2 — "Make It Usable"
+
+**Added:** 2026-06-12
+**Goal:** Rework the UI foundations surfaced by the first real dogfood so Canopy is legible and usable day-to-day — fix the landing/information-architecture, make the schedule read as a real timed plan, redesign the goal form and check-in, clarify core affordances, and make priority actually drive scheduling.
+
+**Milestone constraints (carried through all phases):**
+
+- Rule-based only — no LLM or AI API calls
+- Local Hive storage only — no backend, no sync; additive-only schema changes
+- Brownfield rework — existing screen files are modified in place; routing via go_router, state via Provider notifiers
+- Source of truth: dogfood walkthrough at `.planning/research/dogfood-2026-06-12/` (transcript + key frames); planning agents for each phase should consult it
+
+**Sequencing:** 12 → 13 → 14. Phase 12 fixes the foundational IA and schedule cards that all other screens surround; doing it first avoids rework when Goals and Check-in screens are also touched. Phase 13 (check-in + goal form) and Phase 14 (goals screen + priority engine) are parallel-safe after Phase 12, but priority UI in Phase 14 depends on the goal form's priority control established in Phase 13.
+
+---
+
+## v1.2 Phases
+
+- [ ] **Phase 12: Home as Landing, Schedule as Plan** — Fix the landing page, make Home lead with the live day, show clock times on all chunks, surface now/next framing, and make chunk actions obvious
+- [ ] **Phase 13: Check-in and Goal Form** — Fix check-in contrast/legibility, replace the lighter-day toggle with a post-commit flow, and redesign the goal form sheet to fit the viewport
+- [ ] **Phase 14: Goals Screen and Priority End-to-End** — Redesign Goals as an explicit prioritization view with clear priority visual language, and make priority measurably change schedule generation
+
+---
+
+## v1.2 Phase Details
+
+### Phase 12: Home as Landing, Schedule as Plan
+
+**Goal:** The app lands on Home and the schedule reads as a real timed plan — every chunk shows a clock time, there is one unambiguous "what am I doing right now" view, and chunk actions are discoverable without hover.
+**Depends on:** Phase 11 (v1.1 complete)
+**Requirements:** NAV-01, NAV-02, SCHED-01, SCHED-02, SCHED-03
+**Success Criteria** (what must be TRUE):
+  1. Completing onboarding and relaunching the app from a cold start both land on Home, not the Goals screen.
+  2. Home leads with an active-day view — the current chunk with its start/end time and the next chunk — so the user never needs to navigate to Schedule just to answer "what am I doing now."
+  3. Every chunk in the schedule (commitment and discretionary) shows a real clock time (e.g. "9:25 AM – 9:50 AM"), not a frequency label like "5x/week."
+  4. The schedule has a clear "now" marker and a "next" indicator anchored to the current time, so the user can orient without scanning the whole list.
+  5. Each chunk row has labeled complete and skip actions that are visible without hover on both touch and mouse surfaces.
+**Plans:** TBD
+**UI hint**: yes
+
+---
+
+### Phase 13: Check-in and Goal Form
+
+**Goal:** The check-in is legible and the lighter-day choice is clear and well-timed; the goal form fits the viewport so Priority and Save are always reachable.
+**Depends on:** Phase 12
+**Requirements:** CHECKIN-01, CHECKIN-02, GOALFORM-01
+**Success Criteria** (what must be TRUE):
+  1. The check-in screen's text and controls are readable against the mood-themed background at all five mood levels — no amber-wash contrast failure.
+  2. All interactive elements on the check-in screen (mood options, confirm button) have visible hover and pressed states on desktop and web.
+  3. The lighter-day choice is not an always-visible inline toggle; it appears after the user taps "Let's go," framed as a push-forward vs. lighter-day decision, with an unambiguous on/off state.
+  4. The add/edit goal sheet fits within the viewport — Priority selector and Save button are visible and tappable without in-sheet scrolling on a standard phone screen height.
+**Plans:** TBD
+**UI hint**: yes
+
+---
+
+### Phase 14: Goals Screen and Priority End-to-End
+
+**Goal:** The Goals screen reads as a prioritization view with a legible priority visual language, and changing a goal's priority produces a visibly different schedule.
+**Depends on:** Phase 13
+**Requirements:** GOALS-01, GOALS-02, PRIORITY-01
+**Success Criteria** (what must be TRUE):
+  1. The Goals screen's purpose is explicit — a heading or framing copy makes clear this is where the user decides what to focus on — and the reorder affordance is obvious (not an ambiguous "two slashes").
+  2. Low, normal, and high priority are visually distinct and consistently applied across the Goals screen and schedule cards — changing a goal's priority produces a visible, unambiguous difference in how it is displayed.
+  3. Elevating a goal from low to high priority and regenerating the schedule produces measurably more or earlier chunks for that goal — the change is observable by the user without inspecting code.
+  4. Lowering a goal from high to low priority and regenerating produces fewer or later chunks — the effect is symmetric and consistent.
+**Plans:** TBD
+**UI hint**: yes
+
+---
+
+## v1.2 Progress Table
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 12. Home as Landing, Schedule as Plan | 0/? | Not started | - |
+| 13. Check-in and Goal Form | 0/? | Not started | - |
+| 14. Goals Screen and Priority End-to-End | 0/? | Not started | - |
+
+---
+
+## v1.2 Coverage Map
+
+All 11 v1.2 requirements mapped to exactly one phase. No orphaned requirements.
+
+| Requirement | Phase |
+|-------------|-------|
+| NAV-01 | Phase 12 |
+| NAV-02 | Phase 12 |
+| SCHED-01 | Phase 12 |
+| SCHED-02 | Phase 12 |
+| SCHED-03 | Phase 12 |
+| CHECKIN-01 | Phase 13 |
+| CHECKIN-02 | Phase 13 |
+| GOALFORM-01 | Phase 13 |
+| GOALS-01 | Phase 14 |
+| GOALS-02 | Phase 14 |
+| PRIORITY-01 | Phase 14 |

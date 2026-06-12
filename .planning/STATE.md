@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-06-12T13:30:21.214Z"
 last_activity: 2026-06-12
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,16 +17,16 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-11T22:49:02.022Z
+**Last session:** 2026-06-12
 
 ---
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-06-12 — Milestone v1.2 started
+Phase: 12 — Home as Landing, Schedule as Plan
+Plan: Not started
+Status: Roadmap defined — ready for Phase 12 planning
+Last activity: 2026-06-12 — Milestone v1.2 roadmap created (3 phases, 11 requirements)
 
 ## Completed Plans
 
@@ -151,4 +151,4 @@ None.
 
 ## Stopped At
 
-Phase 11 Plan 01 complete. Next: Phase 11 Plan 02 — screen wiring, cold-launch fix, AdjustmentsSection call-site swap (REVIEW-01/02/03)
+v1.2 roadmap defined. Next: `/gsd-plan-phase 12`

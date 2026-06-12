@@ -65,17 +65,17 @@ Other deferred:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NAV-01 | TBD | Pending |
-| NAV-02 | TBD | Pending |
-| SCHED-01 | TBD | Pending |
-| SCHED-02 | TBD | Pending |
-| SCHED-03 | TBD | Pending |
-| GOALFORM-01 | TBD | Pending |
-| GOALS-01 | TBD | Pending |
-| GOALS-02 | TBD | Pending |
-| CHECKIN-01 | TBD | Pending |
-| CHECKIN-02 | TBD | Pending |
-| PRIORITY-01 | TBD | Pending |
+| NAV-01 | Phase 12 | Pending |
+| NAV-02 | Phase 12 | Pending |
+| SCHED-01 | Phase 12 | Pending |
+| SCHED-02 | Phase 12 | Pending |
+| SCHED-03 | Phase 12 | Pending |
+| GOALFORM-01 | Phase 13 | Pending |
+| CHECKIN-01 | Phase 13 | Pending |
+| CHECKIN-02 | Phase 13 | Pending |
+| GOALS-01 | Phase 14 | Pending |
+| GOALS-02 | Phase 14 | Pending |
+| PRIORITY-01 | Phase 14 | Pending |
 
 ---
 *Phase assignments filled in by the roadmap.*
