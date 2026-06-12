@@ -7,9 +7,12 @@
 // Tests pump ActiveChunkCard directly (Task 1) and HomeScreen (Task 2).
 // Mirrors home_screen_breathing_pulse_test.dart provider wiring pattern.
 
+import 'package:canopy/data/models/daily_schedule.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/providers/goals_notifier.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
+import 'package:canopy/providers/theme_notifier.dart';
+import 'package:canopy/screens/home/home_screen.dart';
 import 'package:canopy/screens/home/widgets/active_chunk_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -40,6 +43,29 @@ class _FakeScheduleNotifier extends ScheduleNotifier {
 class _FakeGoalsNotifier extends GoalsNotifier {
   @override
   Future<void> loadGoals() async {}
+}
+
+class _FakeThemeNotifier extends ThemeNotifier {
+  @override
+  Future<void> init() async {}
+
+  @override
+  bool get isPreCheckin => false;
+}
+
+/// ScheduleNotifier fake that exposes a pre-built schedule for HomeScreen tests.
+class _FakeScheduleNotifierWithSchedule extends _FakeScheduleNotifier {
+  _FakeScheduleNotifierWithSchedule(this._schedule);
+  final DailySchedule _schedule;
+
+  @override
+  DailySchedule? get todaySchedule => _schedule;
+
+  @override
+  bool get hasScheduleToday => true;
+
+  @override
+  int? get moodIndex => _schedule.moodIndex;
 }
 
 // ─── Chunk factories ─────────────────────────────────────────────────────────
@@ -73,6 +99,39 @@ Future<void> _pumpActiveChunkCard(
       ChangeNotifierProvider<ScheduleNotifier>.value(value: sn),
       ChangeNotifierProvider<GoalsNotifier>.value(value: gn),
     ],
+  );
+}
+
+/// Pump helper for HomeScreen with the necessary provider tree.
+/// Mirrors the router_redirect_test.dart provider pattern.
+Future<void> _pumpHomeScreen(
+  WidgetTester tester, {
+  required ScheduleNotifier scheduleNotifier,
+}) async {
+  final theme = ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: ThemeNotifier.moodSeeds[3]!,
+    ),
+  );
+  await tester.pumpWidget(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ScheduleNotifier>.value(
+          value: scheduleNotifier,
+        ),
+        ChangeNotifierProvider<GoalsNotifier>.value(
+          value: _FakeGoalsNotifier(),
+        ),
+        ChangeNotifierProvider<ThemeNotifier>.value(
+          value: _FakeThemeNotifier(),
+        ),
+      ],
+      child: MaterialApp(
+        theme: theme,
+        home: const HomeScreen(),
+      ),
+    ),
   );
 }
 
@@ -162,6 +221,125 @@ void main() {
       // The test simply pumps to confirm no runtime errors occur.
       await _pumpActiveChunkCard(tester, chunk: _workChunk());
       expect(find.byType(ActiveChunkCard), findsOneWidget);
+    });
+  });
+
+  group('HomeScreen Now/Next layout (NAV-02)', () {
+    /// Builds a DailySchedule for today with two unresolved work chunks.
+    DailySchedule _scheduleWithTwoChunks() {
+      final today = DateTime.now();
+      final ymd =
+          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      return DailySchedule(
+        dateYmd: ymd,
+        moodIndex: 3,
+        chunks: [
+          ScheduledChunk(
+            id: 'c1',
+            chunkTypeIndex: ChunkType.work.index,
+            goalId: 'g1',
+            durationMinutes: 25,
+            rationale: 'First chunk',
+          ),
+          ScheduledChunk(
+            id: 'c2',
+            chunkTypeIndex: ChunkType.work.index,
+            goalId: 'g2',
+            durationMinutes: 30,
+            rationale: 'Second chunk',
+          ),
+        ],
+      );
+    }
+
+    /// Builds a DailySchedule for today with all chunks resolved.
+    DailySchedule _scheduleAllResolved() {
+      final today = DateTime.now();
+      final ymd =
+          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final c1 = ScheduledChunk(
+        id: 'c1',
+        chunkTypeIndex: ChunkType.work.index,
+        goalId: 'g1',
+        durationMinutes: 25,
+        rationale: 'First chunk',
+      )..isCompleted = true;
+      final c2 = ScheduledChunk(
+        id: 'c2',
+        chunkTypeIndex: ChunkType.work.index,
+        goalId: 'g2',
+        durationMinutes: 30,
+        rationale: 'Second chunk',
+      )..isSkipped = true;
+      return DailySchedule(
+        dateYmd: ymd,
+        moodIndex: 3,
+        chunks: [c1, c2],
+      );
+    }
+
+    testWidgets('shows "Now" section label when chunks remain', (tester) async {
+      final sn = _FakeScheduleNotifierWithSchedule(_scheduleWithTwoChunks());
+      await _pumpHomeScreen(tester, scheduleNotifier: sn);
+      expect(
+        find.text('Now'),
+        findsWidgets,
+        reason: 'NAV-02: "Now" section label must appear on HomeScreen',
+      );
+    });
+
+    testWidgets('shows ActiveChunkCard for current chunk', (tester) async {
+      final sn = _FakeScheduleNotifierWithSchedule(_scheduleWithTwoChunks());
+      await _pumpHomeScreen(tester, scheduleNotifier: sn);
+      expect(
+        find.byType(ActiveChunkCard),
+        findsOneWidget,
+        reason: 'NAV-02: ActiveChunkCard must render for the current chunk',
+      );
+    });
+
+    testWidgets('shows "Next" section label when second chunk exists',
+        (tester) async {
+      final sn = _FakeScheduleNotifierWithSchedule(_scheduleWithTwoChunks());
+      await _pumpHomeScreen(tester, scheduleNotifier: sn);
+      expect(
+        find.text('Next'),
+        findsOneWidget,
+        reason: 'NAV-02: "Next" section label must appear for second chunk',
+      );
+    });
+
+    testWidgets('shows "See full schedule" link', (tester) async {
+      final sn = _FakeScheduleNotifierWithSchedule(_scheduleWithTwoChunks());
+      await _pumpHomeScreen(tester, scheduleNotifier: sn);
+      expect(
+        find.text('See full schedule'),
+        findsOneWidget,
+        reason: 'NAV-02: "See full schedule" TextButton must be on HomeScreen',
+      );
+    });
+
+    testWidgets('shows "All done today!" when all chunks resolved',
+        (tester) async {
+      final sn = _FakeScheduleNotifierWithSchedule(_scheduleAllResolved());
+      await _pumpHomeScreen(tester, scheduleNotifier: sn);
+      expect(
+        find.text('All done today!'),
+        findsOneWidget,
+        reason:
+            'NAV-02: "All done today!" must appear when all chunks are resolved',
+      );
+    });
+
+    testWidgets('shows no ActiveChunkCard when all chunks resolved',
+        (tester) async {
+      final sn = _FakeScheduleNotifierWithSchedule(_scheduleAllResolved());
+      await _pumpHomeScreen(tester, scheduleNotifier: sn);
+      expect(
+        find.byType(ActiveChunkCard),
+        findsNothing,
+        reason: 'No ActiveChunkCard when all chunks resolved',
+      );
     });
   });
 }

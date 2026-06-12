@@ -11,6 +11,7 @@ import '../../providers/theme_notifier.dart';
 import '../../services/quarterly_aggregation_service.dart';
 import '../../utils/rationale_mapper.dart';
 import '../schedule/widgets/schedule_progress_bar.dart';
+import 'widgets/active_chunk_card.dart';
 import 'widgets/end_of_day_card.dart';
 import 'widgets/review_banner.dart';
 
@@ -97,12 +98,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final moodEmoji = _moodEmojis[mood] ?? _moodEmojis[3]!;
     final moodDescription = _moodDescriptions[mood] ?? _moodDescriptions[3]!;
 
-    final nextChunk = schedule.chunks
+    final unresolvedWork = schedule.chunks
         .where(
           (c) =>
               c.chunkType == ChunkType.work && !c.isCompleted && !c.isSkipped,
         )
-        .firstOrNull;
+        .toList();
+    final currentChunk = unresolvedWork.isNotEmpty ? unresolvedWork.first : null;
+    final nextChunk = unresolvedWork.length > 1 ? unresolvedWork[1] : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -130,35 +133,18 @@ class _HomeScreenState extends State<HomeScreen> {
               onDismiss: () => setState(() => _eodCardDismissed = true),
               onGoToSummary: () => context.push('/summary'),
             ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Text(moodEmoji, style: const TextStyle(fontSize: 32)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    moodDescription,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
+          // ── NOW section ──────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
             child: Text(
-              'Up next',
+              'Now',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 letterSpacing: 0.8,
               ),
             ),
           ),
-          if (nextChunk == null)
+          if (currentChunk == null)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
@@ -167,21 +153,27 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             )
           else
+            ActiveChunkCard(chunk: currentChunk),
+          // ── NEXT section ─────────────────────────────────────────────────
+          if (nextChunk != null) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: Text(
+                'Next',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
             Builder(
               builder: (context) {
-                // READ-01: resolve the goal's real name as the title (mirrors
-                // the schedule cards) instead of showing the raw rationale
-                // label like "Habit". Commitment chunks (no goalId) fall back
-                // to the block name carried in rationale.
+                // Compact next-chunk row: goal name + clock-time range + duration.
                 final goalName = _lookupGoalName(context, nextChunk);
-                final title =
-                    goalName ??
+                final title = goalName ??
                     (nextChunk.rationale.isNotEmpty
                         ? nextChunk.rationale
                         : 'Work block');
-                // Only show the secondary rationale line when we have a real
-                // goal name above it (avoids "Work / Work" duplication for
-                // commitment chunks).
                 final subtitle = goalName != null
                     ? toDisplayRationale(nextChunk.rationale)
                     : null;
@@ -234,6 +226,33 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
+          ],
+          // ── Mood row ─────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Text(moodEmoji, style: const TextStyle(fontSize: 32)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    moodDescription,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // ── See full schedule link ────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: TextButton(
+              onPressed: () => context.go('/schedule'),
+              child: const Text('See full schedule'),
+            ),
+          ),
         ],
       ),
     );
