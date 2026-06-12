@@ -296,7 +296,7 @@ class ScheduleScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       'Plan your day in 30 seconds.',
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: Theme.of(context).textTheme.titleLarge,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),

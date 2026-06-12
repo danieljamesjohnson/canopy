@@ -94,3 +94,45 @@ info warnings in test files are unrelated to these changes).
 _Fixed: 2026-06-12T14:47:24Z_
 _Fixer: Claude (gsd-code-fixer)_
 _Iteration: 1_
+
+---
+
+## UI Audit Fixes
+
+**Applied at:** 2026-06-12
+**Source review:** `.planning/phases/12-home-as-landing-schedule-as-plan/12-UI-REVIEW.md`
+
+Three WARNING findings from the Phase 12 UI audit addressed in a follow-up polish commit.
+
+### UI-WR-01: Next chunk compact row now shows clock-time range
+
+**File modified:** `lib/screens/home/home_screen.dart`
+**Applied fix:** The trailing cell in the "Next" compact row previously showed only
+`'${nextChunk.durationMinutes} min'`. It now conditionally calls
+`formatTimeRange(nextChunk.displayStartMinutes!, nextChunk.displayStartMinutes! + nextChunk.durationMinutes)`
+when `displayStartMinutes != null`, falling back to the duration string when null.
+Added `import '../../utils/time_format.dart'` to `home_screen.dart` (the function was
+already available in `active_chunk_card.dart` via the same import). Trailing text style
+updated from `bodyMedium` to `bodySmall` (matches the `onSurfaceVariant` secondary-text
+role used in `active_chunk_card.dart` for the same clock-time string).
+
+### UI-WR-02: Typography theme roles on "All done today!" and Next chunk title
+
+**File modified:** `lib/screens/home/home_screen.dart`
+**Applied fix:** Replaced `const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)`
+on the "All done today!" `Text` with `Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)`.
+Replaced `const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)` (w700) on the Next
+chunk title with `Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)`,
+bringing the weight from w700 to w600 per the UI-SPEC §Typography ("Chunk goal name: titleMedium at w600").
+Both text widgets now use the Material 3 TextTheme role and will automatically respond to
+theme changes and accessibility text-scaling.
+
+### UI-WR-03: Schedule empty-state heading promoted from titleMedium to titleLarge
+
+**File modified:** `lib/screens/schedule/schedule_screen.dart`
+**Applied fix:** Changed the style on the "Plan your day in 30 seconds." heading in
+`_buildEmptyState` from `Theme.of(context).textTheme.titleMedium` to
+`Theme.of(context).textTheme.titleLarge` (22sp w400), matching the UI-SPEC §Typography
+("Empty state heading: titleLarge at w400").
+
+**Verification:** `flutter analyze` — no issues on touched files. `flutter test` — 185/185 passed.

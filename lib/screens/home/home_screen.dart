@@ -10,6 +10,7 @@ import '../../providers/schedule_notifier.dart';
 import '../../providers/theme_notifier.dart';
 import '../../services/quarterly_aggregation_service.dart';
 import '../../utils/rationale_mapper.dart';
+import '../../utils/time_format.dart';
 import '../schedule/widgets/schedule_progress_bar.dart';
 import 'widgets/active_chunk_card.dart';
 import 'widgets/end_of_day_card.dart';
@@ -147,11 +148,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           if (currentChunk == null)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
                 'All done today!',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             )
           else
@@ -194,10 +197,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Text(
                               title,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
                               overflow: TextOverflow.ellipsis,
                             ),
                             if (subtitle != null && subtitle.isNotEmpty) ...[
@@ -218,8 +221,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${nextChunk.durationMinutes} min',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        nextChunk.displayStartMinutes != null
+                            ? formatTimeRange(
+                                nextChunk.displayStartMinutes!,
+                                nextChunk.displayStartMinutes! +
+                                    nextChunk.durationMinutes,
+                              )
+                            : '${nextChunk.durationMinutes} min',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
