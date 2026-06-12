@@ -365,6 +365,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: () => context.push('/settings/past-reviews'),
           ),
 
+          // Debug section heading — dev builds only (divider + heading gated
+          // together so neither shows in release).
+          if (kDebugMode) ...[
+            const Divider(indent: 16, endIndent: 16),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: Text(
+                'Debug',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
+          ],
+
           // Dev-only: open quarterly review directly (UAT shortcut). Stripped in release.
           if (kDebugMode)
             ListTile(
