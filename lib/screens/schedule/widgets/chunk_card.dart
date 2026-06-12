@@ -17,6 +17,12 @@ String _formatMinutes(int minutes) {
   return '$hour:${m.toString().padLeft(2, '0')} $suffix';
 }
 
+/// Formats a start–end time range as "START – END" (en-dash per UI-SPEC).
+/// Example: _formatTimeRange(565, 590) → "9:25 AM – 9:50 AM"
+String _formatTimeRange(int startMin, int endMin) {
+  return '${_formatMinutes(startMin)} – ${_formatMinutes(endMin)}';
+}
+
 /// A card widget that renders one of three visual variants depending on
 /// [chunk.chunkType]: work, shortBreak, or longBreak.
 class ChunkCard extends StatelessWidget {
@@ -40,7 +46,7 @@ class ChunkCard extends StatelessWidget {
   final String? goalName;
 
   /// Pre-mapped human-readable rationale (e.g. 'Daily habit'). Displayed as
-  /// secondary bodySmall text beneath the goal name. Only relevant for work
+  /// secondary bodySmall text beneath the clock time. Only relevant for work
   /// chunks when goalName is non-null.
   final String? displayRationale;
 
@@ -56,7 +62,7 @@ class ChunkCard extends StatelessWidget {
       case ChunkType.longBreak:
         return _buildLongBreak(context);
       case ChunkType.work:
-        return _HoverableChunkContent(
+        return _WorkChunkContent(
           chunk: chunk,
           goalColor: goalColor,
           goalName: goalName,
@@ -117,20 +123,15 @@ class ChunkCard extends StatelessWidget {
   }
 }
 
-/// Internal stateful widget for the work-variant chunk card. Wraps the card
-/// body in a [MouseRegion] so the trailing checkbox + skip icons fade in on
-/// hover (desktop) while remaining at opacity 0 on touch platforms (mobile
-/// pointer events never fire onEnter/onExit — preserves Phase 4 Dismissible
-/// swipe gestures).
+/// Internal widget for the work-variant chunk card.
 ///
-/// Hover-revealed icon taps go directly through
-/// `context.read<ScheduleNotifier>().markComplete(chunk.id)` /
-/// `markSkipped(chunk.id)` — the same notifier path that
-/// [SwipeableChunkCard]'s Dismissible.confirmDismiss invokes. Hover-click
-/// and swipe-gesture share identical state writes; they're orthogonal input
-/// modalities terminating at the same idempotent notifier method.
-class _HoverableChunkContent extends StatefulWidget {
-  const _HoverableChunkContent({
+/// SCHED-03: Action buttons (Complete/Skip) are always visible — no hover
+/// required. MouseRegion is retained only for cursor change on desktop.
+///
+/// SCHED-01: Shows clock-time range "START – END" as secondary text when
+/// `chunk.displayStartMinutes` is set; falls back to duration ("N min").
+class _WorkChunkContent extends StatelessWidget {
+  const _WorkChunkContent({
     required this.chunk,
     this.goalColor,
     this.goalName,
@@ -145,39 +146,18 @@ class _HoverableChunkContent extends StatefulWidget {
   final VoidCallback? onTap;
 
   @override
-  State<_HoverableChunkContent> createState() => _HoverableChunkContentState();
-}
-
-class _HoverableChunkContentState extends State<_HoverableChunkContent> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final chunk = widget.chunk;
     final barColor = chunk.isCompleted || chunk.isSkipped
         ? Colors.grey.shade400
-        : (widget.goalColor ?? theme.colorScheme.primary);
+        : (goalColor ?? theme.colorScheme.primary);
     final contentOpacity = chunk.isCompleted || chunk.isSkipped ? 0.5 : 1.0;
     final isResolved = chunk.isCompleted || chunk.isSkipped;
-    // Hover-click and Phase 4 Dismissible swipe-gesture share the same idempotent
-    // notifier methods — they're orthogonal input modalities terminating at the
-    // same state writes. Calls are inlined (vs. extracted to a local notifier
-    // variable) so verification grep can match the literal call site.
-    // ignore: prefer_function_declarations_over_variables
-    final void Function()? onMarkComplete = _hovered && !isResolved
-        ? () => context.read<ScheduleNotifier>().markComplete(chunk.id)
-        : null;
-    // ignore: prefer_function_declarations_over_variables
-    final void Function()? onMarkSkipped = _hovered && !isResolved
-        ? () => context.read<ScheduleNotifier>().markSkipped(chunk.id)
-        : null;
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: widget.onTap,
+        onTap: onTap,
         child: Card(
           margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
           shape: RoundedRectangleBorder(
@@ -191,7 +171,7 @@ class _HoverableChunkContentState extends State<_HoverableChunkContent> {
                 left: 0,
                 top: 0,
                 bottom: 0,
-                width: 5,
+                width: 4,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: barColor,
@@ -204,7 +184,7 @@ class _HoverableChunkContentState extends State<_HoverableChunkContent> {
               ),
               // Content
               Padding(
-                padding: const EdgeInsets.only(left: 5),
+                padding: const EdgeInsets.only(left: 4),
                 child: Opacity(
                   opacity: contentOpacity,
                   child: Padding(
@@ -212,120 +192,136 @@ class _HoverableChunkContentState extends State<_HoverableChunkContent> {
                       horizontal: 12,
                       vertical: 12,
                     ),
-                    child: Row(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Expanded(
-                                    child: Text(
-                                      widget.goalName ??
-                                          (chunk.rationale.isNotEmpty
-                                              ? chunk.rationale
-                                              : 'Work block'),
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
                                   Text(
-                                    '${chunk.durationMinutes} min',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
+                                    goalName ??
+                                        (chunk.rationale.isNotEmpty
+                                            ? chunk.rationale
+                                            : 'Work block'),
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
+                                  // SCHED-01: Clock-time range or duration fallback.
+                                  if (chunk.displayStartMinutes != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _formatTimeRange(
+                                        chunk.displayStartMinutes!,
+                                        chunk.displayStartMinutes! +
+                                            chunk.durationMinutes,
+                                      ),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ] else ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${chunk.durationMinutes} min',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
+                                  // Rationale below clock time when present.
+                                  if (goalName != null &&
+                                      displayRationale != null &&
+                                      displayRationale!.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      displayRationale!,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
                                 ],
                               ),
-                              // Secondary text: readable rationale (when goalName
-                              // is provided) or anchored time for commitment chunks.
-                              if (widget.goalName != null &&
-                                  widget.displayRationale != null &&
-                                  widget.displayRationale!.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  widget.displayRationale!,
-                                  style: theme.textTheme.bodySmall?.copyWith(
+                            ),
+                            const SizedBox(width: 8),
+                            chunk.isCompleted
+                                ? Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green.shade600,
+                                  )
+                                : chunk.isSkipped
+                                ? Icon(
+                                    Icons.arrow_forward,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  )
+                                : Icon(
+                                    Icons.radio_button_unchecked,
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
-                                ),
-                              ] else if (chunk.anchoredStartMinutes !=
-                                  null) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  _formatMinutes(chunk.anchoredStartMinutes!),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
+                          ],
+                        ),
+                        // SCHED-03: Always-visible action row for unresolved chunks.
+                        // Resolved chunks show status icon only (no buttons).
+                        if (!isResolved) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Tooltip(
+                                message: 'Complete',
+                                child: FilledButton.icon(
+                                  icon: const Icon(Icons.check_circle_outline),
+                                  label: const Text('Complete'),
+                                  onPressed: () => context
+                                      .read<ScheduleNotifier>()
+                                      .markComplete(chunk.id),
+                                  style: FilledButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
                                   ),
                                 ),
-                              ],
+                              ),
+                              const SizedBox(width: 8),
+                              Tooltip(
+                                message: 'Skip',
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(Icons.skip_next_outlined),
+                                  label: const Text('Skip'),
+                                  onPressed: () => context
+                                      .read<ScheduleNotifier>()
+                                      .markSkipped(chunk.id),
+                                  style: OutlinedButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
+                                    foregroundColor: theme.colorScheme.error,
+                                    side: BorderSide(
+                                        color: theme.colorScheme.error),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        chunk.isCompleted
-                            ? Icon(
-                                Icons.check_circle,
-                                color: Colors.green.shade600,
-                              )
-                            : chunk.isSkipped
-                            ? Icon(
-                                Icons.arrow_forward,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              )
-                            : Icon(
-                                Icons.radio_button_unchecked,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
+                        ],
                       ],
                     ),
                   ),
                 ),
               ),
-              // Hover-revealed action icons (desktop only — onEnter/onExit
-              // never fires on touch-only mobile pointer events, so this stays
-              // at opacity 0 on Android/iOS).
-              //
-              // WR-02: skip the overlay entirely on resolved chunks. The
-              // mark-complete / mark-skipped IconButtons would be `onPressed:
-              // null` (disabled) at full opacity on hover otherwise — looking
-              // tappable but doing nothing.
-              if (!isResolved)
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: AnimatedOpacity(
-                    opacity: _hovered ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 120),
-                    curve: Curves.easeOut,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.check_circle_outline),
-                          tooltip: 'Mark complete',
-                          onPressed: onMarkComplete,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.skip_next_outlined),
-                          tooltip: 'Skip',
-                          onPressed: onMarkSkipped,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
             ],
           ),
-        ), // end GestureDetector
+        ),
       ),
     );
   }
