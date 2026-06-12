@@ -59,8 +59,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final notifier = context.read<ScheduleNotifier>();
     final newDateYmd = notifier.todaySchedule?.dateYmd;
     if (newDateYmd != _lastScheduleDateYmd) {
-      _lastScheduleDateYmd = newDateYmd;
-      _eodCardDismissed = false; // new schedule → show card again
+      setState(() {
+        _lastScheduleDateYmd = newDateYmd;
+        _eodCardDismissed = false; // new schedule → show card again
+      });
     }
   }
 
