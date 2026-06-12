@@ -10,6 +10,7 @@ import '../../providers/schedule_notifier.dart';
 import '../../utils/rationale_mapper.dart';
 import 'widgets/chunk_card.dart';
 import 'widgets/chunk_detail_sheet.dart';
+import 'widgets/now_marker.dart';
 import 'widgets/schedule_progress_bar.dart';
 import 'widgets/swipeable_chunk_card.dart';
 
@@ -88,10 +89,7 @@ class ScheduleScreen extends StatelessWidget {
           ScheduleProgressBar(schedule: schedule, moodColor: moodColor),
           Expanded(
             child: ListView(
-              children: [
-                // Active (non-skipped) chunks with swipe gestures on work chunks.
-                for (final chunk in activeChunks)
-                  _buildSwipeableCard(context, chunk),
+              children: _buildActiveChunkItems(context, activeChunks) + [
                 // "Skipped today" expansion tile — hidden when no skipped chunks.
                 if (skippedChunks.isNotEmpty)
                   _buildSkippedSection(context, skippedChunks),
@@ -101,6 +99,42 @@ class ScheduleScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Builds the active-chunk list items with a NowMarker inserted before the
+  /// first unresolved work chunk at or after the current wall time (SCHED-02).
+  ///
+  /// Insertion rules:
+  /// - Scan activeChunks for unresolved work chunks.
+  /// - `nowMarkerIndex` starts as the first unresolved work chunk (fallback).
+  /// - It advances to the first unresolved work chunk whose
+  ///   displayStartMinutes >= nowMinutes (time-anchored position).
+  /// - When no unresolved work chunk exists, nowMarkerIndex stays null and
+  ///   no NowMarker is rendered (per RESEARCH Open Question 1).
+  List<Widget> _buildActiveChunkItems(
+    BuildContext context,
+    List<ScheduledChunk> activeChunks,
+  ) {
+    final nowMinutes =
+        DateTime.now().hour * 60 + DateTime.now().minute;
+    int? nowMarkerIndex;
+    for (int i = 0; i < activeChunks.length; i++) {
+      final c = activeChunks[i];
+      if (c.chunkType == ChunkType.work && !c.isCompleted && !c.isSkipped) {
+        nowMarkerIndex ??= i; // fallback: first unresolved work chunk
+        if ((c.displayStartMinutes ?? 9999) >= nowMinutes) {
+          nowMarkerIndex = i;
+          break;
+        }
+      }
+    }
+
+    final List<Widget> items = [];
+    for (int i = 0; i < activeChunks.length; i++) {
+      if (i == nowMarkerIndex) items.add(const NowMarker());
+      items.add(_buildSwipeableCard(context, activeChunks[i]));
+    }
+    return items;
   }
 
   /// Returns the ratio of resolved (completed or skipped) work chunks to
