@@ -975,21 +975,27 @@ void main() {
   });
 
   test('Step 4: high-priority goal gets at least as many chunks as low-priority under shared cap', () {
+    // weeklyHourBudget=12h → demand = ceil(12*60/25/7) = 5 chunks each.
+    // moodIndex=3 → cap=8. Two goals × 5 > 8, so cap is genuinely binding.
+    // High TT (0.75) scores 12*0.75=9.0 and is sorted first — gets 5 chunks.
+    // Low TT (0.25) scores 12*0.25=3.0 and is sorted second — gets only 3.
+    // If priority ordering were removed, low would go first and high would lose
+    // slots — the greaterThan assertion below would fail (3 > 5 is false).
     final highTT = makeTimeTarget(
       name: 'High TT',
-      weeklyHourBudget: 2.0,
+      weeklyHourBudget: 12.0,
       priorityWeight: 0.75,
     );
     final lowTT = makeTimeTarget(
       name: 'Low TT',
-      weeklyHourBudget: 2.0,
+      weeklyHourBudget: 12.0,
       priorityWeight: 0.25,
     );
 
     final result = sut.generate(
-      goals: [lowTT, highTT],
+      goals: [lowTT, highTT], // intentionally low first — engine must reorder
       blocks: [],
-      moodIndex: 1, // cap=4 — constrained
+      moodIndex: 3, // mood 3+ required — Step 4 is disabled at mood 1-2
       date: monday,
       completionLogs: [],
       lighterDay: false,
@@ -1000,8 +1006,12 @@ void main() {
     final lowCount = result
         .where((c) => c.chunkType == ChunkType.work && c.goalId == lowTT.id)
         .length;
-    expect(highCount, greaterThanOrEqualTo(lowCount),
-      reason: 'High-priority goal must get at least as many chunks as low-priority under a shared cap');
+    // With cap=8 and demand=5 each: high gets 5, low gets 3.
+    // greaterThan (not greaterThanOrEqualTo) ensures the test is not trivially
+    // satisfied when both counts are equal (e.g. if Step 4 never ran).
+    expect(highCount, greaterThan(lowCount),
+      reason: 'High-priority goal (score 9.0) must win more cap slots than '
+              'low-priority goal (score 3.0) when total demand exceeds cap');
   });
 
   test(
