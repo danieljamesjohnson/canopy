@@ -673,13 +673,13 @@ Plans:
   3. The lighter-day choice is not an always-visible inline toggle; it appears after the user taps "Let's go," framed as a push-forward vs. lighter-day decision, with an unambiguous on/off state.
   4. The add/edit goal sheet fits within the viewport — Priority selector and Save button are visible and tappable without in-sheet scrolling on a standard phone screen height.
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 
 **Wave 1** *(parallel — file-disjoint: 13-01 owns checkin_screen.dart, 13-02 owns goal form files)*
 
-- [ ] 13-01-PLAN.md — Check-in contrast fix (luminance-adaptive _onBgColor) + emoji hover/pressed states + post-commit lighter-day decision screen (CHECKIN-01, CHECKIN-02)
+- [x] 13-01-PLAN.md — Check-in contrast fix (luminance-adaptive _onBgColor) + emoji hover/pressed states + post-commit lighter-day decision screen (CHECKIN-01, CHECKIN-02)
 - [ ] 13-02-PLAN.md — Compact GoalTypePicker cards + goal form spacer reduction so Priority + Save fit the viewport (GOALFORM-01)
 
 **UI hint**: yes
@@ -708,7 +708,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 12. Home as Landing, Schedule as Plan | 3/3 | Complete   | 2026-06-12 |
-| 13. Check-in and Goal Form | 0/? | Not started | - |
+| 13. Check-in and Goal Form | 1/2 | In Progress|  |
 | 14. Goals Screen and Priority End-to-End | 0/? | Not started | - |
 
 ---

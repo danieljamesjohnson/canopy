@@ -32,8 +32,8 @@ Rule-based only — no LLM. All requirements are user-observable capabilities th
 
 ### Check-in (CHECKIN)
 
-- [ ] **CHECKIN-01**: The check-in screen meets contrast/legibility standards — the mood theme background no longer makes text and controls hard to read — and interactive elements have appropriate hover/pressed states.
-- [ ] **CHECKIN-02**: The lighter-day choice has a clearly readable on/off state and is presented at the right moment — after the user commits to the day ("Let's go"), framed as push-forward vs. lighter day — rather than an always-present inline toggle whose state can't be read. *(SEED-001 #1)*
+- [x] **CHECKIN-01**: The check-in screen meets contrast/legibility standards — the mood theme background no longer makes text and controls hard to read — and interactive elements have appropriate hover/pressed states.
+- [x] **CHECKIN-02**: The lighter-day choice has a clearly readable on/off state and is presented at the right moment — after the user commits to the day ("Let's go"), framed as push-forward vs. lighter day — rather than an always-present inline toggle whose state can't be read. *(SEED-001 #1)*
 
 ### Priority Drives Scheduling (PRIORITY)
 
@@ -73,8 +73,8 @@ Other deferred:
 | SCHED-02 | Phase 12 | Complete |
 | SCHED-03 | Phase 12 | Complete |
 | GOALFORM-01 | Phase 13 | Pending |
-| CHECKIN-01 | Phase 13 | Pending |
-| CHECKIN-02 | Phase 13 | Pending |
+| CHECKIN-01 | Phase 13 | Complete |
+| CHECKIN-02 | Phase 13 | Complete |
 | GOALS-01 | Phase 14 | Pending |
 | GOALS-02 | Phase 14 | Pending |
 | PRIORITY-01 | Phase 14 | Pending |
