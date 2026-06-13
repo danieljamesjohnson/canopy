@@ -194,7 +194,7 @@ void main() {
       'markComplete on a due day increments streakCount and persists via GoalRepository',
       () async {
         // Habit 3x/week (Mon/Wed/Fri). Prior completed logs for the past two
-        // due days (Wed 2026-06-03 and Fri 2026-06-06). Today = Mon 2026-06-09
+        // due days (Wed 2026-06-03 and Fri 2026-06-05). Today = Mon 2026-06-08
         // (a due day). After markComplete, streakCount should be 3
         // (prior two + today).
         final goal = Goal(
@@ -359,7 +359,7 @@ void main() {
         // not remain at 0. This exercises the generation-time write-back path,
         // not the mark-time path.
         //
-        // testDate is Sunday 2026-06-07 (weekday=7, not a due day for 3x/week).
+        // streak01TestDate is Sunday 2026-06-07 (weekday=7, not a due day for 3x/week).
         // computeStreak walks backward: Sun 06-07 (skip, not due), Fri 06-05
         // (due, completed → streak=1), Thu 06-04 (skip), Wed 06-03 (due,
         // completed → streak=2), Tue 06-02 (skip), Mon 06-01 (due, no log →
