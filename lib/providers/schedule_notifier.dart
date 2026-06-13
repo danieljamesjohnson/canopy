@@ -178,7 +178,7 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       chunks: chunks,
     );
     // Set generatedAt explicitly (field-level default runs at class parse time, not instantiation).
-    schedule.generatedAt = DateTime.now().toUtc();
+    schedule.generatedAt = _now().toUtc();
 
     await _repo.save(schedule);
     _todaySchedule = schedule;
