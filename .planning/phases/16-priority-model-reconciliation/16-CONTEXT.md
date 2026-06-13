@@ -21,8 +21,11 @@ The drag-reorder and the form's Low/Normal/High selector write the same priority
 <decisions>
 ## Implementation Decisions
 
+### D-01 (LOCKED — user decision 2026-06-13): Position IS the priority model
+Drag-reorder's continuous positional `priorityWeight` is the single coherent priority model. Dragging a goal to a mid-list position **correctly** makes it Normal (no chip) — this is intended behavior, not a bug. PRIORITY-03 is satisfied by a widget test proving the priority chip reflects the goal's *current* `priorityWeight` after a drag (no stale value, correct Low/Normal/High label) — **NOT** by changing production code to make the Low/Normal/High selector override drag. Do not add code that prevents drag from changing a goal's band. The selector and drag write the same continuous model; the chip is a pure function of `priorityWeight`.
+
 ### Claude's Discretion
-All implementation choices are at Claude's discretion — discuss phase was skipped per user setting. Use ROADMAP phase goal, success criteria, and codebase conventions to guide decisions.
+All other implementation choices are at Claude's discretion — discuss phase was skipped per user setting. Use ROADMAP phase goal, success criteria, and codebase conventions to guide decisions.
 
 Known guidance from REQUIREMENTS.md:
 - **PRIORITY-03**: Drag-reorder and the Low/Normal/High control must write a single coherent priority model — no goal silently losing its chip by landing at a mid-list ~0.5. (SEED-003 #3)
