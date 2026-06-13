@@ -95,11 +95,16 @@ class _CheckinScreenState extends State<CheckinScreen> {
       _isGenerating = true;
       _pressedMoods.clear(); // WR-01: clear any stale pressed state before transition
     });
+    // Pre-capture context reads before the await gap (mirrors _commitAndProceed
+    // WR-02 pattern — protects against context-after-await bugs in future refactors).
+    final scheduleNotifier = context.read<ScheduleNotifier>();
+    final goals = context.read<GoalsNotifier>().goals;
+    final blocks = context.read<CommitmentsNotifier>().blocks;
     try {
-      await context.read<ScheduleNotifier>().generateToday(
+      await scheduleNotifier.generateToday(
         moodIndex: _selectedMood!,
-        goals: context.read<GoalsNotifier>().goals,
-        blocks: context.read<CommitmentsNotifier>().blocks,
+        goals: goals,
+        blocks: blocks,
         lighterDay: false, // provisional — decision screen may regenerate
       );
 
