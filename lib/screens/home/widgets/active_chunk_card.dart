@@ -35,11 +35,19 @@ class ActiveChunkCard extends StatelessWidget {
     return goal?.name;
   }
 
+  double? _lookupGoalPriorityWeight(BuildContext context) {
+    if (chunk.goalId == null) return null;
+    final goals = context.read<GoalsNotifier>().goals;
+    final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
+    return goal?.priorityWeight;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final goalColor = _lookupGoalColor(context);
     final goalName = _lookupGoalName(context);
+    final goalPriorityWeight = _lookupGoalPriorityWeight(context);
     final barColor = goalColor ?? theme.colorScheme.primary;
 
     return Card(
@@ -131,6 +139,11 @@ class ActiveChunkCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  // Priority badge below clock-time line (GOALS-02).
+                  if (goalPriorityWeight != null && goalPriorityWeight != 0.5) ...[
+                    const SizedBox(height: 4),
+                    _PriorityChip(priorityWeight: goalPriorityWeight),
+                  ],
                   const SizedBox(height: 12),
                   // Always-visible action row (NAV-02 / SCHED-03)
                   Row(
@@ -168,6 +181,65 @@ class ActiveChunkCard extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// File-private priority badge widget (GOALS-02).
+///
+/// Renders a small chip showing an arrow icon + label for Low (0.25) and
+/// High (0.75) priorities. Display-only — no tap handlers.
+/// Intentionally duplicated from goal_card.dart and chunk_card.dart for
+/// file-disjoint plan parallelism (UI-SPEC §Component Inventory item 3).
+class _PriorityChip extends StatelessWidget {
+  const _PriorityChip({required this.priorityWeight});
+
+  final double priorityWeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final IconData icon;
+    final Color chipColor;
+    final Color onColor;
+    final String label;
+
+    if (priorityWeight >= 0.75) {
+      icon = Icons.arrow_upward;
+      chipColor = colorScheme.primaryContainer;
+      onColor = colorScheme.onPrimaryContainer;
+      label = 'High';
+    } else if (priorityWeight <= 0.25) {
+      icon = Icons.arrow_downward;
+      chipColor = colorScheme.surfaceContainerHighest;
+      onColor = colorScheme.onSurfaceVariant;
+      label = 'Low';
+    } else {
+      return const SizedBox.shrink(); // Normal (0.5) — no chip
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: chipColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: onColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: textTheme.labelSmall?.copyWith(
+              color: onColor,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

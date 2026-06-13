@@ -13,6 +13,7 @@ class ChunkCard extends StatelessWidget {
     this.goalColor,
     this.goalName,
     this.displayRationale,
+    this.goalPriorityWeight,
     this.onTap,
   });
 
@@ -31,6 +32,11 @@ class ChunkCard extends StatelessWidget {
   /// chunks when goalName is non-null.
   final String? displayRationale;
 
+  /// The goal's priority weight (0.25=Low, 0.5=Normal, 0.75=High). Null or
+  /// 0.5 → no badge shown. Used to render the _PriorityChip badge below the
+  /// clock-time line. Pass null for commitment chunks (goalId == null).
+  final double? goalPriorityWeight;
+
   /// Tap callback for opening the detail sheet. Only wired for non-resolved
   /// work chunks from the screen; null for break cards and resolved chunks.
   final VoidCallback? onTap;
@@ -48,6 +54,7 @@ class ChunkCard extends StatelessWidget {
           goalColor: goalColor,
           goalName: goalName,
           displayRationale: displayRationale,
+          goalPriorityWeight: goalPriorityWeight,
           onTap: onTap,
         );
     }
@@ -117,6 +124,7 @@ class _WorkChunkContent extends StatelessWidget {
     this.goalColor,
     this.goalName,
     this.displayRationale,
+    this.goalPriorityWeight,
     this.onTap,
   });
 
@@ -124,6 +132,7 @@ class _WorkChunkContent extends StatelessWidget {
   final Color? goalColor;
   final String? goalName;
   final String? displayRationale;
+  final double? goalPriorityWeight;
   final VoidCallback? onTap;
 
   @override
@@ -236,6 +245,13 @@ class _WorkChunkContent extends StatelessWidget {
                                           ),
                                     ),
                                   ],
+                                  // Priority badge below rationale (GOALS-02).
+                                  if (goalPriorityWeight != null &&
+                                      goalPriorityWeight != 0.5) ...[
+                                    const SizedBox(height: 4),
+                                    _PriorityChip(
+                                        priorityWeight: goalPriorityWeight!),
+                                  ],
                                 ],
                               ),
                             ),
@@ -303,6 +319,65 @@ class _WorkChunkContent extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// File-private priority badge widget (GOALS-02).
+///
+/// Renders a small chip showing an arrow icon + label for Low (0.25) and
+/// High (0.75) priorities. Display-only — no tap handlers.
+/// Intentionally duplicated from goal_card.dart for file-disjoint parallelism
+/// (UI-SPEC §Component Inventory item 3).
+class _PriorityChip extends StatelessWidget {
+  const _PriorityChip({required this.priorityWeight});
+
+  final double priorityWeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final IconData icon;
+    final Color chipColor;
+    final Color onColor;
+    final String label;
+
+    if (priorityWeight >= 0.75) {
+      icon = Icons.arrow_upward;
+      chipColor = colorScheme.primaryContainer;
+      onColor = colorScheme.onPrimaryContainer;
+      label = 'High';
+    } else if (priorityWeight <= 0.25) {
+      icon = Icons.arrow_downward;
+      chipColor = colorScheme.surfaceContainerHighest;
+      onColor = colorScheme.onSurfaceVariant;
+      label = 'Low';
+    } else {
+      return const SizedBox.shrink(); // Normal (0.5) — no chip
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: chipColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: onColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: textTheme.labelSmall?.copyWith(
+              color: onColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

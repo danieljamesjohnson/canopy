@@ -18,6 +18,7 @@ class SwipeableChunkCard extends StatelessWidget {
     this.goalColor,
     this.goalName,
     this.displayRationale,
+    this.goalPriorityWeight,
     this.onTap,
   });
 
@@ -31,6 +32,10 @@ class SwipeableChunkCard extends StatelessWidget {
 
   /// Pre-mapped human-readable rationale. Passed through to ChunkCard.
   final String? displayRationale;
+
+  /// The goal's priority weight. Passed through to ChunkCard for badge
+  /// rendering. Null for break chunks and commitment chunks.
+  final double? goalPriorityWeight;
 
   /// Tap callback. Null for break cards and resolved work chunks.
   final VoidCallback? onTap;
@@ -78,6 +83,7 @@ class SwipeableChunkCard extends StatelessWidget {
         goalColor: goalColor,
         goalName: goalName,
         displayRationale: displayRationale,
+        goalPriorityWeight: goalPriorityWeight,
         // Resolved chunks are not tappable — null out the callback.
         onTap: (chunk.isCompleted || chunk.isSkipped) ? null : onTap,
       ),
