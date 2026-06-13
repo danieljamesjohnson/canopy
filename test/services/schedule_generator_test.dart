@@ -1154,6 +1154,98 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // CAP-01: habit ceiling prevents monopolization on low-mood days
+  // ---------------------------------------------------------------------------
+  test(
+    'CAP-01: mood=1, 4 daily habits + 1 outcome → outcome receives ≥1 chunk',
+    () {
+      final habits = List.generate(4, (i) => makeHabit(name: 'Habit $i'));
+      final outcome = makeOutcome(
+        name: 'Outcome',
+        deadline: monday.add(const Duration(days: 7)),
+      );
+      final result = sut.generate(
+        goals: [...habits, outcome],
+        blocks: [],
+        moodIndex: 1,
+        date: monday,
+        completionLogs: [],
+        lighterDay: false,
+      );
+      final outcomeChunks = result
+          .where((c) => c.chunkType == ChunkType.work && c.goalId == outcome.id)
+          .length;
+      expect(
+        outcomeChunks,
+        greaterThanOrEqualTo(1),
+        reason:
+            'CAP-01: outcome must receive capacity even when 4 habits compete',
+      );
+    },
+  );
+
+  test('CAP-01: mood=1 total work chunks do not exceed cap', () {
+    final goals =
+        List.generate(4, (i) => makeHabit(name: 'Habit $i'))
+          ..add(
+            makeOutcome(
+              deadline: monday.add(const Duration(days: 7)),
+            ),
+          );
+    final result = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 1,
+      date: monday,
+      completionLogs: [],
+      lighterDay: false,
+    );
+    expect(
+      workChunksOf(result),
+      lessThanOrEqualTo(4),
+      reason: 'CAP-01: mood=1 cap=4; total work chunks must not exceed cap',
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // PRIORITY-02: priority changes chunk count, not just sort order
+  // ---------------------------------------------------------------------------
+  test(
+    'PRIORITY-02: high-priority habit (0.75) gets more chunks than normal (0.5) at mood=3',
+    () {
+      final highHabit = makeHabit(name: 'High', priorityWeight: 0.75)
+        ..frequencyPerWeek = 7;
+      final normalHabit = makeHabit(name: 'Normal', priorityWeight: 0.5)
+        ..frequencyPerWeek = 7;
+      final result = sut.generate(
+        goals: [normalHabit, highHabit],
+        blocks: [],
+        moodIndex: 3,
+        date: monday,
+        completionLogs: [],
+        lighterDay: false,
+      );
+      final highCount = result
+          .where(
+            (c) => c.chunkType == ChunkType.work && c.goalId == highHabit.id,
+          )
+          .length;
+      final normalCount = result
+          .where(
+            (c) =>
+                c.chunkType == ChunkType.work && c.goalId == normalHabit.id,
+          )
+          .length;
+      expect(
+        highCount,
+        greaterThan(normalCount),
+        reason:
+            'PRIORITY-02: high-priority habit must receive more chunks than normal-priority habit',
+      );
+    },
+  );
+
+  // ---------------------------------------------------------------------------
   // Start-time floor: a mid-day generation packs from "now", not 8:00 AM.
   // ---------------------------------------------------------------------------
   group('startFloorMinutes places discretionary work near "now"', () {
