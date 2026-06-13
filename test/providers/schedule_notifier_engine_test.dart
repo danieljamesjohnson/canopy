@@ -358,26 +358,41 @@ void main() {
         // After generateToday(), goal.streakCount must equal 2 (the computed value),
         // not remain at 0. This exercises the generation-time write-back path,
         // not the mark-time path.
+        //
+        // testDate is Sunday 2026-06-07 (weekday=7, not a due day for 3x/week).
+        // computeStreak walks backward: Sun 06-07 (skip, not due), Fri 06-05
+        // (due, completed → streak=1), Thu 06-04 (skip), Wed 06-03 (due,
+        // completed → streak=2), Tue 06-02 (skip), Mon 06-01 (due, no log →
+        // break) → returns 2.
+        //
+        // Using Monday 2026-06-08 as testDate would not work here: Monday IS a
+        // due weekday, has no completion log yet (generateToday does not log the
+        // current day), so computeStreak breaks immediately and returns 0 —
+        // matching the stale stored value, and the no-op guard prevents any save.
+        // Sunday is the correct anchor for proving the write-back fires and
+        // persists a non-zero computed value (STREAK-01 divergence fix).
+        final streak01TestDate = DateTime(2026, 6, 7); // Sunday, weekday=7
+
         final goal = Goal(
           id: 'streak-sync-goal',
           name: 'Run',
           goalTypeIndex: GoalType.habit.index,
-          frequencyPerWeek: 3, // due Mon/Wed/Fri
+          frequencyPerWeek: 3, // due Mon/Wed/Fri (weekdays 1, 3, 5)
           streakCount: 0, // stale default — must be updated at generation
         );
 
         final logRepo = InMemoryCompletionLogRepository();
-        // Two consecutive prior due-day completions before testDate (Mon 2026-06-08).
+        // Two consecutive prior due-day completions before streak01TestDate.
         await logRepo.append(CompletionLog(
           chunkId: 'c-wed',
           goalId: goal.id,
-          dateYmd: '2026-06-03', // Wed
+          dateYmd: '2026-06-03', // Wed (weekday 3, due day)
           eventIndex: CompletionEvent.completed.index,
         ));
         await logRepo.append(CompletionLog(
           chunkId: 'c-fri',
           goalId: goal.id,
-          dateYmd: '2026-06-05', // Fri
+          dateYmd: '2026-06-05', // Fri (weekday 5, due day)
           eventIndex: CompletionEvent.completed.index,
         ));
 
@@ -385,7 +400,7 @@ void main() {
         final scheduleRepo = _InMemoryScheduleRepository();
 
         final notifier = ScheduleNotifier(
-          now: () => testDate,
+          now: () => streak01TestDate,
           repo: scheduleRepo,
           logRepo: logRepo,
           goalRepo: goalRepo,
@@ -409,7 +424,7 @@ void main() {
           savedGoal.streakCount,
           equals(2),
           reason:
-              'STREAK-01: streakCount must equal 2 (two prior due-day completions) after generateToday, not the stale 0 default',
+              'STREAK-01: streakCount must equal 2 (two prior due-day completions on Fri+Wed) after generateToday on a non-due-day, not the stale 0 default',
         );
       },
     );

@@ -140,6 +140,31 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       startFloorMinutes: now.hour * 60 + now.minute,
     );
 
+    // STREAK-01: sync streakCount for all active habit goals at generation time.
+    // The engine computes the authoritative streak internally but does not write
+    // it back to goal.streakCount — the displayed value lags until a mark action.
+    // This write-back closes that divergence window on cold launch and day-boundary.
+    // No-op guard: only saves when the computed value differs from the stored value
+    // to avoid N redundant writes per day (Pitfall 3 / T-15-03).
+    for (final goal in goals.where((g) => !g.isArchived && g.goalType == GoalType.habit)) {
+      try {
+        final due = ScheduleGeneratorService.computeDueWeekdays(goal.frequencyPerWeek ?? 7);
+        final logsForGoal = allLogs.where((l) => l.goalId == goal.id).toList();
+        final computed = ScheduleGeneratorService.computeStreak(
+          goal.id,
+          due,
+          logsForGoal,
+          today: date,
+        );
+        if (goal.streakCount != computed) {
+          goal.streakCount = computed;
+          await _goalRepo.save(goal);
+        }
+      } catch (_) {
+        // T-15-04: streak staleness is tolerable; generation must not be blocked.
+      }
+    }
+
     // Silent replace: delete existing schedule for today if any.
     final existing = await _repo.getByDate(dateYmd);
     if (existing != null) await _repo.delete(existing.id);
