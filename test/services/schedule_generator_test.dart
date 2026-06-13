@@ -1254,6 +1254,52 @@ void main() {
   );
 
   // ---------------------------------------------------------------------------
+  // PRIORITY-02 (outcome): priority changes outcome chunk count at mood=3
+  // ---------------------------------------------------------------------------
+  test(
+    'PRIORITY-02: high-priority outcome (0.75) gets more chunks than normal (0.5) at mood=3',
+    () {
+      final deadline = monday.add(const Duration(days: 7));
+      final highOutcome = makeOutcome(
+        name: 'High outcome',
+        deadline: deadline,
+        priorityWeight: 0.75,
+      );
+      final normalOutcome = makeOutcome(
+        name: 'Normal outcome',
+        deadline: deadline,
+        priorityWeight: 0.5,
+      );
+      final result = sut.generate(
+        goals: [normalOutcome, highOutcome],
+        blocks: [],
+        moodIndex: 3,
+        date: monday,
+        completionLogs: [],
+        lighterDay: false,
+      );
+      final highCount = result
+          .where(
+            (c) =>
+                c.chunkType == ChunkType.work && c.goalId == highOutcome.id,
+          )
+          .length;
+      final normalCount = result
+          .where(
+            (c) =>
+                c.chunkType == ChunkType.work && c.goalId == normalOutcome.id,
+          )
+          .length;
+      expect(
+        highCount,
+        greaterThan(normalCount),
+        reason:
+            'PRIORITY-02: high-priority outcome must receive more chunks than normal-priority outcome at mood=3',
+      );
+    },
+  );
+
+  // ---------------------------------------------------------------------------
   // Start-time floor: a mid-day generation packs from "now", not 8:00 AM.
   // ---------------------------------------------------------------------------
   group('startFloorMinutes places discretionary work near "now"', () {
