@@ -407,7 +407,9 @@ class _CheckinScreenState extends State<CheckinScreen> {
   Widget _buildAcknowledgmentBody(BuildContext context) {
     final schedule = context.watch<ScheduleNotifier>().todaySchedule;
     final mood = _selectedMood ?? 3;
-    final bgColor = ThemeNotifier.moodSeeds[mood]!;
+    // CHECKIN-01: use the existing _backgroundColor getter so the bgColor here
+    // is always consistent with the one driving _onBgColor (same _selectedMood).
+    final bgColor = _backgroundColor;
 
     final goals = context.read<GoalsNotifier>().goals;
     final ackText = schedule != null
@@ -441,8 +443,10 @@ class _CheckinScreenState extends State<CheckinScreen> {
                 Text(
                   ackText,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  // CHECKIN-01: _onBgColor replaces hardcoded Colors.white to
+                  // pass WCAG AA on light backgrounds (moods 4 and 5).
+                  style: TextStyle(
+                    color: _onBgColor,
                     fontSize: 22,
                     fontWeight: FontWeight.w500,
                     height: 1.4,
@@ -452,7 +456,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
                 Text(
                   'Swipe up to begin',
                   style: TextStyle(
-                    color: Colors.white.withAlpha(179), // ~70% opacity
+                    // CHECKIN-01: _onBgColor replaces hardcoded Colors.white.
+                    color: _onBgColor.withAlpha(179), // ~70% opacity
                     fontSize: 14,
                     letterSpacing: 1.2,
                   ),
