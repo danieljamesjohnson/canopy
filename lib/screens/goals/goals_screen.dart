@@ -88,6 +88,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
       ),
       body: Consumer<GoalsNotifier>(
         builder: (context, notifier, _) {
+          final theme = Theme.of(context);
+          final colorScheme = theme.colorScheme;
           final timeTargetGoals = notifier.timeTargetGoals;
           final outcomeGoals = notifier.outcomeGoals;
           final habitGoals = notifier.habitGoals;
@@ -102,6 +104,32 @@ class _GoalsScreenState extends State<GoalsScreen> {
               if (allEmpty)
                 const SliverFillRemaining(child: _EmptyState())
               else ...[
+                // Heading sliver (GOALS-01): purpose + affordance hint.
+                // Only shown on the non-empty path.
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Your goals',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Drag to prioritize. Tap to edit.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 if (timeTargetGoals.isNotEmpty) ...[
                   _buildSectionHeader(context, 'Regular time'),
                   _buildReorderableSection(
@@ -164,10 +192,10 @@ class _GoalsScreenState extends State<GoalsScreen> {
     GoalType type,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    // Phase 6 Plan 05: drag handle visibility gated by platform per UI-SPEC
-    // §Drag Handle Visibility (opacity 0.6 desktop / hidden mobile). On mobile
-    // long-press-drag still works because ReorderableListView keeps the
-    // long-press gesture regardless of whether a visible drag handle exists.
+    // Phase 14 Plan 01 (GOALS-01): drag handle visible on BOTH desktop and
+    // mobile using Icons.drag_indicator (six-dot grid). Desktop gets Tooltip +
+    // 44×44 touch target + AnimatedOpacity at 0.6. Mobile gets a lighter
+    // outlineVariant icon, always visible.
     final isMobileTouch =
         defaultTargetPlatform == TargetPlatform.android ||
         defaultTargetPlatform == TargetPlatform.iOS;
@@ -184,26 +212,78 @@ class _GoalsScreenState extends State<GoalsScreen> {
           onEdit: () => _openEditSheet(context, group[i]),
           onArchive: () => notifier.archiveGoal(group[i].id),
           trailing: isMobileTouch
-              ? null
-              : ReorderableDelayedDragStartListener(
+              ? ReorderableDelayedDragStartListener(
                   index: i,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 120),
-                    opacity: 0.6,
+                  child: Semantics(
+                    label: 'Drag to reorder',
+                    button: false,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Icon(
-                        Icons.drag_handle,
-                        color: colorScheme.outline,
+                        Icons.drag_indicator,
+                        size: 20,
+                        color: colorScheme.outlineVariant,
+                      ),
+                    ),
+                  ),
+                )
+              : Tooltip(
+                  message: 'Drag to reorder',
+                  child: ReorderableDelayedDragStartListener(
+                    index: i,
+                    child: Semantics(
+                      label: 'Drag to reorder',
+                      button: false,
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Center(
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 120),
+                            opacity: 0.6,
+                            child: Icon(
+                              Icons.drag_indicator,
+                              color: colorScheme.outline,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
         ),
-        onReorderItem: (oldIndex, newIndex) =>
-            notifier.reorder(type, oldIndex, newIndex),
+        // Phase 14 Plan 01 (GOALS-01): reorder writes priorityWeight via
+        // reorderAllWithPriority (not sortOrder-only via reorder).
+        // newIndex is post-removal — NO >oldIndex adjustment (Pitfall 1).
+        onReorderItem: (oldIndex, newIndex) async {
+          final reorderedGroup = [...group];
+          final item = reorderedGroup.removeAt(oldIndex);
+          reorderedGroup.insert(newIndex, item);
+          final allOrdered = _buildFullOrderedIds(notifier, type, reorderedGroup);
+          await notifier.reorderAllWithPriority(allOrdered);
+        },
       ),
     );
+  }
+
+  /// Reconstructs the flat goal ID list across all three type groups when a
+  /// drag completes within one type group (Pitfall 2: order must match display
+  /// order — timeTarget → outcome → habit).
+  List<String> _buildFullOrderedIds(
+    GoalsNotifier notifier,
+    GoalType type,
+    List<Goal> reorderedGroup,
+  ) {
+    final timeTargetIds = type == GoalType.timeTarget
+        ? reorderedGroup.map((g) => g.id).toList()
+        : notifier.timeTargetGoals.map((g) => g.id).toList();
+    final outcomeIds = type == GoalType.outcome
+        ? reorderedGroup.map((g) => g.id).toList()
+        : notifier.outcomeGoals.map((g) => g.id).toList();
+    final habitIds = type == GoalType.habit
+        ? reorderedGroup.map((g) => g.id).toList()
+        : notifier.habitGoals.map((g) => g.id).toList();
+    return [...timeTargetIds, ...outcomeIds, ...habitIds];
   }
 }
 

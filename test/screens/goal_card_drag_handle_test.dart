@@ -1,14 +1,11 @@
-// Widget tests for platform-gated drag handle visibility — Phase 6 Plan 06
-// Task 2.
+// Widget tests for platform-gated drag handle visibility — Phase 14 Plan 01.
 //
-// Covers the Drag rows in 06-VALIDATION.md: drag handle hidden on
-// Android/iOS (touch-first long-press still works because
-// ReorderableListView keeps the long-press gesture regardless), and visible
-// at 0.6 opacity on macOS via `defaultTargetPlatform` override.
-//
-// The harness mirrors goals_screen.dart's `_buildReorderableSection` so the
-// test exercises the production decision (`isMobileTouch ? null : Reorderable…`)
-// without dragging in the full GoalsNotifier provider tree.
+// Updated from Phase 6 Plan 06 to reflect Phase 14 changes:
+//   - Icon changed from Icons.drag_handle to Icons.drag_indicator
+//   - Mobile (Android/iOS) now shows a visible Icons.drag_indicator handle
+//     (was previously hidden — trailing: null)
+//   - Desktop (macOS) continues to show Icons.drag_indicator at 0.6 opacity
+//     inside a SizedBox(44×44) with Tooltip wrapper
 
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/screens/goals/widgets/goal_card.dart';
@@ -29,9 +26,15 @@ Goal _stubGoal(String id, String name) => Goal(
       color: '#4CAF50',
     );
 
-/// Production-mirroring reorderable list. The platform gate is identical to
-/// `goals_screen.dart:171-202` (`isMobileTouch ? null : Reorderable…`).
+/// Production-mirroring reorderable list. Mirrors the platform gate logic
+/// from `goals_screen.dart:_buildReorderableSection` (Phase 14 Phase 01):
+/// both mobile and desktop now show Icons.drag_indicator, but with different
+/// wrappers and colors.
 Widget _reorderableSection(List<Goal> goals) {
+  final colorScheme = ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrangeAccent),
+  ).colorScheme;
   final isMobileTouch = defaultTargetPlatform == TargetPlatform.android ||
       defaultTargetPlatform == TargetPlatform.iOS;
   return ReorderableListView.builder(
@@ -43,15 +46,42 @@ Widget _reorderableSection(List<Goal> goals) {
       key: ValueKey(goals[i].id),
       goal: goals[i],
       trailing: isMobileTouch
-          ? null
-          : ReorderableDelayedDragStartListener(
+          ? ReorderableDelayedDragStartListener(
               index: i,
-              child: const AnimatedOpacity(
-                duration: Duration(milliseconds: 120),
-                opacity: 0.6,
+              child: Semantics(
+                label: 'Drag to reorder',
+                button: false,
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.drag_handle),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Icon(
+                    Icons.drag_indicator,
+                    size: 20,
+                    color: colorScheme.outlineVariant,
+                  ),
+                ),
+              ),
+            )
+          : Tooltip(
+              message: 'Drag to reorder',
+              child: ReorderableDelayedDragStartListener(
+                index: i,
+                child: Semantics(
+                  label: 'Drag to reorder',
+                  button: false,
+                  child: SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Center(
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 120),
+                        opacity: 0.6,
+                        child: Icon(
+                          Icons.drag_indicator,
+                          color: colorScheme.outline,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -61,9 +91,7 @@ Widget _reorderableSection(List<Goal> goals) {
 }
 
 /// Runs [test] under [platform], guaranteeing the foundation debug variable
-/// is reset BEFORE the test body returns. `_verifyInvariants` runs
-/// immediately after the body completes (before any `addTearDown`/`tearDown`
-/// fires), so the reset must happen in-band via try/finally.
+/// is reset BEFORE the test body returns.
 Future<void> _underPlatform(
   TargetPlatform platform,
   Future<void> Function() body,
@@ -78,23 +106,25 @@ Future<void> _underPlatform(
 
 void main() {
   group('GoalCard drag handle visibility', () {
-    testWidgets('hidden on Android (mobile touch)', (tester) async {
+    testWidgets('visible on Android (mobile touch — Phase 14: now always shown)',
+        (tester) async {
       await _underPlatform(TargetPlatform.android, () async {
         await pumpWithMood(
           tester,
           _reorderableSection([_stubGoal('g1', 'Exercise')]),
         );
-        expect(find.byIcon(Icons.drag_handle), findsNothing);
+        expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
       });
     });
 
-    testWidgets('hidden on iOS (mobile touch)', (tester) async {
+    testWidgets('visible on iOS (mobile touch — Phase 14: now always shown)',
+        (tester) async {
       await _underPlatform(TargetPlatform.iOS, () async {
         await pumpWithMood(
           tester,
           _reorderableSection([_stubGoal('g1', 'Exercise')]),
         );
-        expect(find.byIcon(Icons.drag_handle), findsNothing);
+        expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
       });
     });
 
@@ -104,11 +134,11 @@ void main() {
           tester,
           _reorderableSection([_stubGoal('g1', 'Exercise')]),
         );
-        expect(find.byIcon(Icons.drag_handle), findsOneWidget);
+        expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
         final ao = tester.widget<AnimatedOpacity>(
           find
               .ancestor(
-                of: find.byIcon(Icons.drag_handle),
+                of: find.byIcon(Icons.drag_indicator),
                 matching: find.byType(AnimatedOpacity),
               )
               .first,
