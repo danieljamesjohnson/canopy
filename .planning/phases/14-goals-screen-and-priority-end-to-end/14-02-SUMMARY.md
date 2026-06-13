@@ -23,7 +23,7 @@ key_files:
 decisions:
   - Step 2 habit sort uses pre-filtered habitGoals list (not inline activeGoals filter) to keep cap-check and due-weekday guards unchanged
   - Step 4 composite score `remainingHours × priorityWeight` replaces tiebreaker-only sort; null-coalesced to 0.5 so unset priority sorts as Normal
-  - _PriorityChip uses `textTheme.labelSmall` (not labelMedium) per the PATTERNS.md §goal_card.dart spec; UI-SPEC Typography table lists 12sp for chip label which labelSmall satisfies
+  - _PriorityChip uses `textTheme.labelMedium` (12sp) w600 per the UI-SPEC Typography table (authoritative); standardized across all three chip copies during code-review fix WR-01
   - _demandForTimeTarget and _remainingHours left unchanged; zero-remaining-hours goals score 0.0 and are harmlessly sorted to the bottom (Pitfall 5)
   - home_screen.dart required no edit; _lookupGoalPriorityWeight lookup is internal to ActiveChunkCard
   - File-private _PriorityChip duplicated in chunk_card.dart and active_chunk_card.dart (not shared via import) per UI-SPEC §Component Inventory item 3 file-disjoint parallelism rule
@@ -61,7 +61,7 @@ Priority is now a first-class scheduling signal (PRIORITY-01) and a visible badg
 
 ### Task 2: Badge threading (GOALS-02)
 
-**chunk_card.dart:** Added `double? goalPriorityWeight` to `ChunkCard` and `_WorkChunkContent` constructors. Added file-private `_PriorityChip` widget (labelSmall w600 label). Badge inserted after the rationale row in `_WorkChunkContent`'s inner Column — `if (goalPriorityWeight != null && goalPriorityWeight != 0.5)`.
+**chunk_card.dart:** Added `double? goalPriorityWeight` to `ChunkCard` and `_WorkChunkContent` constructors. Added file-private `_PriorityChip` widget (labelMedium 12sp w600 label). Badge inserted after the rationale row in `_WorkChunkContent`'s inner Column — `if (goalPriorityWeight != null && goalPriorityWeight != 0.5)`.
 
 **swipeable_chunk_card.dart:** Added `double? goalPriorityWeight` passthrough parameter; wired to inner `ChunkCard` call. Break-card branch unchanged (breaks have no priority).
 
@@ -82,7 +82,7 @@ Priority is now a first-class scheduling signal (PRIORITY-01) and a visible badg
 
 ## Deviations from Plan
 
-None — plan executed exactly as written. The _PriorityChip uses `textTheme.labelSmall` (12sp) matching the PATTERNS.md `goal_card.dart` verbatim spec, which aligns with the UI-SPEC Typography table's 12sp chip label requirement.
+Plan executed as written. The _PriorityChip uses `textTheme.labelMedium` (12sp) w600 per the UI-SPEC Typography table — standardized across all three chip copies during the code-review WR-01 fix (an earlier draft used labelSmall; corrected to labelMedium).
 
 ## Known Stubs
 
