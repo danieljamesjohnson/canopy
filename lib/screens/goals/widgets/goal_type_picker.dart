@@ -70,7 +70,9 @@ class _TypeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final backgroundColor = isSelected ? colorScheme.primaryContainer : null;
+    final backgroundColor = isSelected
+        ? colorScheme.primaryContainer
+        : colorScheme.surfaceContainerHighest;
     final borderColor = isSelected ? colorScheme.primary : Colors.transparent;
 
     return Card(
@@ -83,12 +85,17 @@ class _TypeCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 6,
+          ),
           minVerticalPadding: 0,
           leading: Icon(
             icon,
             size: 20,
-            color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            color: isSelected
+                ? colorScheme.primary
+                : colorScheme.onSurfaceVariant,
           ),
           title: Text(
             title,

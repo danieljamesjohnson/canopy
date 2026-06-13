@@ -78,10 +78,10 @@ class _CheckinScreenState extends State<CheckinScreen> {
   Color _resolveEmojiBackground(int mood, bool isSelected) {
     final isHovered = _hoveredMoods[mood] ?? false;
     final isPressed = _pressedMoods[mood] ?? false;
-    final luminance =
-        _selectedMood != null ? _backgroundColor.computeLuminance() : 0.0;
-    final base =
-        luminance > 0.35 ? const Color(0xFF1A1A1A) : Colors.white;
+    final luminance = _selectedMood != null
+        ? _backgroundColor.computeLuminance()
+        : 0.0;
+    final base = luminance > 0.35 ? const Color(0xFF1A1A1A) : Colors.white;
     if (isSelected) {
       return base.withAlpha(isPressed ? 77 : (isHovered ? 64 : 51));
     } else {
@@ -93,7 +93,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
     if (_selectedMood == null || _isGenerating) return;
     setState(() {
       _isGenerating = true;
-      _pressedMoods.clear(); // WR-01: clear any stale pressed state before transition
+      _pressedMoods
+          .clear(); // WR-01: clear any stale pressed state before transition
     });
     // Pre-capture context reads before the await gap (mirrors _commitAndProceed
     // WR-02 pattern — protects against context-after-await bugs in future refactors).
@@ -230,8 +231,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
         child: _scheduleGenerated
             ? _buildAcknowledgmentBody(context)
             : _generationDone
-                ? _buildDecisionBody(context)
-                : _buildCheckinBody(context),
+            ? _buildDecisionBody(context)
+            : _buildCheckinBody(context),
       ),
     );
   }
@@ -243,101 +244,105 @@ class _CheckinScreenState extends State<CheckinScreen> {
 
     return Center(
       key: const ValueKey('checkin'),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 32),
-            // Emoji row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: _moodEmojis.entries.map((entry) {
-                final mood = entry.key;
-                final emoji = entry.value;
-                final isSelected = _selectedMood == mood;
-                // CHECKIN-01: wrap GestureDetector in MouseRegion for hover,
-                // add onTapDown/onTapUp/onTapCancel for pressed visual feedback.
-                return MouseRegion(
-                  onEnter: (_) =>
-                      setState(() => _hoveredMoods[mood] = true),
-                  onExit: (_) =>
-                      setState(() => _hoveredMoods[mood] = false),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedMood = mood;
-                      });
-                      // Phase 6 Plan 05: route the mood tap through ThemeNotifier
-                      // so Plan 04's themeAnimationDuration warms the ColorScheme
-                      // app-wide (AC-6, D-09).
-                      context.read<ThemeNotifier>().setMoodSeed(
-                        ThemeNotifier.moodSeeds[mood]!,
-                      );
-                    },
-                    onTapDown: (_) =>
-                        setState(() => _pressedMoods[mood] = true),
-                    onTapUp: (_) =>
-                        setState(() => _pressedMoods[mood] = false),
-                    onTapCancel: () =>
-                        setState(() => _pressedMoods[mood] = false),
-                    child: AnimatedContainer(
-                      // CHECKIN-01: 120ms hover timing per UI-SPEC
-                      duration: const Duration(milliseconds: 120),
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        // CHECKIN-01: luminance-adaptive hover/pressed color
-                        color: _resolveEmojiBackground(mood, isSelected),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(emoji, style: const TextStyle(fontSize: 36)),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 32),
-            // Confirm button — visible once mood is selected.
-            // Inline "Want a lighter day?" Switch removed (CHECKIN-02).
-            if (_selectedMood != null) ...[
-              SizedBox(
-                width: 200,
-                child: ElevatedButton(
-                  // CHECKIN-01 / Pitfall 6: non-null no-op during generation
-                  // avoids the unreadable Material disabled foreground on light
-                  // backgrounds (e.g. amber mood 5).
-                  onPressed: _isGenerating ? () {} : _generate,
-                  style: ElevatedButton.styleFrom(
-                    // CHECKIN-01: luminance-adaptive button colors
-                    backgroundColor: _onBgColor,
-                    foregroundColor: _backgroundColor,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    // StadiumBorder adapts to button height (e.g. spinner swap)
-                    shape: const StadiumBorder(),
-                  ),
-                  child: _isGenerating
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: bgColor,
-                          ),
-                        )
-                      : Text(
-                          "Let's go",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: _backgroundColor,
-                          ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 32),
+              // Emoji row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: _moodEmojis.entries.map((entry) {
+                  final mood = entry.key;
+                  final emoji = entry.value;
+                  final isSelected = _selectedMood == mood;
+                  // CHECKIN-01: wrap GestureDetector in MouseRegion for hover,
+                  // add onTapDown/onTapUp/onTapCancel for pressed visual feedback.
+                  return MouseRegion(
+                    onEnter: (_) => setState(() => _hoveredMoods[mood] = true),
+                    onExit: (_) => setState(() => _hoveredMoods[mood] = false),
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedMood = mood;
+                        });
+                        // Phase 6 Plan 05: route the mood tap through ThemeNotifier
+                        // so Plan 04's themeAnimationDuration warms the ColorScheme
+                        // app-wide (AC-6, D-09).
+                        context.read<ThemeNotifier>().setMoodSeed(
+                          ThemeNotifier.moodSeeds[mood]!,
+                        );
+                      },
+                      onTapDown: (_) =>
+                          setState(() => _pressedMoods[mood] = true),
+                      onTapUp: (_) =>
+                          setState(() => _pressedMoods[mood] = false),
+                      onTapCancel: () =>
+                          setState(() => _pressedMoods[mood] = false),
+                      child: AnimatedContainer(
+                        // CHECKIN-01: 120ms hover timing per UI-SPEC
+                        duration: const Duration(milliseconds: 120),
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          // CHECKIN-01: luminance-adaptive hover/pressed color
+                          color: _resolveEmojiBackground(mood, isSelected),
                         ),
-                ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          emoji,
+                          style: const TextStyle(fontSize: 36),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
+              const SizedBox(height: 32),
+              // Confirm button — visible once mood is selected.
+              // Inline "Want a lighter day?" Switch removed (CHECKIN-02).
+              if (_selectedMood != null) ...[
+                SizedBox(
+                  width: 200,
+                  child: ElevatedButton(
+                    // CHECKIN-01 / Pitfall 6: non-null no-op during generation
+                    // avoids the unreadable Material disabled foreground on light
+                    // backgrounds (e.g. amber mood 5).
+                    onPressed: _isGenerating ? () {} : _generate,
+                    style: ElevatedButton.styleFrom(
+                      // CHECKIN-01: luminance-adaptive button colors
+                      backgroundColor: _onBgColor,
+                      foregroundColor: _backgroundColor,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      // StadiumBorder adapts to button height (e.g. spinner swap)
+                      shape: const StadiumBorder(),
+                    ),
+                    child: _isGenerating
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: bgColor,
+                            ),
+                          )
+                        : Text(
+                            "Let's go",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: _backgroundColor,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -370,10 +375,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Choose your pace for today',
-                    style: TextStyle(
-                      color: onBg.withAlpha(179),
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: onBg.withAlpha(179), fontSize: 14),
                   ),
                   const SizedBox(height: 32),
                   _LighterDayCard(
@@ -393,8 +395,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   ),
                   const SizedBox(height: 16),
                   TextButton(
-                    onPressed: () =>
-                        setState(() => _generationDone = false),
+                    onPressed: () => setState(() => _generationDone = false),
                     child: Text(
                       'Go back',
                       style: TextStyle(color: onBg.withAlpha(179)),
