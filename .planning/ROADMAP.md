@@ -56,7 +56,7 @@ covered by a green 209-test suite — see `milestones/v1.2-MILESTONE-AUDIT.md`.
 
 **Milestone Goal:** Make the scheduling engine tell the truth and use the whole day — real time, real priority, filled capacity, honest streaks.
 
-- [ ] **Phase 15: Engine Honesty** - Cap sharing, honest streaks, priority drives all goal types, regular-time fills open days
+- [x] **Phase 15: Engine Honesty** - Cap sharing, honest streaks, priority drives all goal types, regular-time fills open days (completed 2026-06-13)
 - [ ] **Phase 16: Priority Model Reconciliation** - Drag and form write one coherent priority; goal sheet viewport test proves Priority+Save always reachable
 - [ ] **Phase 17: Time-Anchored Home** - Now/Next reflect the chunk whose clock window contains the actual current time; pre-start and day-complete states
 
@@ -78,7 +78,7 @@ covered by a green 209-test suite — see `milestones/v1.2-MILESTONE-AUDIT.md`.
 **Plans**: 2 plans
 
   - [x] 15-01-PLAN.md — Engine allocation fixes: habit ceiling + multi-chunk priority demand + always-run round-robin time-target fill (CAP-01, PRIORITY-02, FILL-01, FILL-02)
-  - [ ] 15-02-PLAN.md — Generation-time streak write-back so displayed streak matches computeStreak() (STREAK-01)
+  - [x] 15-02-PLAN.md — Generation-time streak write-back so displayed streak matches computeStreak() (STREAK-01)
 
 ### Phase 16: Priority Model Reconciliation
 
@@ -117,6 +117,6 @@ covered by a green 209-test suite — see `milestones/v1.2-MILESTONE-AUDIT.md`.
 | 12. Home as Landing, Schedule as Plan | v1.2 | 3/3 | Complete | 2026-06-12 |
 | 13. Check-in and Goal Form | v1.2 | 2/2 | Complete | 2026-06-13 |
 | 14. Goals Screen and Priority End-to-End | v1.2 | 2/2 | Complete | 2026-06-13 |
-| 15. Engine Honesty | v1.3 | 1/2 | In Progress|  |
+| 15. Engine Honesty | v1.3 | 2/2 | Complete   | 2026-06-13 |
 | 16. Priority Model Reconciliation | v1.3 | 0/? | Not started | - |
 | 17. Time-Anchored Home | v1.3 | 0/? | Not started | - |

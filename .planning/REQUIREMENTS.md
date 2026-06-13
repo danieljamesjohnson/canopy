@@ -26,7 +26,7 @@ Rule-based only — no LLM. Theme: make the scheduling engine tell the truth and
 
 ### Honest Streaks (STREAK)
 
-- [ ] **STREAK-01**: A goal's displayed streak equals the actual computed backward due-day walk — the number shown on the goal and the engine's computed streak never diverge. *(SEED-001 #6)*
+- [x] **STREAK-01**: A goal's displayed streak equals the actual computed backward due-day walk — the number shown on the goal and the engine's computed streak never diverge. *(SEED-001 #6)*
 
 ### Fill the Day (FILL)
 
@@ -61,7 +61,7 @@ Rule-based only — no LLM. Theme: make the scheduling engine tell the truth and
 | PRIORITY-02 | Phase 15 | Complete |
 | PRIORITY-03 | Phase 16 | pending |
 | CAP-01 | Phase 15 | Complete |
-| STREAK-01 | Phase 15 | pending |
+| STREAK-01 | Phase 15 | Complete |
 | FILL-01 | Phase 15 | Complete |
 | FILL-02 | Phase 15 | Complete |
 | GOALFORM-02 | Phase 16 | pending |
