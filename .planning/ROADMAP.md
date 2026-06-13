@@ -72,7 +72,9 @@ covered by a green 209-test suite — see `milestones/v1.2-MILESTONE-AUDIT.md`.
   3. Raising a habit's priority increases the number of chunks it receives relative to a lower-priority habit; raising an outcome's priority increases its chunk allocation relative to a lower-priority outcome.
   4. On a day with open capacity after required work and habits, regular-time (time-target) goals appear in the schedule rather than leaving the day empty.
   5. When multiple regular-time goals compete for open slots, higher-priority goals receive more chunks and no single goal claims the entire open day.
-**Plans**: TBD
+**Plans**: 2 plans
+  - [ ] 15-01-PLAN.md — Engine allocation fixes: habit ceiling + multi-chunk priority demand + always-run round-robin time-target fill (CAP-01, PRIORITY-02, FILL-01, FILL-02)
+  - [ ] 15-02-PLAN.md — Generation-time streak write-back so displayed streak matches computeStreak() (STREAK-01)
 
 ### Phase 16: Priority Model Reconciliation
 **Goal**: The drag-reorder and the form's Low/Normal/High selector write the same priority model, so a goal's priority chip stays correct after any interaction — and an automated test proves the goal sheet's Priority and Save controls are reachable at the true modal height for every goal type.
@@ -105,6 +107,6 @@ covered by a green 209-test suite — see `milestones/v1.2-MILESTONE-AUDIT.md`.
 | 12. Home as Landing, Schedule as Plan | v1.2 | 3/3 | Complete | 2026-06-12 |
 | 13. Check-in and Goal Form | v1.2 | 2/2 | Complete | 2026-06-13 |
 | 14. Goals Screen and Priority End-to-End | v1.2 | 2/2 | Complete | 2026-06-13 |
-| 15. Engine Honesty | v1.3 | 0/? | Not started | - |
+| 15. Engine Honesty | v1.3 | 0/2 | Planned | - |
 | 16. Priority Model Reconciliation | v1.3 | 0/? | Not started | - |
 | 17. Time-Anchored Home | v1.3 | 0/? | Not started | - |
