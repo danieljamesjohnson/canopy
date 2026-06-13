@@ -8,25 +8,25 @@ Canopy is a personal time budgeting app that generates a daily schedule built ar
 
 Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
 
-## Current State: v1.2 "Make It Usable" — SHIPPED 2026-06-13
+## Previous Milestone: v1.2 "Make It Usable" — SHIPPED 2026-06-13
 
-**Shipped:** 3 phases (12-14), 7 plans, 11/11 requirements implemented and wired, 209-test suite green. Home now lands the day with clock-timed schedule cards and now/next framing; the check-in is legible with a post-commit lighter-day decision screen; the goal form fits the viewport; the Goals screen reads as a prioritization view; and priority measurably changes the generated schedule. Human visual UAT (12 items across phases 12-14) deferred for later confirmation via `/gsd-verify-work`. See `.planning/milestones/v1.2-*` and `MILESTONES.md`.
+3 phases (12-14), 7 plans, 11/11 requirements implemented and wired, 209-test suite green. Reworked the UI foundations from the first real dogfood: Home landing + clock-timed schedule with now/next framing, labeled chunk actions, legible check-in, goal form that fits the viewport, Goals-as-prioritization, and priority that measurably drives scheduling. Human visual UAT (12 items) deferred for later `/gsd-verify-work`. See `.planning/milestones/v1.2-*` and `MILESTONES.md`.
 
-**Next:** start the next milestone with `/gsd-new-milestone`.
+## Current Milestone: v1.3 "An Honest Day"
 
-**v1.2 goal (delivered):** Rework the UI foundations surfaced by the first real dogfood so Canopy is legible and usable day-to-day — fix the landing/information-architecture, make the schedule read as a real timed plan, redesign the goal form and check-in, clarify core affordances, and make priority actually drive scheduling. Rule-based only (no LLM).
+**Goal:** Make the scheduling engine tell the truth and use the whole day — so the plan reflects real time, real priority, and fills open capacity with what matters. Rule-based only (no LLM).
 
-**Why this milestone:** v1.1 shipped 21/21 requirements "complete on paper and in code," but the first end-to-end walkthrough (Dan, 2026-06-12) returned a blunt verdict: *"the basics just aren't here yet… quite a bit of rework on just the basics of the UI."* The dogfood is captured in `.planning/seeds/SEED-002-ui-basics-rework-dogfood.md` with transcript + annotated frames at `.planning/research/dogfood-2026-06-12/`. It also confirmed two engine concerns from `.planning/seeds/SEED-001-engine-product-critique.md` (#1 lighter-day default + unreadable toggle, #5 chunks show "5x/week" instead of times).
+**Why this milestone:** A post-v1.2 adversarial audit (`SEED-003`) found three v1.2 requirements landed *superficially* — Home's "Now" is a label, not time-anchored; the goal-sheet "fits viewport" claim is untested; priority's count-effect covers only 1 of 3 goal types. Continued dogfooding (2026-06-13 session) surfaced the deeper product gap: regular-time goals (e.g. family) don't claim an otherwise-empty day. Together these are an "engine honesty + fill the day" pass over `SEED-001` (#3, #6) and `SEED-003` (#1, #2, #3).
 
-**Target outcomes:**
-- Home is the landing, and the schedule reads as a real plan — every chunk shows a clock time, with a clear "now / next" framing (not "5x/week").
-- The goal form fits the screen — Priority and Save are always reachable.
-- The Goals screen reads as a prioritization view with a legible priority visual language.
-- The check-in is legible (contrast/hover), and the lighter-day choice has a readable state shown at the right moment (after "Let's go"), not an always-on ambiguous toggle.
-- Core chunk affordances (complete / skip) are obvious, not an unlabeled circle.
-- Priority measurably changes the generated schedule (SEED-001 #4), not just a tiebreaker.
+**Target features:**
+- Home "Now" / "Next" reflect the chunk whose clock window contains the *actual* current time, with graceful before-start / day-over states.
+- Priority changes chunk *count* for every goal type (habits & outcomes, not just time-target), and the drag-continuous vs form-discrete priority models are reconciled so the priority chip stays meaningful after a drag.
+- Capacity is shared across goal types — habits no longer allocate first and consume the whole (especially low-mood) cap before outcomes/time-targets.
+- Honest streaks — the displayed streak matches the actual computed walk.
+- Regular-time goals fill open days — when little else is due they claim leftover slots (spread across them by priority, bounded by the mood cap), instead of leaving the day empty.
+- A real viewport test proves the goal sheet's Priority + Save are reachable at the true modal height per goal type.
 
-**Scope notes:** Driven by SEED-002 (A–F) + SEED-001 #1/#5/#4. Deferred to a later "engine honesty" milestone: SEED-001 #2 (low-mood zeros time-targets), #3 (habits monopolize the cap), #6 (streak semantics). Phase numbering continues from v1.1 (starts at Phase 12); v1.1 phase directories are preserved.
+**Scope notes:** Low-energy days stay minimal (required + habits only); time-targets remain suppressed on mood 1–2 — explicit owner decision, so SEED-001 #2 is deferred. Energy-aware valence (`SEED-004`) deferred to a follow-on milestone. Phase numbering continues from v1.2 (starts at Phase 15); prior phase directories are preserved. Several items are partly pre-paid by the 2026-06-13 dogfood commits (start-near-now, weekday frequency, 3-hr regular-time default, removed pace prompt, humane empty-day copy).
 
 ## Requirements
 
@@ -52,7 +52,7 @@ Usability rework (v1.2 — *code-validated; visual UAT deferred*):
 
 ### Active
 
-(None — define the next milestone's requirements via `/gsd-new-milestone`. Candidate backlog: SEED-001 engine-honesty items #2 low-mood zeros time-targets, #3 habits monopolize the cap, #6 streak semantics.)
+v1.3 "An Honest Day" — engine honesty + fill the day. See `.planning/REQUIREMENTS.md` for the scoped, ID'd list. Themes: time-anchored Home now/next; priority changes count for all goal types + reconciled priority models; capacity shared across goal types; honest streaks; regular-time fills open days; a real goal-sheet viewport test. Deferred: SEED-001 #2 (low-mood time-target floor — owner kept low days minimal), SEED-004 (energy-aware valence).
 
 ### Out of Scope
 
@@ -111,4 +111,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-13 after v1.2 "Make It Usable" milestone (UI foundations rework + priority drives scheduling; visual UAT deferred)*
+*Last updated: 2026-06-13 — started milestone v1.3 "An Honest Day" (engine honesty + fill the day)*
