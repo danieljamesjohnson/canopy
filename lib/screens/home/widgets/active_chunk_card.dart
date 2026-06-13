@@ -237,7 +237,7 @@ class _PriorityChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: textTheme.labelSmall?.copyWith(
+            style: textTheme.labelMedium?.copyWith(
               color: onColor,
               fontWeight: FontWeight.w600,
             ),
