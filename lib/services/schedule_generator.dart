@@ -366,18 +366,42 @@ class ScheduleGeneratorService {
             return cmp != 0 ? cmp : a.id.compareTo(b.id); // stable secondary key
           });
 
-    // FILL-02: one chunk per goal per pass until cap is full or all demands satisfied.
+    // PRIORITY-03: high-priority time-target goals (priorityWeight >= 0.75) receive
+    // one surplus chunk ahead of the round-robin so they end up with strictly more
+    // chunks than lower-priority goals when capacity is binding.  The surplus is
+    // capped by both the goal's own demand and the remaining discretionary cap, and
+    // lower-priority goals are still guaranteed at least one chunk when demand and
+    // capacity allow (the subsequent round-robin handles this).
     final placedCountPerGoal = <String, int>{};
+    for (final goal in timeTargetGoals) {
+      if (discretionaryCount >= cap) break;
+      if ((goal.priorityWeight ?? 0.5) < 0.75) continue;
+      final rawDemand = _demandForTimeTarget(goal, completionLogs, date);
+      final demand = isLowMood ? rawDemand.clamp(0, 1) : rawDemand;
+      if (demand <= 0) continue;
+      workChunks.add(
+        ScheduledChunk(
+          chunkTypeIndex: ChunkType.work.index,
+          goalId: goal.id,
+          durationMinutes: 25,
+          rationale: _timeTargetRationale(goal, completionLogs, date),
+        ),
+      );
+      discretionaryCount++;
+      placedCountPerGoal[goal.id] = 1;
+    }
+
+    // FILL-02: one chunk per goal per pass until cap is full or all demands satisfied.
     bool anyPlaced = true;
     while (anyPlaced && discretionaryCount < cap) {
       anyPlaced = false;
       for (final goal in timeTargetGoals) {
         if (discretionaryCount >= cap) break;
         final placed = placedCountPerGoal[goal.id] ?? 0;
-        // FILL-01: cap demand at 1 per goal on low-mood days.
-        final demand = isLowMood
-            ? 1
-            : _demandForTimeTarget(goal, completionLogs, date);
+        // FILL-01: cap actual demand at 1 per goal on low-mood days so goals
+        // with no remaining budget (rawDemand == 0) are correctly skipped.
+        final rawDemand = _demandForTimeTarget(goal, completionLogs, date);
+        final demand = isLowMood ? rawDemand.clamp(0, 1) : rawDemand;
         if (demand <= 0 || placed >= demand) continue;
         workChunks.add(
           ScheduledChunk(

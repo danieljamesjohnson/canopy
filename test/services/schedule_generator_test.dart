@@ -998,16 +998,18 @@ void main() {
   );
 
   test(
-    'Step 4: high-priority goal gets at least as many chunks as low-priority under shared cap',
+    'Step 4: high-priority time-target goal gets strictly more chunks than low-priority under shared cap',
     () {
       // weeklyHourBudget=12h → demand = min(ceil(12*60/25/7), 4) = min(5, 4) = 4 chunks each.
       // (The per-goal daily cap in _demandForTimeTarget is 4.)
       // moodIndex=3 + lighterDay=true → effective cap = moodCap[2] = 6 (one tier lower).
       // Two goals × 4 demand = 8 > cap 6, so cap is genuinely binding.
-      // Round-robin: High TT (score 9.0) is sorted first and served first in each round.
-      // Both goals receive 3 chunks each (cap=6, 2 goals, 3 rounds).
-      // greaterThanOrEqualTo ensures high-priority never gets fewer chunks than low-priority
-      // (the sort order guarantees high is never disadvantaged by round-robin).
+      // PRIORITY-03 surplus: high (0.75) gets +1 chunk before the round-robin → disc=1.
+      // Round-robin fills remaining 5 slots alternating high/low:
+      //   pass 1: high (placed→2, disc=2), low (placed→1, disc=3)
+      //   pass 2: high (placed→3, disc=4), low (placed→2, disc=5)
+      //   pass 3: high (placed→4, disc=6=cap) → stops
+      // Final: high=4, low=2 → high > low (success criterion 5 satisfied).
       final highTT = makeTimeTarget(
         name: 'High TT',
         weeklyHourBudget: 12.0,
@@ -1036,15 +1038,16 @@ void main() {
       final lowCount = result
           .where((c) => c.chunkType == ChunkType.work && c.goalId == lowTT.id)
           .length;
-      // Round-robin: high-priority goal is served first each round, so it gets
-      // >= low-priority goal's chunks. Never disadvantaged by the new FILL-02 distribution.
+      // PRIORITY-03: priority surplus ensures high-priority gets strictly more
+      // chunks than low-priority (success criterion 5: "higher-priority goals
+      // receive more chunks and no single goal claims the entire open day").
       expect(
         highCount,
-        greaterThanOrEqualTo(lowCount),
+        greaterThan(lowCount),
         reason:
-            'High-priority goal (score 9.0) must get at least as many cap slots as '
-            'low-priority goal (score 3.0) under round-robin — priority sort order '
-            'ensures high is never disadvantaged',
+            'High-priority goal (score 9.0) must get strictly more cap slots than '
+            'low-priority goal (score 3.0) — PRIORITY-03 surplus awards the extra '
+            'chunk before the round-robin',
       );
     },
   );
