@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Phases
-status: verifying
-last_updated: "2026-06-13T15:30:33.035Z"
-last_activity: 2026-06-13 -- Phase 14 execution started
+status: Awaiting next milestone
+last_updated: "2026-06-13T15:48:14.008Z"
+last_activity: 2026-06-13 — Milestone v1.2 completed and archived
 progress:
   total_phases: 3
   completed_phases: 3
@@ -23,10 +23,10 @@ progress:
 
 ## Current Position
 
-Phase: 14 (Goals Screen and Priority End-to-End) — EXECUTING
-Plan: 2 of 2
-Status: Phase complete — ready for verification
-Last activity: 2026-06-13 -- Phase 14 execution started
+Phase: Milestone v1.2 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-13 — Milestone v1.2 completed and archived
 
 ## Completed Plans
 
@@ -170,6 +170,30 @@ None.
 
 ---
 
+## Deferred Items
+
+Items acknowledged and deferred at v1.2 milestone close on 2026-06-13:
+
+| Category | Item | Status |
+|----------|------|--------|
+| uat | Phase 12 12-UAT.md | testing — 5 pending visual scenarios |
+| uat | Phase 13 13-UAT.md | testing — 8 pending visual scenarios |
+| uat | Phase 14 14-UAT.md | testing — 4 pending visual scenarios |
+| uat | Phases 04/05/06/09/10/11 UAT | carried over from prior milestones (v1.0/v1.1) |
+| verification | Phases 01/06/07/09/10/11/12/13/14 VERIFICATION.md | human_needed (automated must-haves passed; visual sign-off pending) |
+| seed | SEED-001-engine-product-critique | dormant (partially addressed by v1.2 CHECKIN-02 + PRIORITY-01) |
+| seed | SEED-002-ui-basics-rework-dogfood | dormant |
+
+All v1.2 requirements are implemented, wired, and covered by a green 209-test suite
+(see v1.2-MILESTONE-AUDIT.md, status tech_debt). Visual UAT deferred by user choice
+during the autonomous run; run `/gsd-verify-work {12,13,14}` to confirm.
+
+---
+
 ## Stopped At
 
-v1.2 roadmap defined. Next: `/gsd-plan-phase 12`
+v1.2 "Phases" milestone complete and archived. Next: `/gsd-new-milestone`
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
