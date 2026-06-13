@@ -68,24 +68,45 @@ class _TypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final backgroundColor = isSelected ? colorScheme.primaryContainer : null;
     final borderColor = isSelected ? colorScheme.primary : Colors.transparent;
 
     return Card(
       color: backgroundColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: borderColor, width: 2),
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: borderColor, width: 1.5),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: ListTile(
-          contentPadding: const EdgeInsets.all(16),
-          leading: Icon(icon, color: isSelected ? colorScheme.primary : null),
-          title: Text(title),
-          subtitle: Text(subtitle),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          minVerticalPadding: 0,
+          leading: Icon(
+            icon,
+            size: 20,
+            color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+          ),
+          title: Text(
+            title,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: isSelected
+                  ? colorScheme.onPrimaryContainer
+                  : colorScheme.onSurface,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
+          subtitle: Text(
+            subtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isSelected
+                  ? colorScheme.onPrimaryContainer.withAlpha(179)
+                  : colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
       ),
     );

@@ -150,7 +150,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
               style: theme.textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Goal type picker
             GoalTypePicker(
@@ -168,7 +168,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
                 _descriptionController.clear();
               }),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Goal name
             TextField(
@@ -181,7 +181,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
               onChanged: (_) => setState(() {}),
               textCapitalization: TextCapitalization.sentences,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Priority control — shown for all goal types
             Row(
