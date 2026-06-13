@@ -345,4 +345,73 @@ void main() {
       },
     );
   });
+
+  // ---------------------------------------------------------------------------
+  // STREAK-01: generation-time streak sync
+  // ---------------------------------------------------------------------------
+
+  group('STREAK-01: generateToday() syncs goal.streakCount', () {
+    test(
+      'After generateToday(), habit streakCount matches computeStreak — not stale default',
+      () async {
+        // Habit with 2 prior completed due-days. goal.streakCount starts at 0 (default).
+        // After generateToday(), goal.streakCount must equal 2 (the computed value),
+        // not remain at 0. This exercises the generation-time write-back path,
+        // not the mark-time path.
+        final goal = Goal(
+          id: 'streak-sync-goal',
+          name: 'Run',
+          goalTypeIndex: GoalType.habit.index,
+          frequencyPerWeek: 3, // due Mon/Wed/Fri
+          streakCount: 0, // stale default — must be updated at generation
+        );
+
+        final logRepo = InMemoryCompletionLogRepository();
+        // Two consecutive prior due-day completions before testDate (Mon 2026-06-08).
+        await logRepo.append(CompletionLog(
+          chunkId: 'c-wed',
+          goalId: goal.id,
+          dateYmd: '2026-06-03', // Wed
+          eventIndex: CompletionEvent.completed.index,
+        ));
+        await logRepo.append(CompletionLog(
+          chunkId: 'c-fri',
+          goalId: goal.id,
+          dateYmd: '2026-06-05', // Fri
+          eventIndex: CompletionEvent.completed.index,
+        ));
+
+        final goalRepo = _InMemoryGoalRepository([goal]);
+        final scheduleRepo = _InMemoryScheduleRepository();
+
+        final notifier = ScheduleNotifier(
+          now: () => testDate,
+          repo: scheduleRepo,
+          logRepo: logRepo,
+          goalRepo: goalRepo,
+        );
+
+        await notifier.generateToday(
+          moodIndex: 3,
+          goals: [goal],
+          blocks: [],
+        );
+
+        // goalRepo.saved must contain the goal with streakCount == 2.
+        expect(
+          goalRepo.saved,
+          isNotEmpty,
+          reason:
+              'STREAK-01: GoalRepository.save must be called during generateToday for habit goals',
+        );
+        final savedGoal = goalRepo.saved.last;
+        expect(
+          savedGoal.streakCount,
+          equals(2),
+          reason:
+              'STREAK-01: streakCount must equal 2 (two prior due-day completions) after generateToday, not the stale 0 default',
+        );
+      },
+    );
+  });
 }
