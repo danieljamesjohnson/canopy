@@ -17,12 +17,12 @@ Rule-based only — no LLM. Theme: make the scheduling engine tell the truth and
 
 ### Priority Drives Scheduling (PRIORITY) — continues PRIORITY-01
 
-- [ ] **PRIORITY-02**: Raising a *habit's* or an *outcome's* priority changes how it is allocated (more/earlier chunks), not just its sort order — priority's effect on the generated schedule is observable for all three goal types, not time-target only. *(SEED-003 #3)*
+- [x] **PRIORITY-02**: Raising a *habit's* or an *outcome's* priority changes how it is allocated (more/earlier chunks), not just its sort order — priority's effect on the generated schedule is observable for all three goal types, not time-target only. *(SEED-003 #3)*
 - [ ] **PRIORITY-03**: Drag-reorder and the form's Low/Normal/High control write a single coherent priority model, so a goal's priority chip stays correct and visible after a drag (no goal silently losing its chip by landing at a mid-list ~0.5). *(SEED-003 #3)*
 
 ### Capacity Sharing (CAP)
 
-- [ ] **CAP-01**: When the discretionary cap is scarce (especially low mood), capacity is shared across goal types — habits cannot consume the entire cap before outcomes and time-targets are considered. *(SEED-001 #3)*
+- [x] **CAP-01**: When the discretionary cap is scarce (especially low mood), capacity is shared across goal types — habits cannot consume the entire cap before outcomes and time-targets are considered. *(SEED-001 #3)*
 
 ### Honest Streaks (STREAK)
 
@@ -30,8 +30,8 @@ Rule-based only — no LLM. Theme: make the scheduling engine tell the truth and
 
 ### Fill the Day (FILL)
 
-- [ ] **FILL-01**: When a day has open capacity after required work and habits are placed, regular-time (time-target) goals claim the leftover slots so an otherwise-empty day is filled with what matters — not left blank.
-- [ ] **FILL-02**: Open-capacity fill is distributed across regular-time goals by priority and bounded by the mood cap, so no single regular-time goal swallows the whole open day.
+- [x] **FILL-01**: When a day has open capacity after required work and habits are placed, regular-time (time-target) goals claim the leftover slots so an otherwise-empty day is filled with what matters — not left blank.
+- [x] **FILL-02**: Open-capacity fill is distributed across regular-time goals by priority and bounded by the mood cap, so no single regular-time goal swallows the whole open day.
 
 ### Goal Form Honesty (GOALFORM) — continues GOALFORM-01
 
@@ -58,10 +58,10 @@ Rule-based only — no LLM. Theme: make the scheduling engine tell the truth and
 |-------------|-------|--------|
 | NOW-01 | Phase 17 | pending |
 | NOW-02 | Phase 17 | pending |
-| PRIORITY-02 | Phase 15 | pending |
+| PRIORITY-02 | Phase 15 | Complete |
 | PRIORITY-03 | Phase 16 | pending |
-| CAP-01 | Phase 15 | pending |
+| CAP-01 | Phase 15 | Complete |
 | STREAK-01 | Phase 15 | pending |
-| FILL-01 | Phase 15 | pending |
-| FILL-02 | Phase 15 | pending |
+| FILL-01 | Phase 15 | Complete |
+| FILL-02 | Phase 15 | Complete |
 | GOALFORM-02 | Phase 16 | pending |

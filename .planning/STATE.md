@@ -2,14 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: An Honest Day
-status: planning
-last_updated: "2026-06-13"
-last_activity: 2026-06-13
+status: executing
+stopped_at: Completed 15-engine-honesty/15-01-PLAN.md
+last_updated: "2026-06-13T22:06:34.752Z"
+last_activity: 2026-06-13 -- Phase 15 execution started
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 2
+  completed_plans: 1
   percent: 0
 ---
 
@@ -17,16 +18,16 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-13
+**Last session:** 2026-06-13T22:06:34.749Z
 
 ---
 
 ## Current Position
 
-Phase: 15 of 17 (Engine Honesty — not started)
-Plan: —
-Status: Ready to plan Phase 15
-Last activity: 2026-06-13 — v1.3 roadmap created (3 phases, 9 requirements)
+Phase: 15 (Engine Honesty) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-06-13 -- Phase 15 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -35,7 +36,7 @@ Progress: [░░░░░░░░░░] 0%
 See: `.planning/PROJECT.md` (updated 2026-06-13)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** v1.3 Phase 15 — Engine Honesty
+**Current focus:** Phase 15 — Engine Honesty
 
 ## Accumulated Context
 
@@ -46,6 +47,10 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.3:
 - [Phase 14-02]: Priority drives composite score (remainingHours × priorityWeight) for time-targets; habit sort pre-filtered by priority. Both patterns extended in Phase 15.
 - [v1.3 scope]: Low-mood restorative floor (SEED-001 #2) deferred by owner — low days stay required + habits only.
 - [v1.3 baseline]: Several items pre-paid by 2026-06-13 dogfood commits: schedule starts near now, weekday-biased habit frequency, regular-time default 3 hrs/week, pace prompt removed, humane empty-day copy.
+- [Phase ?]: CAP-01: use ceil(cap/2) for habit ceiling
+- [Phase ?]: PRIORITY-02: flat +1 chunk for high-priority habits/outcomes on good-mood days
+- [Phase ?]: FILL-01/FILL-02: always-run round-robin Step 4 with isLowMood?1:demand per-goal cap
+- [Phase ?]: CLOSE-02 deferred carry-in intentionally bypasses habitCeiling — user-explicit deferral honored
 
 ### Blockers / Concerns
 
@@ -64,5 +69,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-06-13
-Stopped at: v1.3 roadmap written. Next: `/gsd-plan-phase 15`
+Stopped at: Completed 15-engine-honesty/15-01-PLAN.md
 Resume file: None
+
+## Performance Metrics
+
+| Phase | Plan | Duration | Notes |
+|-------|------|----------|-------|
+| Phase 15-engine-honesty P01 | 6 | 3 tasks | 2 files |
