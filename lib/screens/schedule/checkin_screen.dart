@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -41,10 +42,10 @@ class _CheckinScreenState extends State<CheckinScreen> {
   bool _scheduleGenerated = false;
   bool _isGenerating = false;
 
-  // CHECKIN-01: three new state fields added alongside existing ones.
-  // _generationDone drives the AnimatedSwitcher to the decision screen (Task 2).
   // _hoveredMoods / _pressedMoods drive luminance-adaptive hover/pressed visuals.
-  bool _generationDone = false;
+  // (The intermediate "light or full day" decision screen was removed — check-in
+  // now goes straight from mood → full-plan acknowledgment. A pace choice may
+  // return later, gated to low-mood days.)
   final Map<int, bool> _hoveredMoods = {};
   final Map<int, bool> _pressedMoods = {};
 
@@ -106,7 +107,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
         moodIndex: _selectedMood!,
         goals: goals,
         blocks: blocks,
-        lighterDay: false, // provisional — decision screen may regenerate
+        lighterDay: false, // full plan — no pace prompt
       );
 
       // Request iOS notification permission after first successful check-in.
@@ -115,48 +116,14 @@ class _CheckinScreenState extends State<CheckinScreen> {
 
       if (mounted) {
         setState(() {
-          _generationDone = true; // triggers AnimatedSwitcher → decision screen
+          // Straight to the acknowledgment — the decision screen is gone.
+          _scheduleGenerated = true;
           _isGenerating = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isGenerating = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Something went wrong. Please try again.'),
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _commitAndProceed({required bool lighterDay}) async {
-    try {
-      if (lighterDay) {
-        // Capture context-dependent values before the await gap (WR-02: explicit
-        // pre-capture protects against accidental context-after-await bugs in
-        // future refactors).
-        final scheduleNotifier = context.read<ScheduleNotifier>();
-        final goals = context.read<GoalsNotifier>().goals;
-        final blocks = context.read<CommitmentsNotifier>().blocks;
-        // Regenerate with lighter day — fast engine call; overwrites the
-        // provisional lighterDay:false schedule generated in _generate().
-        await scheduleNotifier.generateToday(
-          moodIndex: _selectedMood!,
-          goals: goals,
-          blocks: blocks,
-          lighterDay: true,
-        );
-      }
-      // else: reuse the schedule already generated in _generate() (lighterDay: false).
-      if (mounted) {
-        setState(() => _scheduleGenerated = true);
-      }
-    } catch (e) {
-      // CR-02: surface errors from generateToday to the user instead of silently
-      // dropping them into the Flutter zone error handler.
-      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Something went wrong. Please try again.'),
@@ -176,6 +143,14 @@ class _CheckinScreenState extends State<CheckinScreen> {
         .where((c) => c.chunkType == ChunkType.work)
         .toList();
     final count = workChunks.length;
+    // A 0-chunk day is legitimate (nothing due today — e.g. a non-daily habit
+    // on an off-day, or no discretionary goals yet). Without a dedicated copy
+    // path the user saw "… 0 chunks." which reads like a failure. Reassure
+    // instead and point them at adding goals.
+    if (count == 0) {
+      return '$prefix Nothing’s due today — your slate is clear. '
+          'Add a goal or habit anytime to fill it.';
+    }
     // Prefer the goal's real name over the raw rationale label ("Habit");
     // commitment chunks (no goalId) fall back to the block name.
     final firstName = workChunks.isNotEmpty
@@ -230,8 +205,6 @@ class _CheckinScreenState extends State<CheckinScreen> {
         duration: const Duration(milliseconds: 300),
         child: _scheduleGenerated
             ? _buildAcknowledgmentBody(context)
-            : _generationDone
-            ? _buildDecisionBody(context)
             : _buildCheckinBody(context),
       ),
     );
@@ -348,68 +321,6 @@ class _CheckinScreenState extends State<CheckinScreen> {
     );
   }
 
-  Widget _buildDecisionBody(BuildContext context) {
-    final onBg = _onBgColor;
-    return Container(
-      key: const ValueKey('decision'),
-      width: double.infinity,
-      height: double.infinity,
-      color: _backgroundColor,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Ready to start?',
-                    style: TextStyle(
-                      color: onBg,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Choose your pace for today',
-                    style: TextStyle(color: onBg.withAlpha(179), fontSize: 14),
-                  ),
-                  const SizedBox(height: 32),
-                  _LighterDayCard(
-                    icon: Icons.bolt_outlined,
-                    title: 'Full day',
-                    subtitle: 'Push forward with your complete plan',
-                    onBgColor: onBg,
-                    onTap: () => _commitAndProceed(lighterDay: false),
-                  ),
-                  const SizedBox(height: 12),
-                  _LighterDayCard(
-                    icon: Icons.self_improvement_outlined,
-                    title: 'Lighter day',
-                    subtitle: 'A gentler pace — fewer chunks, lower stakes',
-                    onBgColor: onBg,
-                    onTap: () => _commitAndProceed(lighterDay: true),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => setState(() => _generationDone = false),
-                    child: Text(
-                      'Go back',
-                      style: TextStyle(color: onBg.withAlpha(179)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildAcknowledgmentBody(BuildContext context) {
     final schedule = context.watch<ScheduleNotifier>().todaySchedule;
     final mood = _selectedMood ?? 3;
@@ -422,146 +333,69 @@ class _CheckinScreenState extends State<CheckinScreen> {
         ? _buildAckText(schedule, mood, goals)
         : '';
 
-    return GestureDetector(
-      key: const ValueKey('acknowledgment'),
-      behavior: HitTestBehavior.opaque,
-      onVerticalDragEnd: (details) {
-        if (details.primaryVelocity != null &&
-            details.primaryVelocity! < -300) {
-          Navigator.of(context).pop();
-        }
+    // "Begin" is reachable three ways so it works across input devices:
+    //   • swipe up (touch / mouse drag) — original gesture
+    //   • tap / click anywhere — desktop & accidental-proof since this screen's
+    //     only action is "begin"
+    //   • two-finger / wheel scroll up — trackpad users who can't flick a drag
+    // On desktop a velocity-thresholded vertical drag almost never fires
+    // (mouse/trackpad don't produce a -300 primaryVelocity), so without the
+    // tap/scroll fallbacks the screen was a dead end on PC.
+    void begin() => Navigator.of(context).pop();
+
+    return Listener(
+      onPointerSignal: (event) {
+        if (event is PointerScrollEvent && event.scrollDelta.dy < -8) begin();
       },
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        color: bgColor,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  _moodEmojis[mood] ?? '⛅',
-                  style: const TextStyle(fontSize: 72),
-                ),
-                const SizedBox(height: 32),
-                Text(
-                  ackText,
-                  textAlign: TextAlign.center,
-                  // CHECKIN-01: _onBgColor replaces hardcoded Colors.white to
-                  // pass WCAG AA on light backgrounds (moods 4 and 5).
-                  style: TextStyle(
-                    color: _onBgColor,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w500,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 48),
-                Text(
-                  'Swipe up to begin',
-                  style: TextStyle(
-                    // CHECKIN-01: _onBgColor replaces hardcoded Colors.white.
-                    color: _onBgColor.withAlpha(179), // ~70% opacity
-                    fontSize: 14,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// _LighterDayCard — private StatefulWidget for lighter-day choice cards.
-// Used only in _buildDecisionBody. Provides AnimatedScale press feedback,
-// MouseRegion hover states, and GestureDetector tap handling (CHECKIN-02).
-// ---------------------------------------------------------------------------
-
-class _LighterDayCard extends StatefulWidget {
-  const _LighterDayCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onBgColor,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color onBgColor;
-  final VoidCallback onTap;
-
-  @override
-  State<_LighterDayCard> createState() => _LighterDayCardState();
-}
-
-class _LighterDayCardState extends State<_LighterDayCard> {
-  bool _pressed = false;
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapUp: (_) {
-          // Pitfall 5: setState first, then invoke onTap so the press visual
-          // clears before the parent setState (schedule change) rebuilds.
-          setState(() => _pressed = false);
-          widget.onTap();
+        key: const ValueKey('acknowledgment'),
+        behavior: HitTestBehavior.opaque,
+        onTap: begin,
+        onVerticalDragEnd: (details) {
+          if (details.primaryVelocity != null &&
+              details.primaryVelocity! < -300) {
+            begin();
+          }
         },
-        onTapCancel: () => setState(() => _pressed = false),
-        child: AnimatedScale(
-          scale: _pressed ? 0.97 : 1.0,
-          duration: const Duration(milliseconds: 80),
-          curve: Curves.easeOut,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: widget.onBgColor.withAlpha(_hovered ? 153 : 77),
-                width: 1.5,
-              ),
-              color: widget.onBgColor.withAlpha(_hovered ? 38 : 26),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Icon(widget.icon, color: widget.onBgColor, size: 28),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.title,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: widget.onBgColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.subtitle,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: widget.onBgColor.withAlpha(179),
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: bgColor,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _moodEmojis[mood] ?? '⛅',
+                    style: const TextStyle(fontSize: 72),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 32),
+                  Text(
+                    ackText,
+                    textAlign: TextAlign.center,
+                    // CHECKIN-01: _onBgColor replaces hardcoded Colors.white to
+                    // pass WCAG AA on light backgrounds (moods 4 and 5).
+                    style: TextStyle(
+                      color: _onBgColor,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w500,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+                  Text(
+                    'Tap or swipe up to begin',
+                    style: TextStyle(
+                      // CHECKIN-01: _onBgColor replaces hardcoded Colors.white.
+                      color: _onBgColor.withAlpha(179), // ~70% opacity
+                      fontSize: 14,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

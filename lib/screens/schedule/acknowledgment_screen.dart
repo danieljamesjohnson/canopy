@@ -49,6 +49,12 @@ class AcknowledgmentScreen extends StatelessWidget {
         .where((c) => c.chunkType == ChunkType.work)
         .toList();
     final count = workChunks.length;
+    // A 0-chunk day is legitimate (nothing due today). Reassure rather than
+    // showing "… 0 chunks.", which reads like a failure.
+    if (count == 0) {
+      return '$prefix Nothing’s due today — your slate is clear. '
+          'Add a goal or habit anytime to fill it.';
+    }
     // Prefer the goal's real name ("vibe code") over the raw rationale label
     // ("Habit"); commitment chunks (no goalId) fall back to the block name.
     final firstName = workChunks.isNotEmpty
