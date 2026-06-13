@@ -660,17 +660,17 @@ This phase is a behavior fix phase, not a rename/migration. No stored data, serv
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Outcome multi-chunk demand (PRIORITY-02)**
    - What we know: success criterion says "raising an outcome's priority increases its chunk allocation relative to a lower-priority outcome."
    - What's unclear: outcomes currently get 1 chunk with no concept of "demand" (unlike time-targets which have `_demandForTimeTarget`). Should high-priority outcomes get a flat +1 chunk, or should outcomes have a demand model based on deadline proximity?
-   - Recommendation: flat +1 for high priority (same as habits) — keeps it simple and observable. A deadline-aware demand model is over-engineering for Phase 15.
+   - RESOLVED: flat +1 for high priority (same as habits) — keeps it simple and observable. A deadline-aware demand model is over-engineering for Phase 15.
 
 2. **Interaction: CAP-01 ceiling + PRIORITY-02 double-chunks**
    - What we know: habit ceiling is `(cap/2).ceil()`. A high-priority habit takes 2 slots. With cap=4 and ceiling=2, two high-priority habits would hit the ceiling immediately, leaving 0 slots for more habits.
    - What's unclear: is it acceptable that only 1 high-priority habit fits in a ceiling=2 slot budget?
-   - Recommendation: yes, acceptable. The ceiling exists precisely to ensure outcomes get slots. A user with 3 high-priority habits on a mood=1 day should expect a constrained schedule.
+   - RESOLVED: yes, acceptable. The ceiling exists precisely to ensure outcomes get slots. A user with 3 high-priority habits on a mood=1 day should expect a constrained schedule.
 
 ---
 
