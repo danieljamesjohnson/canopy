@@ -642,13 +642,13 @@ await tester.pumpAndSettle();
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should the two `setSurfaceSize` tests be deleted in-place or replaced in-place?**
    - What we know: both tests cover real assertions (High saves 0.75; 3-hr default saves 3.0).
    - What's unclear: whether to keep the assertions in the new modal-height tests or
      separately verify them without `setSurfaceSize`.
-   - Recommendation: Replace in-place. The new modal-height tests should also assert that
+   - RESOLVED: Replace in-place. The new modal-height tests should also assert that
      tapping High and saving persists 0.75, so no assertion coverage is lost.
 
 2. **Is there any case where the Consumer stale-chip bug could manifest?**
@@ -656,7 +656,7 @@ await tester.pumpAndSettle();
      sound (no local state or stale captures).
    - What's unclear: whether `ReorderableListView`'s internal state machine could hold a
      stale widget tree during or after drag gesture.
-   - Recommendation: The PRIORITY-03 widget test covers this by asserting chip state after
+   - RESOLVED: The PRIORITY-03 widget test covers this by asserting chip state after
      `pumpAndSettle()` post-reorder. If the test passes, the rebuild path is confirmed.
 
 ---
