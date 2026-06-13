@@ -246,6 +246,9 @@ class ScheduleGeneratorService {
     // -------------------------------------------------------------------------
     // Step 2: Habits — scheduled on due weekdays only; streak from logs.
     // Priority-sorted so high-priority habits fill cap before low-priority.
+    // CAP-01: habits may not consume more than ceil(cap/2) slots so outcomes
+    // and time-targets always receive capacity on low-mood days.
+    // PRIORITY-02: high-priority habits get 2 chunks on good-mood days.
     // -------------------------------------------------------------------------
     final activeGoals = goals.where((g) => !g.isArchived).toList();
 
@@ -255,8 +258,18 @@ class ScheduleGeneratorService {
               (b.priorityWeight ?? 0.5).compareTo(a.priorityWeight ?? 0.5),
         );
 
+    // CAP-01: ceiling on habit slots ensures outcomes and time-targets get capacity.
+    final int habitCeiling = (cap / 2).ceil();
+    int habitCount = 0;
+
+    // PRIORITY-02: high-priority habits get 2 chunks on good-mood days.
+    // On low-mood days all habits get 1 chunk regardless of priority.
+    int habitDemand(Goal g) =>
+        (!isLowMood && (g.priorityWeight ?? 0.5) >= 0.75) ? 2 : 1;
+
     for (final goal in habitGoals) {
       if (discretionaryCount >= cap) break;
+      if (habitCount >= habitCeiling) break; // CAP-01 type ceiling
       final effectiveFreq = goal.frequencyPerWeek ?? 7;
       final dueWeekdays = computeDueWeekdays(effectiveFreq);
       if (!dueWeekdays.contains(date.weekday)) continue; // not due today
@@ -266,15 +279,21 @@ class ScheduleGeneratorService {
         completionLogs,
         today: date,
       );
-      workChunks.add(
-        ScheduledChunk(
-          chunkTypeIndex: ChunkType.work.index,
-          goalId: goal.id,
-          durationMinutes: 25,
-          rationale: _habitRationale(goal, streak),
-        ),
-      );
-      discretionaryCount++;
+      final demand = habitDemand(goal);
+      for (int i = 0; i < demand; i++) {
+        if (discretionaryCount >= cap) break;
+        if (habitCount >= habitCeiling) break;
+        workChunks.add(
+          ScheduledChunk(
+            chunkTypeIndex: ChunkType.work.index,
+            goalId: goal.id,
+            durationMinutes: 25,
+            rationale: _habitRationale(goal, streak),
+          ),
+        );
+        discretionaryCount++;
+        habitCount++;
+      }
     }
 
     // -------------------------------------------------------------------------

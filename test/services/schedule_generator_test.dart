@@ -185,7 +185,8 @@ void main() {
   test(
     'Test 6: mood=3 break pattern with 4 work chunks (trailing break trimmed)',
     () {
-      // Use 4 habits to generate exactly 4 work chunks
+      // Use 4 habits to generate exactly 4 work chunks.
+      // lighterDay: false → cap=8, habitCeiling=4 (CAP-01), so all 4 habits fit.
       final goals = List.generate(4, (i) => makeHabit(name: 'Habit $i'));
       final result = sut.generate(
         goals: goals,
@@ -193,6 +194,7 @@ void main() {
         moodIndex: 3,
         date: monday,
         completionLogs: [],
+        lighterDay: false,
       );
       // Verify chunk order: W SB W SB W SB W (trailing long break trimmed)
       expect(result.length, 7);
@@ -213,8 +215,10 @@ void main() {
   // READ-02: no dangling trailing break on the final work chunk.
   // ---------------------------------------------------------------------------
   test(
-    'Test 7: mood=1 break pattern with 3 work chunks (trailing break trimmed)',
+    'Test 7: mood=1 break pattern with 2 work chunks (trailing break trimmed)',
     () {
+      // At mood=1, habitCeiling=ceil(4/2)=2 (CAP-01), so 3 habits produces 2 chunks.
+      // Verify chunk order: W SB W (trailing short break trimmed — READ-02).
       final goals = List.generate(3, (i) => makeHabit(name: 'Habit $i'));
       final result = sut.generate(
         goals: goals,
@@ -223,13 +227,11 @@ void main() {
         date: monday,
         completionLogs: [],
       );
-      // Verify chunk order: W SB W SB W (trailing long break trimmed — READ-02)
-      expect(result.length, 5);
+      // With CAP-01 ceiling=2: only 2 habit chunks placed. Pattern: W SB W.
+      expect(result.length, 3);
       expect(result[0].chunkType, ChunkType.work);
       expect(result[1].chunkType, ChunkType.shortBreak);
       expect(result[2].chunkType, ChunkType.work);
-      expect(result[3].chunkType, ChunkType.shortBreak);
-      expect(result[4].chunkType, ChunkType.work);
       // Trailing break was trimmed (READ-02)
       expect(result.last.chunkType, ChunkType.work);
     },
@@ -490,14 +492,20 @@ void main() {
   test(
     'WR-01: emitted long break matches reserved slot — no overlapping synthetic times',
     () {
-      // 6 habits at mood 3 (longBreakEvery=4). The break after chunk 4 is long.
-      final goals = List.generate(6, (i) => makeHabit(name: 'Habit $i'));
+      // 4 habits + 1 time-target goal at mood=3, lighterDay=false (cap=8, ceiling=4).
+      // Habits fill the ceiling (4 chunks), then the time-target adds 1+ chunks.
+      // With 5+ chunks and longBreakEvery=4, the break after chunk 4 is long (25 min).
+      final goals = [
+        ...List.generate(4, (i) => makeHabit(name: 'Habit $i')),
+        makeTimeTarget(name: 'Regular', weeklyHourBudget: 5),
+      ];
       final result = sut.generate(
         goals: goals,
         blocks: [],
         moodIndex: 3,
         date: monday,
         completionLogs: [],
+        lighterDay: false,
       );
 
       // No chunk's [start, start+duration) may overlap the next chunk's start.
