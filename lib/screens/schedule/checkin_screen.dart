@@ -126,19 +126,37 @@ class _CheckinScreenState extends State<CheckinScreen> {
   }
 
   Future<void> _commitAndProceed({required bool lighterDay}) async {
-    if (lighterDay) {
-      // Regenerate with lighter day — fast engine call; overwrites the
-      // provisional lighterDay:false schedule generated in _generate().
-      await context.read<ScheduleNotifier>().generateToday(
-        moodIndex: _selectedMood!,
-        goals: context.read<GoalsNotifier>().goals,
-        blocks: context.read<CommitmentsNotifier>().blocks,
-        lighterDay: true,
-      );
-    }
-    // else: reuse the schedule already generated in _generate() (lighterDay: false).
-    if (mounted) {
-      setState(() => _scheduleGenerated = true);
+    try {
+      if (lighterDay) {
+        // Capture context-dependent values before the await gap (WR-02: explicit
+        // pre-capture protects against accidental context-after-await bugs in
+        // future refactors).
+        final scheduleNotifier = context.read<ScheduleNotifier>();
+        final goals = context.read<GoalsNotifier>().goals;
+        final blocks = context.read<CommitmentsNotifier>().blocks;
+        // Regenerate with lighter day — fast engine call; overwrites the
+        // provisional lighterDay:false schedule generated in _generate().
+        await scheduleNotifier.generateToday(
+          moodIndex: _selectedMood!,
+          goals: goals,
+          blocks: blocks,
+          lighterDay: true,
+        );
+      }
+      // else: reuse the schedule already generated in _generate() (lighterDay: false).
+      if (mounted) {
+        setState(() => _scheduleGenerated = true);
+      }
+    } catch (e) {
+      // CR-02: surface errors from generateToday to the user instead of silently
+      // dropping them into the Flutter zone error handler.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Something went wrong. Please try again.'),
+          ),
+        );
+      }
     }
   }
 
