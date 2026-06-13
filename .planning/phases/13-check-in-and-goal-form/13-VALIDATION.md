@@ -39,10 +39,9 @@ created: 2026-06-13
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
 | 13-01-01 | 01 | 1 | CHECKIN-01 | — | N/A | unit | `flutter test test/screens/checkin_screen_test.dart` | ❌ W0 | ⬜ pending |
-| 13-01-02 | 01 | 1 | CHECKIN-01 | — | N/A | manual | hover highlight on MouseRegion enter (pointer event) | ❌ W0 | ⬜ pending |
-| 13-02-01 | 02 | 2 | CHECKIN-02 | — | N/A | widget | `flutter test test/screens/checkin_screen_widget_test.dart` | ❌ W0 | ⬜ pending |
-| 13-02-02 | 02 | 2 | CHECKIN-02 | — | N/A | widget | `flutter test test/screens/checkin_screen_widget_test.dart` | ❌ W0 | ⬜ pending |
-| 13-03-01 | 03 | 3 | GOALFORM-01 | — | N/A | widget | `flutter test test/widgets/goal_type_picker_test.dart` | ❌ W0 | ⬜ pending |
+| 13-01-01b | 01 | 1 | CHECKIN-01 | — | N/A | manual | hover/pressed highlight on MouseRegion enter (pointer event) | n/a | ⬜ pending |
+| 13-01-02 | 01 | 1 | CHECKIN-02 | — | N/A | widget | `flutter test test/screens/checkin_screen_widget_test.dart` | ❌ W0 | ⬜ pending |
+| 13-02-01 | 02 | 1 | GOALFORM-01 | — | N/A | widget | `flutter test test/widgets/goal_type_picker_test.dart` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
