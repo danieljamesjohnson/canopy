@@ -47,7 +47,7 @@ Exceptions:
 - Chunk card left bar: 4dp (existing — retain).
 - Card border radius: 12dp (all cards, existing — retain).
 - Drag handle icon touch target: minimum 44dp tall × 44dp wide (must meet this via `Padding` wrapping the icon even on desktop).
-- Priority chip (new): height 20dp, horizontal padding 6dp each side (total 12dp wide per chip; content is 12sp label).
+- Priority chip (new): height ~24dp, horizontal padding 8dp each side, vertical padding 4dp, icon-to-label gap 4dp (all multiples of 4; content is 12sp label).
 - Screen header section (new): `Padding(fromLTRB(16, 16, 16, 8))` for the heading row.
 
 ---
@@ -60,19 +60,21 @@ Inherited from Phase 13 UI-SPEC. Phase 14 additions:
 |------|----------------------|------|--------|-------------|
 | Heading | `titleMedium` | 16sp | w600 | 1.4 |
 | Body | `bodyMedium` | 14sp | w400 | 1.5 |
-| Label | `bodySmall` / `labelMedium` | 12sp | w400–w500 | 1.4 |
+| Label | `bodySmall` / `labelMedium` | 12sp | w400 | 1.4 |
 | Display | `titleLarge` | 22sp | w400 | 1.2 |
+
+Two weights only: w400 (body, label, display) and w600 (heading/emphasis, priority chip badge).
 
 Phase 14 specific:
 
 - **Goals screen AppBar title**: `titleLarge` 22sp w400 via `AppBar(title: Text('Goals'))` — existing, retain.
 - **Goals screen heading/subhead** (new — required by GOALS-01): `titleMedium` 16sp w600, `colorScheme.onSurface`. Placed above the goal list sections inside the scroll view.
 - **Goals screen section labels** ("Regular time", "Working toward", "Daily habits"): `titleSmall` in `colorScheme.primary` (existing — retain).
-- **Priority chip label** (new — GOALS-02): `labelMedium` 12sp w500. Color varies by priority tier (see §Priority Visual Language).
+- **Priority chip label** (new — GOALS-02): `labelMedium` 12sp w600. Color varies by priority tier (see §Priority Visual Language).
 - **Goal card name**: `titleMedium` (16sp w400) — existing, retain.
 - **Goal card secondary stat**: `bodySmall` (12sp w400) — existing, retain.
 - **Chunk card goal name**: `titleMedium` w600 (16sp) — existing, retain.
-- **Chunk card priority badge label** (new — GOALS-02 / PRIORITY-01): same as priority chip: `labelMedium` 12sp w500.
+- **Chunk card priority badge label** (new — GOALS-02 / PRIORITY-01): same as priority chip: `labelMedium` 12sp w600.
 
 ---
 
@@ -107,7 +109,7 @@ Design rationale: Normal priority is the default for every goal. Showing a chip 
 
 ```
 Container(
-  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
   decoration: BoxDecoration(
     color: chipColor,          // tier-specific from table above
     borderRadius: BorderRadius.circular(10),
@@ -116,17 +118,17 @@ Container(
     mainAxisSize: MainAxisSize.min,
     children: [
       Icon(icon, size: 12, color: onColor),
-      SizedBox(width: 3),
+      SizedBox(width: 4),
       Text(label, style: textTheme.labelSmall?.copyWith(
         color: onColor,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w600,
       )),
     ],
   ),
 )
 ```
 
-Chip height with 2dp vertical padding + 12sp text = approximately 20dp. Meets no minimum-tap-target requirement because chips are not interactive (display only).
+Chip height with 4dp vertical padding + 12sp text = approximately 24dp. Meets no minimum-tap-target requirement because chips are not interactive (display only).
 
 **Priority chip placement in GoalCard:**
 
@@ -158,7 +160,7 @@ Wait — the status icon already occupies the top-right. Do NOT stack the priori
 ```
 // After clock-time text in _WorkChunkContent's inner Column:
 if (priorityLabel != null) ...[
-  SizedBox(height: 2),
+  SizedBox(height: 4),
   _PriorityChip(label: priorityLabel, chipColor: chipColor, onColor: onColor, icon: icon),
 ]
 ```
@@ -454,7 +456,7 @@ Extract as a private widget `_PriorityChip` with parameters: `double priorityWei
 - In the inner `Column`, after the clock-time/rationale rows, add:
   ```
   if (goalPriorityWeight != null && goalPriorityWeight != 0.5) ...[
-    SizedBox(height: 2),
+    SizedBox(height: 4),
     _PriorityChip(priorityWeight: goalPriorityWeight),
   ]
   ```
