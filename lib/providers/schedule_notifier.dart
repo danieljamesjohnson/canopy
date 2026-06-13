@@ -149,6 +149,9 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     for (final goal in goals.where((g) => !g.isArchived && g.goalType == GoalType.habit)) {
       try {
         final due = ScheduleGeneratorService.computeDueWeekdays(goal.frequencyPerWeek ?? 7);
+        // allLogs already contains only entries for goals in this loop (built
+        // via getByGoalId above), but re-filter defensively in case the
+        // log-fetch strategy changes and allLogs starts containing mixed entries.
         final logsForGoal = allLogs.where((l) => l.goalId == goal.id).toList();
         final computed = ScheduleGeneratorService.computeStreak(
           goal.id,
