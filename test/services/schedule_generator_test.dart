@@ -975,12 +975,14 @@ void main() {
   });
 
   test('Step 4: high-priority goal gets at least as many chunks as low-priority under shared cap', () {
-    // weeklyHourBudget=12h → demand = ceil(12*60/25/7) = 5 chunks each.
-    // moodIndex=3 → cap=8. Two goals × 5 > 8, so cap is genuinely binding.
-    // High TT (0.75) scores 12*0.75=9.0 and is sorted first — gets 5 chunks.
-    // Low TT (0.25) scores 12*0.25=3.0 and is sorted second — gets only 3.
-    // If priority ordering were removed, low would go first and high would lose
-    // slots — the greaterThan assertion below would fail (3 > 5 is false).
+    // weeklyHourBudget=12h → demand = min(ceil(12*60/25/7), 4) = min(5, 4) = 4 chunks each.
+    // (The per-goal daily cap in _demandForTimeTarget is 4.)
+    // moodIndex=3 + lighterDay=true → effective cap = moodCap[2] = 6 (one tier lower).
+    // Two goals × 4 demand = 8 > cap 6, so cap is genuinely binding.
+    // High TT composite score = 12.0 * 0.75 = 9.0 → sorted first → gets 4 chunks (6-4=2 left).
+    // Low TT composite score  = 12.0 * 0.25 = 3.0 → sorted second → gets 2 chunks.
+    // If priority ordering were removed, low would go first and high would get 2.
+    // The greaterThan assertion below would fail (2 > 4 is false) — genuinely non-trivial.
     final highTT = makeTimeTarget(
       name: 'High TT',
       weeklyHourBudget: 12.0,
@@ -993,12 +995,12 @@ void main() {
     );
 
     final result = sut.generate(
-      goals: [lowTT, highTT], // intentionally low first — engine must reorder
+      goals: [lowTT, highTT], // intentionally low first — engine must reorder by score
       blocks: [],
-      moodIndex: 3, // mood 3+ required — Step 4 is disabled at mood 1-2
+      moodIndex: 3,  // mood 3+ required — Step 4 is disabled at mood 1-2
       date: monday,
       completionLogs: [],
-      lighterDay: false,
+      lighterDay: true, // drops cap to tier-2 (6), making combined demand (8) binding
     );
     final highCount = result
         .where((c) => c.chunkType == ChunkType.work && c.goalId == highTT.id)
@@ -1006,12 +1008,13 @@ void main() {
     final lowCount = result
         .where((c) => c.chunkType == ChunkType.work && c.goalId == lowTT.id)
         .length;
-    // With cap=8 and demand=5 each: high gets 5, low gets 3.
+    // With effective cap=6 and demand=4 each: high gets 4, low gets 2.
     // greaterThan (not greaterThanOrEqualTo) ensures the test is not trivially
-    // satisfied when both counts are equal (e.g. if Step 4 never ran).
+    // satisfied when both counts are equal (i.e., when Step 4 never ran or
+    // priority ordering had no effect).
     expect(highCount, greaterThan(lowCount),
       reason: 'High-priority goal (score 9.0) must win more cap slots than '
-              'low-priority goal (score 3.0) when total demand exceeds cap');
+              'low-priority goal (score 3.0) when total demand exceeds the effective cap');
   });
 
   test(
