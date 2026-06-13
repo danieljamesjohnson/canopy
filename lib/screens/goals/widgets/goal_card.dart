@@ -75,6 +75,7 @@ class _GoalCardState extends State<GoalCard> {
         : theme.colorScheme.primary;
     final secondary = _secondaryLine(goal);
     final showHoverIcons = widget.trailing == null;
+    final showPriorityChip = (goal.priorityWeight ?? 0.5) != 0.5;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -155,9 +156,25 @@ class _GoalCardState extends State<GoalCard> {
                                 ),
                             ],
                           ),
-                          if (secondary != null) ...[
+                          // Priority chip integration in secondary row (GOALS-02)
+                          if (secondary != null || showPriorityChip) ...[
                             const SizedBox(height: 4),
-                            Text(secondary, style: theme.textTheme.bodySmall),
+                            Row(
+                              children: [
+                                if (secondary != null)
+                                  Expanded(
+                                    child: Text(
+                                      secondary,
+                                      style: theme.textTheme.bodySmall,
+                                    ),
+                                  ),
+                                if (showPriorityChip)
+                                  _PriorityChip(
+                                    priorityWeight:
+                                        goal.priorityWeight ?? 0.5,
+                                  ),
+                              ],
+                            ),
                           ],
                         ],
                       ),
@@ -199,6 +216,64 @@ class _GoalCardState extends State<GoalCard> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// File-private priority chip widget for GoalCard (GOALS-02).
+///
+/// Renders a colored container chip with an icon and label for Low (0.25) and
+/// High (0.75) priority tiers. Returns [SizedBox.shrink] for Normal (0.5) or
+/// any value between 0.25 and 0.75. Display-only — no tap handlers.
+class _PriorityChip extends StatelessWidget {
+  const _PriorityChip({required this.priorityWeight});
+
+  final double priorityWeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final IconData icon;
+    final Color chipColor;
+    final Color onColor;
+    final String label;
+
+    if (priorityWeight >= 0.75) {
+      icon = Icons.arrow_upward;
+      chipColor = colorScheme.primaryContainer;
+      onColor = colorScheme.onPrimaryContainer;
+      label = 'High';
+    } else if (priorityWeight <= 0.25) {
+      icon = Icons.arrow_downward;
+      chipColor = colorScheme.surfaceContainerHighest;
+      onColor = colorScheme.onSurfaceVariant;
+      label = 'Low';
+    } else {
+      return const SizedBox.shrink(); // Normal (0.5) — no chip
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: chipColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: onColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: textTheme.labelMedium?.copyWith(
+              color: onColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
