@@ -27,8 +27,8 @@ Rule-based only — no LLM. All requirements are user-observable capabilities th
 
 ### Goals Screen (GOALS)
 
-- [ ] **GOALS-01**: The Goals screen makes its purpose explicit as a prioritization view — what your goals are and how focused you are — with an obvious reorder affordance.
-- [ ] **GOALS-02**: A goal's priority (low / normal / high) has a clear, consistent visual language that reads correctly and distinctly at each level.
+- [x] **GOALS-01**: The Goals screen makes its purpose explicit as a prioritization view — what your goals are and how focused you are — with an obvious reorder affordance.
+- [x] **GOALS-02**: A goal's priority (low / normal / high) has a clear, consistent visual language that reads correctly and distinctly at each level.
 
 ### Check-in (CHECKIN)
 
@@ -75,8 +75,8 @@ Other deferred:
 | GOALFORM-01 | Phase 13 | Complete |
 | CHECKIN-01 | Phase 13 | Complete |
 | CHECKIN-02 | Phase 13 | Complete |
-| GOALS-01 | Phase 14 | Pending |
-| GOALS-02 | Phase 14 | Pending |
+| GOALS-01 | Phase 14 | Complete |
+| GOALS-02 | Phase 14 | Complete |
 | PRIORITY-01 | Phase 14 | Pending |
 
 ---

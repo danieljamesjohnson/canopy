@@ -698,13 +698,13 @@ Plans:
   3. Elevating a goal from low to high priority and regenerating the schedule produces measurably more or earlier chunks for that goal — the change is observable by the user without inspecting code.
   4. Lowering a goal from high to low priority and regenerating produces fewer or later chunks — the effect is symmetric and consistent.
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 
 **Wave 1** *(parallel — file-disjoint: 14-01 owns lib/screens/goals/, 14-02 owns lib/services/ + lib/screens/schedule/ + lib/screens/home/widgets/)*
 
-- [ ] 14-01-PLAN.md — Goals screen redesign: "Your goals" heading, Icons.drag_indicator (desktop + mobile), reorder-writes-priority, _PriorityChip on goal cards (GOALS-01, GOALS-02 goal-card half)
+- [x] 14-01-PLAN.md — Goals screen redesign: "Your goals" heading, Icons.drag_indicator (desktop + mobile), reorder-writes-priority, _PriorityChip on goal cards (GOALS-01, GOALS-02 goal-card half)
 - [ ] 14-02-PLAN.md — Priority engine (Step 2 habit sort + Step 4 composite score) + priority badge on schedule chunk cards (PRIORITY-01, GOALS-02 chunk-card half)
 
 **UI hint**: yes
@@ -717,7 +717,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 12. Home as Landing, Schedule as Plan | 3/3 | Complete   | 2026-06-12 |
 | 13. Check-in and Goal Form | 2/2 | Complete   | 2026-06-13 |
-| 14. Goals Screen and Priority End-to-End | 0/2 | Planned | - |
+| 14. Goals Screen and Priority End-to-End | 1/2 | In Progress|  |
 
 ---
 
