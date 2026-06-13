@@ -8,10 +8,11 @@
 //   5. Control is visible for every goal type (not inside a type guard).
 //
 // GOALFORM-02 (Phase 16 Plan 01):
-//   Replaces two setSurfaceSize(800,1200) tests with true-modal-height tests
-//   at 390x844 viewport / initialChildSize 0.6 — covering time-target, outcome,
+//   Replaces two setSurfaceSize(800,1200) tests with constrained-modal-height tests
+//   at 390x844 viewport / initialChildSize 0.5 — covering time-target, outcome,
 //   AND habit goals, and folding in the High-saves-0.75 and 3-hr-default
-//   assertions so no coverage is lost.
+//   assertions so no coverage is lost. initialChildSize 0.5 (422pt) forces ALL
+//   three goal types to require real scrolling to reach Priority and Save.
 
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/repositories/goal_repository.dart';
@@ -89,7 +90,12 @@ Future<_InMemoryGoalRepository> _pumpForm(
 }
 
 /// Opens GoalFormSheet inside a real showModalBottomSheet + DraggableScrollableSheet
-/// at the true modal height (390x844 viewport, initialChildSize 0.6).
+/// at a constrained modal height (390x844 viewport, initialChildSize 0.5).
+///
+/// initialChildSize 0.5 → modal height = 844 * 0.5 = 422pt. This is small
+/// enough that ALL three goal types (time-target, outcome, habit) require real
+/// scrolling to reach the Priority selector and Save button, so every
+/// scrollUntilVisible call in GOALFORM-02 does genuine work.
 ///
 /// Returns the [_InMemoryGoalRepository] so callers can assert on [lastSaved].
 /// [setViewport] auto-registers teardown — caller must NOT add another teardown.
@@ -117,12 +123,12 @@ Future<_InMemoryGoalRepository> _pumpModal(WidgetTester tester) async {
     isScrollControlled: true,
     useSafeArea: true,
     builder: (_) => DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
+      initialChildSize: 0.5,
+      minChildSize: 0.3,
       maxChildSize: 1.0,
       expand: false,
       snap: true,
-      snapSizes: const [0.6, 1.0],
+      snapSizes: const [0.5, 1.0],
       builder: (_, sc) => GoalFormSheet(scrollController: sc),
     ),
   );
@@ -246,17 +252,19 @@ void main() {
   //
   // Replaces the two deprecated setSurfaceSize(800,1200) tests.
   // All tests pump GoalFormSheet inside a real showModalBottomSheet +
-  // DraggableScrollableSheet at initialChildSize 0.6 on a 390x844 viewport.
-  // Modal height = 844 * 0.6 = 506.4pt.
+  // DraggableScrollableSheet at initialChildSize 0.5 on a 390x844 viewport.
+  // Modal height = 844 * 0.5 = 422pt.
   //
-  // For the outcome goal, content height (~692px) > modal height (506px),
-  // so real scrolling is required to reach Priority and Save — validating
-  // that the test does actual work rather than finding widgets already on-screen.
+  // initialChildSize 0.5 is small enough that ALL three goal types require
+  // real scrolling to reach Priority and Save — so scrollUntilVisible does
+  // genuine work for every variant, not just outcome. Tests in this group
+  // would fail if Priority or Save were clipped or missing from the scroll
+  // extent entirely.
   // ---------------------------------------------------------------------------
   group('GOALFORM-02 — true modal height contract', () {
     testWidgets(
       'time-target goal: Priority selector and Save reachable via scroll '
-      'at true modal height (390x844 / initialChildSize 0.6)',
+      'at constrained modal height (390x844 / initialChildSize 0.5)',
       (tester) async {
         await _pumpModal(tester);
 
@@ -270,9 +278,10 @@ void main() {
         // Type parameter required — find.byType(SegmentedButton) without <double>
         // does not match (16-RESEARCH.md Pitfall 6).
         //
-        // Use find.byType(Scrollable).first to target the DraggableScrollableSheet's
-        // scrollable, which is linked to the form's SingleChildScrollView via the
-        // shared scrollController passed to GoalFormSheet. Using
+        // find.byType(Scrollable).first finds the SingleChildScrollView's Scrollable
+        // inside GoalFormSheet. DraggableScrollableSheet has no separate Scrollable
+        // of its own — it delegates to the content's ScrollController (sc), which is
+        // the controller for GoalFormSheet's SingleChildScrollView. Using
         // find.byType(SingleChildScrollView) as the scrollable arg fails because
         // scrollUntilVisible casts the found widget to Scrollable directly.
         await tester.scrollUntilVisible(
@@ -294,7 +303,7 @@ void main() {
 
     testWidgets(
       'outcome goal: Priority selector and Save reachable via scroll at '
-      'true modal height — outcome content (~692px) exceeds modal (506px), '
+      'constrained modal height — outcome content exceeds modal (422pt), '
       'so real scrolling is required',
       (tester) async {
         await _pumpModal(tester);
@@ -327,7 +336,7 @@ void main() {
 
     testWidgets(
       'habit goal: Priority selector and Save reachable via scroll at '
-      'true modal height (390x844 / initialChildSize 0.6)',
+      'constrained modal height (390x844 / initialChildSize 0.5)',
       (tester) async {
         await _pumpModal(tester);
 
