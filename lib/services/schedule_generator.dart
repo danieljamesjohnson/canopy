@@ -41,15 +41,29 @@ class ScheduleGeneratorService {
   // ---------------------------------------------------------------------------
 
   /// Returns the set of due weekdays (Monday=1 through Sunday=7) for a habit
-  /// with the given [freq] sessions per week, using an even floor-div spread.
+  /// with the given [freq] sessions per week.
   ///
-  /// Examples: freq=3 → {1,3,5} = Mon/Wed/Fri; freq=7 → {1,2,3,4,5,6,7} (daily).
+  /// Weekday-biased: frequencies of 5 or fewer fill the work week (Mon–Fri)
+  /// first and never land on a weekend; freq 6 adds Saturday; freq 7 is daily.
+  /// This matches the user's mental model — "5x/week" means weekdays, not a
+  /// mathematically even spread that put a session on Saturday and skipped
+  /// Thursday (the old `i*7~/freq+1` formula gave freq=5 → {Mon,Tue,Wed,Fri,Sat}).
   ///
-  /// IMPORTANT: uses integer floor-division only — do NOT use round()-based
-  /// formula which gives wrong results (freq=3 → Mon/Wed/SAT instead of Fri).
+  /// Lower frequencies are spaced out within the work week:
+  ///   1 → Mon | 2 → Mon,Thu | 3 → Mon,Wed,Fri | 4 → Mon,Tue,Thu,Fri | 5 → Mon–Fri
+  static const Map<int, Set<int>> _dueWeekdaysByFreq = {
+    1: {1},
+    2: {1, 4},
+    3: {1, 3, 5},
+    4: {1, 2, 4, 5},
+    5: {1, 2, 3, 4, 5},
+    6: {1, 2, 3, 4, 5, 6},
+    7: {1, 2, 3, 4, 5, 6, 7},
+  };
+
   static Set<int> computeDueWeekdays(int freq) {
     assert(freq >= 1 && freq <= 7);
-    return {for (int i = 0; i < freq; i++) i * 7 ~/ freq + 1};
+    return _dueWeekdaysByFreq[freq.clamp(1, 7)] ?? _dueWeekdaysByFreq[7]!;
   }
 
   /// Computes the habit streak by walking backward through the calendar from
@@ -196,6 +210,9 @@ class ScheduleGeneratorService {
     List<CompletionLog> completionLogs = const [],
     bool lighterDay = true,
     Set<String> deferredGoalIds = const {}, // CLOSE-02 carry-in
+    int? startFloorMinutes, // earliest minutes-since-midnight for discretionary
+    // chunks; when the day is generated mid-day, packing starts near "now"
+    // instead of 8:00 AM. Null → use the default 8:00 AM day start.
   }) {
     final int cap = _effectiveCap(moodIndex, lighterDay);
     final bool isLowMood = moodIndex <= 2;
@@ -232,11 +249,11 @@ class ScheduleGeneratorService {
     // -------------------------------------------------------------------------
     final activeGoals = goals.where((g) => !g.isArchived).toList();
 
-    final habitGoals = activeGoals
-        .where((g) => g.goalType == GoalType.habit)
-        .toList()
-      ..sort((a, b) =>
-          (b.priorityWeight ?? 0.5).compareTo(a.priorityWeight ?? 0.5));
+    final habitGoals =
+        activeGoals.where((g) => g.goalType == GoalType.habit).toList()..sort(
+          (a, b) =>
+              (b.priorityWeight ?? 0.5).compareTo(a.priorityWeight ?? 0.5),
+        );
 
     for (final goal in habitGoals) {
       if (discretionaryCount >= cap) break;
@@ -393,6 +410,7 @@ class ScheduleGeneratorService {
       discretionaryChunks: discretionaryChunks,
       commitmentChunks: commitmentChunks,
       longBreakEvery: longBreakEvery,
+      startFloorMinutes: startFloorMinutes,
     );
 
     // STEP C: Build result — commitment chunks (no breaks between them),
@@ -453,9 +471,16 @@ class ScheduleGeneratorService {
     required List<ScheduledChunk> discretionaryChunks,
     required List<ScheduledChunk> commitmentChunks,
     required int longBreakEvery,
+    int? startFloorMinutes,
   }) {
-    const int dayStart = 480; // 8:00 AM
+    const int defaultDayStart = 480; // 8:00 AM
     const int dayEnd = 1320; // 10:00 PM
+    // Start packing at "now" when generating mid-day so the plan doesn't lay
+    // chunks down in already-passed morning hours. Never earlier than 8:00 AM,
+    // and round up to the next 5-minute boundary for tidy start times.
+    final int dayStart = startFloorMinutes == null
+        ? defaultDayStart
+        : (((startFloorMinutes + 4) ~/ 5) * 5).clamp(defaultDayStart, dayEnd);
 
     // Build merged commitment windows.
     //

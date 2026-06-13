@@ -135,6 +135,9 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       completionLogs: allLogs,
       lighterDay: lighterDay,
       deferredGoalIds: deferredGoalIds, // CLOSE-02 carry-in
+      // Start the discretionary plan near "now" (clamped to ≥8:00 AM in the
+      // engine) so a mid-day check-in doesn't schedule into passed morning hours.
+      startFloorMinutes: now.hour * 60 + now.minute,
     );
 
     // Silent replace: delete existing schedule for today if any.

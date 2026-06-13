@@ -922,100 +922,127 @@ void main() {
   // Phase 14 — PRIORITY-01 engine behavioral tests (criteria 3 & 4)
   // ---------------------------------------------------------------------------
 
-  test('Step 2: high-priority habit is scheduled before low-priority habit', () {
-    final highHabit = makeHabit(name: 'High Habit', priorityWeight: 0.75)
-      ..frequencyPerWeek = 7; // due every day
-    final lowHabit = makeHabit(name: 'Low Habit', priorityWeight: 0.25)
-      ..frequencyPerWeek = 7; // due every day
+  test(
+    'Step 2: high-priority habit is scheduled before low-priority habit',
+    () {
+      final highHabit = makeHabit(name: 'High Habit', priorityWeight: 0.75)
+        ..frequencyPerWeek = 7; // due every day
+      final lowHabit = makeHabit(name: 'Low Habit', priorityWeight: 0.25)
+        ..frequencyPerWeek = 7; // due every day
 
-    final result = sut.generate(
-      goals: [lowHabit, highHabit], // intentionally low first in input order
-      blocks: [],
-      moodIndex: 3,
-      date: monday,
-      completionLogs: [],
-      lighterDay: false,
-    );
-    final workChunks = result.where((c) => c.chunkType == ChunkType.work).toList();
-    expect(workChunks, isNotEmpty);
-    expect(workChunks.first.goalId, equals(highHabit.id),
-      reason: 'High-priority habit must be scheduled before low-priority habit');
-  });
+      final result = sut.generate(
+        goals: [lowHabit, highHabit], // intentionally low first in input order
+        blocks: [],
+        moodIndex: 3,
+        date: monday,
+        completionLogs: [],
+        lighterDay: false,
+      );
+      final workChunks = result
+          .where((c) => c.chunkType == ChunkType.work)
+          .toList();
+      expect(workChunks, isNotEmpty);
+      expect(
+        workChunks.first.goalId,
+        equals(highHabit.id),
+        reason:
+            'High-priority habit must be scheduled before low-priority habit',
+      );
+    },
+  );
 
-  test('Step 4: high-priority time-target goal with equal remaining hours gets chunk before low-priority', () {
-    // Both goals have same weeklyHourBudget=2h and no completions → equal remaining hours.
-    // High-priority goal should score higher and fill cap first.
-    final highTT = makeTimeTarget(
-      name: 'High TT',
-      weeklyHourBudget: 2.0,
-      priorityWeight: 0.75,
-    );
-    final lowTT = makeTimeTarget(
-      name: 'Low TT',
-      weeklyHourBudget: 2.0,
-      priorityWeight: 0.25,
-    );
+  test(
+    'Step 4: high-priority time-target goal with equal remaining hours gets chunk before low-priority',
+    () {
+      // Both goals have same weeklyHourBudget=2h and no completions → equal remaining hours.
+      // High-priority goal should score higher and fill cap first.
+      final highTT = makeTimeTarget(
+        name: 'High TT',
+        weeklyHourBudget: 2.0,
+        priorityWeight: 0.75,
+      );
+      final lowTT = makeTimeTarget(
+        name: 'Low TT',
+        weeklyHourBudget: 2.0,
+        priorityWeight: 0.25,
+      );
 
-    final result = sut.generate(
-      goals: [lowTT, highTT], // intentionally low first
-      blocks: [],
-      moodIndex: 3, // cap=8; both goals get chunks, so check order of first
-      date: monday,
-      completionLogs: [],
-      lighterDay: false,
-    );
-    final workGoalIds = result
-        .where((c) => c.chunkType == ChunkType.work && c.goalId != null)
-        .map((c) => c.goalId!)
-        .toList();
-    expect(workGoalIds, isNotEmpty);
-    // First chunk must belong to highTT (composite score: 2.0 * 0.75 = 1.5 > 2.0 * 0.25 = 0.5)
-    expect(workGoalIds.first, equals(highTT.id),
-      reason: 'High-priority time-target goal must receive chunks before low-priority goal');
-  });
+      final result = sut.generate(
+        goals: [lowTT, highTT], // intentionally low first
+        blocks: [],
+        moodIndex: 3, // cap=8; both goals get chunks, so check order of first
+        date: monday,
+        completionLogs: [],
+        lighterDay: false,
+      );
+      final workGoalIds = result
+          .where((c) => c.chunkType == ChunkType.work && c.goalId != null)
+          .map((c) => c.goalId!)
+          .toList();
+      expect(workGoalIds, isNotEmpty);
+      // First chunk must belong to highTT (composite score: 2.0 * 0.75 = 1.5 > 2.0 * 0.25 = 0.5)
+      expect(
+        workGoalIds.first,
+        equals(highTT.id),
+        reason:
+            'High-priority time-target goal must receive chunks before low-priority goal',
+      );
+    },
+  );
 
-  test('Step 4: high-priority goal gets at least as many chunks as low-priority under shared cap', () {
-    // weeklyHourBudget=12h → demand = min(ceil(12*60/25/7), 4) = min(5, 4) = 4 chunks each.
-    // (The per-goal daily cap in _demandForTimeTarget is 4.)
-    // moodIndex=3 + lighterDay=true → effective cap = moodCap[2] = 6 (one tier lower).
-    // Two goals × 4 demand = 8 > cap 6, so cap is genuinely binding.
-    // High TT composite score = 12.0 * 0.75 = 9.0 → sorted first → gets 4 chunks (6-4=2 left).
-    // Low TT composite score  = 12.0 * 0.25 = 3.0 → sorted second → gets 2 chunks.
-    // If priority ordering were removed, low would go first and high would get 2.
-    // The greaterThan assertion below would fail (2 > 4 is false) — genuinely non-trivial.
-    final highTT = makeTimeTarget(
-      name: 'High TT',
-      weeklyHourBudget: 12.0,
-      priorityWeight: 0.75,
-    );
-    final lowTT = makeTimeTarget(
-      name: 'Low TT',
-      weeklyHourBudget: 12.0,
-      priorityWeight: 0.25,
-    );
+  test(
+    'Step 4: high-priority goal gets at least as many chunks as low-priority under shared cap',
+    () {
+      // weeklyHourBudget=12h → demand = min(ceil(12*60/25/7), 4) = min(5, 4) = 4 chunks each.
+      // (The per-goal daily cap in _demandForTimeTarget is 4.)
+      // moodIndex=3 + lighterDay=true → effective cap = moodCap[2] = 6 (one tier lower).
+      // Two goals × 4 demand = 8 > cap 6, so cap is genuinely binding.
+      // High TT composite score = 12.0 * 0.75 = 9.0 → sorted first → gets 4 chunks (6-4=2 left).
+      // Low TT composite score  = 12.0 * 0.25 = 3.0 → sorted second → gets 2 chunks.
+      // If priority ordering were removed, low would go first and high would get 2.
+      // The greaterThan assertion below would fail (2 > 4 is false) — genuinely non-trivial.
+      final highTT = makeTimeTarget(
+        name: 'High TT',
+        weeklyHourBudget: 12.0,
+        priorityWeight: 0.75,
+      );
+      final lowTT = makeTimeTarget(
+        name: 'Low TT',
+        weeklyHourBudget: 12.0,
+        priorityWeight: 0.25,
+      );
 
-    final result = sut.generate(
-      goals: [lowTT, highTT], // intentionally low first — engine must reorder by score
-      blocks: [],
-      moodIndex: 3,  // mood 3+ required — Step 4 is disabled at mood 1-2
-      date: monday,
-      completionLogs: [],
-      lighterDay: true, // drops cap to tier-2 (6), making combined demand (8) binding
-    );
-    final highCount = result
-        .where((c) => c.chunkType == ChunkType.work && c.goalId == highTT.id)
-        .length;
-    final lowCount = result
-        .where((c) => c.chunkType == ChunkType.work && c.goalId == lowTT.id)
-        .length;
-    // With effective cap=6 and demand=4 each: high gets 4, low gets 2.
-    // greaterThan (not greaterThanOrEqualTo) ensures the test is not trivially
-    // satisfied when both counts are equal (i.e., when Step 4 never ran or
-    // priority ordering had no effect).
-    expect(highCount, greaterThan(lowCount),
-      reason: 'High-priority goal (score 9.0) must win more cap slots than '
-              'low-priority goal (score 3.0) when total demand exceeds the effective cap');
-  });
+      final result = sut.generate(
+        goals: [
+          lowTT,
+          highTT,
+        ], // intentionally low first — engine must reorder by score
+        blocks: [],
+        moodIndex: 3, // mood 3+ required — Step 4 is disabled at mood 1-2
+        date: monday,
+        completionLogs: [],
+        lighterDay:
+            true, // drops cap to tier-2 (6), making combined demand (8) binding
+      );
+      final highCount = result
+          .where((c) => c.chunkType == ChunkType.work && c.goalId == highTT.id)
+          .length;
+      final lowCount = result
+          .where((c) => c.chunkType == ChunkType.work && c.goalId == lowTT.id)
+          .length;
+      // With effective cap=6 and demand=4 each: high gets 4, low gets 2.
+      // greaterThan (not greaterThanOrEqualTo) ensures the test is not trivially
+      // satisfied when both counts are equal (i.e., when Step 4 never ran or
+      // priority ordering had no effect).
+      expect(
+        highCount,
+        greaterThan(lowCount),
+        reason:
+            'High-priority goal (score 9.0) must win more cap slots than '
+            'low-priority goal (score 3.0) when total demand exceeds the effective cap',
+      );
+    },
+  );
 
   test(
     'T-09-WR02b: no missed days — consecutive completions count correctly',
@@ -1051,4 +1078,123 @@ void main() {
       );
     },
   );
+
+  // ---------------------------------------------------------------------------
+  // Weekday-biased frequency → due-weekday mapping.
+  // freq ≤ 5 stays on Mon–Fri (never weekends); 6 adds Sat; 7 is daily.
+  // ---------------------------------------------------------------------------
+  group('computeDueWeekdays is weekday-biased', () {
+    test('freq=5 is Mon–Fri (no weekend) — the reported bug', () {
+      expect(
+        ScheduleGeneratorService.computeDueWeekdays(5),
+        {1, 2, 3, 4, 5},
+        reason: '5x/week must mean weekdays, not include Saturday',
+      );
+    });
+
+    test('lower frequencies spread within the work week', () {
+      expect(ScheduleGeneratorService.computeDueWeekdays(1), {1});
+      expect(ScheduleGeneratorService.computeDueWeekdays(2), {1, 4});
+      expect(ScheduleGeneratorService.computeDueWeekdays(3), {1, 3, 5});
+      expect(ScheduleGeneratorService.computeDueWeekdays(4), {1, 2, 4, 5});
+    });
+
+    test('freq=6 adds Saturday; freq=7 is daily', () {
+      expect(ScheduleGeneratorService.computeDueWeekdays(6), {
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+      });
+      expect(ScheduleGeneratorService.computeDueWeekdays(7), {
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+      });
+    });
+
+    test(
+      'a 5x/week habit is NOT scheduled on Saturday but IS on a weekday',
+      () {
+        final habit = Goal(
+          name: 'Weekday habit',
+          goalTypeIndex: GoalType.habit.index,
+          frequencyPerWeek: 5,
+        );
+        final onSaturday = sut.generate(
+          goals: [habit],
+          blocks: [],
+          moodIndex: 3,
+          date: saturday,
+        );
+        expect(
+          onSaturday.where((c) => c.chunkType == ChunkType.work),
+          isEmpty,
+          reason: 'Weekday (5x/week) habit must not fire on Saturday',
+        );
+        final onMonday = sut.generate(
+          goals: [habit],
+          blocks: [],
+          moodIndex: 3,
+          date: monday,
+        );
+        expect(
+          onMonday.where((c) => c.chunkType == ChunkType.work).length,
+          1,
+          reason: 'Weekday habit must fire on Monday',
+        );
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Start-time floor: a mid-day generation packs from "now", not 8:00 AM.
+  // ---------------------------------------------------------------------------
+  group('startFloorMinutes places discretionary work near "now"', () {
+    final habit = Goal(name: 'Daily', goalTypeIndex: GoalType.habit.index);
+
+    test('null floor keeps the 8:00 AM (480) default start', () {
+      final chunks = sut.generate(
+        goals: [habit],
+        blocks: [],
+        moodIndex: 3,
+        date: monday,
+      );
+      final work = chunks.firstWhere((c) => c.chunkType == ChunkType.work);
+      expect(work.syntheticStartMinutes, 480);
+    });
+
+    test(
+      'a 15:42 floor starts the chunk at 15:45 (rounded up to 5), not 8 AM',
+      () {
+        final chunks = sut.generate(
+          goals: [habit],
+          blocks: [],
+          moodIndex: 3,
+          date: monday,
+          startFloorMinutes: 942, // 15:42
+        );
+        final work = chunks.firstWhere((c) => c.chunkType == ChunkType.work);
+        expect(work.syntheticStartMinutes, 945); // 15:45
+      },
+    );
+
+    test('a floor earlier than 8:00 AM is clamped up to 480', () {
+      final chunks = sut.generate(
+        goals: [habit],
+        blocks: [],
+        moodIndex: 3,
+        date: monday,
+        startFloorMinutes: 360, // 06:00 — before the day start
+      );
+      final work = chunks.firstWhere((c) => c.chunkType == ChunkType.work);
+      expect(work.syntheticStartMinutes, 480);
+    });
+  });
 }
