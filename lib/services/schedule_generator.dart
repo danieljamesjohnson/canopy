@@ -434,6 +434,10 @@ class ScheduleGeneratorService {
           .map((c) => c.goalId!)
           .toSet();
 
+      // CLOSE-02: deferred injection bypasses the habitCeiling guard intentionally.
+      // A goal deferred from yesterday has already been counted against yesterday's
+      // cap. Re-materializing it today should not be blocked by today's ceiling —
+      // the goal was already "paid for" and the user explicitly asked to defer it.
       for (final gid in deferredGoalIds) {
         if (discretionaryCount >= cap) break;
         if (scheduledGoalIds.contains(gid)) continue; // already scheduled
