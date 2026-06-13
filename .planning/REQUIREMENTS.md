@@ -56,14 +56,12 @@ Rule-based only — no LLM. Theme: make the scheduling engine tell the truth and
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NOW-01 | — | pending |
-| NOW-02 | — | pending |
-| PRIORITY-02 | — | pending |
-| PRIORITY-03 | — | pending |
-| CAP-01 | — | pending |
-| STREAK-01 | — | pending |
-| FILL-01 | — | pending |
-| FILL-02 | — | pending |
-| GOALFORM-02 | — | pending |
-
-*(Phase column filled by the roadmap.)*
+| NOW-01 | Phase 17 | pending |
+| NOW-02 | Phase 17 | pending |
+| PRIORITY-02 | Phase 15 | pending |
+| PRIORITY-03 | Phase 16 | pending |
+| CAP-01 | Phase 15 | pending |
+| STREAK-01 | Phase 15 | pending |
+| FILL-01 | Phase 15 | pending |
+| FILL-02 | Phase 15 | pending |
+| GOALFORM-02 | Phase 16 | pending |
