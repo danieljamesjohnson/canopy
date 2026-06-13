@@ -3,31 +3,31 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: An Honest Day
 status: verifying
-stopped_at: Completed 15-engine-honesty/15-01-PLAN.md
-last_updated: "2026-06-13T22:11:54.681Z"
-last_activity: 2026-06-13 -- Phase 15 execution started
+stopped_at: Completed 16-priority-model-reconciliation-01-PLAN.md
+last_updated: "2026-06-13T23:35:17.809Z"
+last_activity: 2026-06-13 -- Phase 16 execution started
 progress:
   total_phases: 3
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 33
+  completed_phases: 2
+  total_plans: 3
+  completed_plans: 3
+  percent: 67
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-13T22:11:47.959Z
+**Last session:** 2026-06-13T23:35:17.806Z
 
 ---
 
 ## Current Position
 
-Phase: 15 (Engine Honesty) — EXECUTING
-Plan: 2 of 2
+Phase: 16 (Priority Model Reconciliation) — EXECUTING
+Plan: 1 of 1
 Status: Phase complete — ready for verification
-Last activity: 2026-06-13 -- Phase 15 execution started
+Last activity: 2026-06-13 -- Phase 16 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -36,7 +36,7 @@ Progress: [░░░░░░░░░░] 0%
 See: `.planning/PROJECT.md` (updated 2026-06-13)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Phase 15 — Engine Honesty
+**Current focus:** Phase 16 — Priority Model Reconciliation
 
 ## Accumulated Context
 
@@ -53,6 +53,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.3:
 - [Phase ?]: CLOSE-02 deferred carry-in intentionally bypasses habitCeiling — user-explicit deferral honored
 - [Phase ?]: Use non-due-weekday as testDate
 - [Phase ?]: No-op guard + try/catch for streak write-back
+- [Phase ?]: Use find.byType(Scrollable).first as scrollable arg to scrollUntilVisible in modal tests — SingleChildScrollView is not a Scrollable and causes type cast error at runtime
+- [Phase ?]: goal_form_sheet.dart not modified — SingleChildScrollView already wraps the form; no restructuring needed for any goal type at true modal height
 
 ### Blockers / Concerns
 
@@ -71,7 +73,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-06-13
-Stopped at: Completed 15-engine-honesty/15-01-PLAN.md
+Stopped at: Completed 16-priority-model-reconciliation-01-PLAN.md
 Resume file: None
 
 ## Performance Metrics
@@ -80,3 +82,4 @@ Resume file: None
 |-------|------|----------|-------|
 | Phase 15-engine-honesty P01 | 6 | 3 tasks | 2 files |
 | Phase 15-engine-honesty P02 | 230 | 1 tasks | 2 files |
+| Phase 16-priority-model-reconciliation P01 | 25 | 2 tasks | 2 files |

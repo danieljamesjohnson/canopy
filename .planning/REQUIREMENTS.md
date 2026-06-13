@@ -18,7 +18,7 @@ Rule-based only — no LLM. Theme: make the scheduling engine tell the truth and
 ### Priority Drives Scheduling (PRIORITY) — continues PRIORITY-01
 
 - [x] **PRIORITY-02**: Raising a *habit's* or an *outcome's* priority changes how it is allocated (more/earlier chunks), not just its sort order — priority's effect on the generated schedule is observable for all three goal types, not time-target only. *(SEED-003 #3)*
-- [ ] **PRIORITY-03**: Drag-reorder and the form's Low/Normal/High control write a single coherent priority model, so a goal's priority chip stays correct and visible after a drag (no goal silently losing its chip by landing at a mid-list ~0.5). *(SEED-003 #3)*
+- [x] **PRIORITY-03**: Drag-reorder and the form's Low/Normal/High control write a single coherent priority model, so a goal's priority chip stays correct and visible after a drag (no goal silently losing its chip by landing at a mid-list ~0.5). *(SEED-003 #3)*
 
 ### Capacity Sharing (CAP)
 
@@ -35,7 +35,7 @@ Rule-based only — no LLM. Theme: make the scheduling engine tell the truth and
 
 ### Goal Form Honesty (GOALFORM) — continues GOALFORM-01
 
-- [ ] **GOALFORM-02**: An automated test proves Priority and Save are reachable at the goal sheet's *true* opened modal height, for every goal type — replacing the existing test that resized the surface to 800×1200 and pumped the form outside the modal. Restructure the sheet if outcome goals overflow. *(SEED-003 #2)*
+- [x] **GOALFORM-02**: An automated test proves Priority and Save are reachable at the goal sheet's *true* opened modal height, for every goal type — replacing the existing test that resized the surface to 800×1200 and pumped the form outside the modal. Restructure the sheet if outcome goals overflow. *(SEED-003 #2)*
 
 ---
 
@@ -59,9 +59,9 @@ Rule-based only — no LLM. Theme: make the scheduling engine tell the truth and
 | NOW-01 | Phase 17 | pending |
 | NOW-02 | Phase 17 | pending |
 | PRIORITY-02 | Phase 15 | Complete |
-| PRIORITY-03 | Phase 16 | pending |
+| PRIORITY-03 | Phase 16 | Complete |
 | CAP-01 | Phase 15 | Complete |
 | STREAK-01 | Phase 15 | Complete |
 | FILL-01 | Phase 15 | Complete |
 | FILL-02 | Phase 15 | Complete |
-| GOALFORM-02 | Phase 16 | pending |
+| GOALFORM-02 | Phase 16 | Complete |
