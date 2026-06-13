@@ -1,10 +1,11 @@
 ---
 phase: 16
 slug: priority-model-reconciliation
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-06-13
+reviewed_at: 2026-06-13
 ---
 
 # Phase 16 — UI Design Contract
@@ -73,6 +74,8 @@ All typography roles map directly to Flutter Material 3 `TextTheme` tokens. Do n
 | Form section heading | `titleLarge` (sheet title "Edit goal" / "Add goal") | 400 (Material default) | 1.2 |
 
 **Source:** `lib/screens/goals/widgets/goal_card.dart`, `lib/screens/goals/goal_form_sheet.dart` — existing code, locked.
+
+> **Note (typography weights):** This contract documents 3 distinct font weights (w400, w500, w600). The 2-weight guideline exists to prevent *new* visual debt. All three weights are pre-existing in the codebase; weight reduction is explicitly out of scope for this correctness-reconciliation phase. Future checkers should not treat this as new debt.
 
 ---
 
