@@ -91,7 +91,10 @@ covered by a green 209-test suite — see `milestones/v1.2-MILESTONE-AUDIT.md`.
   2. After opening a goal's form and changing the priority selector, the goal's chip in the list reflects the new value without requiring a restart or re-open.
   3. A widget test run at the goal sheet's actual opened modal height (not an oversized test surface) passes for time-target, outcome, and habit goals — confirming Priority and Save are not clipped.
 
-**Plans**: TBD
+**Plans**: 1 plan
+
+  - [ ] 16-01-PLAN.md — Prove priority chip reflects fresh priorityWeight after reorder rebuild (PRIORITY-03) and replace setSurfaceSize tests with true-modal-height reachability tests for all goal types (GOALFORM-02)
+
 **UI hint**: yes
 
 ### Phase 17: Time-Anchored Home
@@ -118,5 +121,5 @@ covered by a green 209-test suite — see `milestones/v1.2-MILESTONE-AUDIT.md`.
 | 13. Check-in and Goal Form | v1.2 | 2/2 | Complete | 2026-06-13 |
 | 14. Goals Screen and Priority End-to-End | v1.2 | 2/2 | Complete | 2026-06-13 |
 | 15. Engine Honesty | v1.3 | 2/2 | Complete   | 2026-06-13 |
-| 16. Priority Model Reconciliation | v1.3 | 0/? | Not started | - |
+| 16. Priority Model Reconciliation | v1.3 | 0/1 | Planned | - |
 | 17. Time-Anchored Home | v1.3 | 0/? | Not started | - |
