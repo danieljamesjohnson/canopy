@@ -673,7 +673,15 @@ Plans:
   3. The lighter-day choice is not an always-visible inline toggle; it appears after the user taps "Let's go," framed as a push-forward vs. lighter-day decision, with an unambiguous on/off state.
   4. The add/edit goal sheet fits within the viewport — Priority selector and Save button are visible and tappable without in-sheet scrolling on a standard phone screen height.
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+
+**Wave 1** *(parallel — file-disjoint: 13-01 owns checkin_screen.dart, 13-02 owns goal form files)*
+
+- [ ] 13-01-PLAN.md — Check-in contrast fix (luminance-adaptive _onBgColor) + emoji hover/pressed states + post-commit lighter-day decision screen (CHECKIN-01, CHECKIN-02)
+- [ ] 13-02-PLAN.md — Compact GoalTypePicker cards + goal form spacer reduction so Priority + Save fit the viewport (GOALFORM-01)
+
 **UI hint**: yes
 
 ---
