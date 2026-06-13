@@ -349,33 +349,47 @@ class ScheduleGeneratorService {
     }
 
     // -------------------------------------------------------------------------
-    // Step 4: Time-target goals (mood 3-5 only).
-    // Multi-chunk demand per goal; sorted by composite score
-    // (remainingHours × priorityWeight) so priority is a primary factor,
-    // not merely a tiebreaker.
+    // Step 4: Time-target goals.
+    // FILL-01: runs always (not gated on !isLowMood); on low-mood days demand
+    //          is capped at 1 chunk per goal so the day stays light. This is
+    //          open-capacity filling, not a restorative floor (Pitfall 4).
+    // FILL-02: round-robin across sorted goals so no single goal monopolizes
+    //          the remaining open capacity.
+    // Sort stability: equal-score goals tiebreak on goal.id (Pitfall 2).
     // -------------------------------------------------------------------------
-    if (!isLowMood) {
-      double score(Goal g) =>
-          _remainingHours(g, completionLogs, date) * (g.priorityWeight ?? 0.5);
-      final timeTargetGoals =
-          activeGoals.where((g) => g.goalType == GoalType.timeTarget).toList()
-            ..sort((a, b) => score(b).compareTo(score(a)));
+    double score(Goal g) =>
+        _remainingHours(g, completionLogs, date) * (g.priorityWeight ?? 0.5);
+    final timeTargetGoals =
+        activeGoals.where((g) => g.goalType == GoalType.timeTarget).toList()
+          ..sort((a, b) {
+            final cmp = score(b).compareTo(score(a));
+            return cmp != 0 ? cmp : a.id.compareTo(b.id); // stable secondary key
+          });
 
+    // FILL-02: one chunk per goal per pass until cap is full or all demands satisfied.
+    final placedCountPerGoal = <String, int>{};
+    bool anyPlaced = true;
+    while (anyPlaced && discretionaryCount < cap) {
+      anyPlaced = false;
       for (final goal in timeTargetGoals) {
         if (discretionaryCount >= cap) break;
-        final demand = _demandForTimeTarget(goal, completionLogs, date);
-        for (int i = 0; i < demand; i++) {
-          if (discretionaryCount >= cap) break;
-          workChunks.add(
-            ScheduledChunk(
-              chunkTypeIndex: ChunkType.work.index,
-              goalId: goal.id,
-              durationMinutes: 25,
-              rationale: _timeTargetRationale(goal, completionLogs, date),
-            ),
-          );
-          discretionaryCount++;
-        }
+        final placed = placedCountPerGoal[goal.id] ?? 0;
+        // FILL-01: cap demand at 1 per goal on low-mood days.
+        final demand = isLowMood
+            ? 1
+            : _demandForTimeTarget(goal, completionLogs, date);
+        if (demand <= 0 || placed >= demand) continue;
+        workChunks.add(
+          ScheduledChunk(
+            chunkTypeIndex: ChunkType.work.index,
+            goalId: goal.id,
+            durationMinutes: 25,
+            rationale: _timeTargetRationale(goal, completionLogs, date),
+          ),
+        );
+        discretionaryCount++;
+        placedCountPerGoal[goal.id] = placed + 1;
+        anyPlaced = true;
       }
     }
 

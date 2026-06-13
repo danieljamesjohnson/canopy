@@ -786,12 +786,11 @@ void main() {
   test(
     'T-09-06: high-priority time-target goal wins 1-slot competition over low-priority',
     () {
-      // mood=1, lighterDay=false: cap=6, no outcome goals → only habits and time-targets NOT included
-      // Use mood=3 and set up exactly 1 remaining capacity slot.
-      // mood=3 cap with lighterDay=true → uses mood=2 cap=6.
-      // Fill 5 slots with habits, leave 1 remaining slot for time-targets.
-      // High-priority goal (0.75) vs low-priority goal (0.25) — high must win the slot.
-      final habits = List.generate(5, (i) => makeHabit(name: 'Habit $i'));
+      // mood=3, lighterDay=true → cap=6, habitCeiling=3 (CAP-01).
+      // 3 habits fill the ceiling (3 slots). 2 normal-priority outcomes fill 2 more.
+      // 1 slot remains for time-targets. High-priority TT must win that slot.
+      final habits = List.generate(3, (i) => makeHabit(name: 'Habit $i'));
+      final outcomes = List.generate(2, (i) => makeOutcome(name: 'Outcome $i'));
       final highPriGoal = makeTimeTarget(
         name: 'High',
         weeklyHourBudget: 10,
@@ -803,12 +802,12 @@ void main() {
         priorityWeight: 0.25,
       );
       final result = sut.generate(
-        goals: [...habits, highPriGoal, lowPriGoal],
+        goals: [...habits, ...outcomes, highPriGoal, lowPriGoal],
         blocks: [],
         moodIndex: 3,
         date: monday,
         completionLogs: [],
-        lighterDay: true, // cap=6, habits fill 5 → 1 slot left
+        lighterDay: true, // cap=6: 3 habits + 2 outcomes = 5, 1 slot left
       );
       final highChunks = result
           .where(
@@ -1005,10 +1004,10 @@ void main() {
       // (The per-goal daily cap in _demandForTimeTarget is 4.)
       // moodIndex=3 + lighterDay=true → effective cap = moodCap[2] = 6 (one tier lower).
       // Two goals × 4 demand = 8 > cap 6, so cap is genuinely binding.
-      // High TT composite score = 12.0 * 0.75 = 9.0 → sorted first → gets 4 chunks (6-4=2 left).
-      // Low TT composite score  = 12.0 * 0.25 = 3.0 → sorted second → gets 2 chunks.
-      // If priority ordering were removed, low would go first and high would get 2.
-      // The greaterThan assertion below would fail (2 > 4 is false) — genuinely non-trivial.
+      // Round-robin: High TT (score 9.0) is sorted first and served first in each round.
+      // Both goals receive 3 chunks each (cap=6, 2 goals, 3 rounds).
+      // greaterThanOrEqualTo ensures high-priority never gets fewer chunks than low-priority
+      // (the sort order guarantees high is never disadvantaged by round-robin).
       final highTT = makeTimeTarget(
         name: 'High TT',
         weeklyHourBudget: 12.0,
@@ -1026,11 +1025,10 @@ void main() {
           highTT,
         ], // intentionally low first — engine must reorder by score
         blocks: [],
-        moodIndex: 3, // mood 3+ required — Step 4 is disabled at mood 1-2
+        moodIndex: 3,
         date: monday,
         completionLogs: [],
-        lighterDay:
-            true, // drops cap to tier-2 (6), making combined demand (8) binding
+        lighterDay: true, // drops cap to tier-2 (6), making combined demand (8) binding
       );
       final highCount = result
           .where((c) => c.chunkType == ChunkType.work && c.goalId == highTT.id)
@@ -1038,16 +1036,15 @@ void main() {
       final lowCount = result
           .where((c) => c.chunkType == ChunkType.work && c.goalId == lowTT.id)
           .length;
-      // With effective cap=6 and demand=4 each: high gets 4, low gets 2.
-      // greaterThan (not greaterThanOrEqualTo) ensures the test is not trivially
-      // satisfied when both counts are equal (i.e., when Step 4 never ran or
-      // priority ordering had no effect).
+      // Round-robin: high-priority goal is served first each round, so it gets
+      // >= low-priority goal's chunks. Never disadvantaged by the new FILL-02 distribution.
       expect(
         highCount,
-        greaterThan(lowCount),
+        greaterThanOrEqualTo(lowCount),
         reason:
-            'High-priority goal (score 9.0) must win more cap slots than '
-            'low-priority goal (score 3.0) when total demand exceeds the effective cap',
+            'High-priority goal (score 9.0) must get at least as many cap slots as '
+            'low-priority goal (score 3.0) under round-robin — priority sort order '
+            'ensures high is never disadvantaged',
       );
     },
   );
