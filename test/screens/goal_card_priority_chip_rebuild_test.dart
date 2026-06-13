@@ -160,27 +160,68 @@ void main() {
       await notifier.reorderAllWithPriority([g1.id, g0.id, g2.id]);
       await tester.pumpAndSettle();
 
-      // After reorder: exactly one High chip (now on g1, NOT on g0).
-      expect(find.text('High'), findsOneWidget,
-          reason:
-              'g1 is now at position 0 → priorityWeight 0.75 → must show '
-              'exactly one High chip; g0 dropped to Normal → no chip');
+      // After reorder: assert IDENTITY of the High chip — which card owns it.
+      //
+      // A stale widget tree (broken Consumer rebuild) would leave g0 (Alpha) with
+      // its pre-reorder High chip. A correctly rebuilt tree must show g1 (Beta) as
+      // the High-chip owner and Alpha must have NO High chip.
+      //
+      // Strategy: use find.descendant to confirm the Beta GoalCard contains the
+      // High chip text, then use find.ancestor to confirm NO Card ancestor of the
+      // High chip also contains Alpha — these two assertions together cannot pass
+      // in the stale-tree scenario.
 
-      // High chip count is exactly 1 → g0 did NOT retain a stale High chip.
-      // (The stale-chip regression: without Consumer rebuild, g0 would still
-      // show High even after reorder. findsOneWidget proves it did not.)
+      // 1. The High chip must still exist in the tree (sanity baseline).
+      expect(
+        find.text('High'),
+        findsOneWidget,
+        reason: 'g1 (Beta) at new position 0 must have priorityWeight 0.75 '
+            '→ exactly one High chip',
+      );
 
-      // Low chip is still present (g2 stays at position 2 → 0.25).
+      // 2. The Beta GoalCard must contain the High chip text as a descendant.
+      //    find.descendant(of: X, matching: Y) finds Y that lives inside X.
+      //    GoalCard is a StatefulWidget; its root render object is the Card.
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Beta'),
+            matching: find.byType(Card),
+          ),
+          matching: find.text('High'),
+        ),
+        findsOneWidget,
+        reason: 'g1 (Beta) is at new position 0 → its Card must own the High '
+            'chip; if Consumer rebuild is broken, Beta retains its stale Normal '
+            'state and this assertion fails',
+      );
+
+      // 3. The Alpha GoalCard must NOT contain the High chip text.
+      //    If Consumer rebuild is broken, Alpha retains its pre-reorder High chip
+      //    and this assertion fails — making this the regression catch.
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Alpha'),
+            matching: find.byType(Card),
+          ),
+          matching: find.text('High'),
+        ),
+        findsNothing,
+        reason: 'g0 (Alpha) dropped to Normal after reorder — its Card must '
+            'NOT contain a High chip; a stale tree would leave it there',
+      );
+
+      // 4. Low chip is still present on the Gamma GoalCard (g2 stays at position 2).
       expect(find.text('Low'), findsOneWidget,
           reason: 'g2 stays at position 2 → priorityWeight 0.25 → Low chip');
       expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
 
-      // g0 is now Normal → no High chip for it (total High count is 1, not 2).
-      // Arrow-upward icon exists exactly once — g1 owns it, not g0.
+      // 5. Arrow-upward icon exists exactly once — belongs to Beta (g1), not Alpha.
       expect(find.byIcon(Icons.arrow_upward), findsOneWidget,
           reason:
-              'Only g1 (new position 0) must show the upward arrow; '
-              'g0 (now Normal) must not render any priority chip');
+              'Only g1 (Beta, new position 0) must show the upward arrow; '
+              'g0 (Alpha, now Normal) must not render any priority chip');
     });
   });
 }
