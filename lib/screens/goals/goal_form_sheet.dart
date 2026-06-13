@@ -177,14 +177,19 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
               selectedType: _selectedType,
               onTypeSelected: (t) => setState(() {
                 _selectedType = t;
-                // Reset type-specific fields when type changes
-                _weeklyHourBudget = null;
+                // Reset type-specific fields when type changes.
+                // Regular-time goals default to 3 hrs/week so they actually get
+                // scheduled out of the box — a null budget produces zero chunks
+                // forever (the engine has nothing to allocate). Users can raise it.
+                _weeklyHourBudget = t == GoalType.timeTarget ? 3.0 : null;
                 _deadline = null;
                 _outcomeDescription = null;
                 _frequencyPerWeek = null;
-                // Also clear the hoisted controllers so the fields visually
-                // reset without recreating the controller (LOOP-05).
-                _weeklyHoursController.clear();
+                // Also reset the hoisted controllers so the fields visually
+                // reflect the new type without recreating the controller (LOOP-05).
+                _weeklyHoursController.text = _weeklyHourBudget != null
+                    ? _weeklyHourBudget!.toStringAsFixed(1)
+                    : '';
                 _descriptionController.clear();
               }),
             ),

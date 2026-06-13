@@ -237,5 +237,39 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'selecting Regular time defaults the weekly budget to 3 hrs and saves it',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final repo = await _pumpForm(tester);
+
+        await tester.enterText(find.byType(TextField).first, 'Family');
+        await tester.tap(
+          find.text('I want to spend regular time on something'),
+        );
+        await tester.pumpAndSettle();
+
+        // The hours field must be pre-filled with 3.0 (no longer a silent null).
+        expect(
+          find.text('3.0'),
+          findsOneWidget,
+          reason: 'Regular-time goal must default the weekly budget to 3.0 hrs',
+        );
+
+        await tester.tap(find.text('Add goal').last);
+        await tester.pumpAndSettle();
+
+        expect(
+          repo.lastSaved?.weeklyHourBudget,
+          closeTo(3.0, 0.001),
+          reason:
+              'A regular-time goal saved without edits must persist 3.0 hrs/week '
+              'so the engine has a budget to schedule against',
+        );
+      },
+    );
   });
 }

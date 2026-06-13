@@ -66,6 +66,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         name: name,
         goalTypeIndex: _screen1Type!.index,
         color: goalsNotifier.autoColor(),
+        // Regular-time goals need a budget to be scheduled at all; onboarding
+        // has no hours field, so seed a sensible 3 hrs/week the user can adjust.
+        weeklyHourBudget: _screen1Type == GoalType.timeTarget ? 3.0 : null,
       );
       await goalsNotifier.saveGoal(goal);
     }
