@@ -2,22 +2,22 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Phases
-status: executing
-last_updated: "2026-06-13T13:36:21.197Z"
+status: verifying
+last_updated: "2026-06-13T13:44:02.031Z"
 last_activity: 2026-06-13 -- Phase 14 execution started
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 7
-  completed_plans: 6
-  percent: 67
+  completed_plans: 7
+  percent: 100
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-13T13:36:21.191Z
+**Last session:** 2026-06-13T13:44:02.026Z
 
 ---
 
@@ -25,7 +25,7 @@ progress:
 
 Phase: 14 (Goals Screen and Priority End-to-End) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-13 -- Phase 14 execution started
 
 ## Completed Plans
@@ -119,6 +119,10 @@ Last activity: 2026-06-13 -- Phase 14 execution started
 - [Phase 12-03]: Mood row relocated below Now/Next sections; Divider removed — section labels provide visual separation
 - [Phase ?]: 13-02: Test height threshold set to <=96dp (not 64dp) because flutter_test fonts cause subtitles to wrap to 2 lines; real-device target remains ~64dp
 - [Phase ?]: 13-02: minVerticalPadding:0 on ListTile is the authoritative guard for Pitfall 4 (defeats Flutter's 8dp enforced minimum in compact card contexts)
+- [Phase ?]: Step 2 habit sort: pre-filtered priority-sorted habitGoals list replaces inline activeGoals filter
+- [Phase ?]: Step 4 composite score: remainingHours x priorityWeight replaces tiebreaker-only sort; _demandForTimeTarget and _remainingHours unchanged
+- [Phase ?]: goalPriorityWeight threaded ScheduleScreen -> SwipeableChunkCard -> ChunkCard; _lookupGoalPriorityWeight internal to ActiveChunkCard; home_screen.dart untouched
+- [Phase ?]: _PriorityChip duplicated file-private in chunk_card.dart and active_chunk_card.dart per UI-SPEC file-disjoint parallelism rule (not shared via import this phase)
 
 ## Performance Metrics
 
@@ -158,6 +162,7 @@ Last activity: 2026-06-13 -- Phase 14 execution started
 | Phase 12-home-as-landing-schedule-as-plan P03 | 4 minutes | 2 tasks | 4 files |
 | Phase 13-check-in-and-goal-form P13-02 | 4min | 2 tasks | 3 files |
 | Phase 14-goals-screen-and-priority-end-to-end P01 | 3 minutes | 2 tasks | 5 files |
+| Phase 14-goals-screen-and-priority-end-to-end P02 | 10min | 2 tasks | 7 files |
 
 ## Blockers
 

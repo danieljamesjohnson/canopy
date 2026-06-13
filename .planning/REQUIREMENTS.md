@@ -37,7 +37,7 @@ Rule-based only — no LLM. All requirements are user-observable capabilities th
 
 ### Priority Drives Scheduling (PRIORITY)
 
-- [ ] **PRIORITY-01**: A goal's priority measurably influences schedule generation beyond a tiebreaker — higher-priority goals receive proportionally more or earlier chunks — so changing a goal's priority visibly changes the generated schedule. *(SEED-001 #4)*
+- [x] **PRIORITY-01**: A goal's priority measurably influences schedule generation beyond a tiebreaker — higher-priority goals receive proportionally more or earlier chunks — so changing a goal's priority visibly changes the generated schedule. *(SEED-001 #4)*
 
 ---
 
@@ -77,7 +77,7 @@ Other deferred:
 | CHECKIN-02 | Phase 13 | Complete |
 | GOALS-01 | Phase 14 | Complete |
 | GOALS-02 | Phase 14 | Complete |
-| PRIORITY-01 | Phase 14 | Pending |
+| PRIORITY-01 | Phase 14 | Complete |
 
 ---
 *Phase assignments filled in by the roadmap.*
