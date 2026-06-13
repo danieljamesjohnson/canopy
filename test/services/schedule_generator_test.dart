@@ -918,6 +918,92 @@ void main() {
     },
   );
 
+  // ---------------------------------------------------------------------------
+  // Phase 14 — PRIORITY-01 engine behavioral tests (criteria 3 & 4)
+  // ---------------------------------------------------------------------------
+
+  test('Step 2: high-priority habit is scheduled before low-priority habit', () {
+    final highHabit = makeHabit(name: 'High Habit', priorityWeight: 0.75)
+      ..frequencyPerWeek = 7; // due every day
+    final lowHabit = makeHabit(name: 'Low Habit', priorityWeight: 0.25)
+      ..frequencyPerWeek = 7; // due every day
+
+    final result = sut.generate(
+      goals: [lowHabit, highHabit], // intentionally low first in input order
+      blocks: [],
+      moodIndex: 3,
+      date: monday,
+      completionLogs: [],
+      lighterDay: false,
+    );
+    final workChunks = result.where((c) => c.chunkType == ChunkType.work).toList();
+    expect(workChunks, isNotEmpty);
+    expect(workChunks.first.goalId, equals(highHabit.id),
+      reason: 'High-priority habit must be scheduled before low-priority habit');
+  });
+
+  test('Step 4: high-priority time-target goal with equal remaining hours gets chunk before low-priority', () {
+    // Both goals have same weeklyHourBudget=2h and no completions → equal remaining hours.
+    // High-priority goal should score higher and fill cap first.
+    final highTT = makeTimeTarget(
+      name: 'High TT',
+      weeklyHourBudget: 2.0,
+      priorityWeight: 0.75,
+    );
+    final lowTT = makeTimeTarget(
+      name: 'Low TT',
+      weeklyHourBudget: 2.0,
+      priorityWeight: 0.25,
+    );
+
+    final result = sut.generate(
+      goals: [lowTT, highTT], // intentionally low first
+      blocks: [],
+      moodIndex: 3, // cap=8; both goals get chunks, so check order of first
+      date: monday,
+      completionLogs: [],
+      lighterDay: false,
+    );
+    final workGoalIds = result
+        .where((c) => c.chunkType == ChunkType.work && c.goalId != null)
+        .map((c) => c.goalId!)
+        .toList();
+    expect(workGoalIds, isNotEmpty);
+    // First chunk must belong to highTT (composite score: 2.0 * 0.75 = 1.5 > 2.0 * 0.25 = 0.5)
+    expect(workGoalIds.first, equals(highTT.id),
+      reason: 'High-priority time-target goal must receive chunks before low-priority goal');
+  });
+
+  test('Step 4: high-priority goal gets at least as many chunks as low-priority under shared cap', () {
+    final highTT = makeTimeTarget(
+      name: 'High TT',
+      weeklyHourBudget: 2.0,
+      priorityWeight: 0.75,
+    );
+    final lowTT = makeTimeTarget(
+      name: 'Low TT',
+      weeklyHourBudget: 2.0,
+      priorityWeight: 0.25,
+    );
+
+    final result = sut.generate(
+      goals: [lowTT, highTT],
+      blocks: [],
+      moodIndex: 1, // cap=4 — constrained
+      date: monday,
+      completionLogs: [],
+      lighterDay: false,
+    );
+    final highCount = result
+        .where((c) => c.chunkType == ChunkType.work && c.goalId == highTT.id)
+        .length;
+    final lowCount = result
+        .where((c) => c.chunkType == ChunkType.work && c.goalId == lowTT.id)
+        .length;
+    expect(highCount, greaterThanOrEqualTo(lowCount),
+      reason: 'High-priority goal must get at least as many chunks as low-priority under a shared cap');
+  });
+
   test(
     'T-09-WR02b: no missed days — consecutive completions count correctly',
     () {

@@ -228,12 +228,18 @@ class ScheduleGeneratorService {
 
     // -------------------------------------------------------------------------
     // Step 2: Habits — scheduled on due weekdays only; streak from logs.
+    // Priority-sorted so high-priority habits fill cap before low-priority.
     // -------------------------------------------------------------------------
     final activeGoals = goals.where((g) => !g.isArchived).toList();
 
-    for (final goal in activeGoals) {
+    final habitGoals = activeGoals
+        .where((g) => g.goalType == GoalType.habit)
+        .toList()
+      ..sort((a, b) =>
+          (b.priorityWeight ?? 0.5).compareTo(a.priorityWeight ?? 0.5));
+
+    for (final goal in habitGoals) {
       if (discretionaryCount >= cap) break;
-      if (goal.goalType != GoalType.habit) continue;
       final effectiveFreq = goal.frequencyPerWeek ?? 7;
       final dueWeekdays = computeDueWeekdays(effectiveFreq);
       if (!dueWeekdays.contains(date.weekday)) continue; // not due today
@@ -302,21 +308,16 @@ class ScheduleGeneratorService {
 
     // -------------------------------------------------------------------------
     // Step 4: Time-target goals (mood 3-5 only).
-    // Multi-chunk demand per goal; sorted most-behind first; priority tiebreaker.
+    // Multi-chunk demand per goal; sorted by composite score
+    // (remainingHours × priorityWeight) so priority is a primary factor,
+    // not merely a tiebreaker.
     // -------------------------------------------------------------------------
     if (!isLowMood) {
+      double score(Goal g) =>
+          _remainingHours(g, completionLogs, date) * (g.priorityWeight ?? 0.5);
       final timeTargetGoals =
           activeGoals.where((g) => g.goalType == GoalType.timeTarget).toList()
-            ..sort((a, b) {
-              final remA = _remainingHours(a, completionLogs, date);
-              final remB = _remainingHours(b, completionLogs, date);
-              if ((remA - remB).abs() > 0.01) {
-                return remB.compareTo(remA); // most behind first
-              }
-              return (b.priorityWeight ?? 0.5).compareTo(
-                a.priorityWeight ?? 0.5,
-              ); // tiebreaker
-            });
+            ..sort((a, b) => score(b).compareTo(score(a)));
 
       for (final goal in timeTargetGoals) {
         if (discretionaryCount >= cap) break;
