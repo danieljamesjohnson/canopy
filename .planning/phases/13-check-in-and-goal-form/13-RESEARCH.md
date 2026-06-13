@@ -561,17 +561,17 @@ leading: Icon(icon, size: 20,
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`_commitAndProceed` async loading state**
    - What we know: `generateToday()` is async and involves Hive writes. It is described as synchronous/fast in UI-SPEC comments but is `async` in implementation.
    - What's unclear: Whether a loading indicator is needed during the "Lighter day" regeneration path in `_commitAndProceed`.
-   - Recommendation: Do not add a spinner for now. The transition to the acknowledgment body (which animates in via `AnimatedSwitcher`) provides sufficient visual feedback. If testing reveals a perceptible delay, add `setState(() => _isGenerating = true)` before the regeneration call and show a brief spinner on the decision screen.
+   - RESOLVED: Do not add a spinner for now. The transition to the acknowledgment body (which animates in via `AnimatedSwitcher`) provides sufficient visual feedback. If testing reveals a perceptible delay, add `setState(() => _isGenerating = true)` before the regeneration call and show a brief spinner on the decision screen. Plan 13-01 Task 2 implements this recommendation (no spinner).
 
 2. **`onTapCancel` handling for `_LighterDayCard`**
    - What we know: If the user lifts their finger outside the card after pressing, `onTapCancel` fires. `_pressed` must be reset to avoid a permanently-scaled card.
    - What's unclear: Whether `GestureDetector.onTapCancel` also fires on web when pointer leaves the card boundary during press.
-   - Recommendation: Always handle `onTapCancel: () => setState(() => _pressed = false)` alongside `onTapUp`.
+   - RESOLVED: Always handle `onTapCancel: () => setState(() => _pressed = false)` alongside `onTapUp`. Plan 13-01 Task 2 handles `onTapCancel` on the lighter-day card and emoji targets.
 
 ---
 
