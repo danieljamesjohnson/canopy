@@ -624,7 +624,7 @@ All 21 v1.1 requirements mapped to exactly one phase. No orphaned requirements.
 ## v1.2 Phases
 
 - [x] **Phase 12: Home as Landing, Schedule as Plan** — Fix the landing page, make Home lead with the live day, show clock times on all chunks, surface now/next framing, and make chunk actions obvious (completed 2026-06-12)
-- [ ] **Phase 13: Check-in and Goal Form** — Fix check-in contrast/legibility, replace the lighter-day toggle with a post-commit flow, and redesign the goal form sheet to fit the viewport
+- [x] **Phase 13: Check-in and Goal Form** — Fix check-in contrast/legibility, replace the lighter-day toggle with a post-commit flow, and redesign the goal form sheet to fit the viewport (completed 2026-06-13)
 - [ ] **Phase 14: Goals Screen and Priority End-to-End** — Redesign Goals as an explicit prioritization view with clear priority visual language, and make priority measurably change schedule generation
 
 ---
@@ -673,14 +673,14 @@ Plans:
   3. The lighter-day choice is not an always-visible inline toggle; it appears after the user taps "Let's go," framed as a push-forward vs. lighter-day decision, with an unambiguous on/off state.
   4. The add/edit goal sheet fits within the viewport — Priority selector and Save button are visible and tappable without in-sheet scrolling on a standard phone screen height.
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 
 **Wave 1** *(parallel — file-disjoint: 13-01 owns checkin_screen.dart, 13-02 owns goal form files)*
 
 - [x] 13-01-PLAN.md — Check-in contrast fix (luminance-adaptive _onBgColor) + emoji hover/pressed states + post-commit lighter-day decision screen (CHECKIN-01, CHECKIN-02)
-- [ ] 13-02-PLAN.md — Compact GoalTypePicker cards + goal form spacer reduction so Priority + Save fit the viewport (GOALFORM-01)
+- [x] 13-02-PLAN.md — Compact GoalTypePicker cards + goal form spacer reduction so Priority + Save fit the viewport (GOALFORM-01)
 
 **UI hint**: yes
 
@@ -708,7 +708,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 12. Home as Landing, Schedule as Plan | 3/3 | Complete   | 2026-06-12 |
-| 13. Check-in and Goal Form | 1/2 | In Progress|  |
+| 13. Check-in and Goal Form | 2/2 | Complete   | 2026-06-13 |
 | 14. Goals Screen and Priority End-to-End | 0/? | Not started | - |
 
 ---

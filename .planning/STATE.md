@@ -2,22 +2,22 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Phases
-status: executing
-last_updated: "2026-06-13T12:29:21.319Z"
+status: verifying
+last_updated: "2026-06-13T12:36:46.162Z"
 last_activity: 2026-06-13 -- Phase 13 execution started
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 4
-  percent: 33
+  completed_plans: 5
+  percent: 67
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-13T12:29:21.315Z
+**Last session:** 2026-06-13T12:36:46.157Z
 
 ---
 
@@ -25,7 +25,7 @@ progress:
 
 Phase: 13 (Check-in and Goal Form) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-13 -- Phase 13 execution started
 
 ## Completed Plans
@@ -117,6 +117,8 @@ Last activity: 2026-06-13 -- Phase 13 execution started
 - [Phase 12-03]: Formatters extracted to lib/utils/time_format.dart without editing chunk_card.dart — file-disjoint parallelism preserved between 12-02 and 12-03
 - [Phase 12-03]: Tooltip wrapper used for Complete/Skip buttons in ActiveChunkCard — Flutter 3.18 FilledButton.icon lacks tooltip parameter (same pattern as 12-02)
 - [Phase 12-03]: Mood row relocated below Now/Next sections; Divider removed — section labels provide visual separation
+- [Phase ?]: 13-02: Test height threshold set to <=96dp (not 64dp) because flutter_test fonts cause subtitles to wrap to 2 lines; real-device target remains ~64dp
+- [Phase ?]: 13-02: minVerticalPadding:0 on ListTile is the authoritative guard for Pitfall 4 (defeats Flutter's 8dp enforced minimum in compact card contexts)
 
 ## Performance Metrics
 
@@ -154,6 +156,7 @@ Last activity: 2026-06-13 -- Phase 13 execution started
 | Phase 12-home-as-landing-schedule-as-plan P12-01 | 3 minutes | 2 tasks | 4 files |
 | Phase 12-home-as-landing-schedule-as-plan P12-02 | 15 minutes | 3 tasks | 8 files |
 | Phase 12-home-as-landing-schedule-as-plan P03 | 4 minutes | 2 tasks | 4 files |
+| Phase 13-check-in-and-goal-form P13-02 | 4min | 2 tasks | 3 files |
 
 ## Blockers
 

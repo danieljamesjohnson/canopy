@@ -23,7 +23,7 @@ Rule-based only — no LLM. All requirements are user-observable capabilities th
 
 ### Goal Form (GOALFORM)
 
-- [ ] **GOALFORM-01**: The add/edit goal sheet fits the viewport so every field — including Priority — and the Save/confirm action are reachable without the sheet being clipped or requiring awkward in-sheet scrolling.
+- [x] **GOALFORM-01**: The add/edit goal sheet fits the viewport so every field — including Priority — and the Save/confirm action are reachable without the sheet being clipped or requiring awkward in-sheet scrolling.
 
 ### Goals Screen (GOALS)
 
@@ -72,7 +72,7 @@ Other deferred:
 | SCHED-01 | Phase 12 | Complete |
 | SCHED-02 | Phase 12 | Complete |
 | SCHED-03 | Phase 12 | Complete |
-| GOALFORM-01 | Phase 13 | Pending |
+| GOALFORM-01 | Phase 13 | Complete |
 | CHECKIN-01 | Phase 13 | Complete |
 | CHECKIN-02 | Phase 13 | Complete |
 | GOALS-01 | Phase 14 | Pending |
