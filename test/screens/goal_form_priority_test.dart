@@ -6,6 +6,12 @@
 //   3. Tapping High yields priorityWeight == 0.75 on save.
 //   4. Existing goal with null priorityWeight renders as Normal selected.
 //   5. Control is visible for every goal type (not inside a type guard).
+//
+// GOALFORM-02 (Phase 16 Plan 01):
+//   Replaces two setSurfaceSize(800,1200) tests with true-modal-height tests
+//   at 390x844 viewport / initialChildSize 0.6 — covering time-target, outcome,
+//   AND habit goals, and folding in the High-saves-0.75 and 3-hr-default
+//   assertions so no coverage is lost.
 
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/repositories/goal_repository.dart';
@@ -16,6 +22,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import '../test_helpers/mood_pump.dart';
+import '../test_helpers/viewport.dart';
 
 // ---------------------------------------------------------------------------
 // In-memory GoalRepository — no Hive I/O.
@@ -81,6 +88,49 @@ Future<_InMemoryGoalRepository> _pumpForm(
   return repo;
 }
 
+/// Opens GoalFormSheet inside a real showModalBottomSheet + DraggableScrollableSheet
+/// at the true modal height (390x844 viewport, initialChildSize 0.6).
+///
+/// Returns the [_InMemoryGoalRepository] so callers can assert on [lastSaved].
+/// [setViewport] auto-registers teardown — caller must NOT add another teardown.
+Future<_InMemoryGoalRepository> _pumpModal(WidgetTester tester) async {
+  setViewport(tester, const Size(390, 844));
+
+  final repo = _InMemoryGoalRepository();
+  final notifier = GoalsNotifier(repository: repo);
+
+  late BuildContext capturedCtx;
+  await pumpWithMood(
+    tester,
+    Builder(builder: (ctx) {
+      capturedCtx = ctx;
+      return const SizedBox.shrink();
+    }),
+    extraProviders: [
+      ChangeNotifierProvider<GoalsNotifier>.value(value: notifier),
+    ],
+  );
+
+  // Do NOT await — showModalBottomSheet's Future only resolves on dismiss.
+  showModalBottomSheet<void>(
+    context: capturedCtx,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (_) => DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 1.0,
+      expand: false,
+      snap: true,
+      snapSizes: const [0.6, 1.0],
+      builder: (_, sc) => GoalFormSheet(scrollController: sc),
+    ),
+  );
+  await tester.pumpAndSettle();
+
+  return repo;
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -111,54 +161,6 @@ void main() {
           segBtn.selected,
           equals({0.5}),
           reason: 'New goal: null priorityWeight must coalesce to Normal (0.5)',
-        );
-      },
-    );
-
-    testWidgets(
-      'tapping High selects it and save persists priorityWeight == 0.75',
-      (tester) async {
-        // Use a taller test surface so the full form fits without scrolling.
-        await tester.binding.setSurfaceSize(const Size(800, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        final repo = await _pumpForm(tester);
-
-        // Tap the High segment button (.first handles internal duplication).
-        await tester.tap(find.text('High').first);
-        await tester.pumpAndSettle();
-
-        // Verify selected state updated to 0.75.
-        final segBtn = tester.widget<SegmentedButton<double>>(
-          find.byType(SegmentedButton<double>),
-        );
-        expect(
-          segBtn.selected,
-          equals({0.75}),
-          reason: 'Tapping High must select 0.75',
-        );
-
-        // Type a goal name so Save is enabled.
-        await tester.enterText(find.byType(TextField).first, 'Test Goal');
-        await tester.pumpAndSettle();
-
-        // Select Time Target type (minimal extra fields, no date picker) to
-        // enable the Save button.
-        await tester.tap(
-          find.text('I want to spend regular time on something'),
-        );
-        await tester.pumpAndSettle();
-
-        // Tap Add goal ElevatedButton — use .last since 'Add goal' also
-        // appears as the sheet title Text above the button.
-        await tester.tap(find.text('Add goal').last);
-        await tester.pumpAndSettle();
-
-        expect(
-          repo.lastSaved?.priorityWeight,
-          closeTo(0.75, 0.001),
-          reason:
-              'Save must persist priorityWeight == 0.75 when High is selected',
         );
       },
     );
@@ -237,28 +239,209 @@ void main() {
         );
       },
     );
+  });
 
+  // ---------------------------------------------------------------------------
+  // GOALFORM-02 — true modal height contract (Phase 16 Plan 01)
+  //
+  // Replaces the two deprecated setSurfaceSize(800,1200) tests.
+  // All tests pump GoalFormSheet inside a real showModalBottomSheet +
+  // DraggableScrollableSheet at initialChildSize 0.6 on a 390x844 viewport.
+  // Modal height = 844 * 0.6 = 506.4pt.
+  //
+  // For the outcome goal, content height (~692px) > modal height (506px),
+  // so real scrolling is required to reach Priority and Save — validating
+  // that the test does actual work rather than finding widgets already on-screen.
+  // ---------------------------------------------------------------------------
+  group('GOALFORM-02 — true modal height contract', () {
     testWidgets(
-      'selecting Regular time defaults the weekly budget to 3 hrs and saves it',
+      'time-target goal: Priority selector and Save reachable via scroll '
+      'at true modal height (390x844 / initialChildSize 0.6)',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(800, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _pumpModal(tester);
 
-        final repo = await _pumpForm(tester);
-
-        await tester.enterText(find.byType(TextField).first, 'Family');
+        // Select the time-target goal type.
         await tester.tap(
           find.text('I want to spend regular time on something'),
         );
         await tester.pumpAndSettle();
 
-        // The hours field must be pre-filled with 3.0 (no longer a silent null).
+        // Priority selector (SegmentedButton<double>) must be reachable via scroll.
+        // Type parameter required — find.byType(SegmentedButton) without <double>
+        // does not match (16-RESEARCH.md Pitfall 6).
+        //
+        // Use find.byType(Scrollable).first to target the DraggableScrollableSheet's
+        // scrollable, which is linked to the form's SingleChildScrollView via the
+        // shared scrollController passed to GoalFormSheet. Using
+        // find.byType(SingleChildScrollView) as the scrollable arg fails because
+        // scrollUntilVisible casts the found widget to Scrollable directly.
+        await tester.scrollUntilVisible(
+          find.byType(SegmentedButton<double>),
+          100,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.byType(SegmentedButton<double>), findsOneWidget);
+
+        // Save button (ElevatedButton) must be reachable via scroll.
+        await tester.scrollUntilVisible(
+          find.byType(ElevatedButton),
+          100,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.byType(ElevatedButton), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'outcome goal: Priority selector and Save reachable via scroll at '
+      'true modal height — outcome content (~692px) exceeds modal (506px), '
+      'so real scrolling is required',
+      (tester) async {
+        await _pumpModal(tester);
+
+        // Select the outcome goal type — deepest variant with most fields.
+        await tester.tap(
+          find.text("I'm working toward a specific outcome"),
+        );
+        await tester.pumpAndSettle();
+
+        // Priority selector must be reachable via scroll (may be below fold).
+        await tester.scrollUntilVisible(
+          find.byType(SegmentedButton<double>),
+          100,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.byType(SegmentedButton<double>), findsOneWidget);
+
+        // Save button (ElevatedButton) must be reachable via scroll.
+        // The outcome form's Save is below the date picker + description field —
+        // this scroll is the core correctness assertion for GOALFORM-02.
+        await tester.scrollUntilVisible(
+          find.byType(ElevatedButton),
+          100,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.byType(ElevatedButton), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'habit goal: Priority selector and Save reachable via scroll at '
+      'true modal height (390x844 / initialChildSize 0.6)',
+      (tester) async {
+        await _pumpModal(tester);
+
+        // Select the habit goal type.
+        await tester.tap(find.text('I want to build a daily habit'));
+        await tester.pumpAndSettle();
+
+        // Priority selector must be reachable via scroll.
+        await tester.scrollUntilVisible(
+          find.byType(SegmentedButton<double>),
+          100,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.byType(SegmentedButton<double>), findsOneWidget);
+
+        // Save button (ElevatedButton) must be reachable via scroll.
+        await tester.scrollUntilVisible(
+          find.byType(ElevatedButton),
+          100,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.byType(ElevatedButton), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping High selects it and save persists priorityWeight == 0.75 '
+      '(folded in from replaced setSurfaceSize test — at true modal height)',
+      (tester) async {
+        final repo = await _pumpModal(tester);
+
+        // Select time-target (minimal extra fields; avoids date-picker
+        // complications and enables Add goal).
+        await tester.tap(
+          find.text('I want to spend regular time on something'),
+        );
+        await tester.pumpAndSettle();
+
+        // Scroll to and tap the High segment.
+        await tester.scrollUntilVisible(
+          find.byType(SegmentedButton<double>),
+          100,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(find.text('High'));
+        await tester.pumpAndSettle();
+
+        // Verify selected state updated to 0.75.
+        final segBtn = tester.widget<SegmentedButton<double>>(
+          find.byType(SegmentedButton<double>),
+        );
+        expect(
+          segBtn.selected,
+          equals({0.75}),
+          reason: 'Tapping High must select 0.75',
+        );
+
+        // Enter a goal name so Save is enabled (_canSave requires non-empty name).
+        await tester.enterText(find.byType(TextField).first, 'Test Goal');
+        await tester.pumpAndSettle();
+
+        // Scroll to and tap 'Add goal'. Use .last because 'Add goal' also
+        // appears as the sheet title Text above the ElevatedButton.
+        await tester.scrollUntilVisible(
+          find.byType(ElevatedButton),
+          100,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(find.text('Add goal').last);
+        await tester.pumpAndSettle();
+
+        expect(
+          repo.lastSaved?.priorityWeight,
+          closeTo(0.75, 0.001),
+          reason:
+              'Save must persist priorityWeight == 0.75 when High is selected',
+        );
+      },
+    );
+
+    testWidgets(
+      'selecting Regular time defaults the weekly budget to 3 hrs and saves it '
+      '(folded in from replaced setSurfaceSize test — at true modal height)',
+      (tester) async {
+        final repo = await _pumpModal(tester);
+
+        // Enter a goal name first (Save is disabled until name is non-empty).
+        await tester.enterText(find.byType(TextField).first, 'Family');
+        await tester.pumpAndSettle();
+
+        // Select time-target type — this sets weeklyHourBudget to 3.0.
+        await tester.tap(
+          find.text('I want to spend regular time on something'),
+        );
+        await tester.pumpAndSettle();
+
+        // Scroll to the weekly-hours field and verify it shows '3.0'.
+        await tester.scrollUntilVisible(
+          find.text('3.0'),
+          100,
+          scrollable: find.byType(Scrollable).first,
+        );
         expect(
           find.text('3.0'),
           findsOneWidget,
           reason: 'Regular-time goal must default the weekly budget to 3.0 hrs',
         );
 
+        // Scroll to and tap 'Add goal'.
+        await tester.scrollUntilVisible(
+          find.byType(ElevatedButton),
+          100,
+          scrollable: find.byType(Scrollable).first,
+        );
         await tester.tap(find.text('Add goal').last);
         await tester.pumpAndSettle();
 
