@@ -331,15 +331,21 @@ class ScheduleGeneratorService {
             goal.deadline != null; // mood 1–2 lighter OFF: all with deadlines
       }
       if (!include) continue;
-      workChunks.add(
-        ScheduledChunk(
-          chunkTypeIndex: ChunkType.work.index,
-          goalId: goal.id,
-          durationMinutes: 25,
-          rationale: _outcomeRationale(goal, date),
-        ),
-      );
-      discretionaryCount++;
+      // PRIORITY-02: high-priority outcomes get 2 chunks on good-mood days.
+      final outcomeDemand =
+          (!isLowMood && (goal.priorityWeight ?? 0.5) >= 0.75) ? 2 : 1;
+      for (int i = 0; i < outcomeDemand; i++) {
+        if (discretionaryCount >= cap) break;
+        workChunks.add(
+          ScheduledChunk(
+            chunkTypeIndex: ChunkType.work.index,
+            goalId: goal.id,
+            durationMinutes: 25,
+            rationale: _outcomeRationale(goal, date),
+          ),
+        );
+        discretionaryCount++;
+      }
     }
 
     // -------------------------------------------------------------------------
