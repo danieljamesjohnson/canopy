@@ -1300,6 +1300,81 @@ void main() {
   );
 
   // ---------------------------------------------------------------------------
+  // FILL-01: time-target goals appear on low-mood days with open capacity
+  // ---------------------------------------------------------------------------
+  test(
+    'FILL-01: mood=1, open capacity after habits → time-target goal appears in schedule',
+    () {
+      // With CAP-01 fix: 2 daily habits fill ceil(4/2)=2 slots; 2 slots remain.
+      // A time-target goal must fill those remaining slots.
+      final habits = List.generate(2, (i) => makeHabit(name: 'Habit $i'));
+      final tt = makeTimeTarget(name: 'Regular-time', weeklyHourBudget: 5);
+      final result = sut.generate(
+        goals: [...habits, tt],
+        blocks: [],
+        moodIndex: 1,
+        date: monday,
+        completionLogs: [],
+      );
+      final ttChunks = result
+          .where((c) => c.chunkType == ChunkType.work && c.goalId == tt.id)
+          .length;
+      expect(
+        ttChunks,
+        greaterThanOrEqualTo(1),
+        reason:
+            'FILL-01: regular-time goal must appear on a low-mood day with open capacity',
+      );
+    },
+  );
+
+  // ---------------------------------------------------------------------------
+  // FILL-02: open capacity distributed across multiple time-target goals
+  // ---------------------------------------------------------------------------
+  test(
+    'FILL-02: 3 time-target goals with limited cap — no single goal swallows all open slots',
+    () {
+      // mood=3, lighterDay=false → cap=8. No habits.
+      // weeklyHourBudget=10 → demand=ceil(10*60/25/7)=4 per goal (total 12, binding at 8).
+      // With round-robin: each goal gets ~2-3 chunks. Without: goal 1 gets 4, goal 3 gets 0.
+      final goals = [
+        makeTimeTarget(name: 'G1', weeklyHourBudget: 10, priorityWeight: 0.5),
+        makeTimeTarget(name: 'G2', weeklyHourBudget: 10, priorityWeight: 0.5),
+        makeTimeTarget(name: 'G3', weeklyHourBudget: 10, priorityWeight: 0.5),
+      ];
+      final result = sut.generate(
+        goals: goals,
+        blocks: [],
+        moodIndex: 3,
+        date: monday,
+        completionLogs: [],
+        lighterDay: false,
+      );
+      final g1 = result
+          .where(
+            (c) => c.chunkType == ChunkType.work && c.goalId == goals[0].id,
+          )
+          .length;
+      final g3 = result
+          .where(
+            (c) => c.chunkType == ChunkType.work && c.goalId == goals[2].id,
+          )
+          .length;
+      expect(
+        g3,
+        greaterThanOrEqualTo(1),
+        reason:
+            'FILL-02: last goal in priority list must receive at least 1 chunk (no monopoly)',
+      );
+      expect(
+        g1,
+        lessThanOrEqualTo(workChunksOf(result) - 1),
+        reason: 'FILL-02: first goal must not swallow all capacity',
+      );
+    },
+  );
+
+  // ---------------------------------------------------------------------------
   // Start-time floor: a mid-day generation packs from "now", not 8:00 AM.
   // ---------------------------------------------------------------------------
   group('startFloorMinutes places discretionary work near "now"', () {
