@@ -75,7 +75,8 @@ class _GoalCardState extends State<GoalCard> {
         : theme.colorScheme.primary;
     final secondary = _secondaryLine(goal);
     final showHoverIcons = widget.trailing == null;
-    final showPriorityChip = (goal.priorityWeight ?? 0.5) != 0.5;
+    final pw = goal.priorityWeight ?? 0.5;
+    final showPriorityChip = pw >= 0.75 || pw <= 0.25;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
