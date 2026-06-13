@@ -172,9 +172,11 @@ Future<void> _tapMoodAndGenerate(WidgetTester tester) async {
   await tester.pump(); // setState: _selectedMood = 3, shows "Let's go"
 
   await tester.tap(find.text("Let's go"));
-  await tester.pump(); // starts async _generate()
-  await tester.pump(); // drains microtasks → _generationDone = true
-  await tester.pumpAndSettle(); // AnimatedSwitcher 300ms transition
+  // WR-03: Use pump() + pump(500ms) instead of two bare pump() calls so that
+  // any number of microtask turns in _generate() (and its fake) are drained
+  // before the AnimatedSwitcher 300ms transition completes.
+  await tester.pump(); // kick off the async _generate()
+  await tester.pump(const Duration(milliseconds: 500)); // drain async + animate
 }
 
 // ---------------------------------------------------------------------------
