@@ -90,15 +90,35 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
       ..outcomeDescription = _outcomeDescription
       ..frequencyPerWeek = _frequencyPerWeek;
 
-    await notifier.saveGoal(goal);
-    if (mounted) Navigator.pop(context);
+    try {
+      await notifier.saveGoal(goal);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not save goal. Please try again.'),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _archive() async {
     final goal = widget.goal;
     if (goal == null) return;
-    await context.read<GoalsNotifier>().archiveGoal(goal.id);
-    if (mounted) Navigator.pop(context);
+    try {
+      await context.read<GoalsNotifier>().archiveGoal(goal.id);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not archive goal. Please try again.'),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _pickDeadline() async {
