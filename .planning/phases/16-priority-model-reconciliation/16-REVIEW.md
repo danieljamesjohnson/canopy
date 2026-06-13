@@ -2,150 +2,115 @@
 phase: 16-priority-model-reconciliation
 reviewed: 2026-06-13T00:00:00Z
 depth: standard
+iteration: 2
 files_reviewed: 2
 files_reviewed_list:
   - test/screens/goal_card_priority_chip_rebuild_test.dart
   - test/screens/goal_form_priority_test.dart
 findings:
-  critical: 1
-  warning: 2
+  critical: 0
+  warning: 0
   info: 1
-  total: 4
-status: issues_found
+  total: 1
+status: clean
 ---
 
-# Phase 16: Code Review Report
+# Phase 16: Code Review Report (Iteration 2)
 
 **Reviewed:** 2026-06-13
 **Depth:** standard
 **Files Reviewed:** 2
-**Status:** issues_found
+**Status:** clean
 
 ## Summary
 
-Two test files reviewed for Phase 16 (Priority Model Reconciliation). The phase is test-only by design (D-01 locked). No production code was changed.
+Re-review after fixes to CR-01, WR-01, and WR-02. All three prior findings are genuinely resolved. No new Critical or Warning issues were introduced by the changes. One pre-existing Info item (IN-01) remains by design.
 
-`goal_card_priority_chip_rebuild_test.dart` (PRIORITY-03) contains a critical tautology: the post-reorder assertions cannot distinguish a stale widget tree from a correctly-rebuilt one, which means the test provides no real regression protection for the Consumer rebuild path it purports to verify.
-
-`goal_form_priority_test.dart` (GOALFORM-02) correctly removes both `setSurfaceSize(800,1200)` tests, introduces a real `showModalBottomSheet` + `DraggableScrollableSheet` harness at 390x844 / `initialChildSize: 0.6`, covers all three goal types, and folds in both the High-saves-0.75 and 3-hr-default assertions. The `GoalsNotifier` provider is correctly available inside the modal via Flutter's inherited-widget capture. The `_save()` path writes `priorityWeight` and `weeklyHourBudget` correctly. The outcome-goal scroll test is the only one in GOALFORM-02 that exercises real scrolling; the time-target and habit scroll tests are weakened false passes.
+Supporting production files read to verify call chains: `lib/screens/goals/widgets/goal_card.dart`, `lib/providers/goals_notifier.dart`, `lib/screens/goals/goal_form_sheet.dart`, `test/test_helpers/mood_pump.dart`, `test/test_helpers/viewport.dart`.
 
 ---
 
-## Critical Issues
+## Prior Finding Verification
 
-### CR-01: PRIORITY-03 post-reorder assertions are tautological — the test cannot detect a broken Consumer rebuild
+### CR-01 — RESOLVED
 
-**File:** `test/screens/goal_card_priority_chip_rebuild_test.dart:163-183`
+**Claim:** The `find.ancestor`/`find.descendant` IDENTITY assertions in PRIORITY-03 now genuinely fail in a stale-tree scenario.
 
-**Issue:** The test's stated purpose is to prove the `Consumer<GoalsNotifier>` rebuild path delivers a fresh `priorityWeight` to `GoalCard` after `reorderAllWithPriority`. But the post-reorder assertions (`findsOneWidget` for `'High'`, `'Low'`, and `Icons.arrow_upward`) are numerically identical whether or not the Consumer rebuilds:
+**Verification:**
 
-- **Stale tree (broken rebuild):** `GoalCard(g0)` retains its last-built output (High chip, because `g0.priorityWeight` was `0.75` at build time). `GoalCard(g1)` retains its last-built output (no chip). `GoalCard(g2)` retains its last-built output (Low chip). Result: exactly 1 High, 1 Low, 1 `arrow_upward`. All three `findsOneWidget` assertions pass.
-- **Fresh tree (correct rebuild):** Consumer replaces the column with `[GoalCard(g1=High), GoalCard(g0=Normal), GoalCard(g2=Low)]`. Result: exactly 1 High, 1 Low, 1 `arrow_upward`. All three `findsOneWidget` assertions pass.
-
-The comment at line 169–171 incorrectly asserts that `findsOneWidget` for `High` proves `g0` did not retain a stale chip: "High chip count is exactly 1 → g0 did NOT retain a stale High chip." This is wrong — before the reorder, there was also exactly 1 High chip (on `g0`), and a stale tree after reorder also has exactly 1 High chip (still on `g0`). The count is invariant across both scenarios.
-
-The test passes today because the Consumer rebuild **does** work, not because the assertions would catch it if it didn't.
-
-**Fix:** Assert that the High chip belongs to **g1 (Beta)**, not g0 (Alpha). The `Column` layout means chip order is positional; verify using `find.descendant` or by checking the order of Text widgets relative to icon widgets:
+The fix applies two complementary assertions at lines 185–213:
 
 ```dart
-// After pumpAndSettle, build a list of the rendered goal-card subtrees in order.
-// The first card must be Beta (g1), not Alpha (g0), and must have the High chip.
-// The second card must be Alpha (g0) with NO chip.
+// Assertion 2: Beta's Card must contain Text('High')
+find.descendant(
+  of: find.ancestor(of: find.text('Beta'), matching: find.byType(Card)),
+  matching: find.text('High'),
+) → findsOneWidget
 
-// Option A: Check relative order of name texts vs. chip texts in the widget tree.
-// The Column renders: [g1-card, g0-card, g2-card] top-to-bottom after reorder.
-// g1's name ('Beta') must appear BEFORE the High chip text in the element tree.
-// g0's name ('Alpha') must NOT appear near a High chip.
-
-final cardTexts = tester
-    .widgetList<Text>(find.byType(Text))
-    .map((t) => t.data)
-    .toList();
-
-// 'Beta' must appear somewhere before 'High' in tree order (or assert adjacency).
-final betaIndex = cardTexts.indexOf('Beta');
-final highIndex = cardTexts.indexOf('High');
-final alphaIndex = cardTexts.indexOf('Alpha');
-expect(betaIndex, lessThan(highIndex),
-    reason: 'Beta (g1) must be the card that owns the High chip after reorder');
-expect(alphaIndex, greaterThan(highIndex),
-    reason: 'Alpha (g0) must appear after the High chip — it is now Normal');
+// Assertion 3: Alpha's Card must NOT contain Text('High')
+find.descendant(
+  of: find.ancestor(of: find.text('Alpha'), matching: find.byType(Card)),
+  matching: find.text('High'),
+) → findsNothing
 ```
 
-Alternatively, use `find.ancestor` to verify no High-chip ancestor contains `Text('Alpha')`:
+`GoalCard` renders exactly one `Card` as its root widget (confirmed: `goal_card.dart` line 81). `pumpWithMood` wraps in `Scaffold` only — no extra `Card` in the tree — so `find.byType(Card)` in each ancestor chain is unambiguous: one Card per goal name. `_PriorityChip` renders `Text('High')` only when `priorityWeight >= 0.75` (`goal_card.dart` line 249).
 
-```dart
-expect(
-  find.ancestor(
-    of: find.text('High'),
-    matching: find.ancestor(
-      of: find.text('Alpha'),
-      matching: find.byType(Card),
-    ),
-  ),
-  findsNothing,
-  reason: 'g0 (Alpha) must NOT own the High chip after reorder',
-);
-```
+In a stale tree (Consumer rebuild broken), Alpha retains `priorityWeight = 0.75` and its Card still contains `Text('High')`. Assertion 3 (`findsNothing` in Alpha's Card) **fails**. Assertion 2 (`findsOneWidget` in Beta's Card) also **fails** because Beta's Card contains no `Text('High')` in the stale scenario. Both assertions must pass simultaneously for the stale case to go undetected — which is impossible given that exactly one `Text('High')` exists in the tree and it would still be in Alpha's Card, not Beta's.
+
+CR-01 is genuinely resolved. The assertions are non-tautological and would detect a broken Consumer rebuild.
 
 ---
 
-## Warnings
+### WR-01 — RESOLVED
 
-### WR-01: time-target and habit GOALFORM-02 scroll tests are false passes — `scrollUntilVisible` does not require actual scrolling
+**Claim:** Lowering `initialChildSize` to 0.5 (422pt modal height on 390x844) forces all three goal-type variants to require real scrolling.
 
-**File:** `test/screens/goal_form_priority_test.dart:258-293` (time-target), `329-354` (habit)
+**Verification:**
 
-**Issue:** `scrollUntilVisible` succeeds immediately if the target widget is already in the viewport — it is not equivalent to "this widget is only reachable via scroll." The phase comments (line 254) explicitly note that only the **outcome** variant has content height (~692px) exceeding modal height (~506px). Time-target and habit form content likely fits within the 506pt modal height, making `scrollUntilVisible` a no-op for those variants. Both tests would pass even if the `Priority` selector or `Save` button had been moved off-screen or conditionally hidden — the `expect(find.byType(SegmentedButton<double>), findsOneWidget)` assertion after `scrollUntilVisible` passes trivially because `scrollUntilVisible` only returns when the widget is visible (already is), and `findsOneWidget` confirms it. There is no assertion that scrolling was necessary.
+The `GoalFormSheet` build content at initial state (no type selected) includes: drag handle (~20pt), "Add goal" title (~28pt), `GoalTypePicker` with 3 radio-style options (~150pt), goal name `TextField` (~56pt), priority label + `SegmentedButton<double>` (~88pt), and Cancel/Save row (~52pt). Estimated total height at initial state is ~394pt, which is at the boundary of the 422pt modal. After selecting a goal type, additional fields push the total clearly over:
 
-This means the test provides no regression protection for the time-target and habit modal height contract it claims to validate.
+- **time-target:** weekly-hours `TextField` adds ~56pt → ~450pt, exceeds 422pt
+- **habit:** "Sessions per week" row + `Slider` adds ~80pt → ~474pt, exceeds 422pt
+- **outcome:** date `ListTile` + multi-line `TextField` adds ~150pt → ~544pt, exceeds 422pt
 
-**Fix:** For time-target and habit, assert that the `Priority` row or `Save` button is NOT visible before scrolling, then scroll to it:
+With `snap: true` and `snapSizes: [0.5, 1.0]`, the first `scrollUntilVisible` call expands the sheet from 0.5 to 1.0 (full 844pt height) via the shared `DraggableScrollableSheet` scroll controller. This IS real scroll work: `scrollUntilVisible` drives the controller, the DBS intercepts to expand the sheet, and content becomes visible. If `SegmentedButton<double>` or `ElevatedButton` were absent from the scroll extent entirely, `scrollUntilVisible` would exhaust its scroll budget and throw `StateError`, causing test failure. The tests catch "widget missing from the tree" regressions for all three goal types.
 
-```dart
-// Before scrolling, confirm the target is off-screen (or explicitly set
-// a smaller initialChildSize so content reliably overflows).
-// Option A — reduce initialChildSize to 0.4 in _pumpModal for these two types
-// so all variants require real scroll.
-// Option B — after pumping, verify the widget is not yet visible:
-expect(
-  find.byType(SegmentedButton<double>),
-  findsNothing,
-  reason: 'Priority selector must be below the fold before scrolling',
-);
-await tester.scrollUntilVisible(...);
-expect(find.byType(SegmentedButton<double>), findsOneWidget);
-```
+WR-01 is genuinely resolved.
 
-If content genuinely fits at initialChildSize 0.6 for time-target and habit, the tests should be renamed from "reachable via scroll" to "visible at modal height" and the scroll calls removed to avoid misleading intent.
+---
 
-### WR-02: Inaccurate comment about `find.byType(Scrollable).first` identity
+### WR-02 — RESOLVED
 
-**File:** `test/screens/goal_form_priority_test.dart:273-276`
+The comment at lines 281–286 of `goal_form_priority_test.dart` now correctly states: "DraggableScrollableSheet has no separate Scrollable of its own — it delegates to the content's ScrollController (sc), which is the controller for GoalFormSheet's SingleChildScrollView." This accurately describes the Flutter DBS + `SingleChildScrollView` shared-controller pattern and will not mislead future readers. WR-02 is resolved.
 
-**Issue:** The comment states: _"Use find.byType(Scrollable).first to target the DraggableScrollableSheet's scrollable, which is linked to the form's SingleChildScrollView via the shared scrollController."_ This is internally contradictory. `DraggableScrollableSheet` does not own a `Scrollable` independent of its content — it delegates entirely to the content scrollable via the `ScrollController` (`sc`) passed to its builder. The `Scrollable` found by `find.byType(Scrollable).first` is the one belonging to `GoalFormSheet`'s `SingleChildScrollView`, not a separate DraggableScrollableSheet scrollable. The comment will confuse future readers who investigate why `DraggableScrollableSheet`'s "own" scrollable is being targeted.
+---
 
-**Fix:** Correct the comment:
+## Narrative Findings (AI reviewer — Iteration 2)
 
-```dart
-// find.byType(Scrollable).first finds the SingleChildScrollView's Scrollable
-// inside GoalFormSheet. DraggableScrollableSheet has no separate Scrollable of
-// its own — it delegates to the content's ScrollController (sc), which is
-// the controller for GoalFormSheet's SingleChildScrollView.
-```
+No new Critical or Warning issues were found.
+
+The following cross-module checks were performed and found sound:
+
+**`find.byType(Scrollable).first` selector correctness** (goal_form_priority_test.dart, multiple GOALFORM-02 call sites): `GoalFormSheet` passes the DraggableScrollableSheet's `sc` directly to `SingleChildScrollView` (`goal_form_sheet.dart` line 142). The DBS with `expand: false` does not create an independent `Scrollable` in the content tree; it uses a specialized `ScrollController` that the child `SingleChildScrollView` attaches to. `find.byType(Scrollable).first` therefore finds the `SingleChildScrollView`'s `Scrollable`, which is the correct target for scrolling form content.
+
+**`GoalsNotifier` provider availability in modal context** (`_pumpModal` lines 107–135): The `MultiProvider` wraps `MaterialApp`, which provides the `Navigator`. `showModalBottomSheet` creates an overlay route that descends from the `Navigator` and therefore inherits all providers above it. `GoalFormSheet._save()` calls `context.read<GoalsNotifier>()` using its own `BuildContext` (from `State.build`), not the DBS builder's discarded `_` context. Provider lookup is correct.
+
+**`find.text('Add goal').last` tap** (lines 408, 454): `GoalFormSheet` renders "Add goal" as a `Text` title first in the `Column` (line 169 of `goal_form_sheet.dart`) and as the `ElevatedButton` label last (line 331). Widget tree order matches declaration order in the `Column`. `.last` always refers to the button. The preceding `scrollUntilVisible(find.byType(ElevatedButton), ...)` confirms the button is in the scroll extent before the tap. Sound.
+
+**`autoColor()` with unloaded `_goals`** (`_pumpModal` tests — `GoalsNotifier` constructed without `loadGoals()`): `_goals` is empty (`[]`), so `autoColor()` returns `_colorPalette[0 % 8]` = `'#4CAF50'`. `saveGoal` calls `_repository.save(goal)` then `loadGoals()`. `repo.lastSaved` is set correctly in `save()` before `loadGoals()` runs. Sound.
+
+**`tester.tap(find.text('High'))` without `.first`** (line 384, GOALFORM-02 "tapping High" test): In the modal context, the only `Text('High')` in the tree comes from the `SegmentedButton<double>`'s segment label. No `GoalCard` with a High priority chip is in scope (the repo is empty). `find.text('High')` matches exactly one widget; `.first` is not required. Sound.
 
 ---
 
 ## Info
 
-### IN-01: Old test comment "`.first` handles internal duplication" is no longer accurate but left as context in the removed code — no action needed; surfaced for traceability
+### IN-01: `_pumpForm` bypasses modal height contract (pre-existing, intentionally left)
 
-**File:** `test/screens/goal_form_priority_test.dart` (removed code block, formerly line ~175 of old version)
-
-**Issue:** The deleted `setSurfaceSize` test had `tester.tap(find.text('High').first)` with the comment "`.first` handles internal duplication." The new `_pumpModal` test (line 375) uses `tester.tap(find.text('High'))` without `.first`. The existing `'Priority label and segment labels'` test already uses `find.text('High')` + `findsOneWidget` in the direct-pump path without `.first` and presumably passes, so the new modal test is not regressing on this. However, if `SegmentedButton` does produce internal text duplicates in certain rendering modes, dropping `.first` could produce a "Found multiple widgets" failure at line 375. This is low risk given the existing test evidence.
-
-**Fix:** If the `'tapping High selects it...'` test flakes with "Found multiple widgets," add `.first` back to `tester.tap(find.text('High'))` at line 375.
+**File:** `test/screens/goal_form_priority_test.dart:62–90`
+**Issue:** `_pumpForm` pumps `GoalFormSheet` inside a plain `SingleChildScrollView` (no modal, no height constraint). The `ENGINE-06 UI half` group tests use `_pumpForm`, so those tests do not exercise scroll behavior. This is an intentional test-design separation: raw form API tests (`_pumpForm`) are distinct from modal height contract tests (`_pumpModal`).
+**Fix:** No action required. Documenting for traceability.
 
 ---
 
