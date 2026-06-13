@@ -368,10 +368,12 @@ class ScheduleGeneratorService {
 
     // PRIORITY-03: high-priority time-target goals (priorityWeight >= 0.75) receive
     // one surplus chunk ahead of the round-robin so they end up with strictly more
-    // chunks than lower-priority goals when capacity is binding.  The surplus is
-    // capped by both the goal's own demand and the remaining discretionary cap, and
-    // lower-priority goals are still guaranteed at least one chunk when demand and
-    // capacity allow (the subsequent round-robin handles this).
+    // chunks than lower-priority goals when capacity is binding. The surplus is
+    // capped by both the goal's own demand and the remaining discretionary cap.
+    // NOTE: when three or more high-priority goals are present, the surplus pass
+    // can consume enough capacity that lower-priority goals receive zero chunks
+    // even if they have demand. This is accepted behavior; the round-robin that
+    // follows only guarantees proportional distribution among goals that reach it.
     final placedCountPerGoal = <String, int>{};
     for (final goal in timeTargetGoals) {
       if (discretionaryCount >= cap) break;
