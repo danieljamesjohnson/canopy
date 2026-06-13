@@ -38,15 +38,55 @@ class _CheckinScreenState extends State<CheckinScreen> {
   };
 
   int? _selectedMood;
-  bool _lighterDay = true;
   bool _scheduleGenerated = false;
   bool _isGenerating = false;
+
+  // CHECKIN-01: three new state fields added alongside existing ones.
+  // _generationDone drives the AnimatedSwitcher to the decision screen (Task 2).
+  // _hoveredMoods / _pressedMoods drive luminance-adaptive hover/pressed visuals.
+  bool _generationDone = false;
+  final Map<int, bool> _hoveredMoods = {};
+  final Map<int, bool> _pressedMoods = {};
 
   Color get _backgroundColor {
     if (_selectedMood != null) {
       return ThemeNotifier.moodSeeds[_selectedMood!]!;
     }
     return Colors.transparent; // fallback; Builder supplies surface color
+  }
+
+  /// Luminance-adaptive foreground color for text/icons overlaid on the
+  /// mood background (CHECKIN-01). Replaces all hardcoded `Colors.white`
+  /// foreground references when `_selectedMood != null`.
+  ///
+  /// Returns `Color(0xFF1A1A1A)` (near-black) for light backgrounds
+  /// (luminance > 0.35 — moods 4 and 5 require this to pass WCAG AA).
+  /// Returns `Colors.white` for dark backgrounds (moods 1-3).
+  /// Falls back to `colorScheme.onSurface` when no mood is selected.
+  Color get _onBgColor {
+    if (_selectedMood == null) return Theme.of(context).colorScheme.onSurface;
+    final bg = _backgroundColor;
+    final luminance = bg.computeLuminance();
+    // WCAG requirement: use dark text on light backgrounds (luminance > 0.35).
+    // Mood 5 (#E8C547 amber, luminance ≈ 0.55) and mood 4 (#7AAF6A sage,
+    // luminance ≈ 0.36) both exceed 0.35 and require the dark foreground.
+    return luminance > 0.35 ? const Color(0xFF1A1A1A) : Colors.white;
+  }
+
+  /// Resolves the emoji target background color, incorporating hover and
+  /// pressed states with luminance-adaptive base color (CHECKIN-01).
+  Color _resolveEmojiBackground(int mood, bool isSelected) {
+    final isHovered = _hoveredMoods[mood] ?? false;
+    final isPressed = _pressedMoods[mood] ?? false;
+    final luminance =
+        _selectedMood != null ? _backgroundColor.computeLuminance() : 0.0;
+    final base =
+        luminance > 0.35 ? const Color(0xFF1A1A1A) : Colors.white;
+    if (isSelected) {
+      return base.withAlpha(isPressed ? 77 : (isHovered ? 64 : 51));
+    } else {
+      return base.withAlpha(isHovered ? 26 : 0);
+    }
   }
 
   Future<void> _generate() async {
@@ -57,7 +97,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
         moodIndex: _selectedMood!,
         goals: context.read<GoalsNotifier>().goals,
         blocks: context.read<CommitmentsNotifier>().blocks,
-        lighterDay: _lighterDay,
+        lighterDay: false, // provisional — decision screen may regenerate
       );
 
       // Request iOS notification permission after first successful check-in.
@@ -66,16 +106,36 @@ class _CheckinScreenState extends State<CheckinScreen> {
 
       if (mounted) {
         setState(() {
-          _scheduleGenerated = true;
+          _generationDone = true; // triggers AnimatedSwitcher → decision screen
           _isGenerating = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isGenerating = false);
-        // Optionally surface feedback to the user here.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Something went wrong. Please try again.'),
+          ),
+        );
       }
-      rethrow;
+    }
+  }
+
+  Future<void> _commitAndProceed({required bool lighterDay}) async {
+    if (lighterDay) {
+      // Regenerate with lighter day — fast engine call; overwrites the
+      // provisional lighterDay:false schedule generated in _generate().
+      await context.read<ScheduleNotifier>().generateToday(
+        moodIndex: _selectedMood!,
+        goals: context.read<GoalsNotifier>().goals,
+        blocks: context.read<CommitmentsNotifier>().blocks,
+        lighterDay: true,
+      );
+    }
+    // else: reuse the schedule already generated in _generate() (lighterDay: false).
+    if (mounted) {
+      setState(() => _scheduleGenerated = true);
     }
   }
 
@@ -126,14 +186,16 @@ class _CheckinScreenState extends State<CheckinScreen> {
               title: Text(
                 'How are you feeling?',
                 style: TextStyle(
+                  // CHECKIN-01: _onBgColor replaces hardcoded Colors.white
                   color: _selectedMood != null
-                      ? Colors.white
+                      ? _onBgColor
                       : Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               iconTheme: IconThemeData(
+                // CHECKIN-01: _onBgColor replaces hardcoded Colors.white
                 color: _selectedMood != null
-                    ? Colors.white
+                    ? _onBgColor
                     : Theme.of(context).colorScheme.onSurface,
               ),
             ),
@@ -141,7 +203,9 @@ class _CheckinScreenState extends State<CheckinScreen> {
         duration: const Duration(milliseconds: 300),
         child: _scheduleGenerated
             ? _buildAcknowledgmentBody(context)
-            : _buildCheckinBody(context),
+            : _generationDone
+                ? _buildDecisionBody(context)
+                : _buildCheckinBody(context),
       ),
     );
   }
@@ -150,9 +214,6 @@ class _CheckinScreenState extends State<CheckinScreen> {
     final bgColor = _selectedMood != null
         ? _backgroundColor
         : Theme.of(context).colorScheme.surface;
-    final onBg = _selectedMood != null
-        ? Colors.white
-        : Theme.of(context).colorScheme.onSurface;
 
     return Center(
       key: const ValueKey('checkin'),
@@ -169,68 +230,66 @@ class _CheckinScreenState extends State<CheckinScreen> {
                 final mood = entry.key;
                 final emoji = entry.value;
                 final isSelected = _selectedMood == mood;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedMood = mood;
-                    });
-                    // Phase 6 Plan 05: route the mood tap through ThemeNotifier
-                    // so Plan 04's themeAnimationDuration warms the ColorScheme
-                    // app-wide (AC-6, D-09).
-                    context.read<ThemeNotifier>().setMoodSeed(
-                      ThemeNotifier.moodSeeds[mood]!,
-                    );
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isSelected
-                          ? Colors.white.withAlpha(51) // ~20% opacity
-                          : Colors.transparent,
+                // CHECKIN-01: wrap GestureDetector in MouseRegion for hover,
+                // add onTapDown/onTapUp/onTapCancel for pressed visual feedback.
+                return MouseRegion(
+                  onEnter: (_) =>
+                      setState(() => _hoveredMoods[mood] = true),
+                  onExit: (_) =>
+                      setState(() => _hoveredMoods[mood] = false),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedMood = mood;
+                      });
+                      // Phase 6 Plan 05: route the mood tap through ThemeNotifier
+                      // so Plan 04's themeAnimationDuration warms the ColorScheme
+                      // app-wide (AC-6, D-09).
+                      context.read<ThemeNotifier>().setMoodSeed(
+                        ThemeNotifier.moodSeeds[mood]!,
+                      );
+                    },
+                    onTapDown: (_) =>
+                        setState(() => _pressedMoods[mood] = true),
+                    onTapUp: (_) =>
+                        setState(() => _pressedMoods[mood] = false),
+                    onTapCancel: () =>
+                        setState(() => _pressedMoods[mood] = false),
+                    child: AnimatedContainer(
+                      // CHECKIN-01: 120ms hover timing per UI-SPEC
+                      duration: const Duration(milliseconds: 120),
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        // CHECKIN-01: luminance-adaptive hover/pressed color
+                        color: _resolveEmojiBackground(mood, isSelected),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(emoji, style: const TextStyle(fontSize: 36)),
                     ),
-                    alignment: Alignment.center,
-                    child: Text(emoji, style: const TextStyle(fontSize: 36)),
                   ),
                 );
               }).toList(),
             ),
             const SizedBox(height: 32),
-            // Follow-up toggle — visible for all moods once selected (ENGINE-05)
-            if (_selectedMood != null) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Want a lighter day?',
-                    style: TextStyle(color: onBg, fontSize: 16),
-                  ),
-                  const SizedBox(width: 12),
-                  Switch(
-                    value: _lighterDay,
-                    onChanged: (val) => setState(() => _lighterDay = val),
-                    activeThumbColor: Colors.white,
-                    activeTrackColor: Colors.white.withAlpha(102),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
-            // Confirm button
+            // Confirm button — visible once mood is selected.
+            // Inline "Want a lighter day?" Switch removed (CHECKIN-02).
             if (_selectedMood != null) ...[
               SizedBox(
                 width: 200,
                 child: ElevatedButton(
-                  onPressed: _isGenerating ? null : _generate,
+                  // CHECKIN-01 / Pitfall 6: non-null no-op during generation
+                  // avoids the unreadable Material disabled foreground on light
+                  // backgrounds (e.g. amber mood 5).
+                  onPressed: _isGenerating ? () {} : _generate,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: bgColor,
+                    // CHECKIN-01: luminance-adaptive button colors
+                    backgroundColor: _onBgColor,
+                    foregroundColor: _backgroundColor,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
+                    // StadiumBorder adapts to button height (e.g. spinner swap)
+                    shape: const StadiumBorder(),
                   ),
                   child: _isGenerating
                       ? SizedBox(
@@ -246,13 +305,79 @@ class _CheckinScreenState extends State<CheckinScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: bgColor,
+                            color: _backgroundColor,
                           ),
                         ),
                 ),
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDecisionBody(BuildContext context) {
+    final onBg = _onBgColor;
+    return Container(
+      key: const ValueKey('decision'),
+      width: double.infinity,
+      height: double.infinity,
+      color: _backgroundColor,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Ready to start?',
+                    style: TextStyle(
+                      color: onBg,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Choose your pace for today',
+                    style: TextStyle(
+                      color: onBg.withAlpha(179),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  _LighterDayCard(
+                    icon: Icons.bolt_outlined,
+                    title: 'Full day',
+                    subtitle: 'Push forward with your complete plan',
+                    onBgColor: onBg,
+                    onTap: () => _commitAndProceed(lighterDay: false),
+                  ),
+                  const SizedBox(height: 12),
+                  _LighterDayCard(
+                    icon: Icons.self_improvement_outlined,
+                    title: 'Lighter day',
+                    subtitle: 'A gentler pace — fewer chunks, lower stakes',
+                    onBgColor: onBg,
+                    onTap: () => _commitAndProceed(lighterDay: true),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () =>
+                        setState(() => _generationDone = false),
+                    child: Text(
+                      'Go back',
+                      style: TextStyle(color: onBg.withAlpha(179)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -309,6 +434,99 @@ class _CheckinScreenState extends State<CheckinScreen> {
                     color: Colors.white.withAlpha(179), // ~70% opacity
                     fontSize: 14,
                     letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _LighterDayCard — private StatefulWidget for lighter-day choice cards.
+// Used only in _buildDecisionBody. Provides AnimatedScale press feedback,
+// MouseRegion hover states, and GestureDetector tap handling (CHECKIN-02).
+// ---------------------------------------------------------------------------
+
+class _LighterDayCard extends StatefulWidget {
+  const _LighterDayCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onBgColor,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color onBgColor;
+  final VoidCallback onTap;
+
+  @override
+  State<_LighterDayCard> createState() => _LighterDayCardState();
+}
+
+class _LighterDayCardState extends State<_LighterDayCard> {
+  bool _pressed = false;
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) {
+          // Pitfall 5: setState first, then invoke onTap so the press visual
+          // clears before the parent setState (schedule change) rebuilds.
+          setState(() => _pressed = false);
+          widget.onTap();
+        },
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedScale(
+          scale: _pressed ? 0.97 : 1.0,
+          duration: const Duration(milliseconds: 80),
+          curve: Curves.easeOut,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: widget.onBgColor.withAlpha(_hovered ? 153 : 77),
+                width: 1.5,
+              ),
+              color: widget.onBgColor.withAlpha(_hovered ? 38 : 26),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(widget.icon, color: widget.onBgColor, size: 28),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: widget.onBgColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.subtitle,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: widget.onBgColor.withAlpha(179),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
