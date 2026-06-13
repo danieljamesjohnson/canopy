@@ -91,7 +91,10 @@ class _CheckinScreenState extends State<CheckinScreen> {
 
   Future<void> _generate() async {
     if (_selectedMood == null || _isGenerating) return;
-    setState(() => _isGenerating = true);
+    setState(() {
+      _isGenerating = true;
+      _pressedMoods.clear(); // WR-01: clear any stale pressed state before transition
+    });
     try {
       await context.read<ScheduleNotifier>().generateToday(
         moodIndex: _selectedMood!,
