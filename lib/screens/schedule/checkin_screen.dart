@@ -79,14 +79,18 @@ class _CheckinScreenState extends State<CheckinScreen> {
   Color _resolveEmojiBackground(int mood, bool isSelected) {
     final isHovered = _hoveredMoods[mood] ?? false;
     final isPressed = _pressedMoods[mood] ?? false;
+    // Before a mood is picked the emoji sits on colorScheme.surface (see build:
+    // bgColor = surfaceColor when _selectedMood == null), so derive luminance from
+    // the ACTUAL background instead of hard-coding 0.0 — otherwise `base` was always
+    // white and a white wash on the light surface was invisible.
     final luminance = _selectedMood != null
         ? _backgroundColor.computeLuminance()
-        : 0.0;
+        : Theme.of(context).colorScheme.surface.computeLuminance();
     final base = luminance > 0.35 ? const Color(0xFF1A1A1A) : Colors.white;
     if (isSelected) {
       return base.withAlpha(isPressed ? 77 : (isHovered ? 64 : 51));
     } else {
-      return base.withAlpha(isHovered ? 26 : 0);
+      return base.withAlpha(isPressed ? 77 : (isHovered ? 51 : 0));
     }
   }
 
