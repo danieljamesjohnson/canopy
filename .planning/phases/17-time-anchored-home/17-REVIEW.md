@@ -2,167 +2,190 @@
 phase: 17-time-anchored-home
 reviewed: 2026-06-13T00:00:00Z
 depth: standard
-iteration: 2
+iteration: 3
 files_reviewed: 3
 files_reviewed_list:
   - lib/screens/home/home_screen.dart
   - test/screens/home_screen_now_state_test.dart
   - test/screens/active_chunk_card_test.dart
 findings:
-  critical: 1
-  warning: 1
-  info: 0
+  critical: 0
+  warning: 0
+  info: 2
   total: 2
-status: issues_found
+status: clean
 ---
 
-# Phase 17: Code Review Report (Iteration 2)
+# Phase 17: Code Review Report (Iteration 3 — Final)
 
 **Reviewed:** 2026-06-13
 **Depth:** standard
-**Iteration:** 2 (re-review after WR-01 fix)
+**Iteration:** 3 (re-review after GapBeforeNext fix)
 **Files Reviewed:** 3
-**Status:** issues_found
+**Status:** clean
 
 ## Summary
 
-Iteration 2 verifies prior findings and critically examines the WR-01 fix. Prior findings CR-01 (now() called twice), CR-02 (UTC/local — accepted as pre-existing tech debt, documented at lines 90–99), CR-03 (tautological all-resolved tests), WR-02 (test identity pinning), WR-03 (double-timer test), and IN-01 (doc comment) are all verified resolved.
-
-The WR-01 fix (advance-loop gap guard) prevents the premature-Active bug for which it was written. However, it introduced a new, distinct honesty defect: it returns `DayComplete` in the gap-between-resolved-and-next-chunk case, even when unresolved future chunks remain. This directly contradicts the "An Honest Day" milestone — showing "That's a wrap / You've reached the end of today's schedule" to a user who still has a scheduled pending chunk coming up in minutes. The test suite then encodes this wrong behavior as expected, locking in the defect.
+Iteration 3 verifies the GapBeforeNext addition and re-confirms all prior findings. Every
+mandated scenario traces correctly. No Critical or Warning issues remain. Two Info-level items
+are noted (stale comment; dead null-branch in the gap widget). The implementation is ready to ship.
 
 ---
 
-## Prior Findings — Disposition
+## Structural Findings (fallow)
+
+None provided for this phase.
+
+---
+
+## Narrative Findings (AI reviewer)
+
+### Prior Findings — Disposition
 
 | Finding | Disposition |
 |---------|-------------|
-| CR-01 (now() called twice) | **Resolved.** `now()` called exactly once at line 108; result stored in `nowDt`. The doc comment (line 72–75) explicitly documents the single-call contract. |
-| CR-02 (UTC/local frame mismatch) | **Accepted as pre-existing tech debt.** Documented at lines 90–99 in `resolveNowState`. Frame-of-reference note is clear, the display layer and logic layer are now explicitly aligned. Out of scope for Phase 17. |
-| CR-03 (tautological all-resolved widget tests) | **Resolved.** `active_chunk_card_test.dart` `_scheduleAllResolved()` (lines 274–299) now uses real `syntheticStartMinutes` (540 and 600). Tests inject `allResolvedNow = () => DateTime(2026, 6, 13, 10, 5)` (inside c2's window). `resolveNowState` enters the traversal loop, advances past completed c1 then skipped c2, exhausts candidates, and returns `DayComplete` for the correct structural reason. |
-| WR-01 (future chunk wrongly Active) | **Partially resolved — gap guard introduced a new CR-level bug.** See CR-01 below. |
-| WR-02 (overdue test identity pinning) | **Resolved.** Widget test at lines 396–413 of `home_screen_now_state_test.dart` asserts `find.descendant(of: find.byType(ActiveChunkCard), matching: find.textContaining('8:30 AM'))`, pinning the `ActiveChunkCard` to c1's start time. |
-| WR-03 (double-timer idempotency test) | **Resolved.** Test at lines 539–573 of `home_screen_now_state_test.dart` counts `now()` calls across exactly one 1-minute pump after two paused→resumed cycles. Asserts `nowCallCount == 1`. |
-| IN-01 (doc comment gap) | **Resolved.** Single-call contract documented at lines 72–75. |
+| CR-01 (now() called twice) | **Confirmed resolved.** `now()` called exactly once at line 123; result stored in `nowDt`. Single-call contract documented at lines 119-122. |
+| CR-02 (UTC/local frame) | **Confirmed accepted.** Documented departure at lines 107-114. Out of scope for Phase 17. |
+| CR-03 (tautological all-resolved tests) | **Confirmed resolved.** See per-scenario trace below. |
+| iter-2 CR-01 (GapBeforeNext / DayComplete gap honesty) | **Confirmed resolved.** See per-scenario trace below. |
+| WR-02 (overdue identity pin) | **Confirmed resolved.** Widget test pins c1 via `find.textContaining('8:30 AM')` inside `find.byType(ActiveChunkCard)`. |
+| WR-03 (double-timer idempotency) | **Confirmed resolved.** `nowCallCount == 1` assertion after two paused→resumed cycles. |
+| iter-2 WR-01 (gap test encodes wrong expected) | **Confirmed resolved.** Test now asserts `isA<GapBeforeNext>()` with `next.id == 'c2'`. |
 
 ---
 
-## Critical Issues
+### Mandated Scenario Traces
 
-### CR-01: `resolveNowState` returns `DayComplete` mid-morning when unresolved future chunks remain (dishonest gap state)
+**Scenario 1: now=9:10, c1=9:00–9:25 completed, c2=9:25–9:50 pending → GapBeforeNext(c2)**
 
-**File:** `lib/screens/home/home_screen.dart:148–156`
+- `currentMinutes = 550`
+- `allWork = [c1(start=540,dur=25,done), c2(start=565,dur=25,pending)]`
+- Past-last-window guard: `550 >= 565+25=590`? No.
+- `candidates = allWork.where(displayStartMinutes! <= 550)` → [c1] (c2 at 565 excluded)
+- `active = c1`. Loop: c1.isCompleted → yes.
+  - `candidate = c2`. `565 > 550`? Yes → gap branch.
+  - `remaining = allWork.sublist(1).where(!resolved).firstOrNull` = c2 (unresolved).
+  - Returns `GapBeforeNext(c2)`. ✓ NOT DayComplete.
 
-**Issue:** The gap guard inside the advance-loop returns `DayComplete()` whenever the currently-selected chunk is resolved and the next chunk's window has not yet opened — regardless of whether unresolved chunks remain later in the day. `DayComplete` is semantically "no work left today / you've reached the end of today's schedule." The gap case means "current work done early, next chunk not started yet, but future unresolved work does remain." These are different states and conflating them is a user-facing honesty failure.
+Covered by the near-gap unit test at `home_screen_now_state_test.dart:299-331`, which asserts
+`isA<GapBeforeNext>()` with `next.id == 'c2'`. Test correctly encodes the fix.
 
-**Exact trace of the failing scenario:**
+**Scenario 2: now=9:30, c1=9:00–9:25 completed, c2=10:00–10:25 pending → GapBeforeNext(c2)**
 
-Inputs: c1 = `syntheticStartMinutes=540` (9:00 AM), `durationMinutes=25`, `isCompleted=true`. c2 = `syntheticStartMinutes=565` (9:25 AM), `durationMinutes=25`, `isCompleted=false`. `now = () => DateTime(2026, 6, 13, 9, 10)` → `currentMinutes = 550`.
+- `currentMinutes = 570`
+- `candidates = [c1]` (c2 at 600 excluded). `active = c1`. Gap branch fires (600 > 570).
+- `remaining = c2` (unresolved). Returns `GapBeforeNext(c2)`. ✓
 
-```
-allWork = [c1(start=540,dur=25,done), c2(start=565,dur=25,pending)]
+Covered by the gap unit test at `home_screen_now_state_test.dart:247-296`, which asserts
+`isA<GapBeforeNext>()` with `next.id == 'c2'` and explicitly asserts `isNot(isA<Active>())`
+and `isNot(isA<DayComplete>())`.
 
-Step 1: currentMinutes(550) < allWork.first.displayStartMinutes(540)?  → NO
-Step 2: currentMinutes(550) >= allWork.last end (565+25=590)?          → NO
+**Scenario 3a: Genuinely done — now past last window (time-past shortcut)**
 
-candidates = allWork.where(c.displayStartMinutes! <= 550)
-           = [c1]   ← c2 excluded: 565 > 550
+- `currentMinutes = 1080` (6pm), c1 end = 540+25 = 565. `1080 >= 565`? Yes → `DayComplete`. ✓
 
-active = c1
+**Scenario 3b: Genuinely done — all-resolved future (gap branch with empty remaining)**
 
-while (c1.isCompleted):                      ← true, enter loop
-  idx = 0, idx+1 = 1 < 2                    ← continue
-  candidate = allWork[1] = c2
-  c2.displayStartMinutes!(565) > currentMinutes(550)  ← TRUE
-  return DayComplete()                       ← BUG: c2 is unresolved and pending
-```
+- now=9:30 (`currentMinutes=570`), c1 completed, c2 skipped (start=600).
+- Gap branch fires. `remaining = allWork.sublist(1).where(!resolved)` → [] (c2 is skipped).
+- `remaining == null` → `DayComplete`. ✓
 
-At 9:10 AM the user sees "That's a wrap / You've reached the end of today's schedule." C2 is an unresolved pending chunk whose window opens in 15 minutes. The day is not complete. This violates NOW-02 ("day-complete should mean the day is actually over") and the "An Honest Day" milestone.
+Covered by `home_screen_now_state_test.dart:333-361` ("gap with all-resolved future").
 
-The same code path triggers any time a user completes a chunk before the next chunk's window opens — the common early-finish case.
+**Scenario 3c: All-resolved — CR-03 traversal path (inside c2 window)**
 
-**Why the test suite does not catch this:**
+- now=10:05 (`currentMinutes=605`), c1 completed(start=540), c2 skipped(start=600,dur=30,end=630).
+- `605 >= 630`? No (no time shortcut).
+- `candidates = [c1, c2]`. `active = c2`. Loop: c2.isSkipped → yes. `idx+1 = 2 >= 2` → `DayComplete`. ✓
 
-The regression test at `home_screen_now_state_test.dart:246–281` (labeled `'gap (WR-01 regression)'`) uses `now=9:30` with c2 opening at `10:00` (a 35-minute gap). It asserts `isA<DayComplete>()` in its `reason` string with the label "honest state." The test encodes the wrong behavior as expected. No test covers the near-gap scenario (c2 opens imminently, e.g. in 15 minutes). The test would pass with the buggy code and would break if the fix were applied — it is both non-detecting and actively misleading.
+Non-tautological: exercises the genuine traversal path, not the null-filter degenerate shortcut.
 
-**Correct behavior:** When the advance-loop hits a gap (resolved chunk done, next window not yet open), the function must check whether any further unresolved chunks exist. If they do, the day is NOT complete — a gap/pre-next state should be returned. `DayComplete` is only correct when no further unresolved future work exists.
+**Scenario 4: Active vs GapBeforeNext at exact window start**
 
-**Fix:**
+- Gap condition: `candidate.displayStartMinutes! > currentMinutes` (strict `>`).
+- At `currentMinutes == c2.displayStartMinutes`: condition is false → c2 promoted to `active`. Loop
+  continues. If c2 is unresolved: loop exits, `windowEnd = c2.start + c2.dur`, `currentMinutes == c2.start`,
+  `currentMinutes >= windowEnd` only if `durationMinutes == 0` (impossible). → `Active(c2)`. ✓
+- Correct: at exactly c2's window start, the state is Active (not Gap).
 
-Add a `GapBeforeNext` state to the sealed hierarchy:
+**Scenario 5: Overdue reachable for unresolved past-window chunk**
 
-```dart
-/// Current chunk is resolved and the next chunk's window has not yet opened.
-/// [next] is the upcoming unresolved chunk (guaranteed non-null; use
-/// DayComplete when no unresolved future chunks remain).
-class GapBeforeNext extends NowState {
-  final ScheduledChunk next;
-  GapBeforeNext(this.next);
-}
-```
+- GapBeforeNext is only returned inside the while-loop (resolved chunk branch). Overdue is returned
+  after the loop exits (unresolved chunk branch). These are mutually exclusive.
+- Existing overdue unit test (`home_screen_now_state_test.dart:167-182`): c1(start=510,dur=60),
+  c2(start=630). now=10:00 (`currentMinutes=600`). `candidates=[c1]`, active=c1 (unresolved), loop
+  not entered. `windowEnd=570`. `600 >= 570` → `Overdue(c1, c2)`. ✓
 
-Replace the gap guard (lines 153–155) with a check that only returns `DayComplete` when no further unresolved chunks remain:
+**Scenario 6: build() switch exhaustiveness**
 
-```dart
-if (candidate.displayStartMinutes! > currentMinutes) {
-  // Gap: current resolved, next window not yet open.
-  // Find the first unresolved chunk with a future window.
-  final remaining = allWork
-      .sublist(idx + 1)
-      .where((c) => !c.isCompleted && !c.isSkipped)
-      .firstOrNull;
-  if (remaining != null) return GapBeforeNext(remaining);
-  // Truly nothing left: all future chunks are also resolved.
-  return DayComplete();
-}
-```
+Sealed class `NowState` has five subtypes: `PreStart`, `Active`, `Overdue`, `GapBeforeNext`,
+`DayComplete`. The switch at `home_screen.dart:512-523` covers all five arms. Dart's sealed-class
+exhaustiveness analysis will not produce a warning; no default arm is needed. ✓
 
-Add `GapBeforeNext` handling in `_buildNowContent` — show "Next up at {time}" (similar to `PreStart` but with mid-day copy) rather than "That's a wrap."
+**Scenario 7: GapBeforeNext widget renders honest copy (no accent, no "That's a wrap")**
 
-Update the gap regression test to assert `isA<GapBeforeNext>()` with the correct `.next.id`, and add a companion test for the near-gap case (c2 opens in 15 minutes).
+- `_buildGapBeforeNextContent` renders `Text('Up next', ...)` as heading and
+  `'Next up at ${formatMinutes(next.displayStartMinutes!)}'` as body.
+- No `BoxDecoration`, no accent color, no `ActiveChunkCard` — calm inline treatment mirrors PreStart.
+- Widget test (`home_screen_now_state_test.dart:562-614`) asserts: `find.text('Up next')` findsOneWidget,
+  `find.text("That's a wrap")` findsNothing, `find.byType(ActiveChunkCard)` findsNothing,
+  `find.textContaining('10:00 AM')` findsOneWidget. All four assertions match the implementation. ✓
 
 ---
 
-## Warnings
+## Info
 
-### WR-01: Gap regression test asserts the wrong expected result and locks in CR-01
+### IN-01: Stale comment contradicts current gap behavior
 
-**File:** `test/screens/home_screen_now_state_test.dart:246–281`
+**File:** `lib/screens/home/home_screen.dart:160-162`
 
-**Issue:** The test at line 246, labeled `'gap (WR-01 regression)'`, explicitly asserts:
+**Issue:** The block comment above the while-loop still reads:
 
-```dart
-expect(state, isA<DayComplete>(),
-    reason: 'WR-01: gap after resolved chunk → DayComplete (honest state)');
+```
+// return DayComplete so the user sees an honest "wrapped up for now"
+// rather than a future chunk prematurely shown as "Now".
 ```
 
-The `reason` string calls this "honest state," but returning `DayComplete` when c2 is unresolved and pending at 10:00 AM (now=9:30) is precisely the dishonest state identified in CR-01. The test:
+This described the pre-fix behavior. The code now returns `GapBeforeNext` when unresolved future
+chunks remain, and only returns `DayComplete` when they are all resolved. A developer reading the
+comment would incorrectly believe the gap always returns `DayComplete`.
 
-1. Passes with the current buggy code.
-2. Would fail when CR-01 is fixed to return `GapBeforeNext`.
-3. Labels wrong behavior as correct in its own source.
-
-Additionally, the test does not cover the near-gap scenario (e.g., now=9:10, c2 at 9:25) — the case where the next window is imminent. The large gap (35 min after c1 ends, 30 min until c2) may not expose edge cases near window boundaries.
-
-**Fix:** After the CR-01 fix, update the test:
+**Fix:** Replace lines 160-162 with the current behavior:
 
 ```dart
-test(
-    'gap: c1 resolved 9:00–9:25, c2 starts 10:00, now=9:30 → GapBeforeNext(c2)',
-    () {
-  // ...same chunk setup as before...
-  final state = resolveNowState(chunks: chunks,
-      now: () => DateTime(2026, 6, 13, 9, 30));
-  expect(state, isA<GapBeforeNext>(),
-      reason: 'Gap after resolved chunk with future unresolved work must '
-          'surface the upcoming chunk, not DayComplete');
-  expect((state as GapBeforeNext).next.id, 'c2');
-});
+// If the next chunk's window hasn't started yet we are in a between-windows gap.
+// If unresolved future work remains → GapBeforeNext (day not done).
+// If all future chunks are also resolved → DayComplete (day genuinely complete).
 ```
 
-Add a near-gap companion test: `now=9:10`, c1 done at 9:00–9:25, c2 pending at 9:25–9:50 → `GapBeforeNext(c2)`.
+---
+
+### IN-02: Dead null-branch in `_buildGapBeforeNextContent`
+
+**File:** `lib/screens/home/home_screen.dart:587-589`
+
+**Issue:** The body text ternary checks `next.displayStartMinutes != null`, but `GapBeforeNext.next`
+is always sourced from `allWork` (filtered at line 128-130 to `displayStartMinutes != null`). The
+`'Coming up next'` fallback at line 589 is unreachable. This is not a bug, but it is dead code that
+may mislead readers into thinking `next.displayStartMinutes` can be null here.
+
+**Fix:** Remove the guard and render the time string unconditionally:
+
+```dart
+Text(
+  'Next up at ${formatMinutes(next.displayStartMinutes!)}',
+  style: theme.textTheme.bodyMedium?.copyWith(
+    color: theme.colorScheme.onSurfaceVariant,
+  ),
+),
+```
+
+Alternatively, retain the guard with a comment explaining the invariant if defensive coding is
+preferred. Either approach is acceptable.
 
 ---
 
 _Reviewed: 2026-06-13_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
+_Iteration: 3 (final)_
