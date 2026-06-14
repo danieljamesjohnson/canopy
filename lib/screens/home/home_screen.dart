@@ -52,6 +52,16 @@ class Overdue extends NowState {
   Overdue(this.overdue, this.next);
 }
 
+/// Current chunk is resolved and the next chunk's window has not yet opened.
+/// The day is NOT complete — future unresolved work remains.
+///
+/// [next] is the first upcoming unresolved chunk (guaranteed non-null;
+/// [DayComplete] is returned instead when no unresolved future chunks remain).
+class GapBeforeNext extends NowState {
+  final ScheduledChunk next;
+  GapBeforeNext(this.next);
+}
+
 /// All chunk windows have passed, or all chunks are resolved, or there are
 /// no work chunks with a clock time.
 ///
@@ -80,8 +90,13 @@ class DayComplete extends NowState {}
 /// 3. currentMinutes < first chunk start → [PreStart].
 /// 4. currentMinutes ≥ last chunk end → [DayComplete].
 /// 5. Otherwise: find the most-recent chunk whose window has started, advance
-///    past resolved (completed/skipped) chunks, then return [Active] if still
-///    inside the window or [Overdue] if past it.
+///    past resolved (completed/skipped) chunks, then:
+///    - If the next chunk's window hasn't opened and unresolved work remains →
+///      [GapBeforeNext] (day is NOT over; future work pending).
+///    - If the next chunk's window hasn't opened and no unresolved work remains
+///      → [DayComplete].
+///    - If still inside the window → [Active].
+///    - If past the window end → [Overdue].
 ///
 /// KEY INVARIANT: clock-window is found FIRST by time, THEN resolution is
 /// checked. This prevents re-creating the "first unresolved" bug (RESEARCH
@@ -151,7 +166,15 @@ NowState resolveNowState({
     final candidate = allWork[idx + 1];
     // Only promote if the next window has already opened.
     if (candidate.displayStartMinutes! > currentMinutes) {
-      // Gap: current resolved, next hasn't started — nothing to show as Now.
+      // Gap: current chunk resolved, next window not yet open.
+      // Find the first unresolved chunk with a future window — if one exists
+      // the day is NOT complete, just paused between windows.
+      final remaining = allWork
+          .sublist(idx + 1)
+          .where((c) => !c.isCompleted && !c.isSkipped)
+          .firstOrNull;
+      if (remaining != null) return GapBeforeNext(remaining);
+      // All future chunks are also resolved — the day genuinely is done.
       return DayComplete();
     }
     active = candidate;
@@ -307,8 +330,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       now: _nowFn,
     );
 
-    // Extract the next chunk from states that carry one; null in pre-start
-    // and day-complete so the Next section is hidden in those states.
+    // Extract the next chunk from states that carry one; null in pre-start,
+    // gap-before-next, and day-complete so the Next section is hidden in
+    // those states (GapBeforeNext shows its own "up next" inline content).
     final ScheduledChunk? nextChunk = switch (nowState) {
       Active(:final next) => next,
       Overdue(:final next) => next,
@@ -481,8 +505,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   /// Builds the Now zone content based on the current [NowState].
-  /// Exhaustive switch drives the four states: pre-start, active, overdue,
-  /// day-complete. Called from build() to keep the children list clean.
+  /// Exhaustive switch drives the five states: pre-start, active, overdue,
+  /// gap-before-next, day-complete. Called from build() to keep the children
+  /// list clean.
   Widget _buildNowContent(BuildContext context, NowState nowState) {
     switch (nowState) {
       case PreStart(:final firstChunk):
@@ -491,6 +516,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return ActiveChunkCard(chunk: current);
       case Overdue(:final overdue):
         return ActiveChunkCard(chunk: overdue);
+      case GapBeforeNext(:final next):
+        return _buildGapBeforeNextContent(context, next);
       case DayComplete():
         return _buildDayCompleteContent(context);
     }
@@ -524,6 +551,42 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           const SizedBox(height: 4),
           Text(
             bodyText,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Gap-before-next inline Now zone — shown when the current chunk is
+  /// resolved and the next chunk's window has not yet opened. The day is NOT
+  /// complete: [next] is the upcoming unresolved chunk.
+  ///
+  /// Calm, no accent — mirrors pre-start visual treatment per UI-SPEC tone.
+  Widget _buildGapBeforeNextContent(
+    BuildContext context,
+    ScheduledChunk next,
+  ) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Up next',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            next.displayStartMinutes != null
+                ? 'Next up at ${formatMinutes(next.displayStartMinutes!)}'
+                : 'Coming up next',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
