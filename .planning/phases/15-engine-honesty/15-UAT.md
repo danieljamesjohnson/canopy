@@ -28,14 +28,14 @@ result: [pending]
 
 ### 3. FILL-01 in UI — time-target goal appears on a low-mood open-capacity day
 expected: On a low-mood day (mood 1–2) with open capacity after habits, at least one chunk from a time-target goal appears in the generated schedule.
-result: [pending]
+result: [pass] — Verified on hosted debug web build (danserver:8097, software-WebGL headless capture, 2026-06-14). Created a time-target ("regular time") goal "Reading", did a mood-1 (stormy) check-in, generated the schedule: intro card reads "Stormy day — keeping it light. 1 chunk. Starting with Reading." and Home shows the Reading chunk (25 min). The time-target goal surfaces on a low-mood day rather than leaving it empty — confirms the removed `!isLowMood` gate works through the UI. (Tested with a single time-target goal; the "open capacity after habits" multi-goal contention case is covered by the FILL-01 unit test.)
 
 ## Summary
 
 total: 3
-passed: 0
+passed: 1
 issues: 0
-pending: 3
+pending: 2
 skipped: 0
 blocked: 0
 
