@@ -1,10 +1,11 @@
 ---
 phase: 17
 slug: time-anchored-home
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-06-13
+reviewed_at: 2026-06-13
 ---
 
 # Phase 17 — UI Design Contract
