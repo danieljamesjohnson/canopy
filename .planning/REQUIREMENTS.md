@@ -12,8 +12,8 @@ Rule-based only — no LLM. Theme: make the scheduling engine tell the truth and
 
 ### Time-Anchored Home (NOW)
 
-- [ ] **NOW-01**: On Home, "Now" reflects the chunk whose clock-time window contains the *current* time (not merely the first unresolved chunk), and "Next" shows the following chunk. At 6pm with nothing checked off, the 8am chunk is no longer shown as "Now." *(SEED-003 #1)*
-- [ ] **NOW-02**: Before the day's first chunk and after the last resolved/ended chunk, Home shows a clear pre-start / day-complete state rather than a stale "Now."
+- [x] **NOW-01**: On Home, "Now" reflects the chunk whose clock-time window contains the *current* time (not merely the first unresolved chunk), and "Next" shows the following chunk. At 6pm with nothing checked off, the 8am chunk is no longer shown as "Now." *(SEED-003 #1)*
+- [x] **NOW-02**: Before the day's first chunk and after the last resolved/ended chunk, Home shows a clear pre-start / day-complete state rather than a stale "Now."
 
 ### Priority Drives Scheduling (PRIORITY) — continues PRIORITY-01
 
@@ -56,8 +56,8 @@ Rule-based only — no LLM. Theme: make the scheduling engine tell the truth and
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NOW-01 | Phase 17 | pending |
-| NOW-02 | Phase 17 | pending |
+| NOW-01 | Phase 17 | Complete |
+| NOW-02 | Phase 17 | Complete |
 | PRIORITY-02 | Phase 15 | Complete |
 | PRIORITY-03 | Phase 16 | Complete |
 | CAP-01 | Phase 15 | Complete |

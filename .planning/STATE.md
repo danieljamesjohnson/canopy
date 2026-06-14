@@ -4,30 +4,30 @@ milestone: v1.3
 milestone_name: An Honest Day
 status: verifying
 stopped_at: Completed 16-priority-model-reconciliation-01-PLAN.md
-last_updated: "2026-06-13T23:35:17.809Z"
-last_activity: 2026-06-13 -- Phase 16 execution started
+last_updated: "2026-06-14T00:33:03.496Z"
+last_activity: 2026-06-14 -- Phase 17 execution started
 progress:
   total_phases: 3
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
-  percent: 67
+  completed_phases: 3
+  total_plans: 4
+  completed_plans: 4
+  percent: 100
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-13T23:35:17.806Z
+**Last session:** 2026-06-14T00:33:03.492Z
 
 ---
 
 ## Current Position
 
-Phase: 16 (Priority Model Reconciliation) — EXECUTING
+Phase: 17 (Time-Anchored Home) — EXECUTING
 Plan: 1 of 1
 Status: Phase complete — ready for verification
-Last activity: 2026-06-13 -- Phase 16 execution started
+Last activity: 2026-06-14 -- Phase 17 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -36,7 +36,7 @@ Progress: [░░░░░░░░░░] 0%
 See: `.planning/PROJECT.md` (updated 2026-06-13)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Phase 16 — Priority Model Reconciliation
+**Current focus:** Phase 17 — Time-Anchored Home
 
 ## Accumulated Context
 
@@ -83,3 +83,4 @@ Resume file: None
 | Phase 15-engine-honesty P01 | 6 | 3 tasks | 2 files |
 | Phase 15-engine-honesty P02 | 230 | 1 tasks | 2 files |
 | Phase 16-priority-model-reconciliation P01 | 25 | 2 tasks | 2 files |
+| Phase 17-time-anchored-home P01 | 7 | 3 tasks | 3 files |
