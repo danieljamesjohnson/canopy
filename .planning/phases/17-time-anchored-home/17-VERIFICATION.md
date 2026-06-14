@@ -1,7 +1,8 @@
 ---
 phase: 17-time-anchored-home
 verified: 2026-06-13T00:00:00Z
-status: human_needed
+status: passed
+human_uat_cleared: 2026-06-14
 score: 8/8 must-haves verified
 overrides_applied: 0
 human_verification:
