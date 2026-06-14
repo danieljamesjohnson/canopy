@@ -217,27 +217,67 @@ void main() {
     });
 
     test(
-        'active advances past resolved chunk: c1 completed, c2 unresolved, now in c1 window',
+        'active advances past resolved chunk: c1 completed, c2 unresolved, '
+        'both windows started → Active(c2)',
         () {
+      // c1: 8:30–9:30 (completed), c2: 9:00–10:00 (unresolved).
+      // At 9:15 both windows have started; c1 is resolved so c2 becomes active.
       final chunks = [
         _workChunk(
           id: 'c1',
-          syntheticStartMinutes: 510,
+          syntheticStartMinutes: 510, // 8:30 AM
           durationMinutes: 60,
           isCompleted: true,
         ),
         _workChunk(
           id: 'c2',
-          syntheticStartMinutes: 570,
+          syntheticStartMinutes: 540, // 9:00 AM — window opened before now
           durationMinutes: 60,
         ),
       ];
       final state = resolveNowState(
         chunks: chunks,
-        now: () => DateTime(2026, 6, 13, 9, 0), // 9:00 AM — inside c1 window
+        now: () => DateTime(2026, 6, 13, 9, 15), // 9:15 AM — both windows open
       );
       expect(state, isA<Active>());
       expect((state as Active).current.id, 'c2');
+    });
+
+    test(
+        'gap (WR-01 regression): c1 resolved 9:00–9:25, c2 starts 10:00, '
+        'now=9:30 → DayComplete (not Active(c2))',
+        () {
+      // Regression test for WR-01: before the fix, the advance-loop would
+      // promote c2 into Active even though its window hasn't opened yet.
+      final chunks = [
+        _workChunk(
+          id: 'c1',
+          syntheticStartMinutes: 540, // 9:00 AM
+          durationMinutes: 25,
+          isCompleted: true,
+        ),
+        _workChunk(
+          id: 'c2',
+          syntheticStartMinutes: 600, // 10:00 AM — not yet open
+          durationMinutes: 25,
+        ),
+      ];
+      final state = resolveNowState(
+        chunks: chunks,
+        now: () => DateTime(2026, 6, 13, 9, 30), // 9:30 AM — gap
+      );
+      // Must NOT be Active(c2): c2's window opens at 10:00, not now.
+      expect(
+        state,
+        isNot(isA<Active>()),
+        reason: 'WR-01: future chunk must not be promoted to Active before '
+            'its window opens',
+      );
+      expect(
+        state,
+        isA<DayComplete>(),
+        reason: 'WR-01: gap after resolved chunk → DayComplete (honest state)',
+      );
     });
 
     test(

@@ -70,6 +70,9 @@ class DayComplete extends NowState {}
 /// Pure function — no side effects. Injectable [now] enables unit testing
 /// at arbitrary wall-clock times without sleeping or mocking DateTime.now.
 ///
+/// [now] is called exactly once per invocation; callers may supply any stable
+/// supplier (e.g., `() => DateTime.now()` or a test-frozen constant).
+///
 /// Algorithm:
 /// 1. Filter to work chunks with a non-null [ScheduledChunk.displayStartMinutes],
 ///    then sort ascending by that value.
@@ -84,13 +87,26 @@ class DayComplete extends NowState {}
 /// checked. This prevents re-creating the "first unresolved" bug (RESEARCH
 /// Anti-pattern / Pitfall 3).
 ///
-/// LOCAL time only — never `.toUtc()`. [displayStartMinutes] is local minutes
-/// from midnight (RESEARCH Pitfall 1).
+/// FRAME-OF-REFERENCE NOTE: [displayStartMinutes] is intentionally compared
+/// against LOCAL wall-clock minutes-from-midnight (never `.toUtc()`). This
+/// matches the way [formatMinutes] renders chunk times in the UI — both the
+/// "Now" label and the visible start-time label are derived from the same
+/// un-converted minutes value, so they always agree. The ScheduledChunk model
+/// doc comment for [anchoredStartMinutes] says "UTC", but the display layer
+/// (formatMinutes, chunk_card.dart, "Your day starts at…") never converts —
+/// making the effective frame of reference LOCAL for all UI purposes. Fixing
+/// the UTC label is a pre-existing issue in the display layer, out of scope
+/// for Phase 17; resolveNowState is intentionally consistent with the UI.
 NowState resolveNowState({
   required List<ScheduledChunk> chunks,
   required DateTime Function() now,
 }) {
-  final currentMinutes = now().hour * 60 + now().minute;
+  // Sample now() exactly once to avoid a race at minute boundaries.
+  // If now() were called twice (e.g. `now().hour * 60 + now().minute`),
+  // a rollover at 8:59→9:00 could yield hour=8 from the first call and
+  // minute=0 from the second, producing 480 instead of 540.
+  final nowDt = now();
+  final currentMinutes = nowDt.hour * 60 + nowDt.minute;
 
   // Filter to work chunks that have a clock position, sort by window start.
   final allWork = chunks
@@ -123,10 +139,22 @@ NowState resolveNowState({
 
   // Advance past resolved chunks (completed or skipped).
   // Window is found by clock time first — resolution checked after.
+  //
+  // INVARIANT: only promote a chunk to active/overdue if its window has
+  // already opened (displayStartMinutes <= currentMinutes). If the next
+  // chunk's window hasn't started yet we are in a post-resolved gap —
+  // return DayComplete so the user sees an honest "wrapped up for now"
+  // rather than a future chunk prematurely shown as "Now".
   while (active.isCompleted || active.isSkipped) {
     final idx = allWork.indexOf(active);
     if (idx + 1 >= allWork.length) return DayComplete();
-    active = allWork[idx + 1];
+    final candidate = allWork[idx + 1];
+    // Only promote if the next window has already opened.
+    if (candidate.displayStartMinutes! > currentMinutes) {
+      // Gap: current resolved, next hasn't started — nothing to show as Now.
+      return DayComplete();
+    }
+    active = candidate;
   }
 
   // Find the next unresolved chunk after the active one.
