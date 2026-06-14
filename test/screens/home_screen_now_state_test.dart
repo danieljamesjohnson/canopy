@@ -392,6 +392,19 @@ void main() {
         findsOneWidget,
         reason: 'NOW-01: overdue chunk shown as Now (ActiveChunkCard)',
       );
+      // WR-02: pin the identity of the "Now" chunk. The ActiveChunkCard must
+      // show c1 (overdue, window 8:30–9:30), NOT c2 (upcoming, 10:30–11:30).
+      // c1's time range "8:30 AM" must appear inside the card; if logic were
+      // reversed and c2 were promoted, "10:30 AM" would appear instead.
+      expect(
+        find.descendant(
+          of: find.byType(ActiveChunkCard),
+          matching: find.textContaining('8:30 AM'),
+        ),
+        findsOneWidget,
+        reason: 'WR-02: ActiveChunkCard must display c1 (8:30 AM start), '
+            'not c2 (10:30 AM start)',
+      );
       expect(
         find.text('Next'),
         findsOneWidget,
@@ -471,6 +484,11 @@ void main() {
         (tester) async {
       // Start at 7:59 — just before the 8:00 chunk window (480 min).
       DateTime injectedNow = DateTime(2026, 6, 13, 7, 59);
+      // WR-03: count now() calls from the very first pump so the _nowFn
+      // installed in _HomeScreenState is the counting lambda (late final
+      // means it is assigned only once in initState and never replaced via
+      // didUpdateWidget — so the counter must be embedded from the start).
+      int nowCallCount = 0;
       final sn = _FakeScheduleNotifierWithSchedule(
         DailySchedule(
           dateYmd: _todayYmd(),
@@ -483,7 +501,10 @@ void main() {
       await _pumpHomeScreen(
         tester,
         scheduleNotifier: sn,
-        now: () => injectedNow,
+        now: () {
+          nowCallCount = nowCallCount + 1;
+          return injectedNow;
+        },
       );
 
       // At 7:59 → pre-start
@@ -496,6 +517,7 @@ void main() {
       // Advance injected clock to 8:01 (inside the window) and let the
       // 1-minute timer fire.
       injectedNow = DateTime(2026, 6, 13, 8, 1);
+      nowCallCount = 0;
       await tester.pump(const Duration(minutes: 1));
 
       // After timer tick → active
@@ -511,7 +533,44 @@ void main() {
       await tester.pump();
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
-      // No exception → lifecycle handling is correct.
+
+      // ── WR-03: no-double-timer invariant ────────────────────────────────
+      // Cycle paused→resumed a SECOND time to simulate two consecutive resumes.
+      // If _startNowTimer were not idempotent (i.e., appended a second
+      // Timer.periodic without cancelling the first), we'd have two active
+      // timers after this second resume.
+      //
+      // Detection: count now() calls across exactly one 1-minute pump().
+      // One timer = one setState = one resolveNowState call = one now() call.
+      // Two timers = two setState calls = two now() calls per tick.
+      //
+      // nowCallCount is captured in the original _nowFn closure (late final
+      // _nowFn is set once in initState, so the counter is always live).
+      injectedNow = DateTime(2026, 6, 13, 8, 30); // stable inside active window
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      nowCallCount = 0; // only count calls from the next timer tick
+
+      // Advance exactly one timer period.
+      await tester.pump(const Duration(minutes: 1));
+
+      // If _startNowTimer is idempotent, exactly one timer fired → one
+      // setState → one resolveNowState call → nowCallCount == 1.
+      // If a double-timer leaked, nowCallCount would be 2 (or more).
+      expect(
+        nowCallCount,
+        1,
+        reason: 'WR-03: _startNowTimer must be idempotent — exactly one timer '
+            'after two paused→resumed cycles, so now() is called once per tick',
+      );
+      // Sanity: the Now zone shows one (not duplicated) ActiveChunkCard.
+      expect(
+        find.byType(ActiveChunkCard),
+        findsOneWidget,
+        reason: 'WR-03: single rebuild per tick — no duplicate widget',
+      );
     });
   });
 }

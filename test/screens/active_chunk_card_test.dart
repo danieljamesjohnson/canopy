@@ -262,6 +262,15 @@ void main() {
     }
 
     /// Builds a DailySchedule for today with all chunks resolved.
+    ///
+    /// Chunks are given real [syntheticStartMinutes] so they participate in
+    /// clock-window selection in [resolveNowState]. Tests using this schedule
+    /// must inject [now] with a time inside or past the windows; the canonical
+    /// value is [allResolvedNow] = 10:05 AM (inside c2's window), which places
+    /// both windows in [candidates] and exercises the genuine "all resolved via
+    /// traversal → DayComplete" path — not the degenerate allWork.isEmpty path
+    /// (CR-03 fix: previously chunks had null syntheticStartMinutes and no now
+    /// injection, so DayComplete was returned by the null-filter shortcut).
     DailySchedule _scheduleAllResolved() {
       final today = DateTime.now();
       final ymd =
@@ -272,6 +281,7 @@ void main() {
         goalId: 'g1',
         durationMinutes: 25,
         rationale: 'First chunk',
+        syntheticStartMinutes: 540, // 9:00 AM
       )..isCompleted = true;
       final c2 = ScheduledChunk(
         id: 'c2',
@@ -279,6 +289,7 @@ void main() {
         goalId: 'g2',
         durationMinutes: 30,
         rationale: 'Second chunk',
+        syntheticStartMinutes: 600, // 10:00 AM
       )..isSkipped = true;
       return DailySchedule(
         dateYmd: ymd,
@@ -286,6 +297,13 @@ void main() {
         chunks: [c1, c2],
       );
     }
+
+    // now for all-resolved tests: 10:05 AM places us inside c2's window
+    // (10:00–10:30), so both chunk windows have started. resolveNowState
+    // enters the traversal loop, advances past completed c1 then past skipped
+    // c2, runs out of candidates, and returns DayComplete for the correct
+    // structural reason (CR-03: genuine all-resolved path, not null shortcut).
+    final allResolvedNow = () => DateTime(2026, 6, 13, 10, 5);
 
     // Injected now for NAV-02 layout tests: 9:05 AM places us inside the
     // first chunk's window (9:00–9:25 = syntheticStartMinutes 540, dur 25).
@@ -337,7 +355,15 @@ void main() {
     testWidgets('shows "That\'s a wrap" when all chunks resolved',
         (tester) async {
       final sn = _FakeScheduleNotifierWithSchedule(_scheduleAllResolved());
-      await _pumpHomeScreen(tester, scheduleNotifier: sn);
+      // Inject now inside c2's window so resolveNowState traverses the
+      // resolution-checking branch and reaches DayComplete for the correct
+      // reason — not via the null-syntheticStartMinutes degenerate shortcut
+      // (CR-03).
+      await _pumpHomeScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: allResolvedNow,
+      );
       expect(
         find.text("That's a wrap"),
         findsOneWidget,
@@ -349,7 +375,12 @@ void main() {
     testWidgets('shows no ActiveChunkCard when all chunks resolved',
         (tester) async {
       final sn = _FakeScheduleNotifierWithSchedule(_scheduleAllResolved());
-      await _pumpHomeScreen(tester, scheduleNotifier: sn);
+      // Same now injection as the companion test above (CR-03).
+      await _pumpHomeScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: allResolvedNow,
+      );
       expect(
         find.byType(ActiveChunkCard),
         findsNothing,
