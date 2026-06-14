@@ -549,7 +549,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 4),
+          // lg (24px) heading-to-body gap per UI-SPEC spacing scale.
+          const SizedBox(height: 24),
           Text(
             bodyText,
             style: theme.textTheme.bodyMedium?.copyWith(
@@ -583,11 +584,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 4),
+          // lg (24px) heading-to-body gap per UI-SPEC spacing scale.
+          const SizedBox(height: 24),
           Text(
             next.displayStartMinutes != null
-                ? 'Next up at ${formatMinutes(next.displayStartMinutes!)}'
-                : 'Coming up next',
+                ? 'Starts at ${formatMinutes(next.displayStartMinutes!)}'
+                : 'Starting soon',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -614,7 +616,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 4),
+          // lg (24px) heading-to-body gap per UI-SPEC spacing scale.
+          const SizedBox(height: 24),
           Text(
             "You've reached the end of today's schedule.",
             style: theme.textTheme.bodyMedium?.copyWith(
