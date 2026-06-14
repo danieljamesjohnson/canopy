@@ -158,8 +158,9 @@ NowState resolveNowState({
   // INVARIANT: only promote a chunk to active/overdue if its window has
   // already opened (displayStartMinutes <= currentMinutes). If the next
   // chunk's window hasn't started yet we are in a post-resolved gap —
-  // return DayComplete so the user sees an honest "wrapped up for now"
-  // rather than a future chunk prematurely shown as "Now".
+  // return GapBeforeNext(upcoming) when unresolved future work remains (an
+  // honest "up next" state, NOT day-complete), and DayComplete only when no
+  // unresolved future chunk remains. Never show a future chunk as "Now".
   while (active.isCompleted || active.isSkipped) {
     final idx = allWork.indexOf(active);
     if (idx + 1 >= allWork.length) return DayComplete();
