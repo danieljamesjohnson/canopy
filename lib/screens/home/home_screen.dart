@@ -157,15 +157,19 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // Mood seed palette is the single source of truth in `ThemeNotifier.moodSeeds`
   // (Phase 6 Plan 02). This screen reads it directly via `ThemeNotifier.moodSeeds[mood]`.
 
   /// Injectable clock function. Defaults to [DateTime.now]; overridden in
   /// tests via [HomeScreen.now] to simulate specific wall-clock times.
-  /// Wired into build() and the 1-minute timer in Task 3 (phase 17-01).
-  // ignore: unused_field
   late final DateTime Function() _nowFn = widget.now ?? DateTime.now;
+
+  /// 1-minute periodic timer that triggers setState() so resolveNowState is
+  /// re-evaluated as wall-clock time passes. Paused on background, resumed
+  /// on foreground (T-17-01 mitigation: no battery drain; no setState after
+  /// dispose via mounted guard + dispose() cancel).
+  Timer? _nowTimer;
 
   static const Map<int, String> _moodEmojis = {
     1: '\u{1F327}️',
@@ -191,7 +195,35 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _startNowTimer();
     _checkReviewWindow();
+  }
+
+  /// Starts (or restarts) the 1-minute periodic timer that triggers a rebuild
+  /// so [resolveNowState] is re-evaluated with fresh [_nowFn] output.
+  /// Idempotent: cancels any running timer before starting a new one.
+  void _startNowTimer() {
+    _nowTimer?.cancel();
+    _nowTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _startNowTimer();
+    } else if (state == AppLifecycleState.paused) {
+      _nowTimer?.cancel();
+    }
+  }
+
+  @override
+  void dispose() {
+    _nowTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
@@ -241,14 +273,19 @@ class _HomeScreenState extends State<HomeScreen> {
     final moodEmoji = _moodEmojis[mood] ?? _moodEmojis[3]!;
     final moodDescription = _moodDescriptions[mood] ?? _moodDescriptions[3]!;
 
-    final unresolvedWork = schedule.chunks
-        .where(
-          (c) =>
-              c.chunkType == ChunkType.work && !c.isCompleted && !c.isSkipped,
-        )
-        .toList();
-    final currentChunk = unresolvedWork.isNotEmpty ? unresolvedWork.first : null;
-    final nextChunk = unresolvedWork.length > 1 ? unresolvedWork[1] : null;
+    // Classify the current moment against the day's chunk windows.
+    final nowState = resolveNowState(
+      chunks: schedule.chunks,
+      now: _nowFn,
+    );
+
+    // Extract the next chunk from states that carry one; null in pre-start
+    // and day-complete so the Next section is hidden in those states.
+    final ScheduledChunk? nextChunk = switch (nowState) {
+      Active(:final next) => next,
+      Overdue(:final next) => next,
+      _ => null,
+    };
 
     return Scaffold(
       appBar: AppBar(
@@ -287,18 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          if (currentChunk == null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                'All done today!',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            )
-          else
-            ActiveChunkCard(chunk: currentChunk),
+          _buildNowContent(context, nowState),
           // ── NEXT section ─────────────────────────────────────────────────
           if (nextChunk != null) ...[
             Padding(
@@ -424,6 +450,88 @@ class _HomeScreenState extends State<HomeScreen> {
     final goals = context.read<GoalsNotifier>().goals;
     final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
     return goal?.name;
+  }
+
+  /// Builds the Now zone content based on the current [NowState].
+  /// Exhaustive switch drives the four states: pre-start, active, overdue,
+  /// day-complete. Called from build() to keep the children list clean.
+  Widget _buildNowContent(BuildContext context, NowState nowState) {
+    switch (nowState) {
+      case PreStart(:final firstChunk):
+        return _buildPreStartContent(context, firstChunk);
+      case Active(:final current):
+        return ActiveChunkCard(chunk: current);
+      case Overdue(:final overdue):
+        return ActiveChunkCard(chunk: overdue);
+      case DayComplete():
+        return _buildDayCompleteContent(context);
+    }
+  }
+
+  /// Pre-start inline Now zone — shown when the current time is before the
+  /// first work chunk's window. Inline Padding/Column/Text per UI-SPEC §State 2.
+  Widget _buildPreStartContent(
+    BuildContext context,
+    ScheduledChunk firstChunk,
+  ) {
+    final theme = Theme.of(context);
+    final goalName = _lookupGoalName(context, firstChunk);
+    final bodyText = (goalName != null && goalName.isNotEmpty)
+        ? '$goalName · ${firstChunk.durationMinutes} min'
+        : (firstChunk.rationale.isNotEmpty
+            ? '${firstChunk.rationale} · ${firstChunk.durationMinutes} min'
+            : 'Work block · ${firstChunk.durationMinutes} min');
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Your day starts at ${formatMinutes(firstChunk.displayStartMinutes!)}',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            bodyText,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Day-complete inline Now zone — shown when all chunk windows have passed
+  /// or all chunks are resolved (UI-SPEC §State 4).
+  /// Calm, no emoji, no accent — "That's a wrap" is understated and honest.
+  Widget _buildDayCompleteContent(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            "That's a wrap",
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "You've reached the end of today's schedule.",
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildEmptyState(BuildContext context) {
