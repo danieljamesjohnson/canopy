@@ -467,16 +467,16 @@ Future<void> _pumpHomeScreen(
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Fallback for `displayStartMinutes == null` chunks**
    - What we know: UI-SPEC edge case table says "fall back to old 'first unresolved' behavior" when all work chunks have null start times.
    - What's unclear: This creates a code branch that must be maintained; the "old behavior" is the bug being fixed.
-   - Recommendation: Show day-complete instead. Document as a known departure from UI-SPEC edge case language, since all chunks in recent schedules receive `syntheticStartMinutes` from the generator.
+   - RESOLVED: Show **day-complete** in the degenerate all-null case rather than re-introducing the first-unresolved branch that this phase exists to remove. This case is effectively unreachable in practice — the generator always assigns `syntheticStartMinutes`, so `displayStartMinutes` is non-null for real schedules. This is a deliberate, documented departure from the UI-SPEC edge-case wording; record it in the plan and SUMMARY so future readers know it was intentional.
 
 2. **`_nowFn` field on state vs. top-level function**
    - What we know: Both work. Top-level is more unit-testable (pure function tests without widget pump); field on state is simpler.
-   - Recommendation: Extract as a top-level function `_NowState resolveNowState(List<ScheduledChunk>, DateTime Function())` so pure unit tests (no widget pump) can cover the algorithm. Widget tests exercise the integration.
+   - RESOLVED: Extract as a top-level pure function `_NowState resolveNowState(List<ScheduledChunk>, DateTime Function())` so pure unit tests (no widget pump) cover the algorithm; widget tests exercise integration (timer/lifecycle).
 
 ---
 
