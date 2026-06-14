@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -16,8 +18,140 @@ import 'widgets/active_chunk_card.dart';
 import 'widgets/end_of_day_card.dart';
 import 'widgets/review_banner.dart';
 
+// ─── NowState sealed hierarchy ───────────────────────────────────────────────
+//
+// Top-level, public result types for the Home "Now" zone.
+// Kept PUBLIC (no leading underscore) so unit tests can assert
+// `isA<PreStart>()` without a widget pump. Conceptually internal to the
+// Home Now zone — not intended for use outside home_screen.dart.
+
+/// Discriminated result of [resolveNowState]. Exactly one subtype is
+/// returned based on the current wall-clock time relative to the day's
+/// scheduled work-chunk windows.
+sealed class NowState {}
+
+/// Before the first work-chunk window. [firstChunk] is the upcoming chunk.
+class PreStart extends NowState {
+  final ScheduledChunk firstChunk;
+  PreStart(this.firstChunk);
+}
+
+/// Current time falls within an active chunk window. [current] is the matched
+/// chunk; [next] is the first unresolved chunk after it (or null).
+class Active extends NowState {
+  final ScheduledChunk current;
+  final ScheduledChunk? next;
+  Active(this.current, this.next);
+}
+
+/// Current time is past a chunk's window end but that chunk is still
+/// unresolved. [overdue] is that chunk; [next] is the upcoming chunk (or null).
+class Overdue extends NowState {
+  final ScheduledChunk overdue;
+  final ScheduledChunk? next;
+  Overdue(this.overdue, this.next);
+}
+
+/// All chunk windows have passed, or all chunks are resolved, or there are
+/// no work chunks with a clock time.
+///
+/// Deliberate departure from 17-UI-SPEC.md §State Boundary Handling: when
+/// ALL work chunks have `displayStartMinutes == null` (degenerate edge case),
+/// this returns [DayComplete] rather than re-introducing the old
+/// "first unresolved" fallback that this phase exists to remove.
+/// RESEARCH Open Question 1 (RESOLVED): this case is effectively unreachable
+/// in practice because the generator always assigns syntheticStartMinutes.
+class DayComplete extends NowState {}
+
+// ─── resolveNowState ─────────────────────────────────────────────────────────
+
+/// Classifies the current moment in the day's work-chunk schedule.
+///
+/// Pure function — no side effects. Injectable [now] enables unit testing
+/// at arbitrary wall-clock times without sleeping or mocking DateTime.now.
+///
+/// Algorithm:
+/// 1. Filter to work chunks with a non-null [ScheduledChunk.displayStartMinutes],
+///    then sort ascending by that value.
+/// 2. Empty result → [DayComplete] (documented departure — see class doc).
+/// 3. currentMinutes < first chunk start → [PreStart].
+/// 4. currentMinutes ≥ last chunk end → [DayComplete].
+/// 5. Otherwise: find the most-recent chunk whose window has started, advance
+///    past resolved (completed/skipped) chunks, then return [Active] if still
+///    inside the window or [Overdue] if past it.
+///
+/// KEY INVARIANT: clock-window is found FIRST by time, THEN resolution is
+/// checked. This prevents re-creating the "first unresolved" bug (RESEARCH
+/// Anti-pattern / Pitfall 3).
+///
+/// LOCAL time only — never `.toUtc()`. [displayStartMinutes] is local minutes
+/// from midnight (RESEARCH Pitfall 1).
+NowState resolveNowState({
+  required List<ScheduledChunk> chunks,
+  required DateTime Function() now,
+}) {
+  final currentMinutes = now().hour * 60 + now().minute;
+
+  // Filter to work chunks that have a clock position, sort by window start.
+  final allWork = chunks
+      .where(
+        (c) => c.chunkType == ChunkType.work && c.displayStartMinutes != null,
+      )
+      .toList()
+    ..sort(
+      (a, b) => a.displayStartMinutes!.compareTo(b.displayStartMinutes!),
+    );
+
+  // Degenerate: no work chunks with clock times → day-complete.
+  if (allWork.isEmpty) return DayComplete();
+
+  // Before the first chunk's window.
+  if (currentMinutes < allWork.first.displayStartMinutes!) {
+    return PreStart(allWork.first);
+  }
+
+  // Past the last chunk's window end.
+  if (currentMinutes >=
+      allWork.last.displayStartMinutes! + allWork.last.durationMinutes) {
+    return DayComplete();
+  }
+
+  // Find the chunk whose window has started most recently.
+  final candidates =
+      allWork.where((c) => c.displayStartMinutes! <= currentMinutes).toList();
+  var active = candidates.last;
+
+  // Advance past resolved chunks (completed or skipped).
+  // Window is found by clock time first — resolution checked after.
+  while (active.isCompleted || active.isSkipped) {
+    final idx = allWork.indexOf(active);
+    if (idx + 1 >= allWork.length) return DayComplete();
+    active = allWork[idx + 1];
+  }
+
+  // Find the next unresolved chunk after the active one.
+  final activeIdx = allWork.indexOf(active);
+  final next = allWork
+      .sublist(activeIdx + 1)
+      .where((c) => !c.isCompleted && !c.isSkipped)
+      .firstOrNull;
+
+  // Within the window → Active; past the window end → Overdue.
+  final windowEnd = active.displayStartMinutes! + active.durationMinutes;
+  if (currentMinutes >= windowEnd) {
+    return Overdue(active, next);
+  }
+  return Active(active, next);
+}
+
+// ─── HomeScreen ──────────────────────────────────────────────────────────────
+
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  /// [now] is an optional clock-injection seam for testing. Defaults to
+  /// [DateTime.now] at runtime. Forwarded to [_HomeScreenState._nowFn].
+  const HomeScreen({super.key, this.now});
+
+  final DateTime Function()? now;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -26,6 +160,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   // Mood seed palette is the single source of truth in `ThemeNotifier.moodSeeds`
   // (Phase 6 Plan 02). This screen reads it directly via `ThemeNotifier.moodSeeds[mood]`.
+
+  /// Injectable clock function. Defaults to [DateTime.now]; overridden in
+  /// tests via [HomeScreen.now] to simulate specific wall-clock times.
+  /// Wired into build() and the 1-minute timer in Task 3 (phase 17-01).
+  // ignore: unused_field
+  late final DateTime Function() _nowFn = widget.now ?? DateTime.now;
 
   static const Map<int, String> _moodEmojis = {
     1: '\u{1F327}️',
