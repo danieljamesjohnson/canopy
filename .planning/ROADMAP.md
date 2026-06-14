@@ -108,7 +108,10 @@ covered by a green 209-test suite — see `milestones/v1.2-MILESTONE-AUDIT.md`.
   2. Before the first chunk of the day begins, Home shows a pre-start state (not a stale or incorrect "Now").
   3. After the last chunk's time window has passed, Home shows a day-complete state rather than the last chunk stuck as "Now."
 
-**Plans**: TBD
+**Plans**: 1 plan
+
+  - [ ] 17-01-PLAN.md — Time-anchor Home Now/Next via resolveNowState + 1-min timer; pre-start & day-complete states (NOW-01, NOW-02)
+
 **UI hint**: yes
 
 ## Progress
@@ -122,4 +125,4 @@ covered by a green 209-test suite — see `milestones/v1.2-MILESTONE-AUDIT.md`.
 | 14. Goals Screen and Priority End-to-End | v1.2 | 2/2 | Complete | 2026-06-13 |
 | 15. Engine Honesty | v1.3 | 2/2 | Complete   | 2026-06-13 |
 | 16. Priority Model Reconciliation | v1.3 | 1/1 | Complete   | 2026-06-13 |
-| 17. Time-Anchored Home | v1.3 | 0/? | Not started | - |
+| 17. Time-Anchored Home | v1.3 | 0/1 | Planned | - |
