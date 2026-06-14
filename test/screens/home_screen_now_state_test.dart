@@ -244,11 +244,13 @@ void main() {
     });
 
     test(
-        'gap (WR-01 regression): c1 resolved 9:00–9:25, c2 starts 10:00, '
-        'now=9:30 → DayComplete (not Active(c2))',
+        'gap: c1 resolved 9:00–9:25, c2 starts 10:00, now=9:30 → '
+        'GapBeforeNext(c2) — NOT DayComplete or Active',
         () {
-      // Regression test for WR-01: before the fix, the advance-loop would
-      // promote c2 into Active even though its window hasn't opened yet.
+      // CR-01 fix: the advance-loop used to return DayComplete here, which is
+      // wrong because c2 is an unresolved pending chunk opening at 10:00.
+      // The day is not complete; the user is in a between-windows gap.
+      // WR-01 regression: c2 must NOT be promoted to Active (window unopened).
       final chunks = [
         _workChunk(
           id: 'c1',
@@ -266,17 +268,95 @@ void main() {
         chunks: chunks,
         now: () => DateTime(2026, 6, 13, 9, 30), // 9:30 AM — gap
       );
-      // Must NOT be Active(c2): c2's window opens at 10:00, not now.
+      // Must NOT be Active(c2): window hasn't opened yet (10:00 AM).
       expect(
         state,
         isNot(isA<Active>()),
         reason: 'WR-01: future chunk must not be promoted to Active before '
             'its window opens',
       );
+      // Must NOT be DayComplete: c2 is an unresolved future chunk — day not done.
+      expect(
+        state,
+        isNot(isA<DayComplete>()),
+        reason: 'CR-01: gap with pending future work must NOT return DayComplete',
+      );
+      // Must be GapBeforeNext pointing at c2.
+      expect(
+        state,
+        isA<GapBeforeNext>(),
+        reason: 'Gap after resolved chunk with future unresolved work must '
+            'surface the upcoming chunk, not DayComplete',
+      );
+      expect(
+        (state as GapBeforeNext).next.id,
+        'c2',
+        reason: 'GapBeforeNext.next must be c2 (the upcoming unresolved chunk)',
+      );
+    });
+
+    test(
+        'near-gap: c1 resolved 9:00–9:25, c2 starts 9:25, now=9:10 → '
+        'GapBeforeNext(c2) — day not complete when next window imminent',
+        () {
+      // Companion test: even when the gap is tiny (next window opens in 15 min),
+      // the state must be GapBeforeNext, not DayComplete.
+      final chunks = [
+        _workChunk(
+          id: 'c1',
+          syntheticStartMinutes: 540, // 9:00 AM
+          durationMinutes: 25,
+          isCompleted: true,
+        ),
+        _workChunk(
+          id: 'c2',
+          syntheticStartMinutes: 565, // 9:25 AM — opens in 15 min from now
+          durationMinutes: 25,
+        ),
+      ];
+      final state = resolveNowState(
+        chunks: chunks,
+        now: () => DateTime(2026, 6, 13, 9, 10), // 9:10 AM — inside gap
+      );
+      expect(
+        state,
+        isA<GapBeforeNext>(),
+        reason: 'Near-gap (15 min before c2) must be GapBeforeNext, not DayComplete',
+      );
+      expect(
+        (state as GapBeforeNext).next.id,
+        'c2',
+        reason: 'GapBeforeNext.next must be c2',
+      );
+    });
+
+    test(
+        'gap with all-resolved future: c1 done, c2 also done, now=9:30 → '
+        'DayComplete (no unresolved future work)',
+        () {
+      // DayComplete is correct when the gap candidate chain is fully resolved.
+      final chunks = [
+        _workChunk(
+          id: 'c1',
+          syntheticStartMinutes: 540, // 9:00 AM
+          durationMinutes: 25,
+          isCompleted: true,
+        ),
+        _workChunk(
+          id: 'c2',
+          syntheticStartMinutes: 600, // 10:00 AM — not yet open, but also done
+          durationMinutes: 25,
+          isSkipped: true,
+        ),
+      ];
+      final state = resolveNowState(
+        chunks: chunks,
+        now: () => DateTime(2026, 6, 13, 9, 30), // 9:30 AM
+      );
       expect(
         state,
         isA<DayComplete>(),
-        reason: 'WR-01: gap after resolved chunk → DayComplete (honest state)',
+        reason: 'Gap where all future chunks are also resolved → DayComplete',
       );
     });
 
@@ -476,6 +556,60 @@ void main() {
         find.byType(ActiveChunkCard),
         findsNothing,
         reason: 'NOW-02: no ActiveChunkCard when all resolved',
+      );
+    });
+
+    testWidgets(
+        'gap state: c1 resolved 9:00–9:25, c2 at 10:00, now=9:30 → '
+        'shows "Up next" and NOT "That\'s a wrap"',
+        (tester) async {
+      // CR-01: GapBeforeNext renders honest "Up next" copy, not day-complete.
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'c1',
+              syntheticStartMinutes: 540, // 9:00 AM
+              durationMinutes: 25,
+              isCompleted: true,
+            ),
+            _workChunk(
+              id: 'c2',
+              syntheticStartMinutes: 600, // 10:00 AM
+              durationMinutes: 25,
+            ),
+          ],
+        ),
+      );
+      await _pumpHomeScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 9, 30), // gap
+      );
+      // Must show the gap heading, not the day-complete heading.
+      expect(
+        find.text('Up next'),
+        findsOneWidget,
+        reason: 'CR-01: GapBeforeNext must render "Up next", not "That\'s a wrap"',
+      );
+      expect(
+        find.text("That's a wrap"),
+        findsNothing,
+        reason: 'CR-01: "That\'s a wrap" must not appear in gap state',
+      );
+      // Must not show a card — this is an inline state, not an active chunk.
+      expect(
+        find.byType(ActiveChunkCard),
+        findsNothing,
+        reason: 'CR-01: no ActiveChunkCard in gap state',
+      );
+      // Must show the upcoming time in the body.
+      expect(
+        find.textContaining('10:00 AM'),
+        findsOneWidget,
+        reason: 'CR-01: gap body must mention the next chunk start time',
       );
     });
 
