@@ -12,7 +12,20 @@ Generate a usable daily schedule every morning — one that reflects your real g
 
 **Shipped through v1.3 "An Honest Day" (2026-06-14).** Canopy is a working personal time-budgeting app: a daily mood check-in shapes a generated schedule of 25-min Chunks built around three goal types, with a time-anchored Home (Now/Next), an honest scheduling engine (fair capacity, truthful streaks, priority-driven allocation for all goal types, full-day fill), Goals-as-prioritization, and a quarterly review. ~11.4k LOC of app code in `lib/`, 247-test suite green, `flutter analyze` clean. Rule-based only — no LLM.
 
-**Next:** planning the next milestone. Top open usability gap on the dogfood surface is F-03 (goal form / modals don't adapt to desktop — phone bottom-sheet everywhere). The energy-aware direction (SEED-004) and a low-mood restorative floor (SEED-001 #2) remain candidate themes.
+**Next:** v1.4 "Energy-Aware" — make Canopy fit the screen it's used on (responsive modals, F-03) and schedule around how activities make you feel (energy valence per goal, restorative low days). Not aiming for daily-ready; clearing known gaps for a fresh review.
+
+## Current Milestone: v1.4 Energy-Aware
+
+**Goal:** Make Canopy fit the screen it's used on and schedule around how activities make you feel — so a fresh review can judge a more honest, more livable day.
+
+**Target features:**
+- **Responsive modals (F-03)** — goal form and other modals adapt to viewport: centered dialog on desktop/web width, bottom sheet on phone; Priority + Save visible without scrolling.
+- **Energy valence per goal (SEED-004)** — a gives / neutral / costs pick plus an emoji/image tag at goal creation; new Hive field + additive migration; surfaced in the goal form.
+- **Onboarding energy prompt** — a "what gives you energy?" step so a couple restorative activities exist from day one.
+- **Valence-aware engine** — low ("stormy") days let energy-giving discretionary goals through instead of required+habits only (the SEED-001 #2 restorative floor); high days reserve a slot for an energy-giving / high-value goal.
+- **Residual UI-basics polish (SEED-002)** — sweep leftover first-dogfood UI nits not already consumed by v1.2/v1.3.
+
+**Key context:** Not aiming for "daily-ready" — owner will dogfood and re-review after. Rule-based only, no LLM. Hive migration stays additive-only. Web/desktop is the primary dogfood surface.
 
 <details>
 <summary>Previous milestone: v1.3 "An Honest Day" — SHIPPED 2026-06-14</summary>
@@ -60,10 +73,12 @@ Engine honesty + fill the day (v1.3 — *browser-verified*):
 
 ### Active
 
-None committed — planning the next milestone. Candidate themes (a fresh `.planning/REQUIREMENTS.md` will be created by `/gsd-new-milestone`):
-- **F-03** — goal form / modals don't adapt to desktop (phone bottom-sheet everywhere); top open usability gap on the dogfood surface (`.planning/todos/pending/2026-06-14-goal-form-desktop-layout.md`).
-- **Energy-aware valence (SEED-004)** — user-declared "gives / neutral / costs energy" per goal, biasing low/high days.
-- **Low-mood restorative floor (SEED-001 #2)** — let a little restorative time through on low-energy days; revisit if dogfooding shows low days feel empty.
+Committed to v1.4 "Energy-Aware" (scoped requirements in `.planning/REQUIREMENTS.md`):
+- **F-03 responsive modals** — goal form and other modals adapt to viewport (dialog on desktop, sheet on phone).
+- **Energy valence per goal (SEED-004)** — gives / neutral / costs pick + emoji/image tag; new Hive field + additive migration; goal-form UI.
+- **Onboarding energy prompt** — seed restorative activities up front.
+- **Valence-aware engine** — restorative low days (SEED-001 #2) + reserved energy slot on high days.
+- **Residual UI-basics polish (SEED-002)** — leftover first-dogfood nits.
 
 ### Out of Scope
 
@@ -128,4 +143,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-14 after v1.3 "An Honest Day" milestone*
+*Last updated: 2026-06-14 after starting v1.4 "Energy-Aware" milestone*

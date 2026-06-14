@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: An Honest Day
-status: Awaiting next milestone
-stopped_at: Completed 16-priority-model-reconciliation-01-PLAN.md
-last_updated: "2026-06-14T22:38:18.314Z"
-last_activity: 2026-06-14 — Milestone v1.3 completed and archived
+milestone: v1.4
+milestone_name: Energy-Aware
+status: planning
+last_updated: "2026-06-14T23:56:15.114Z"
+last_activity: 2026-06-14
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Execution State
@@ -24,10 +23,10 @@ progress:
 
 ## Current Position
 
-Phase: Milestone v1.3 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-14 — Milestone v1.3 completed and archived
+Status: Defining requirements
+Last activity: 2026-06-14 — Milestone v1.4 started
 
 ## Project Reference
 
