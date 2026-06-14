@@ -9,6 +9,7 @@ import '../models/completion_log.dart';
 import '../models/quarterly_snapshot.dart';
 import '../models/app_settings.dart';
 import 'migrations.dart';
+import 'resilient_box.dart';
 
 class HiveDatabase {
   /// Initialize Hive, register all TypeAdapters, open all boxes, run migrations.
@@ -26,17 +27,29 @@ class HiveDatabase {
     Hive.registerAdapter(QuarterlySnapshotAdapter()); // typeId 5
     Hive.registerAdapter(AppSettingsAdapter()); // typeId 6
 
-    // Open all boxes.
-    await Hive.openBox<Goal>('goals');
-    await Hive.openBox<CommitmentBlock>('commitment_blocks');
-    await Hive.openBox<DailySchedule>('daily_schedules');
-    await Hive.openBox<ScheduledChunk>(
+    // Open all boxes. Each open is resilient: if a box holds a record from an
+    // older app version that the current adapters cannot deserialize, that box
+    // is reset to empty instead of throwing an uncaught error that blanks the
+    // app at startup (see resilient_box.dart and the debug write-up at
+    // .planning/debug/stale-hive-data-startup-crash.md).
+    await _openBox<Goal>('goals');
+    await _openBox<CommitmentBlock>('commitment_blocks');
+    await _openBox<DailySchedule>('daily_schedules');
+    await _openBox<ScheduledChunk>(
       'scheduled_chunks',
     ); // standalone, not just embedded
-    await Hive.openBox<CompletionLog>('completion_logs');
-    await Hive.openBox<QuarterlySnapshot>('quarterly_snapshots');
-    await Hive.openBox<AppSettings>('app_settings');
+    await _openBox<CompletionLog>('completion_logs');
+    await _openBox<QuarterlySnapshot>('quarterly_snapshots');
+    await _openBox<AppSettings>('app_settings');
 
     await runMigrations(prefs);
   }
+
+  /// Opens a typed box via the resilient helper, wiring in the real Hive
+  /// open/delete calls. Kept private so [init] reads as a flat list of boxes.
+  static Future<Box<T>> _openBox<T>(String name) => openBoxResilient<T>(
+    name,
+    (n) => Hive.openBox<T>(n),
+    (n) => Hive.deleteBoxFromDisk(n),
+  );
 }

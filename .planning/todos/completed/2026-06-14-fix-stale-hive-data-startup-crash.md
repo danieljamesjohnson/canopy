@@ -1,5 +1,8 @@
 ---
 created: 2026-06-14T14:54:18Z
+status: completed
+completed: 2026-06-14
+resolution: .planning/quick/20260614-fix-stale-hive-data-startup-crash/SUMMARY.md
 title: Fix stale Hive data startup crash (blank screen on old IndexedDB)
 area: database
 files:

@@ -1,6 +1,7 @@
 ---
 slug: stale-hive-data-startup-crash
-status: open
+status: resolved
+resolution: .planning/quick/20260614-fix-stale-hive-data-startup-crash/SUMMARY.md
 severity: high
 created: 2026-06-14
 surfaced_during: v1.3 milestone UAT (browser debug session)

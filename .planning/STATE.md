@@ -70,6 +70,12 @@ None.
 | uat | Phases 04/05/06/09/10/11 UAT | carried over from v1.0/v1.1 |
 | verification | Phases 01/06/07/09/10/11/12/13/14 | human visual sign-off pending |
 
+## Quick Tasks Completed
+
+| Date | Slug | Outcome |
+|------|------|---------|
+| 2026-06-14 | fix-stale-hive-data-startup-crash | Resilient Hive box open — incompatible old-version data is reset instead of blanking the app at startup. `.planning/quick/20260614-fix-stale-hive-data-startup-crash/` |
+
 ## Session Continuity
 
 Last session: 2026-06-13
