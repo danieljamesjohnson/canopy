@@ -104,9 +104,12 @@ Future<void> _pumpActiveChunkCard(
 
 /// Pump helper for HomeScreen with the necessary provider tree.
 /// Mirrors the router_redirect_test.dart provider pattern.
+/// Accepts an injectable [now] function forwarded to HomeScreen(now:)
+/// so tests can simulate specific wall-clock times (NOW-01/NOW-02).
 Future<void> _pumpHomeScreen(
   WidgetTester tester, {
   required ScheduleNotifier scheduleNotifier,
+  DateTime Function()? now,
 }) async {
   final theme = ThemeData(
     useMaterial3: true,
@@ -129,7 +132,7 @@ Future<void> _pumpHomeScreen(
       ],
       child: MaterialApp(
         theme: theme,
-        home: const HomeScreen(),
+        home: HomeScreen(now: now),
       ),
     ),
   );
@@ -226,6 +229,10 @@ void main() {
 
   group('HomeScreen Now/Next layout (NAV-02)', () {
     /// Builds a DailySchedule for today with two unresolved work chunks.
+    /// Chunks are given syntheticStartMinutes so they participate in
+    /// clock-window selection under the new time-anchored logic (NOW-01).
+    /// Tests using this schedule inject now: () => DateTime(2026,6,13,9,5)
+    /// so the first chunk (starts 9:00 = 540 min) is the active Now.
     DailySchedule _scheduleWithTwoChunks() {
       final today = DateTime.now();
       final ymd =
@@ -240,6 +247,7 @@ void main() {
             goalId: 'g1',
             durationMinutes: 25,
             rationale: 'First chunk',
+            syntheticStartMinutes: 540, // 9:00 AM
           ),
           ScheduledChunk(
             id: 'c2',
@@ -247,6 +255,7 @@ void main() {
             goalId: 'g2',
             durationMinutes: 30,
             rationale: 'Second chunk',
+            syntheticStartMinutes: 600, // 10:00 AM
           ),
         ],
       );
@@ -278,9 +287,15 @@ void main() {
       );
     }
 
+    // Injected now for NAV-02 layout tests: 9:05 AM places us inside the
+    // first chunk's window (9:00–9:25 = syntheticStartMinutes 540, dur 25).
+    // This is required so the time-anchored resolveNowState sees an Active
+    // state and renders ActiveChunkCard for c1 and Next for c2 (NOW-01).
+    final navNow = () => DateTime(2026, 6, 13, 9, 5);
+
     testWidgets('shows "Now" section label when chunks remain', (tester) async {
       final sn = _FakeScheduleNotifierWithSchedule(_scheduleWithTwoChunks());
-      await _pumpHomeScreen(tester, scheduleNotifier: sn);
+      await _pumpHomeScreen(tester, scheduleNotifier: sn, now: navNow);
       expect(
         find.text('Now'),
         findsWidgets,
@@ -290,7 +305,7 @@ void main() {
 
     testWidgets('shows ActiveChunkCard for current chunk', (tester) async {
       final sn = _FakeScheduleNotifierWithSchedule(_scheduleWithTwoChunks());
-      await _pumpHomeScreen(tester, scheduleNotifier: sn);
+      await _pumpHomeScreen(tester, scheduleNotifier: sn, now: navNow);
       expect(
         find.byType(ActiveChunkCard),
         findsOneWidget,
@@ -301,7 +316,7 @@ void main() {
     testWidgets('shows "Next" section label when second chunk exists',
         (tester) async {
       final sn = _FakeScheduleNotifierWithSchedule(_scheduleWithTwoChunks());
-      await _pumpHomeScreen(tester, scheduleNotifier: sn);
+      await _pumpHomeScreen(tester, scheduleNotifier: sn, now: navNow);
       expect(
         find.text('Next'),
         findsOneWidget,
@@ -311,7 +326,7 @@ void main() {
 
     testWidgets('shows "See full schedule" link', (tester) async {
       final sn = _FakeScheduleNotifierWithSchedule(_scheduleWithTwoChunks());
-      await _pumpHomeScreen(tester, scheduleNotifier: sn);
+      await _pumpHomeScreen(tester, scheduleNotifier: sn, now: navNow);
       expect(
         find.text('See full schedule'),
         findsOneWidget,
@@ -319,15 +334,15 @@ void main() {
       );
     });
 
-    testWidgets('shows "All done today!" when all chunks resolved',
+    testWidgets('shows "That\'s a wrap" when all chunks resolved',
         (tester) async {
       final sn = _FakeScheduleNotifierWithSchedule(_scheduleAllResolved());
       await _pumpHomeScreen(tester, scheduleNotifier: sn);
       expect(
-        find.text('All done today!'),
+        find.text("That's a wrap"),
         findsOneWidget,
         reason:
-            'NAV-02: "All done today!" must appear when all chunks are resolved',
+            "NOW-02: day-complete state shows \"That's a wrap\" when all chunks resolved",
       );
     });
 
