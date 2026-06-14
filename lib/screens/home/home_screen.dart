@@ -572,6 +572,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ScheduledChunk next,
   ) {
     final theme = Theme.of(context);
+    // Name the upcoming chunk's goal, mirroring the Next-section fallback.
+    final goalName = _lookupGoalName(context, next);
+    final title = goalName ??
+        (next.rationale.isNotEmpty ? next.rationale : 'Work block');
+    final subtitle =
+        goalName != null ? toDisplayRationale(next.rationale) : null;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -586,6 +592,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
           // lg (24px) heading-to-body gap per UI-SPEC spacing scale.
           const SizedBox(height: 24),
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (subtitle != null && subtitle.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          const SizedBox(height: 8),
           Text(
             next.displayStartMinutes != null
                 ? 'Starts at ${formatMinutes(next.displayStartMinutes!)}'
