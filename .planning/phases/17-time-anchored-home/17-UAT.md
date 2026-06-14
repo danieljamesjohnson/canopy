@@ -1,9 +1,9 @@
 ---
-status: testing
+status: complete
 phase: 17-time-anchored-home
 source: [17-VERIFICATION.md]
 started: 2026-06-13T23:30:00Z
-updated: 2026-06-13T23:30:00Z
+updated: 2026-06-14T17:35:00Z
 ---
 
 ## Current Test

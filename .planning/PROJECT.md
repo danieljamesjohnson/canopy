@@ -8,25 +8,25 @@ Canopy is a personal time budgeting app that generates a daily schedule built ar
 
 Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
 
-## Previous Milestone: v1.2 "Make It Usable" — SHIPPED 2026-06-13
+## Current State
 
-3 phases (12-14), 7 plans, 11/11 requirements implemented and wired, 209-test suite green. Reworked the UI foundations from the first real dogfood: Home landing + clock-timed schedule with now/next framing, labeled chunk actions, legible check-in, goal form that fits the viewport, Goals-as-prioritization, and priority that measurably drives scheduling. Human visual UAT (12 items) deferred for later `/gsd-verify-work`. See `.planning/milestones/v1.2-*` and `MILESTONES.md`.
+**Shipped through v1.3 "An Honest Day" (2026-06-14).** Canopy is a working personal time-budgeting app: a daily mood check-in shapes a generated schedule of 25-min Chunks built around three goal types, with a time-anchored Home (Now/Next), an honest scheduling engine (fair capacity, truthful streaks, priority-driven allocation for all goal types, full-day fill), Goals-as-prioritization, and a quarterly review. ~11.4k LOC of app code in `lib/`, 247-test suite green, `flutter analyze` clean. Rule-based only — no LLM.
 
-## Current Milestone: v1.3 "An Honest Day"
+**Next:** planning the next milestone. Top open usability gap on the dogfood surface is F-03 (goal form / modals don't adapt to desktop — phone bottom-sheet everywhere). The energy-aware direction (SEED-004) and a low-mood restorative floor (SEED-001 #2) remain candidate themes.
 
-**Goal:** Make the scheduling engine tell the truth and use the whole day — so the plan reflects real time, real priority, and fills open capacity with what matters. Rule-based only (no LLM).
+<details>
+<summary>Previous milestone: v1.3 "An Honest Day" — SHIPPED 2026-06-14</summary>
 
-**Why this milestone:** A post-v1.2 adversarial audit (`SEED-003`) found three v1.2 requirements landed *superficially* — Home's "Now" is a label, not time-anchored; the goal-sheet "fits viewport" claim is untested; priority's count-effect covers only 1 of 3 goal types. Continued dogfooding (2026-06-13 session) surfaced the deeper product gap: regular-time goals (e.g. family) don't claim an otherwise-empty day. Together these are an "engine honesty + fill the day" pass over `SEED-001` (#3, #6) and `SEED-003` (#1, #2, #3).
+3 phases (15-17), 4 plans, 9/9 requirements satisfied and browser-verified, 247-test suite green. Made the scheduling engine tell the truth and use the whole day: time-anchored Home Now/Next with pre-start/day-complete states (NOW-01/02); priority drives chunk count for all three goal types with reconciled drag/form priority models (PRIORITY-02/03); capacity shared across goal types so habits don't monopolize the low-mood cap (CAP-01); generation-time honest streaks (STREAK-01); regular-time goals fill open days, priority-spread and mood-capped (FILL-01/02); and a true-modal-height goal-sheet reachability test (GOALFORM-02). See `.planning/milestones/v1.3-*` and `MILESTONES.md`.
 
-**Target features:**
-- Home "Now" / "Next" reflect the chunk whose clock window contains the *actual* current time, with graceful before-start / day-over states.
-- Priority changes chunk *count* for every goal type (habits & outcomes, not just time-target), and the drag-continuous vs form-discrete priority models are reconciled so the priority chip stays meaningful after a drag.
-- Capacity is shared across goal types — habits no longer allocate first and consume the whole (especially low-mood) cap before outcomes/time-targets.
-- Honest streaks — the displayed streak matches the actual computed walk.
-- Regular-time goals fill open days — when little else is due they claim leftover slots (spread across them by priority, bounded by the mood cap), instead of leaving the day empty.
-- A real viewport test proves the goal sheet's Priority + Save are reachable at the true modal height per goal type.
+</details>
 
-**Scope notes:** Low-energy days stay minimal (required + habits only); time-targets remain suppressed on mood 1–2 — explicit owner decision, so SEED-001 #2 is deferred. Energy-aware valence (`SEED-004`) deferred to a follow-on milestone. Phase numbering continues from v1.2 (starts at Phase 15); prior phase directories are preserved. Several items are partly pre-paid by the 2026-06-13 dogfood commits (start-near-now, weekday frequency, 3-hr regular-time default, removed pace prompt, humane empty-day copy).
+<details>
+<summary>Previous milestone: v1.2 "Make It Usable" — SHIPPED 2026-06-13</summary>
+
+3 phases (12-14), 7 plans, 11/11 requirements implemented and wired, 209-test suite green. Reworked the UI foundations from the first real dogfood: Home landing + clock-timed schedule with now/next framing, labeled chunk actions, legible check-in, goal form that fits the viewport, Goals-as-prioritization, and priority that measurably drives scheduling. See `.planning/milestones/v1.2-*`.
+
+</details>
 
 ## Requirements
 
@@ -42,7 +42,7 @@ Core product loop (v1.0) and daily-loop hardening (v1.1):
 - ✓ Quarterly review (data summary + guided reflection) — v1.0
 - ✓ Rule-based scheduling (no AI dependency) — v1.0
 
-Usability rework (v1.2 — *code-validated; visual UAT deferred*):
+Usability rework (v1.2):
 - ✓ Home is the landing; schedule reads as a real timed plan with now/next framing (NAV-01/02, SCHED-01/02) — v1.2
 - ✓ Chunk complete/skip are labeled, hover-free affordances (SCHED-03) — v1.2
 - ✓ Check-in legible at all moods + hover/pressed; lighter-day choice is a readable post-commit decision (CHECKIN-01/02) — v1.2
@@ -50,9 +50,20 @@ Usability rework (v1.2 — *code-validated; visual UAT deferred*):
 - ✓ Goals screen reads as a prioritization view with a clear priority visual language (GOALS-01/02) — v1.2
 - ✓ Priority measurably changes the generated schedule, not just a tiebreaker (PRIORITY-01) — v1.2
 
+Engine honesty + fill the day (v1.3 — *browser-verified*):
+- ✓ Home Now/Next reflect the chunk whose clock window contains the current time, with pre-start / day-complete states (NOW-01/02) — v1.3
+- ✓ Priority changes chunk count for all three goal types; drag and form write one coherent priority model (PRIORITY-02/03) — v1.3
+- ✓ Capacity shared across goal types — habits can't monopolize the low-mood cap (CAP-01) — v1.3
+- ✓ Displayed streak equals the computed backward due-day walk (STREAK-01) — v1.3
+- ✓ Regular-time goals fill open days, priority-spread and mood-capped (FILL-01/02) — v1.3
+- ✓ Goal sheet's Priority + Save proven reachable at true modal height for every goal type (GOALFORM-02) — v1.3
+
 ### Active
 
-v1.3 "An Honest Day" — engine honesty + fill the day. See `.planning/REQUIREMENTS.md` for the scoped, ID'd list. Themes: time-anchored Home now/next; priority changes count for all goal types + reconciled priority models; capacity shared across goal types; honest streaks; regular-time fills open days; a real goal-sheet viewport test. Deferred: SEED-001 #2 (low-mood time-target floor — owner kept low days minimal), SEED-004 (energy-aware valence).
+None committed — planning the next milestone. Candidate themes (a fresh `.planning/REQUIREMENTS.md` will be created by `/gsd-new-milestone`):
+- **F-03** — goal form / modals don't adapt to desktop (phone bottom-sheet everywhere); top open usability gap on the dogfood surface (`.planning/todos/pending/2026-06-14-goal-form-desktop-layout.md`).
+- **Energy-aware valence (SEED-004)** — user-declared "gives / neutral / costs energy" per goal, biasing low/high days.
+- **Low-mood restorative floor (SEED-001 #2)** — let a little restorative time through on low-energy days; revisit if dogfooding shows low days feel empty.
 
 ### Out of Scope
 
@@ -64,7 +75,8 @@ v1.3 "An Honest Day" — engine honesty + fill the day. See `.planning/REQUIREME
 
 - Built as a personal tool first — the primary user is the developer
 - Flutter project targeting all platforms (iOS, Android, Web, Windows, macOS, Linux)
-- Currently at Flutter starter template; all app code goes in `lib/`
+- ~11.4k LOC of app code in `lib/`; 247-test suite green, `flutter analyze` clean (as of v1.3)
+- Dogfooded via a hosted **debug** web build (single dart2js bundle, no service worker) over tailscale — see CLAUDE.md "Local hosting for UAT"
 - The "Chunk" concept is like a Pomodoro (25 min) but framed around budgeting time toward goals rather than pure focus sessions
 - Every chunk is followed by a 5-min short break; after 3–4 chunks a 25-min long break is inserted (mood-adaptive cadence)
 - Commitment blocks (job, school, appointments) are chunked up automatically within their time window and always appear in the schedule
@@ -91,7 +103,12 @@ v1.3 "An Honest Day" — engine honesty + fill the day. See `.planning/REQUIREME
 | Break structure | 5-min after each chunk, 25-min long break every 3–4 chunks (mood-adaptive); breaks shown in schedule | ✓ Good |
 | Local storage only | Personal tool, no server complexity in v1 | ✓ Good |
 | Priority drives scheduling (v1.2) | Make priority observable: habit sort + time-target composite score, not a tiebreaker | ✓ Good — proven by deterministic engine tests (PRIORITY-01) |
-| Provider + ChangeNotifier (from Phase 2) | Cross-screen state without a heavier framework | ✓ Good — held up through v1.2 |
+| Provider + ChangeNotifier (from Phase 2) | Cross-screen state without a heavier framework | ✓ Good — held up through v1.3 |
+| Habit ceiling `ceil(cap/2)` for capacity sharing (v1.3) | Stop habits monopolizing the discretionary cap on low-mood days so outcomes/time-targets get a share | ✓ Good — CAP-01 browser-verified (2/4 habits on a low-mood day) |
+| Generation-time streak write-back (v1.3) | Displayed streak can't diverge from the computed walk if it's written at generation | ✓ Good — STREAK-01 |
+| Always-run round-robin fill, mood-capped (v1.3) | Fill open days with time-target goals by priority without one goal swallowing the day | ⚠️ Revisit — FILL-02 high-priority monopoly edge documented-accepted (3+ goals at weight ≥0.75 can starve lower-priority time-targets) |
+| Time-anchor Home via `resolveNowState` + 1-min timer (v1.3) | Now/Next must track the real clock window, not the first unresolved chunk; honest pre-start/day-complete states | ✓ Good — NOW-01/02 browser-verified |
+| Low-mood days stay minimal (required + habits only) (v1.3) | Owner decision: protect low days from time-target load; defer SEED-001 #2 restorative floor | — Pending — revisit if low days feel empty in dogfooding |
 
 ## Evolution
 
@@ -111,4 +128,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-13 — started milestone v1.3 "An Honest Day" (engine honesty + fill the day)*
+*Last updated: 2026-06-14 after v1.3 "An Honest Day" milestone*
