@@ -44,15 +44,27 @@ Dart stack traces; release minifies everything to `main.dart.js:<n>`, which is u
 when something throws (this is exactly what blocked the stale-Hive-data crash triage). Do
 **not** optimize for load speed at this stage — that concern was premature.
 
-Serve it bound to all interfaces so the affected browser on the tailnet (danserver) can
-reach it:
+**Build a single-bundle debug build and serve it statically — do NOT use
+`flutter run -d web-server`.** That command uses the DDC incremental compiler, which
+fans the app out into ~866 separate module files. Over tailscale latency, the browser's
+~6-connections-per-origin limit turns that into minutes of serial round-trips → blue
+loading strip → white. It only "worked before" when the app was small (few modules). The
+app outgrew it. (Measured: at 80ms emulated latency the DDC build's `load` event never
+fired in 90s / 877 requests; the single-bundle debug build below fired in ~21s / 9
+requests.)
 
 ```bash
-flutter run -d web-server --web-hostname=0.0.0.0 --web-port=8095 --debug
+# Debug MODE (assertions on, DEBUG banner, source-mapped traces), single dart2js bundle,
+# no service worker (so it can never collide on an origin):
+flutter build web --debug --source-maps --pwa-strategy=none
+
+# Serve statically, bound to all interfaces for the tailnet:
+cd build/web && python3 -m http.server <port> --bind 0.0.0.0
 ```
 
-Reach it at `http://danserver:8095/`. Only switch back to `flutter build web --release`
-(served via a static server) once the basics are solid.
+Reach it at `http://danserver:<port>/`. Use a port that has NEVER served a different
+build type (see trap #1). Switch to `flutter build web --release` only once the basics
+are solid.
 
 ### Two traps that fake a "blank page" (neither means the build is broken)
 
@@ -65,9 +77,11 @@ concluding the build is broken:
    port, the browser's service worker keeps intercepting requests and serving the
    cached **release** shell against a mismatched server → blank, and it persists
    across reloads and even incognito-after-install. **Dedicate a port per build
-   type and never cross them:** debug → `:8095`, release → `:8096`. If you must
-   reuse an origin, first unregister the SW (DevTools → Application → Service
-   Workers → Unregister, then Clear storage) or just pick a fresh port.
+   type and never cross them.** If you must reuse an origin, first unregister the
+   SW (DevTools → Application → Service Workers → Unregister, then Clear storage)
+   or just pick a fresh port. The `--pwa-strategy=none` debug build above never
+   registers a SW, so it can't *create* this collision — but a SW left over from a
+   prior **release** build on the same port still will, so keep using fresh ports.
 2. **Headless Chromium exhausts the GPU → `CONTEXT_LOST_WEBGL` → blank.**
    Repeatedly launching headless Chromium (e.g. automated screenshot loops)
    triggers WebGL context loss, so CanvasKit can't draw and never reaches
