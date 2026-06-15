@@ -98,10 +98,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     // (1) Save Screen 1 goal if filled.
     // Re-use the same Goal object that was displayed on Screen 4 (stable ID)
     // so that any marked-ID in _screen4MarkedGoalIds resolves correctly.
+    // Use object-identity comparison against _screen3Habit rather than
+    // filtering by goal type — Screen 1 uses GoalTypePicker which exposes
+    // all three types (including habit), so a type-based filter would
+    // silently drop a habit selected on Screen 1 (CR-01).
     final pendingGoals = _getPendingGoalsForScreen4();
-    final screen1Goal = pendingGoals
-        .where((g) => g.goalTypeIndex != GoalType.habit.index)
-        .firstOrNull;
+    final screen1Goal =
+        pendingGoals.isNotEmpty && pendingGoals[0] != _screen3Habit
+            ? pendingGoals[0]
+            : null;
     if (screen1Goal != null) {
       screen1Goal.color = goalsNotifier.autoColor();
       await goalsNotifier.saveGoal(screen1Goal);
@@ -119,12 +124,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       await goalsNotifier.saveGoal(_screen3Habit!);
     }
 
-    // (3.5) NEW: Save Screen 4 quick-added goals with gives valence,
-    // then apply gives to goals the user marked on Screen 4.
+    // (3.5) NEW: Save Screen 4 quick-added goals; apply gives only if the
+    // user left the goal marked (i.e. ID is in _screen4MarkedGoalIds).
+    // This respects any deselection the user made (CR-02).
     for (final goal in _screen4QuickGoals) {
-      goal.energyValenceIndex = EnergyValence.gives.index;
+      if (_screen4MarkedGoalIds.contains(goal.id)) {
+        goal.energyValenceIndex = EnergyValence.gives.index;
+      }
       await goalsNotifier.saveGoal(goal);
     }
+    // Apply gives to pending goals (Screens 1 + 3) that the user marked.
     for (final id in _screen4MarkedGoalIds) {
       final goals = goalsNotifier.goals;
       final goal = goals.where((g) => g.id == id).firstOrNull;
@@ -688,20 +697,27 @@ class _Screen4State extends State<_Screen4> {
   void _confirmQuickAdd() {
     final name = _quickAddController.text.trim();
     if (name.isEmpty) return;
+    // Do NOT pre-set energyValenceIndex here — let _markedGoalIds drive
+    // selection state so the chip is actually toggleable (CR-02).
     final goal = Goal(
       name: name,
       goalTypeIndex: GoalType.timeTarget.index,
       weeklyHourBudget: 3.0,
-      energyValenceIndex: EnergyValence.gives.index,
     );
     setState(() {
       _quickGoals.add(goal);
+      _markedGoalIds.add(goal.id); // pre-mark as energizing, but user can unmark
       _quickAddController.clear();
       _showQuickAdd = false;
     });
   }
 
   void _onComplete() {
+    // Commit any in-flight quick-add text so a goal the user typed but
+    // hadn't confirmed yet is not silently discarded (WR-02).
+    if (_showQuickAdd && _quickAddController.text.trim().isNotEmpty) {
+      _confirmQuickAdd();
+    }
     widget.onComplete(
       Set<String>.from(_markedGoalIds),
       List<Goal>.from(_quickGoals),
@@ -742,9 +758,11 @@ class _Screen4State extends State<_Screen4> {
             )
           else
             ...allGoals.map((goal) {
-              final isMarked =
-                  _markedGoalIds.contains(goal.id) ||
-                  goal.energyValenceIndex == EnergyValence.gives.index;
+              // Drive selection state solely from _markedGoalIds (CR-02).
+              // Using energyValenceIndex as a fallback permanently locks
+              // quick-added goals (pre-set to gives) in the selected state,
+              // making the chip non-interactive.
+              final isMarked = _markedGoalIds.contains(goal.id);
               return ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Text(
