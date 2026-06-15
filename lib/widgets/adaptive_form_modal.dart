@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 /// Shows a form modal that adapts to the available viewport width.
 ///
 /// At >= 720dp: opens a centered Material [Dialog] with [clipBehavior: Clip.antiAlias],
-/// constrained to max 560dp wide and 80% of screen height. Interior is wrapped in
-/// [SingleChildScrollView] with a fresh [ScrollController] injected into [builder].
+/// constrained to max 560dp wide and 80% of screen height. The [ScrollController]
+/// is owned by [_DialogForm] and properly disposed when the dialog closes.
 /// [barrierDismissible] is true — tapping outside closes the dialog without saving.
 ///
 /// At < 720dp: opens a [showModalBottomSheet] with [isScrollControlled: true] and
@@ -29,22 +29,13 @@ Future<void> showAdaptiveFormModal({
     await showDialog<void>(
       context: context,
       barrierDismissible: true,
-      builder: (ctx) {
-        final scrollController = ScrollController();
-        return Dialog(
-          clipBehavior: Clip.antiAlias,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: 560,
-              maxHeight: screenHeight * 0.8,
-            ),
-            child: SingleChildScrollView(
-              controller: scrollController,
-              child: builder(scrollController),
-            ),
-          ),
-        );
-      },
+      builder: (ctx) => Dialog(
+        clipBehavior: Clip.antiAlias,
+        child: _DialogForm(
+          builder: builder,
+          maxHeight: screenHeight * 0.8,
+        ),
+      ),
     );
   } else {
     await showModalBottomSheet<void>(
@@ -60,6 +51,49 @@ Future<void> showAdaptiveFormModal({
         snapSizes: const [0.6, 1.0],
         builder: (ctx, scrollController) => builder(scrollController),
       ),
+    );
+  }
+}
+
+/// Private StatefulWidget that owns and disposes the [ScrollController] used
+/// by dialog-mode forms (CR-01 / WR-01 fix).
+///
+/// Rationale:
+/// - The outer [SingleChildScrollView] that previously wrapped [builder] output
+///   caused nested scrolling with the form's own [SingleChildScrollView] (CR-01).
+/// - Creating the controller inside the [showDialog] builder closure leaked it
+///   because there was no corresponding [dispose] (WR-01).
+///
+/// This widget provides proper lifecycle management: the controller is created
+/// once in [initState] and disposed in [dispose]. The [ConstrainedBox] that
+/// previously lived in the dialog builder now lives here, keeping the 560dp /
+/// 80%-height constraints in one place.
+class _DialogForm extends StatefulWidget {
+  const _DialogForm({required this.builder, required this.maxHeight});
+
+  final Widget Function(ScrollController) builder;
+  final double maxHeight;
+
+  @override
+  State<_DialogForm> createState() => _DialogFormState();
+}
+
+class _DialogFormState extends State<_DialogForm> {
+  late final ScrollController _sc = ScrollController();
+
+  @override
+  void dispose() {
+    _sc.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: 560, maxHeight: widget.maxHeight),
+      // No SingleChildScrollView here — the builder (GoalFormSheet,
+      // CommitmentFormSheet) already provides a scrollable root.
+      child: widget.builder(_sc),
     );
   }
 }
