@@ -64,9 +64,43 @@
 - Model mix: planners on opus; researchers/checkers/executors/reviewers/fixers/auditors on sonnet (balanced profile).
 - All visual UAT cleared in-milestone this time (vs v1.2 where 12 items were deferred) — the hosted debug build + clock-mocking made browser verification cheap enough to finish.
 
+## Milestone: v1.4 — Energy-Aware
+
+**Shipped:** 2026-06-15
+**Phases:** 3 (18-20) | **Plans:** 12
+
+### What Was Built
+- Phase 18: Responsive modals + desktop polish — one shared `showAdaptiveFormModal` (dialog ≥720dp / bottom sheet below) for every form caller, 720dp content constraints on home/schedule/goals, and POLISH-02 copy fixes (RESP-01/02/03, POLISH-01/02).
+- Phase 19: Energy valence — additive Hive migration (schema 7→8) adding `EnergyValence` (int-index, neutral=0, crash-safe) + emoji tag to Goal; valence picker + emoji picker in the goal form; `_ValenceBadge`/`_ValenceChip` + emoji on goal card and schedule chunks; onboarding "what gives you energy?" Screen 4 (ENERGY-01/02/03/04, ONBOARD-01).
+- Phase 20: Valence-aware engine — bounded restorative floor on low-mood days + reserved energy/high-priority slot on high-mood days, deterministic-unit-tested, zero regressions (VSCHED-01/02/03).
+
+### What Worked
+- The discuss-skipped → research → pattern-map → plan → plan-check → execute → verify → code-review → fix chain caught real, shippable-blocking defects every phase: two critical onboarding bugs in Phase 19 (habit-on-Screen-1 silent data loss; "Energizing" chip stuck-selected), and a CRITICAL double-place bug in Phase 20 (restorative floor + PRIORITY-03 both placing a gives+high-priority goal, count map overwritten not incremented) plus a determinism tiebreaker gap — all found by adversarial review, fixed, and pinned with a new regression test.
+- The additive-migration discipline held: the migration-safety RED test (old record → neutral, no crash) was written Wave 0 first and proved the highest-risk path before any model change.
+- Agent-driven real-browser walkthroughs (go-look-at, ANGLE/SwiftShader) cleared the visual `human_needed` items in-milestone (desktop goal dialog, onboarding Screen 4, valence pickers) instead of deferring them.
+
+### What Was Inefficient
+- `nyquist_compliant: false` frontmatter lag struck a third time — all three v1.4 VALIDATION.md files needed flipping to `true` at milestone close despite green tests. Same bookkeeping gap flagged in v1.3; still not flipped at phase close.
+- The planner twice mis-wrote ROADMAP.md with the Write tool and had to restore from git mid-run — a recurring hazard when agents edit shared planning files.
+- Pre-existing seeds/todos (SEED-001/002/003/004, goal-form-desktop-layout) surfaced in the pre-close audit even though several were consumed by this milestone — they were acknowledged rather than marked resolved at source.
+
+### Patterns Established
+- Intentional file-private widget duplication (`_ValenceBadge`/`_ValenceChip` mirroring `_PriorityChip`) over premature shared-widget extraction.
+- Non-destructive semantic color encoding for state that isn't an error (valence → tertiary/secondaryContainer; `colorScheme.error` stays reserved for archive/delete).
+- Enum-as-int-index Hive storage with the zero value as the safe default, so additive migrations never need a data transform.
+
+### Key Lessons
+- Adversarial code review earns its keep on engine logic: the Phase 20 double-place bug passed all 7 VSCHED tests + 288 existing tests because no test exercised gives+high-priority on a low day — the review found it by reading the pass-ordering, not by running tests.
+- When several passes share mutable accounting state (`placedCountPerGoal`), read-increment (`(x ?? 0) + 1`), never hard-assign — pass reordering silently corrupts hard-assigned counts.
+
+### Cost Observations
+- Model mix: planners on opus; researchers/pattern-mappers/checkers/executors/reviewers/fixers/auditors/UI agents on sonnet.
+- Run end-to-end autonomously (`/gsd-autonomous`) across all 3 phases including lifecycle; sequential execution (worktrees auto-degraded — local master ahead of origin).
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Notable |
 |-----------|--------|-------|---------|
 | v1.2 Phases | 3 | 7 | UI foundations rework + priority-drives-scheduling; review/verify chain caught a WCAG regression and a false-passing engine test |
 | v1.3 An Honest Day | 3 | 4 | Engine honesty (capacity/streaks/priority/fill) + time-anchored Home; all 9 requirements browser-verified via clock-mocking; review loop caught a boundary race and a false day-complete state |
+| v1.4 Energy-Aware | 3 | 12 | Responsive modals + energy valence model + valence-aware engine; additive Hive migration crash-safe; adversarial review caught 2 critical onboarding bugs + 1 critical engine double-place bug; 289/289 tests green |

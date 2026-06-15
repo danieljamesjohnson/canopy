@@ -31,10 +31,10 @@ Last activity: 2026-06-15 — Milestone v1.4 completed and archived
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-14)
+See: `.planning/PROJECT.md` (updated 2026-06-15)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Phase 20 — Valence-Aware Engine
+**Current focus:** v1.4 "Energy-Aware" shipped (2026-06-15). Planning next milestone (`/gsd-new-milestone`) after dogfooding.
 
 ## v1.4 Phase Summary
 
@@ -122,7 +122,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 
 Last session: 2026-06-14
 Stopped at: None
-Resume at: `/gsd-plan-phase 18`
+Resume at: `/gsd-new-milestone` (v1.4 shipped)
 
 ## Performance Metrics
 
