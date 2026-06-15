@@ -95,7 +95,9 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
   }
 
   bool get _canSave =>
-      _nameController.text.trim().isNotEmpty && _selectedDays.isNotEmpty;
+      _nameController.text.trim().isNotEmpty &&
+      _selectedDays.isNotEmpty &&
+      _endMinutes > _startMinutes;
 
   Future<void> _save() async {
     if (!_canSave) return;
