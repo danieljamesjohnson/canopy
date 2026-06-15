@@ -132,7 +132,10 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
   3. On a high ("sunny") mood day, at least one slot is reserved for an energy-giving or high-priority goal even when backlog pressure is high
   4. Engine behavior is covered by deterministic unit tests that pass under `flutter test`
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+- [ ] 20-01-red-tests-PLAN.md — Wave 0 RED tests + valence param on test helpers (VSCHED-01/02/03)
+- [ ] 20-02-valence-engine-PLAN.md — Engine change: restorative floor (low days) + reservation (high days) in schedule_generator.dart (VSCHED-01/02/03)
 
 ## Progress
 
@@ -146,4 +149,4 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 | 17. Time-Anchored Home | v1.3 | 1/1 | Complete | 2026-06-14 |
 | 18. Responsive Modals and Desktop Polish | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 19. Energy Valence | v1.4 | 5/5 | Complete   | 2026-06-15 |
-| 20. Valence-Aware Engine | v1.4 | 0/? | Not started | - |
+| 20. Valence-Aware Engine | v1.4 | 0/2 | Planned | - |
