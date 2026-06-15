@@ -107,8 +107,18 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
       endMinutes: _endMinutes,
     );
     block.color = _color;
-    await context.read<CommitmentsNotifier>().saveBlock(block);
-    if (mounted) Navigator.of(context).pop();
+    try {
+      await context.read<CommitmentsNotifier>().saveBlock(block);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not save commitment. Please try again.'),
+          ),
+        );
+      }
+    }
   }
 
   @override
