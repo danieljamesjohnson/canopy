@@ -539,7 +539,7 @@ body: Align(
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **CommitmentFormSheet cancel button**
    - What we know: `CommitmentFormSheet.build()` currently has no "Cancel"/"Discard" button — only a `FilledButton` for save.
