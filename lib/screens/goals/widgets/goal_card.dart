@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../data/models/energy_valence.dart';
 import '../../../data/models/goal.dart';
 import '../../../utils/time_format.dart';
 
@@ -119,7 +120,7 @@ class _GoalCardState extends State<GoalCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Title row: icon + name + color swatch
+                          // Title row: icon + emoji (optional) + name + color swatch
                           Row(
                             children: [
                               Icon(
@@ -128,6 +129,13 @@ class _GoalCardState extends State<GoalCard> {
                                 color: goalColor,
                               ),
                               const SizedBox(width: 6),
+                              if (goal.emojiTag != null) ...[
+                                Text(
+                                  goal.emojiTag!,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(width: 4),
+                              ],
                               Expanded(
                                 child: Text(
                                   goal.name,
@@ -157,8 +165,10 @@ class _GoalCardState extends State<GoalCard> {
                                 ),
                             ],
                           ),
-                          // Priority chip integration in secondary row (GOALS-02)
-                          if (secondary != null || showPriorityChip) ...[
+                          // Priority chip + valence badge in secondary row (GOALS-02, ENERGY-04a)
+                          if (secondary != null ||
+                              showPriorityChip ||
+                              goal.energyValence != EnergyValence.neutral) ...[
                             const SizedBox(height: 4),
                             Row(
                               children: [
@@ -173,6 +183,11 @@ class _GoalCardState extends State<GoalCard> {
                                   _PriorityChip(
                                     priorityWeight: goal.priorityWeight ?? 0.5,
                                   ),
+                                if (goal.energyValence !=
+                                    EnergyValence.neutral) ...[
+                                  const SizedBox(width: 4),
+                                  _ValenceBadge(valence: goal.energyValence),
+                                ],
                               ],
                             ),
                           ],
@@ -216,6 +231,67 @@ class _GoalCardState extends State<GoalCard> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// File-private valence badge widget for GoalCard (ENERGY-04a).
+///
+/// Renders a colored container chip with an icon and label for 'gives' and
+/// 'costs' valence. Returns [SizedBox.shrink] for neutral — neutral is never
+/// shown here (caller guards with != EnergyValence.neutral, but we double-guard
+/// for safety). Display-only — no tap handlers.
+/// Uses tertiaryContainer (gives) and secondaryContainer (costs) — never the error slot.
+class _ValenceBadge extends StatelessWidget {
+  const _ValenceBadge({required this.valence});
+
+  final EnergyValence valence;
+
+  @override
+  Widget build(BuildContext context) {
+    if (valence == EnergyValence.neutral) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final IconData icon;
+    final Color chipColor;
+    final Color onColor;
+    final String label;
+
+    if (valence == EnergyValence.gives) {
+      icon = Icons.bolt;
+      chipColor = colorScheme.tertiaryContainer;
+      onColor = colorScheme.onTertiaryContainer;
+      label = 'Gives';
+    } else {
+      // costs
+      icon = Icons.hourglass_empty;
+      chipColor = colorScheme.secondaryContainer;
+      onColor = colorScheme.onSecondaryContainer;
+      label = 'Costs';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: chipColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: onColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: textTheme.labelSmall?.copyWith(
+              color: onColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
