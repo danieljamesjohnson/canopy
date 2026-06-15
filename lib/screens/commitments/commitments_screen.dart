@@ -135,20 +135,32 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
       body: Consumer<CommitmentsNotifier>(
         builder: (ctx, notifier, _) {
           if (notifier.blocks.isEmpty) {
-            return _emptyState();
+            return Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: _emptyState(),
+              ),
+            );
           }
-          return ListView.builder(
-            itemCount: notifier.blocks.length,
-            itemBuilder: (ctx, i) {
-              final block = notifier.blocks[i];
-              return _CommitmentRow(
-                block: block,
-                colorSwatch: _parseColor(block.color),
-                subtitle: _commitmentCardSubtitle(block),
-                onEdit: () => _openAddSheet(context, block),
-                onDelete: () => _confirmDelete(context, block),
-              );
-            },
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: ListView.builder(
+                itemCount: notifier.blocks.length,
+                itemBuilder: (ctx, i) {
+                  final block = notifier.blocks[i];
+                  return _CommitmentRow(
+                    block: block,
+                    colorSwatch: _parseColor(block.color),
+                    subtitle: _commitmentCardSubtitle(block),
+                    onEdit: () => _openAddSheet(context, block),
+                    onDelete: () => _confirmDelete(context, block),
+                  );
+                },
+              ),
+            ),
           );
         },
       ),
