@@ -134,7 +134,7 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 
 **Plans**: 2 plans
 
-- [ ] 20-01-red-tests-PLAN.md — Wave 0 RED tests + valence param on test helpers (VSCHED-01/02/03)
+- [x] 20-01-red-tests-PLAN.md — Wave 0 RED tests + valence param on test helpers (VSCHED-01/02/03)
 - [ ] 20-02-valence-engine-PLAN.md — Engine change: restorative floor (low days) + reservation (high days) in schedule_generator.dart (VSCHED-01/02/03)
 
 ## Progress
@@ -149,4 +149,4 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 | 17. Time-Anchored Home | v1.3 | 1/1 | Complete | 2026-06-14 |
 | 18. Responsive Modals and Desktop Polish | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 19. Energy Valence | v1.4 | 5/5 | Complete   | 2026-06-15 |
-| 20. Valence-Aware Engine | v1.4 | 0/2 | Planned | - |
+| 20. Valence-Aware Engine | v1.4 | 1/2 | In Progress|  |

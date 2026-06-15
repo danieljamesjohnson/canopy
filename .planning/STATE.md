@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Energy-Aware
-status: verifying
+status: executing
 stopped_at: None
-last_updated: "2026-06-15T02:50:41.101Z"
-last_activity: 2026-06-15 -- Phase 19 execution started
+last_updated: "2026-06-15T03:31:15.946Z"
+last_activity: 2026-06-15 -- Phase 20 execution started
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 12
+  completed_plans: 11
   percent: 67
 ---
 
@@ -18,16 +18,16 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-15T02:50:31.871Z
+**Last session:** 2026-06-15T03:31:15.942Z
 
 ---
 
 ## Current Position
 
-Phase: 19 (Energy Valence) — EXECUTING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
-Last activity: 2026-06-15 -- Phase 19 execution started
+Phase: 20 (Valence-Aware Engine) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-06-15 -- Phase 20 execution started
 
 ```
 Progress: [░░░░░░░░░░] 0% — Phase 18/20
@@ -38,7 +38,7 @@ Progress: [░░░░░░░░░░] 0% — Phase 18/20
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Phase 19 — Energy Valence
+**Current focus:** Phase 20 — Valence-Aware Engine
 
 ## v1.4 Phase Summary
 
@@ -144,3 +144,4 @@ Resume at: `/gsd-plan-phase 18`
 | Phase 19-energy-valence P02 | 5min | 2 tasks | 6 files |
 | Phase 19-energy-valence P04 | 4 | 2 tasks | 4 files |
 | Phase 19-energy-valence P05 | 15min | 2 tasks | 2 files |
+| Phase 20-valence-aware-engine P01 | 2min | 2 tasks | 1 files |

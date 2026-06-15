@@ -29,9 +29,9 @@
 
 ### Valence-Aware Scheduling
 
-- [ ] **VSCHED-01**: On low ("stormy") mood days, energy-giving discretionary goals are eligible for scheduling instead of required + habits only
-- [ ] **VSCHED-02**: The low-day restorative inclusion is bounded (a small floor, not full time-target load) so low days stay light
-- [ ] **VSCHED-03**: On high ("sunny") mood days, at least one slot is reserved for an energy-giving / high-value goal so good days aren't pure backlog throughput
+- [x] **VSCHED-01**: On low ("stormy") mood days, energy-giving discretionary goals are eligible for scheduling instead of required + habits only
+- [x] **VSCHED-02**: The low-day restorative inclusion is bounded (a small floor, not full time-target load) so low days stay light
+- [x] **VSCHED-03**: On high ("sunny") mood days, at least one slot is reserved for an energy-giving / high-value goal so good days aren't pure backlog throughput
 
 ### Desktop Polish
 
@@ -73,9 +73,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | ENERGY-03 | Phase 19 | Complete |
 | ENERGY-04 | Phase 19 | Complete |
 | ONBOARD-01 | Phase 19 | Complete |
-| VSCHED-01 | Phase 20 | Pending |
-| VSCHED-02 | Phase 20 | Pending |
-| VSCHED-03 | Phase 20 | Pending |
+| VSCHED-01 | Phase 20 | Complete |
+| VSCHED-02 | Phase 20 | Complete |
+| VSCHED-03 | Phase 20 | Complete |
 | POLISH-01 | Phase 18 | Complete |
 | POLISH-02 | Phase 18 | Complete |
 
