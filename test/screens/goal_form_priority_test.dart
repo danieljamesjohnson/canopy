@@ -398,14 +398,14 @@ void main() {
         await tester.enterText(find.byType(TextField).first, 'Test Goal');
         await tester.pumpAndSettle();
 
-        // Scroll to and tap 'Add goal'. Use .last because 'Add goal' also
+        // Scroll to and tap 'Add Goal'. Use .last because 'Add Goal' also
         // appears as the sheet title Text above the ElevatedButton.
         await tester.scrollUntilVisible(
           find.byType(ElevatedButton),
           100,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.tap(find.text('Add goal').last);
+        await tester.tap(find.text('Add Goal').last);
         await tester.pumpAndSettle();
 
         expect(
@@ -445,13 +445,13 @@ void main() {
           reason: 'Regular-time goal must default the weekly budget to 3.0 hrs',
         );
 
-        // Scroll to and tap 'Add goal'.
+        // Scroll to and tap 'Add Goal'.
         await tester.scrollUntilVisible(
           find.byType(ElevatedButton),
           100,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.tap(find.text('Add goal').last);
+        await tester.tap(find.text('Add Goal').last);
         await tester.pumpAndSettle();
 
         expect(
