@@ -129,15 +129,15 @@ Future<({_InMemoryGoalRepository goalRepo, _FakeSettingsNotifier settings})>
 }
 
 /// Navigates from Screen 1 through Screen 3 to reach Screen 4.
-/// Skips Screens 1–3 with minimal interaction (no goal name → skip patterns).
+/// Uses minimal interaction to advance each screen.
 Future<void> _navigateToScreen4(WidgetTester tester) async {
-  // Screen 1: tap "Next" without filling in a goal name (skip-equivalent).
-  // Screen 1 has a "Next ->" button visible; tap it to advance.
-  final nextBtn = find.text('Next');
-  if (nextBtn.evaluate().isNotEmpty) {
-    await tester.tap(nextBtn);
-    await tester.pumpAndSettle();
-  }
+  // Screen 1: select a goal type and enter a name so "Continue" is enabled.
+  await tester.tap(find.text('I want to spend regular time on something'));
+  await tester.pumpAndSettle();
+  await tester.enterText(find.byType(TextField).first, 'Test Goal');
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Continue'));
+  await tester.pumpAndSettle();
 
   // Screen 2: tap "Skip" to skip commitment block.
   final skipS2 = find.text('Skip');
@@ -147,9 +147,7 @@ Future<void> _navigateToScreen4(WidgetTester tester) async {
   }
 
   // Screen 3: tap "Skip" to skip morning habit.
-  // In the Phase 19 implementation, Screen 3's onSkip → _nextPage() → Screen 4.
-  // (Currently Screen 3's onSkip calls _completeOnboarding directly — Screen 4
-  // is added in Plan 02. This test will fail RED until Screen 4 exists.)
+  // Screen 3's onSkip → _nextPage() → Screen 4.
   final skipS3 = find.text('Skip');
   if (skipS3.evaluate().isNotEmpty) {
     await tester.tap(skipS3.first);
@@ -185,18 +183,15 @@ void main() {
       (tester) async {
         final stores = await _pumpOnboarding(tester);
 
-        // Navigate to Screen 1, enter a goal name so there's a goal to mark.
+        // Screen 1: select a goal type and enter a name.
         await tester.tap(find.text('I want to spend regular time on something'));
         await tester.pumpAndSettle();
         await tester.enterText(find.byType(TextField).first, 'Morning Run');
         await tester.pumpAndSettle();
 
         // Advance past Screen 1.
-        final nextBtn = find.text('Next');
-        if (nextBtn.evaluate().isNotEmpty) {
-          await tester.tap(nextBtn);
-          await tester.pumpAndSettle();
-        }
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
 
         // Skip Screen 2.
         final skipS2 = find.text('Skip');
@@ -205,7 +200,7 @@ void main() {
           await tester.pumpAndSettle();
         }
 
-        // Skip Screen 3 → navigates to Screen 4 (Phase 19 implementation)
+        // Skip Screen 3 → navigates to Screen 4.
         final skipS3 = find.text('Skip');
         if (skipS3.evaluate().isNotEmpty) {
           await tester.tap(skipS3.first);
@@ -219,14 +214,16 @@ void main() {
           reason: 'Must be on Screen 4 — ONBOARD-01',
         );
 
-        // Mark "Morning Run" as energizing (UI label TBD by implementation;
-        // test will be updated once Screen 4 UI is locked in Plan 02).
-        // For now, assert the goal name appears on Screen 4's list.
+        // Pending goal from Screen 1 must appear in Screen 4's list.
         expect(
           find.text('Morning Run'),
           findsOneWidget,
           reason: 'Pending goal from Screen 1 must appear on Screen 4 list',
         );
+
+        // Mark "Morning Run" as energizing by tapping its FilterChip.
+        await tester.tap(find.text('Energizing'));
+        await tester.pumpAndSettle();
 
         // Tap "Let's go" to complete onboarding.
         await tester.tap(find.text("Let's go"));
@@ -240,7 +237,6 @@ void main() {
         );
 
         // Verify the goal that was marked energizing has valence == gives.
-        // (Assertion references EnergyValence — fails RED.)
         final savedGoals = await stores.goalRepo.getAll();
         final morningRun = savedGoals.where((g) => g.name == 'Morning Run').firstOrNull;
         expect(
@@ -249,7 +245,7 @@ void main() {
           reason: '"Morning Run" must be saved when completing onboarding',
         );
         expect(
-          morningRun!.energyValence, // getter does not exist yet — RED
+          morningRun!.energyValence,
           equals(EnergyValence.gives),
           reason:
               'Goal marked energizing on Screen 4 must have '

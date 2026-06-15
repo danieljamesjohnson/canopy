@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/commitment_block.dart';
+import '../../data/models/energy_valence.dart';
 import '../../data/models/goal.dart';
 import '../../providers/commitments_notifier.dart';
 import '../../providers/goals_notifier.dart';
@@ -30,6 +31,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // Screen 3 state (null if skipped)
   Goal? _screen3Habit;
 
+  // Screen 4 state
+  Set<String> _screen4MarkedGoalIds = {};
+  List<Goal> _screen4QuickGoals = [];
+
+  // Cached pending goals passed to Screen 4 (same objects saved in _completeOnboarding).
+  // Rebuilt whenever Screen 3 onComplete fires (when _screen3Habit changes).
+  List<Goal>? _screen4PendingGoals;
+
   // Prevent double-tap on final complete button
   bool _isSaving = false;
 
@@ -51,6 +60,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await _completeOnboarding();
   }
 
+  /// Returns the stable display list of pending goals for Screen 4.
+  ///
+  /// The list is cached after first build so that the same Goal objects
+  /// (with stable IDs) are both shown on Screen 4 and saved by
+  /// _completeOnboarding steps (1) and (3). Without caching, every
+  /// PageView rebuild would create new Goal instances with new UUIDs,
+  /// making the marked-ID set stale.
+  List<Goal> _getPendingGoalsForScreen4() {
+    if (_screen4PendingGoals != null) return _screen4PendingGoals!;
+    final goals = <Goal>[];
+    final name = _screen1NameController.text.trim();
+    if (name.isNotEmpty && _screen1Type != null) {
+      goals.add(
+        Goal(
+          name: name,
+          goalTypeIndex: _screen1Type!.index,
+          weeklyHourBudget: _screen1Type == GoalType.timeTarget ? 3.0 : null,
+        ),
+      );
+    }
+    if (_screen3Habit != null) {
+      goals.add(_screen3Habit!);
+    }
+    _screen4PendingGoals = goals;
+    return goals;
+  }
+
   Future<void> _completeOnboarding() async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
@@ -59,18 +95,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final commitmentsNotifier = context.read<CommitmentsNotifier>();
     final settingsNotifier = context.read<SettingsNotifier>();
 
-    // (1) Save Screen 1 goal if filled
-    final name = _screen1NameController.text.trim();
-    if (name.isNotEmpty && _screen1Type != null) {
-      final goal = Goal(
-        name: name,
-        goalTypeIndex: _screen1Type!.index,
-        color: goalsNotifier.autoColor(),
-        // Regular-time goals need a budget to be scheduled at all; onboarding
-        // has no hours field, so seed a sensible 3 hrs/week the user can adjust.
-        weeklyHourBudget: _screen1Type == GoalType.timeTarget ? 3.0 : null,
-      );
-      await goalsNotifier.saveGoal(goal);
+    // (1) Save Screen 1 goal if filled.
+    // Re-use the same Goal object that was displayed on Screen 4 (stable ID)
+    // so that any marked-ID in _screen4MarkedGoalIds resolves correctly.
+    final pendingGoals = _getPendingGoalsForScreen4();
+    final screen1Goal = pendingGoals
+        .where((g) => g.goalTypeIndex != GoalType.habit.index)
+        .firstOrNull;
+    if (screen1Goal != null) {
+      screen1Goal.color = goalsNotifier.autoColor();
+      await goalsNotifier.saveGoal(screen1Goal);
     }
 
     // (2) Save Screen 2 commitment block if filled
@@ -78,9 +112,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       await commitmentsNotifier.saveBlock(_screen2Block!);
     }
 
-    // (3) Save Screen 3 habit if filled
+    // (3) Save Screen 3 habit if filled.
+    // _screen3Habit is already in pendingGoals (same object), so saving it
+    // here keeps the existing path working correctly.
     if (_screen3Habit != null) {
       await goalsNotifier.saveGoal(_screen3Habit!);
+    }
+
+    // (3.5) NEW: Save Screen 4 quick-added goals with gives valence,
+    // then apply gives to goals the user marked on Screen 4.
+    for (final goal in _screen4QuickGoals) {
+      goal.energyValenceIndex = EnergyValence.gives.index;
+      await goalsNotifier.saveGoal(goal);
+    }
+    for (final id in _screen4MarkedGoalIds) {
+      final goals = goalsNotifier.goals;
+      final goal = goals.where((g) => g.id == id).firstOrNull;
+      if (goal != null) {
+        goal.energyValenceIndex = EnergyValence.gives.index;
+        await goalsNotifier.saveGoal(goal);
+      }
     }
 
     // (4) ALWAYS last — triggers router redirect
@@ -104,7 +155,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _StepDots(currentPage: _currentPage, totalPages: 3),
+            _StepDots(currentPage: _currentPage, totalPages: 4),
             Expanded(
               child: PageView(
                 controller: _controller,
@@ -128,6 +179,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   _Screen3(
                     onComplete: (habit) {
                       _screen3Habit = habit;
+                      _screen4PendingGoals = null; // invalidate cache
+                      _nextPage();
+                    },
+                    onSkip: () {
+                      _screen4PendingGoals = null; // invalidate cache
+                      _nextPage();
+                    },
+                    isSaving: _isSaving,
+                  ),
+                  _Screen4(
+                    pendingGoals: _getPendingGoalsForScreen4(),
+                    onComplete: (markedIds, quickGoals) {
+                      _screen4MarkedGoalIds = markedIds;
+                      _screen4QuickGoals = quickGoals;
                       _completeOnboarding();
                     },
                     onSkip: _skipToComplete,
@@ -550,6 +615,188 @@ class _Screen3State extends State<_Screen3> {
           const Spacer(),
 
           // Skip + Complete row
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: widget.isSaving ? null : widget.onSkip,
+                  child: const Text('Skip'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: widget.isSaving ? null : _onComplete,
+                child: const Text("Let's go"),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Screen 4: What gives you energy?
+// ---------------------------------------------------------------------------
+
+class _Screen4 extends StatefulWidget {
+  const _Screen4({
+    required this.pendingGoals,
+    required this.onComplete,
+    required this.onSkip,
+    required this.isSaving,
+  });
+
+  /// Goals from Screens 1 and 3 — not yet persisted. Display-only list.
+  final List<Goal> pendingGoals;
+
+  /// Called when user taps "Let's go". Receives marked goal IDs and quick-added goals.
+  final void Function(Set<String>, List<Goal>) onComplete;
+
+  final VoidCallback onSkip;
+  final bool isSaving;
+
+  @override
+  State<_Screen4> createState() => _Screen4State();
+}
+
+class _Screen4State extends State<_Screen4> {
+  final Set<String> _markedGoalIds = {};
+  final List<Goal> _quickGoals = [];
+
+  // Quick-add state
+  bool _showQuickAdd = false;
+  final _quickAddController = TextEditingController();
+
+  @override
+  void dispose() {
+    _quickAddController.dispose();
+    super.dispose();
+  }
+
+  void _toggleMark(String id, bool selected) {
+    setState(() {
+      if (selected) {
+        _markedGoalIds.add(id);
+      } else {
+        _markedGoalIds.remove(id);
+      }
+    });
+  }
+
+  void _confirmQuickAdd() {
+    final name = _quickAddController.text.trim();
+    if (name.isEmpty) return;
+    final goal = Goal(
+      name: name,
+      goalTypeIndex: GoalType.timeTarget.index,
+      weeklyHourBudget: 3.0,
+      energyValenceIndex: EnergyValence.gives.index,
+    );
+    setState(() {
+      _quickGoals.add(goal);
+      _quickAddController.clear();
+      _showQuickAdd = false;
+    });
+  }
+
+  void _onComplete() {
+    widget.onComplete(
+      Set<String>.from(_markedGoalIds),
+      List<Goal>.from(_quickGoals),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    // Combined display list: pending goals from parent + quick-added goals
+    final allGoals = [...widget.pendingGoals, ..._quickGoals];
+
+    return _ScreenLayout(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('What gives you energy?', style: textTheme.headlineSmall),
+          const SizedBox(height: 8),
+          Text(
+            "Pick one or two activities that leave you feeling good. "
+            "We'll make sure to include them on hard days.",
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Goal rows
+          if (allGoals.isEmpty)
+            Text(
+              'No goals yet — add one below.',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            )
+          else
+            ...allGoals.map((goal) {
+              final isMarked =
+                  _markedGoalIds.contains(goal.id) ||
+                  goal.energyValenceIndex == EnergyValence.gives.index;
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Text(
+                  goal.emojiTag ?? '',
+                  style: const TextStyle(fontSize: 20),
+                ),
+                title: Text(goal.name, style: textTheme.bodyMedium),
+                trailing: FilterChip(
+                  label: const Text('Energizing'),
+                  selected: isMarked,
+                  avatar: isMarked ? const Icon(Icons.bolt, size: 14) : null,
+                  onSelected: (sel) => _toggleMark(goal.id, sel),
+                ),
+              );
+            }),
+
+          const SizedBox(height: 16),
+
+          // Quick-add button or inline text field
+          if (_showQuickAdd)
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _quickAddController,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      hintText: 'Goal name',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    onSubmitted: (_) => _confirmQuickAdd(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Add goal',
+                  icon: const Icon(Icons.check_circle_outlined),
+                  onPressed: _confirmQuickAdd,
+                ),
+              ],
+            )
+          else
+            OutlinedButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Add something energizing'),
+              onPressed: () => setState(() => _showQuickAdd = true),
+            ),
+
+          const Spacer(),
+
+          // CTA row
           Row(
             children: [
               Expanded(
