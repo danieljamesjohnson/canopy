@@ -84,7 +84,12 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
   3. Commitment add/edit and any other modal callers use the same adaptive helper — no modal renders as a cramped phone sheet on desktop
   4. Primary screens (home, schedule, goals, check-in) have constrained content width on desktop — not phone-stretched full-bleed
   5. High-friction desktop UI nits from a walkthrough are identified and fixed
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 18-01-PLAN.md — Wave 0 test stubs (adaptive modal, content width, copy) — RED scaffolds
+- [ ] 18-02-PLAN.md — showAdaptiveFormModal helper + goal form routing (RESP-01, RESP-02)
+- [ ] 18-03-PLAN.md — commitment caller routed through helper (RESP-03)
+- [ ] 18-04-PLAN.md — primary screen content-width constraints (POLISH-01)
+- [ ] 18-05-PLAN.md — copy polish + desktop walkthrough (POLISH-02)
 **UI hint**: yes
 
 ### Phase 19: Energy Valence
