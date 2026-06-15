@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Energy-Aware
 status: executing
-stopped_at: Completed 18-03-commitment-caller-PLAN.md
-last_updated: "2026-06-15T01:09:24.202Z"
+stopped_at: Completed 18-04-screen-width-constraints-PLAN.md
+last_updated: "2026-06-15T01:15:20.241Z"
 last_activity: 2026-06-15 -- Phase 18 execution started
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-15T01:09:24.199Z
+**Last session:** 2026-06-15T01:15:20.237Z
 
 ---
 
 ## Current Position
 
 Phase: 18 (Responsive Modals and Desktop Polish) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-06-15 -- Phase 18 execution started
 
@@ -68,6 +68,7 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.3:
 - [Phase ?]: Enables test helpers to omit isDialog:true and still get correct dialog behavior
 - [Phase ?]: CommitmentFormSheet mirrors GoalFormSheet isDialog pattern with ModalRoute fallback detection — no explicit isDialog at call site needed
 - [Phase ?]: All user-facing form callers route through showAdaptiveFormModal; no screen calls showModalBottomSheet directly for forms
+- [Phase ?]: Align(topCenter)+ConstrainedBox(maxWidth: 720) applied to Home, Goals, Schedule body content for POLISH-01
 
 ### Engine Constraints (carry-forward for Phase 20)
 
@@ -114,7 +115,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-06-14
-Stopped at: Completed 18-03-commitment-caller-PLAN.md
+Stopped at: Completed 18-04-screen-width-constraints-PLAN.md
 Resume at: `/gsd-plan-phase 18`
 
 ## Performance Metrics
@@ -127,3 +128,4 @@ Resume at: `/gsd-plan-phase 18`
 | Phase 17-time-anchored-home P01 | 7 | 3 tasks | 3 files |
 | Phase 18-responsive-modals-and-desktop-polish P02 | 3 | 2 tasks | 3 files |
 | Phase 18-responsive-modals-and-desktop-polish P03 | 3min | 1 tasks | 2 files |
+| Phase 18-responsive-modals-and-desktop-polish P04 | 20min | 2 tasks | 3 files |
