@@ -31,10 +31,7 @@ Future<void> showAdaptiveFormModal({
       barrierDismissible: true,
       builder: (ctx) => Dialog(
         clipBehavior: Clip.antiAlias,
-        child: _DialogForm(
-          builder: builder,
-          maxHeight: screenHeight * 0.8,
-        ),
+        child: _DialogForm(builder: builder, maxHeight: screenHeight * 0.8),
       ),
     );
   } else {
