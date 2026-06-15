@@ -70,7 +70,7 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 
 - [x] **Phase 18: Responsive Modals and Desktop Polish** - Goal form and other modals adapt to viewport (dialog vs sheet); primary screens fit desktop width (completed 2026-06-15)
 - [x] **Phase 19: Energy Valence** - Goals carry a user-declared valence (gives / neutral / costs) with an optional emoji tag; valence is visible in goal form, goal list, and schedule; onboarding seeds restorative activities (completed 2026-06-15)
-- [ ] **Phase 20: Valence-Aware Engine** - Scheduler uses valence to make low days restorative and high days purposeful
+- [x] **Phase 20: Valence-Aware Engine** - Scheduler uses valence to make low days restorative and high days purposeful (completed 2026-06-15)
 
 ## Phase Details
 
@@ -135,7 +135,7 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 **Plans**: 2 plans
 
 - [x] 20-01-red-tests-PLAN.md — Wave 0 RED tests + valence param on test helpers (VSCHED-01/02/03)
-- [ ] 20-02-valence-engine-PLAN.md — Engine change: restorative floor (low days) + reservation (high days) in schedule_generator.dart (VSCHED-01/02/03)
+- [x] 20-02-valence-engine-PLAN.md — Engine change: restorative floor (low days) + reservation (high days) in schedule_generator.dart (VSCHED-01/02/03)
 
 ## Progress
 
@@ -149,4 +149,4 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 | 17. Time-Anchored Home | v1.3 | 1/1 | Complete | 2026-06-14 |
 | 18. Responsive Modals and Desktop Polish | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 19. Energy Valence | v1.4 | 5/5 | Complete   | 2026-06-15 |
-| 20. Valence-Aware Engine | v1.4 | 1/2 | In Progress|  |
+| 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
