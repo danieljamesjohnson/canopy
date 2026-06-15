@@ -68,7 +68,7 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 
 **Milestone Goal:** Make Canopy fit the screen it's used on and schedule around how activities make you feel — so a fresh review can judge a more honest, more livable day.
 
-- [ ] **Phase 18: Responsive Modals and Desktop Polish** - Goal form and other modals adapt to viewport (dialog vs sheet); primary screens fit desktop width
+- [x] **Phase 18: Responsive Modals and Desktop Polish** - Goal form and other modals adapt to viewport (dialog vs sheet); primary screens fit desktop width (completed 2026-06-15)
 - [ ] **Phase 19: Energy Valence** - Goals carry a user-declared valence (gives / neutral / costs) with an optional emoji tag; valence is visible in goal form, goal list, and schedule; onboarding seeds restorative activities
 - [ ] **Phase 20: Valence-Aware Engine** - Scheduler uses valence to make low days restorative and high days purposeful
 
@@ -93,7 +93,7 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 - [x] 18-02-PLAN.md — showAdaptiveFormModal helper + goal form routing (RESP-01, RESP-02)
 - [x] 18-03-PLAN.md — commitment caller routed through helper (RESP-03)
 - [x] 18-04-PLAN.md — primary screen content-width constraints (POLISH-01)
-- [ ] 18-05-PLAN.md — copy polish + desktop walkthrough (POLISH-02)
+- [x] 18-05-PLAN.md — copy polish + desktop walkthrough (POLISH-02)
 
 **UI hint**: yes
 
@@ -137,6 +137,6 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 | 15. Engine Honesty | v1.3 | 2/2 | Complete | 2026-06-13 |
 | 16. Priority Model Reconciliation | v1.3 | 1/1 | Complete | 2026-06-13 |
 | 17. Time-Anchored Home | v1.3 | 1/1 | Complete | 2026-06-14 |
-| 18. Responsive Modals and Desktop Polish | v1.4 | 4/5 | In Progress|  |
+| 18. Responsive Modals and Desktop Polish | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 19. Energy Valence | v1.4 | 0/? | Not started | - |
 | 20. Valence-Aware Engine | v1.4 | 0/? | Not started | - |

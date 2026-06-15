@@ -2,23 +2,23 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Energy-Aware
-status: executing
-stopped_at: Completed 18-04-screen-width-constraints-PLAN.md
-last_updated: "2026-06-15T01:15:20.241Z"
+status: verifying
+stopped_at: Completed 18-05-copy-polish-walkthrough-PLAN.md
+last_updated: "2026-06-15T01:22:26.222Z"
 last_activity: 2026-06-15 -- Phase 18 execution started
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
-  percent: 0
+  completed_plans: 5
+  percent: 33
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-15T01:15:20.237Z
+**Last session:** 2026-06-15T01:22:26.218Z
 
 ---
 
@@ -26,7 +26,7 @@ progress:
 
 Phase: 18 (Responsive Modals and Desktop Polish) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-15 -- Phase 18 execution started
 
 ```
@@ -69,6 +69,7 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.3:
 - [Phase ?]: CommitmentFormSheet mirrors GoalFormSheet isDialog pattern with ModalRoute fallback detection — no explicit isDialog at call site needed
 - [Phase ?]: All user-facing form callers route through showAdaptiveFormModal; no screen calls showModalBottomSheet directly for forms
 - [Phase ?]: Align(topCenter)+ConstrainedBox(maxWidth: 720) applied to Home, Goals, Schedule body content for POLISH-01
+- [Phase ?]: POLISH-02 copy convention: all destructive-confirm cancel buttons use 'Keep <noun>' pattern; primary CTA uses verb+noun (Save Goal, Add Goal, Delete commitment)
 
 ### Engine Constraints (carry-forward for Phase 20)
 
@@ -115,7 +116,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-06-14
-Stopped at: Completed 18-04-screen-width-constraints-PLAN.md
+Stopped at: Completed 18-05-copy-polish-walkthrough-PLAN.md
 Resume at: `/gsd-plan-phase 18`
 
 ## Performance Metrics
@@ -129,3 +130,4 @@ Resume at: `/gsd-plan-phase 18`
 | Phase 18-responsive-modals-and-desktop-polish P02 | 3 | 2 tasks | 3 files |
 | Phase 18-responsive-modals-and-desktop-polish P03 | 3min | 1 tasks | 2 files |
 | Phase 18-responsive-modals-and-desktop-polish P04 | 20min | 2 tasks | 3 files |
+| Phase 18-responsive-modals-and-desktop-polish P05 | 25 | 2 tasks | 4 files |
