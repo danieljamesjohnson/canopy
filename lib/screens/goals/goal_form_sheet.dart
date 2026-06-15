@@ -228,7 +228,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
                 Text(
                   'Priority',
                   style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w400,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
