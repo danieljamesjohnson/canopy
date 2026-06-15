@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../data/models/energy_valence.dart';
 import '../../../data/models/scheduled_chunk.dart';
 import '../../../providers/schedule_notifier.dart';
 import '../../../utils/time_format.dart';
@@ -14,6 +15,8 @@ class ChunkCard extends StatelessWidget {
     this.goalName,
     this.displayRationale,
     this.goalPriorityWeight,
+    this.goalEmojiTag,
+    this.goalValence,
     this.onTap,
   });
 
@@ -37,6 +40,14 @@ class ChunkCard extends StatelessWidget {
   /// clock-time line. Pass null for commitment chunks (goalId == null).
   final double? goalPriorityWeight;
 
+  /// The goal's emoji tag (single emoji). Null → no emoji prefix in title.
+  /// Pass null for commitment chunks (goalId == null).
+  final String? goalEmojiTag;
+
+  /// The goal's energy valence. Null or neutral → no chip shown.
+  /// Pass null for commitment chunks (goalId == null).
+  final EnergyValence? goalValence;
+
   /// Tap callback for opening the detail sheet. Only wired for non-resolved
   /// work chunks from the screen; null for break cards and resolved chunks.
   final VoidCallback? onTap;
@@ -55,6 +66,8 @@ class ChunkCard extends StatelessWidget {
           goalName: goalName,
           displayRationale: displayRationale,
           goalPriorityWeight: goalPriorityWeight,
+          goalEmojiTag: goalEmojiTag,
+          goalValence: goalValence,
           onTap: onTap,
         );
     }
@@ -125,6 +138,8 @@ class _WorkChunkContent extends StatelessWidget {
     this.goalName,
     this.displayRationale,
     this.goalPriorityWeight,
+    this.goalEmojiTag,
+    this.goalValence,
     this.onTap,
   });
 
@@ -133,6 +148,8 @@ class _WorkChunkContent extends StatelessWidget {
   final String? goalName;
   final String? displayRationale;
   final double? goalPriorityWeight;
+  final String? goalEmojiTag;
+  final EnergyValence? goalValence;
   final VoidCallback? onTap;
 
   @override
@@ -195,10 +212,8 @@ class _WorkChunkContent extends StatelessWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    goalName ??
-                                        (chunk.rationale.isNotEmpty
-                                            ? chunk.rationale
-                                            : 'Work block'),
+                                    '${goalEmojiTag != null ? "$goalEmojiTag " : ""}'
+                                    '${goalName ?? (chunk.rationale.isNotEmpty ? chunk.rationale : "Work block")}',
                                     style: theme.textTheme.titleMedium
                                         ?.copyWith(fontWeight: FontWeight.w600),
                                     overflow: TextOverflow.ellipsis,
@@ -253,6 +268,12 @@ class _WorkChunkContent extends StatelessWidget {
                                     _PriorityChip(
                                       priorityWeight: goalPriorityWeight!,
                                     ),
+                                  ],
+                                  // Valence chip after priority badge (ENERGY-04b).
+                                  if (goalValence != null &&
+                                      goalValence != EnergyValence.neutral) ...[
+                                    const SizedBox(height: 4),
+                                    _ValenceChip(valence: goalValence!),
                                   ],
                                 ],
                               ),
@@ -322,6 +343,66 @@ class _WorkChunkContent extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// File-private valence chip widget for ChunkCard (ENERGY-04b).
+///
+/// Visual duplicate of _ValenceBadge in goal_card.dart — intentionally
+/// file-private per the existing _PriorityChip duplication pattern.
+/// Uses tertiaryContainer (gives) and secondaryContainer (costs).
+/// Neutral → SizedBox.shrink (caller already guards, but we double-guard).
+class _ValenceChip extends StatelessWidget {
+  const _ValenceChip({required this.valence});
+
+  final EnergyValence valence;
+
+  @override
+  Widget build(BuildContext context) {
+    if (valence == EnergyValence.neutral) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final IconData icon;
+    final Color chipColor;
+    final Color onColor;
+    final String label;
+
+    if (valence == EnergyValence.gives) {
+      icon = Icons.bolt;
+      chipColor = colorScheme.tertiaryContainer;
+      onColor = colorScheme.onTertiaryContainer;
+      label = 'Gives';
+    } else {
+      // costs
+      icon = Icons.hourglass_empty;
+      chipColor = colorScheme.secondaryContainer;
+      onColor = colorScheme.onSecondaryContainer;
+      label = 'Costs';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: chipColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: onColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: textTheme.labelSmall?.copyWith(
+              color: onColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

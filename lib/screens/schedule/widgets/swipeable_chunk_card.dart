@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../../data/models/energy_valence.dart';
 import '../../../data/models/scheduled_chunk.dart';
 import '../../../providers/schedule_notifier.dart';
 import 'chunk_card.dart';
@@ -19,6 +20,8 @@ class SwipeableChunkCard extends StatelessWidget {
     this.goalName,
     this.displayRationale,
     this.goalPriorityWeight,
+    this.goalEmojiTag,
+    this.goalValence,
     this.onTap,
   });
 
@@ -36,6 +39,12 @@ class SwipeableChunkCard extends StatelessWidget {
   /// The goal's priority weight. Passed through to ChunkCard for badge
   /// rendering. Null for break chunks and commitment chunks.
   final double? goalPriorityWeight;
+
+  /// The goal's emoji tag. Passed through to ChunkCard. Null for commitment chunks.
+  final String? goalEmojiTag;
+
+  /// The goal's energy valence. Passed through to ChunkCard. Null for commitment chunks.
+  final EnergyValence? goalValence;
 
   /// Tap callback. Null for break cards and resolved work chunks.
   final VoidCallback? onTap;
@@ -84,6 +93,8 @@ class SwipeableChunkCard extends StatelessWidget {
         goalName: goalName,
         displayRationale: displayRationale,
         goalPriorityWeight: goalPriorityWeight,
+        goalEmojiTag: goalEmojiTag,
+        goalValence: goalValence,
         // Resolved chunks are not tappable — null out the callback.
         onTap: (chunk.isCompleted || chunk.isSkipped) ? null : onTap,
       ),

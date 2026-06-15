@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/daily_schedule.dart';
+import '../../data/models/energy_valence.dart';
 import '../../data/models/scheduled_chunk.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
@@ -176,6 +177,8 @@ class ScheduleScreen extends StatelessWidget {
       goalName: goalName,
       displayRationale: displayRationale,
       goalPriorityWeight: _lookupGoalPriorityWeight(context, chunk),
+      goalEmojiTag: _lookupGoalEmojiTag(context, chunk),
+      goalValence: _lookupGoalValence(context, chunk),
       // onTap wired in Task 2 (_openDetailSheet). Resolved chunks stay null.
       onTap: (chunk.isCompleted || chunk.isSkipped)
           ? null
@@ -213,6 +216,8 @@ class ScheduleScreen extends StatelessWidget {
             goalName: _lookupGoalName(context, chunk),
             displayRationale: _toDisplayRationale(chunk.rationale),
             goalPriorityWeight: _lookupGoalPriorityWeight(context, chunk),
+            goalEmojiTag: _lookupGoalEmojiTag(context, chunk),
+            goalValence: _lookupGoalValence(context, chunk),
           );
         }).toList(),
       ),
@@ -249,6 +254,29 @@ class ScheduleScreen extends StatelessWidget {
     final goals = context.read<GoalsNotifier>().goals;
     final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
     return goal?.priorityWeight;
+  }
+
+  /// Resolves goal energy valence for a chunk by looking up its goalId in
+  /// GoalsNotifier. Returns null for commitment chunks (goalId == null) so
+  /// they show no valence chip (T-19-05).
+  EnergyValence? _lookupGoalValence(
+    BuildContext context,
+    ScheduledChunk chunk,
+  ) {
+    if (chunk.goalId == null) return null;
+    final goals = context.read<GoalsNotifier>().goals;
+    final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
+    return goal?.energyValence;
+  }
+
+  /// Resolves goal emoji tag for a chunk by looking up its goalId in
+  /// GoalsNotifier. Returns null for commitment chunks (goalId == null) so
+  /// they show no emoji prefix (T-19-05).
+  String? _lookupGoalEmojiTag(BuildContext context, ScheduledChunk chunk) {
+    if (chunk.goalId == null) return null;
+    final goals = context.read<GoalsNotifier>().goals;
+    final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
+    return goal?.emojiTag;
   }
 
   /// Maps the raw generator rationale string to a human-readable display
