@@ -172,7 +172,7 @@ class ScheduleGeneratorService {
     final days = goal.deadline!.difference(date).inDays.clamp(0, 9999);
     if (days == 0) return 'Deadline today';
     if (days == 1) return 'Deadline tomorrow';
-    return 'Deadline in $days day${days == 1 ? "" : "s"}';
+    return 'Deadline in $days days'; // days is always >= 2 here
   }
 
   String _timeTargetRationale(
@@ -329,6 +329,13 @@ class ScheduleGeneratorService {
         // VSCHED-01: energy-giving outcomes always eligible on low-mood days.
         include = deadlineToday || goal.energyValence == EnergyValence.gives;
       } else {
+        // low-mood, lighterDay=false: user explicitly opted out of a reduced
+        // day, so deadline pressure (any horizon) or restorative valence both
+        // qualify. This is intentionally fuller than the lighterDay=true branch
+        // (deadline-today-or-gives only): "non-lighter low days are harder
+        // days — include anything with deadline pressure, not just imminent
+        // ones." The asymmetry is by design; the gives addition here (Phase 20)
+        // mirrors the lighterDay branch so gives goals are always protected.
         include =
             goal.deadline != null || goal.energyValence == EnergyValence.gives;
       }
@@ -415,9 +422,12 @@ class ScheduleGeneratorService {
     for (final goal in timeTargetGoals) {
       if (discretionaryCount >= cap) break;
       if ((goal.priorityWeight ?? 0.5) < 0.75) continue;
+      // VSCHED-02 guard: if the restorative floor already placed this goal,
+      // skip PRIORITY-03 for it so we never double-place on a low-mood day.
+      final alreadyPlaced = placedCountPerGoal[goal.id] ?? 0;
       final rawDemand = _demandForTimeTarget(goal, completionLogs, date);
       final demand = isLowMood ? rawDemand.clamp(0, 1) : rawDemand;
-      if (demand <= 0) continue;
+      if (demand <= 0 || alreadyPlaced >= demand) continue;
       workChunks.add(
         ScheduledChunk(
           chunkTypeIndex: ChunkType.work.index,
@@ -427,7 +437,8 @@ class ScheduleGeneratorService {
         ),
       );
       discretionaryCount++;
-      placedCountPerGoal[goal.id] = 1;
+      placedCountPerGoal[goal.id] =
+          alreadyPlaced + 1; // increment, not overwrite
     }
 
     // VSCHED-03: On good-mood days, reserve 1 slot for an energy-giving /
@@ -444,11 +455,13 @@ class ScheduleGeneratorService {
               )
               .toList()
             ..sort((a, b) {
-              // gives-valence first; tie → composite score descending (deterministic)
+              // gives-valence first; tie → composite score descending; tie → id (SC-4 stable)
               final aGives = a.energyValence == EnergyValence.gives ? 0 : 1;
               final bGives = b.energyValence == EnergyValence.gives ? 0 : 1;
               if (aGives != bGives) return aGives.compareTo(bGives);
-              return score(b).compareTo(score(a));
+              final scoreCmp = score(b).compareTo(score(a));
+              if (scoreCmp != 0) return scoreCmp;
+              return a.id.compareTo(b.id); // stable final key — SC-4
             });
 
       for (final goal in reserveCandidates) {

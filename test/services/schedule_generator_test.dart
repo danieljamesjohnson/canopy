@@ -1694,4 +1694,53 @@ void main() {
       );
     },
   );
+
+  // ---------------------------------------------------------------------------
+  // CR-01 regression: gives-valence + high-priority time-target on a low-mood
+  // day must NOT be double-placed. The restorative floor places exactly 1 chunk;
+  // PRIORITY-03 must detect the prior placement and skip, yielding exactly the
+  // floor count (1), not 2.
+  // ---------------------------------------------------------------------------
+  test(
+    'CR-01 regression: gives+high-priority time-target on low-mood day gets exactly 1 chunk (no double-place)',
+    () {
+      // A gives-valence time-target with priorityWeight >= 0.75 and real demand
+      // (3h budget, Monday = 7 days left → demand = ceil(3*60/25/7) = 1).
+      // On moodIndex=1, lighterDay=true:
+      //   - Restorative floor fires (gives valence, demand=1) → places 1 chunk,
+      //     writes placedCountPerGoal[id]=1.
+      //   - PRIORITY-03 fires (priorityWeight=0.9 >= 0.75); pre-fix it would
+      //     place a 2nd chunk and overwrite the map to 1. Post-fix it reads
+      //     alreadyPlaced=1, demand=clamp(1,0,1)=1, alreadyPlaced >= demand →
+      //     skips. Result: exactly 1 chunk.
+      final givesHighPriGoal = makeTimeTarget(
+        name: 'Yoga (high pri)',
+        weeklyHourBudget: 3,
+        priorityWeight: 0.9,
+        valence: EnergyValence.gives,
+      );
+      final result = sut.generate(
+        goals: [givesHighPriGoal],
+        blocks: [],
+        moodIndex: 1,
+        date: monday,
+        lighterDay: true,
+        completionLogs: [],
+      );
+      final chunks = result
+          .where(
+            (c) =>
+                c.chunkType == ChunkType.work && c.goalId == givesHighPriGoal.id,
+          )
+          .length;
+      expect(
+        chunks,
+        equals(1),
+        reason:
+            'CR-01: gives-valence+high-priority goal must receive exactly 1 chunk '
+            'on a low-mood day (restorative floor fills demand; PRIORITY-03 must '
+            'not double-place when alreadyPlaced >= demand)',
+      );
+    },
+  );
 }
