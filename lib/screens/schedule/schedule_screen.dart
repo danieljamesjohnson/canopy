@@ -89,12 +89,20 @@ class ScheduleScreen extends StatelessWidget {
         children: [
           ScheduleProgressBar(schedule: schedule, moodColor: moodColor),
           Expanded(
-            child: ListView(
-              children: _buildActiveChunkItems(context, activeChunks) + [
-                // "Skipped today" expansion tile — hidden when no skipped chunks.
-                if (skippedChunks.isNotEmpty)
-                  _buildSkippedSection(context, skippedChunks),
-              ],
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: ListView(
+                  children:
+                      _buildActiveChunkItems(context, activeChunks) +
+                      [
+                        // "Skipped today" expansion tile — hidden when no skipped chunks.
+                        if (skippedChunks.isNotEmpty)
+                          _buildSkippedSection(context, skippedChunks),
+                      ],
+                ),
+              ),
             ),
           ),
         ],
@@ -233,7 +241,10 @@ class ScheduleScreen extends StatelessWidget {
   /// Resolves goal priority weight for a chunk by looking up its goalId in
   /// GoalsNotifier. Returns null for commitment chunks (goalId == null) so
   /// they show no priority badge.
-  double? _lookupGoalPriorityWeight(BuildContext context, ScheduledChunk chunk) {
+  double? _lookupGoalPriorityWeight(
+    BuildContext context,
+    ScheduledChunk chunk,
+  ) {
     if (chunk.goalId == null) return null;
     final goals = context.read<GoalsNotifier>().goals;
     final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
