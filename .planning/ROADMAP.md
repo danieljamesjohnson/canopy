@@ -90,7 +90,7 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 **Plans**: 5 plans
 
 - [x] 18-01-PLAN.md — Wave 0 test stubs (adaptive modal, content width, copy) — RED scaffolds
-- [ ] 18-02-PLAN.md — showAdaptiveFormModal helper + goal form routing (RESP-01, RESP-02)
+- [x] 18-02-PLAN.md — showAdaptiveFormModal helper + goal form routing (RESP-01, RESP-02)
 - [ ] 18-03-PLAN.md — commitment caller routed through helper (RESP-03)
 - [ ] 18-04-PLAN.md — primary screen content-width constraints (POLISH-01)
 - [ ] 18-05-PLAN.md — copy polish + desktop walkthrough (POLISH-02)
@@ -137,6 +137,6 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 | 15. Engine Honesty | v1.3 | 2/2 | Complete | 2026-06-13 |
 | 16. Priority Model Reconciliation | v1.3 | 1/1 | Complete | 2026-06-13 |
 | 17. Time-Anchored Home | v1.3 | 1/1 | Complete | 2026-06-14 |
-| 18. Responsive Modals and Desktop Polish | v1.4 | 1/5 | In Progress|  |
+| 18. Responsive Modals and Desktop Polish | v1.4 | 2/5 | In Progress|  |
 | 19. Energy Valence | v1.4 | 0/? | Not started | - |
 | 20. Valence-Aware Engine | v1.4 | 0/? | Not started | - |

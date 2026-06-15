@@ -4,13 +4,13 @@ milestone: v1.4
 milestone_name: Energy-Aware
 status: executing
 stopped_at: v1.4 roadmap created
-last_updated: "2026-06-15T00:59:54.073Z"
+last_updated: "2026-06-15T01:05:56.619Z"
 last_activity: 2026-06-15 -- Phase 18 execution started
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-15T00:59:54.070Z
+**Last session:** 2026-06-15T01:05:56.616Z
 
 ---
 
 ## Current Position
 
 Phase: 18 (Responsive Modals and Desktop Polish) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-06-15 -- Phase 18 execution started
 
@@ -65,6 +65,7 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.3:
 - [Phase ?]: No-op guard + try/catch for streak write-back
 - [Phase ?]: Use find.byType(Scrollable).first as scrollable arg to scrollUntilVisible in modal tests — SingleChildScrollView is not a Scrollable and causes type cast error at runtime
 - [Phase ?]: goal_form_sheet.dart not modified — SingleChildScrollView already wraps the form; no restructuring needed for any goal type at true modal height
+- [Phase ?]: Enables test helpers to omit isDialog:true and still get correct dialog behavior
 
 ### Engine Constraints (carry-forward for Phase 20)
 
@@ -122,3 +123,4 @@ Resume at: `/gsd-plan-phase 18`
 | Phase 15-engine-honesty P02 | 230 | 1 tasks | 2 files |
 | Phase 16-priority-model-reconciliation P01 | 25 | 2 tasks | 2 files |
 | Phase 17-time-anchored-home P01 | 7 | 3 tasks | 3 files |
+| Phase 18-responsive-modals-and-desktop-polish P02 | 3 | 2 tasks | 3 files |
