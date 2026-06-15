@@ -371,6 +371,38 @@ class ScheduleGeneratorService {
                 : a.id.compareTo(b.id); // stable secondary key
           });
 
+    // Shared tracker: hoisted here so all three sub-passes (restorative floor,
+    // PRIORITY-03 surplus, VSCHED-03 reservation) and FILL-02 round-robin share
+    // one map and no goal is double-placed.
+    final placedCountPerGoal = <String, int>{};
+
+    // VSCHED-01/02: Restorative floor — on low-mood days, guarantee at least
+    // 1 chunk goes to an energy-giving time-target goal (if one has demand)
+    // before the PRIORITY-03/FILL-02 passes run.
+    // VSCHED-02 bound: restorativeFloor = 1 keeps low days light.
+    const int restorativeFloor = 1;
+    int restorativeCount = 0;
+    if (isLowMood) {
+      for (final goal in timeTargetGoals) {
+        if (discretionaryCount >= cap) break;
+        if (restorativeCount >= restorativeFloor) break;
+        if (goal.energyValence != EnergyValence.gives) continue;
+        final rawDemand = _demandForTimeTarget(goal, completionLogs, date);
+        if (rawDemand <= 0) continue;
+        workChunks.add(
+          ScheduledChunk(
+            chunkTypeIndex: ChunkType.work.index,
+            goalId: goal.id,
+            durationMinutes: 25,
+            rationale: _timeTargetRationale(goal, completionLogs, date),
+          ),
+        );
+        discretionaryCount++;
+        placedCountPerGoal[goal.id] = 1; // CRITICAL: prevents FILL-02 double-place
+        restorativeCount++;
+      }
+    }
+
     // PRIORITY-03: high-priority time-target goals (priorityWeight >= 0.75) receive
     // one surplus chunk ahead of the round-robin so they end up with strictly more
     // chunks than lower-priority goals when capacity is binding. The surplus is
@@ -379,7 +411,6 @@ class ScheduleGeneratorService {
     // can consume enough capacity that lower-priority goals receive zero chunks
     // even if they have demand. This is accepted behavior; the round-robin that
     // follows only guarantees proportional distribution among goals that reach it.
-    final placedCountPerGoal = <String, int>{};
     for (final goal in timeTargetGoals) {
       if (discretionaryCount >= cap) break;
       if ((goal.priorityWeight ?? 0.5) < 0.75) continue;
