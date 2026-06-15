@@ -69,7 +69,7 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 **Milestone Goal:** Make Canopy fit the screen it's used on and schedule around how activities make you feel — so a fresh review can judge a more honest, more livable day.
 
 - [x] **Phase 18: Responsive Modals and Desktop Polish** - Goal form and other modals adapt to viewport (dialog vs sheet); primary screens fit desktop width (completed 2026-06-15)
-- [ ] **Phase 19: Energy Valence** - Goals carry a user-declared valence (gives / neutral / costs) with an optional emoji tag; valence is visible in goal form, goal list, and schedule; onboarding seeds restorative activities
+- [x] **Phase 19: Energy Valence** - Goals carry a user-declared valence (gives / neutral / costs) with an optional emoji tag; valence is visible in goal form, goal list, and schedule; onboarding seeds restorative activities (completed 2026-06-15)
 - [ ] **Phase 20: Valence-Aware Engine** - Scheduler uses valence to make low days restorative and high days purposeful
 
 ## Phase Details
@@ -116,7 +116,7 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 - [x] 19-02-PLAN.md — Data model: EnergyValence enum + Goal fields 12/13 + schema bump 7→8 + no-op _migration7to8 (ENERGY-01)
 - [x] 19-03-PLAN.md — Goal form valence picker + emoji tag picker (ENERGY-02, ENERGY-03)
 - [x] 19-04-PLAN.md — Valence badge + emoji on goal card and schedule chunk card (ENERGY-03, ENERGY-04)
-- [ ] 19-05-PLAN.md — Onboarding Screen 4 "What gives you energy?" energy step (ONBOARD-01)
+- [x] 19-05-PLAN.md — Onboarding Screen 4 "What gives you energy?" energy step (ONBOARD-01)
 
 **UI hint**: yes
 
@@ -145,5 +145,5 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 | 16. Priority Model Reconciliation | v1.3 | 1/1 | Complete | 2026-06-13 |
 | 17. Time-Anchored Home | v1.3 | 1/1 | Complete | 2026-06-14 |
 | 18. Responsive Modals and Desktop Polish | v1.4 | 5/5 | Complete   | 2026-06-15 |
-| 19. Energy Valence | v1.4 | 4/5 | In Progress|  |
+| 19. Energy Valence | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 20. Valence-Aware Engine | v1.4 | 0/? | Not started | - |
