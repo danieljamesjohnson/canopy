@@ -329,8 +329,8 @@ class ScheduleGeneratorService {
         // VSCHED-01: energy-giving outcomes always eligible on low-mood days.
         include = deadlineToday || goal.energyValence == EnergyValence.gives;
       } else {
-        include = goal.deadline != null ||
-            goal.energyValence == EnergyValence.gives;
+        include =
+            goal.deadline != null || goal.energyValence == EnergyValence.gives;
       }
       if (!include) continue;
       // PRIORITY-02: high-priority outcomes get 2 chunks on good-mood days.
@@ -398,7 +398,8 @@ class ScheduleGeneratorService {
           ),
         );
         discretionaryCount++;
-        placedCountPerGoal[goal.id] = 1; // CRITICAL: prevents FILL-02 double-place
+        placedCountPerGoal[goal.id] =
+            1; // CRITICAL: prevents FILL-02 double-place
         restorativeCount++;
       }
     }
@@ -427,6 +428,46 @@ class ScheduleGeneratorService {
       );
       discretionaryCount++;
       placedCountPerGoal[goal.id] = 1;
+    }
+
+    // VSCHED-03: On good-mood days, reserve 1 slot for an energy-giving /
+    // high-priority time-target goal before the backlog round-robin runs.
+    // Prevents high-backlog days from becoming pure throughput with zero
+    // restorative chunks. Guard: !isLowMood (mood 3–5).
+    if (!isLowMood) {
+      final reserveCandidates =
+          timeTargetGoals
+              .where(
+                (g) =>
+                    g.energyValence == EnergyValence.gives ||
+                    (g.priorityWeight ?? 0.5) >= 0.75,
+              )
+              .toList()
+            ..sort((a, b) {
+              // gives-valence first; tie → composite score descending (deterministic)
+              final aGives = a.energyValence == EnergyValence.gives ? 0 : 1;
+              final bGives = b.energyValence == EnergyValence.gives ? 0 : 1;
+              if (aGives != bGives) return aGives.compareTo(bGives);
+              return score(b).compareTo(score(a));
+            });
+
+      for (final goal in reserveCandidates) {
+        if (discretionaryCount >= cap) break;
+        final placed = placedCountPerGoal[goal.id] ?? 0;
+        final rawDemand = _demandForTimeTarget(goal, completionLogs, date);
+        if (rawDemand <= 0 || placed >= rawDemand) continue;
+        workChunks.add(
+          ScheduledChunk(
+            chunkTypeIndex: ChunkType.work.index,
+            goalId: goal.id,
+            durationMinutes: 25,
+            rationale: _timeTargetRationale(goal, completionLogs, date),
+          ),
+        );
+        discretionaryCount++;
+        placedCountPerGoal[goal.id] = placed + 1;
+        break; // only 1 reserved slot
+      }
     }
 
     // FILL-02: one chunk per goal per pass until cap is full or all demands satisfied.
