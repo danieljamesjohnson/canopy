@@ -28,13 +28,15 @@ class GoalAdapter extends TypeAdapter<Goal> {
       outcomeDescription: fields[9] as String?,
       frequencyPerWeek: (fields[10] as num?)?.toInt(),
       streakCount: fields[11] == null ? 0 : (fields[11] as num).toInt(),
+      energyValenceIndex: (fields[12] as num?)?.toInt(),
+      emojiTag: fields[13] as String?,
     )..isArchived = fields[3] as bool;
   }
 
   @override
   void write(BinaryWriter writer, Goal obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -58,7 +60,11 @@ class GoalAdapter extends TypeAdapter<Goal> {
       ..writeByte(10)
       ..write(obj.frequencyPerWeek)
       ..writeByte(11)
-      ..write(obj.streakCount);
+      ..write(obj.streakCount)
+      ..writeByte(12)
+      ..write(obj.energyValenceIndex)
+      ..writeByte(13)
+      ..write(obj.emojiTag);
   }
 
   @override

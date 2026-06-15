@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-const int currentSchemaVersion = 7;
+const int currentSchemaVersion = 8;
 
 typedef MigrationFn = Future<void> Function();
 
@@ -14,6 +14,7 @@ final List<MigrationFn> _migrations = [
   _migration4to5,
   _migration5to6,
   _migration6to7,
+  _migration7to8,
 ];
 
 Future<void> _migration0to1() async {
@@ -70,6 +71,14 @@ Future<void> _migration6to7() async {
   // back as null; the displayStartMinutes "duration only" fallback is the
   // intended behavior until the next re-check-in regenerates and persists the
   // field with the new adapter (RESEARCH Pitfall 4).
+}
+
+Future<void> _migration7to8() async {
+  // Phase 19: Goal model gains energyValenceIndex (HiveField 12, int?, null)
+  // and emojiTag (HiveField 13, String?, null). Both additive nullable fields —
+  // Hive CE binary reader returns null for missing fields in existing records.
+  // null energyValenceIndex → Goal.energyValence getter returns EnergyValence.neutral.
+  // No data transformation needed.
 }
 
 Future<void> runMigrations(SharedPreferences prefs) async {
