@@ -180,7 +180,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
 
             // Title
             Text(
-              _isEditMode ? 'Edit goal' : 'Add goal',
+              _isEditMode ? 'Edit Goal' : 'Add Goal',
               style: theme.textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
@@ -325,7 +325,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
               TextButton(
                 onPressed: _archive,
                 style: TextButton.styleFrom(foregroundColor: colorScheme.error),
-                child: const Text('Archive'),
+                child: const Text('Archive goal'),
               ),
               const SizedBox(height: 8),
             ],
@@ -335,13 +335,13 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: const Text('Discard'),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _canSave ? _save : null,
-                    child: Text(_isEditMode ? 'Save' : 'Add goal'),
+                    child: Text(_isEditMode ? 'Save Goal' : 'Add Goal'),
                   ),
                 ),
               ],

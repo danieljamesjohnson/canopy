@@ -219,6 +219,13 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
           ),
           const SizedBox(height: 24),
 
+          // Discard button — lets the user cancel without saving
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Discard'),
+          ),
+          const SizedBox(height: 8),
+
           // Save button
           FilledButton(
             onPressed: _canSave ? _save : null,

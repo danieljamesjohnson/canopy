@@ -44,11 +44,11 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: const Text('Keep commitment'),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
+            child: const Text('Delete commitment'),
           ),
         ],
       ),

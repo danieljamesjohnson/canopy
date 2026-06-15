@@ -39,8 +39,10 @@ Future<Box<T>> openBoxResilient<T>(
       // file, so a trailing lock-file error (a known VM-backend race) does not
       // mean the bad data survived — the reopen below is the real recovery
       // signal, and it will rethrow if the box is genuinely unrecoverable.
-      debugPrint('Reset of box "$name" reported an error (continuing): '
-          '$deleteError');
+      debugPrint(
+        'Reset of box "$name" reported an error (continuing): '
+        '$deleteError',
+      );
     }
     return await open(name);
   }

@@ -146,9 +146,13 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     // This write-back closes that divergence window on cold launch and day-boundary.
     // No-op guard: only saves when the computed value differs from the stored value
     // to avoid N redundant writes per day (Pitfall 3 / T-15-03).
-    for (final goal in goals.where((g) => !g.isArchived && g.goalType == GoalType.habit)) {
+    for (final goal in goals.where(
+      (g) => !g.isArchived && g.goalType == GoalType.habit,
+    )) {
       try {
-        final due = ScheduleGeneratorService.computeDueWeekdays(goal.frequencyPerWeek ?? 7);
+        final due = ScheduleGeneratorService.computeDueWeekdays(
+          goal.frequencyPerWeek ?? 7,
+        );
         // allLogs already contains only entries for goals in this loop (built
         // via getByGoalId above), but re-filter defensively in case the
         // log-fetch strategy changes and allLogs starts containing mixed entries.

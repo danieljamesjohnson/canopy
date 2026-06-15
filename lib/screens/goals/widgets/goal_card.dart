@@ -171,8 +171,7 @@ class _GoalCardState extends State<GoalCard> {
                                   ),
                                 if (showPriorityChip)
                                   _PriorityChip(
-                                    priorityWeight:
-                                        goal.priorityWeight ?? 0.5,
+                                    priorityWeight: goal.priorityWeight ?? 0.5,
                                   ),
                               ],
                             ),

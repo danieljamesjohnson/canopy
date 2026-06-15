@@ -200,9 +200,7 @@ class _WorkChunkContent extends StatelessWidget {
                                             ? chunk.rationale
                                             : 'Work block'),
                                     style: theme.textTheme.titleMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                        ?.copyWith(fontWeight: FontWeight.w600),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   // SCHED-01: Clock-time range or duration fallback.
@@ -217,7 +215,8 @@ class _WorkChunkContent extends StatelessWidget {
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
                                             color: theme
-                                                .colorScheme.onSurfaceVariant,
+                                                .colorScheme
+                                                .onSurfaceVariant,
                                           ),
                                     ),
                                   ] else ...[
@@ -227,7 +226,8 @@ class _WorkChunkContent extends StatelessWidget {
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
                                             color: theme
-                                                .colorScheme.onSurfaceVariant,
+                                                .colorScheme
+                                                .onSurfaceVariant,
                                           ),
                                     ),
                                   ],
@@ -241,7 +241,8 @@ class _WorkChunkContent extends StatelessWidget {
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
                                             color: theme
-                                                .colorScheme.onSurfaceVariant,
+                                                .colorScheme
+                                                .onSurfaceVariant,
                                           ),
                                     ),
                                   ],
@@ -250,7 +251,8 @@ class _WorkChunkContent extends StatelessWidget {
                                       goalPriorityWeight != 0.5) ...[
                                     const SizedBox(height: 4),
                                     _PriorityChip(
-                                        priorityWeight: goalPriorityWeight!),
+                                      priorityWeight: goalPriorityWeight!,
+                                    ),
                                   ],
                                 ],
                               ),
@@ -304,7 +306,8 @@ class _WorkChunkContent extends StatelessWidget {
                                     visualDensity: VisualDensity.compact,
                                     foregroundColor: theme.colorScheme.error,
                                     side: BorderSide(
-                                        color: theme.colorScheme.error),
+                                      color: theme.colorScheme.error,
+                                    ),
                                   ),
                                 ),
                               ),

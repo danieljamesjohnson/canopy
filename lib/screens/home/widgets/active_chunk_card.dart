@@ -13,10 +13,7 @@ import '../../../utils/time_format.dart';
 /// badge, and always-visible Complete/Skip action buttons (NAV-02 / SCHED-03).
 /// All colors use [ColorScheme] tokens — no hardcoded Colors references.
 class ActiveChunkCard extends StatelessWidget {
-  const ActiveChunkCard({
-    super.key,
-    required this.chunk,
-  });
+  const ActiveChunkCard({super.key, required this.chunk});
 
   final ScheduledChunk chunk;
 
@@ -140,7 +137,8 @@ class ActiveChunkCard extends StatelessWidget {
                     ],
                   ),
                   // Priority badge below clock-time line (GOALS-02).
-                  if (goalPriorityWeight != null && goalPriorityWeight != 0.5) ...[
+                  if (goalPriorityWeight != null &&
+                      goalPriorityWeight != 0.5) ...[
                     const SizedBox(height: 4),
                     _PriorityChip(priorityWeight: goalPriorityWeight),
                   ],

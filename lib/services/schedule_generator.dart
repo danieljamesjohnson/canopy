@@ -332,8 +332,9 @@ class ScheduleGeneratorService {
       }
       if (!include) continue;
       // PRIORITY-02: high-priority outcomes get 2 chunks on good-mood days.
-      final outcomeDemand =
-          (!isLowMood && (goal.priorityWeight ?? 0.5) >= 0.75) ? 2 : 1;
+      final outcomeDemand = (!isLowMood && (goal.priorityWeight ?? 0.5) >= 0.75)
+          ? 2
+          : 1;
       for (int i = 0; i < outcomeDemand; i++) {
         if (discretionaryCount >= cap) break;
         workChunks.add(
@@ -363,7 +364,9 @@ class ScheduleGeneratorService {
         activeGoals.where((g) => g.goalType == GoalType.timeTarget).toList()
           ..sort((a, b) {
             final cmp = score(b).compareTo(score(a));
-            return cmp != 0 ? cmp : a.id.compareTo(b.id); // stable secondary key
+            return cmp != 0
+                ? cmp
+                : a.id.compareTo(b.id); // stable secondary key
           });
 
     // PRIORITY-03: high-priority time-target goals (priorityWeight >= 0.75) receive
