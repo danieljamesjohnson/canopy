@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/goal.dart';
 import '../../providers/goals_notifier.dart';
+import '../../widgets/adaptive_form_modal.dart';
 import 'goal_form_sheet.dart';
 import 'widgets/goal_card.dart';
 
@@ -26,37 +27,24 @@ class _GoalsScreenState extends State<GoalsScreen> {
   }
 
   void _openAddSheet(BuildContext context) {
-    showModalBottomSheet<void>(
+    final isDesktop = MediaQuery.of(context).size.width >= 720;
+    showAdaptiveFormModal(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 1.0,
-        expand: false,
-        snap: true,
-        snapSizes: const [0.6, 1.0],
-        builder: (ctx, scrollController) =>
-            GoalFormSheet(scrollController: scrollController),
+      builder: (scrollController) => GoalFormSheet(
+        scrollController: scrollController,
+        isDialog: isDesktop,
       ),
     );
   }
 
   void _openEditSheet(BuildContext context, Goal goal) {
-    showModalBottomSheet<void>(
+    final isDesktop = MediaQuery.of(context).size.width >= 720;
+    showAdaptiveFormModal(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 1.0,
-        expand: false,
-        snap: true,
-        snapSizes: const [0.6, 1.0],
-        builder: (ctx, scrollController) =>
-            GoalFormSheet(scrollController: scrollController, goal: goal),
+      builder: (scrollController) => GoalFormSheet(
+        scrollController: scrollController,
+        goal: goal,
+        isDialog: isDesktop,
       ),
     );
   }
@@ -259,7 +247,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
           final reorderedGroup = [...group];
           final item = reorderedGroup.removeAt(oldIndex);
           reorderedGroup.insert(newIndex, item);
-          final allOrdered = _buildFullOrderedIds(notifier, type, reorderedGroup);
+          final allOrdered = _buildFullOrderedIds(
+            notifier,
+            type,
+            reorderedGroup,
+          );
           await notifier.reorderAllWithPriority(allOrdered);
         },
       ),

@@ -6,10 +6,16 @@ import '../../providers/goals_notifier.dart';
 import 'widgets/goal_type_picker.dart';
 
 class GoalFormSheet extends StatefulWidget {
-  const GoalFormSheet({super.key, required this.scrollController, this.goal});
+  const GoalFormSheet({
+    super.key,
+    required this.scrollController,
+    this.goal,
+    this.isDialog = false,
+  });
 
   final ScrollController scrollController;
   final Goal? goal;
+  final bool isDialog;
 
   @override
   State<GoalFormSheet> createState() => _GoalFormSheetState();
@@ -138,31 +144,39 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // Detect dialog mode: explicit parameter takes precedence; fall back to
+    // route detection so callers that pass GoalFormSheet without isDialog:true
+    // (e.g. test helpers pumping via showAdaptiveFormModal) still hide the
+    // drag handle and suppress viewInsets.bottom when rendered inside a Dialog.
+    final isDialog = widget.isDialog || (ModalRoute.of(context) is DialogRoute);
+
     return SingleChildScrollView(
       controller: widget.scrollController,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          16,
-          16,
-          16,
-          16 + MediaQuery.of(context).viewInsets.bottom,
+          24,
+          24,
+          24,
+          isDialog ? 24 : 16 + MediaQuery.of(context).viewInsets.bottom,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag handle indicator
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
+            // Drag handle indicator — hidden in dialog mode (handle has no
+            // meaning in a centered Material Dialog).
+            if (!isDialog)
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
 
             // Title
             Text(
