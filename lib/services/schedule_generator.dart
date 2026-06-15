@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:canopy/data/models/commitment_block.dart';
 import 'package:canopy/data/models/completion_log.dart';
+import 'package:canopy/data/models/energy_valence.dart';
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:intl/intl.dart';
@@ -325,10 +326,11 @@ class ScheduleGeneratorService {
       if (!isLowMood) {
         include = true; // mood 3–5: all outcomes
       } else if (lighterDay) {
-        include = deadlineToday; // mood 1–2 lighter ON: only deadline today
+        // VSCHED-01: energy-giving outcomes always eligible on low-mood days.
+        include = deadlineToday || goal.energyValence == EnergyValence.gives;
       } else {
-        include =
-            goal.deadline != null; // mood 1–2 lighter OFF: all with deadlines
+        include = goal.deadline != null ||
+            goal.energyValence == EnergyValence.gives;
       }
       if (!include) continue;
       // PRIORITY-02: high-priority outcomes get 2 chunks on good-mood days.
