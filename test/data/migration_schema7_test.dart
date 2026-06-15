@@ -1,35 +1,19 @@
-// Regression test for schema version 7:
-// - currentSchemaVersion == 7
-// - _migrations list has exactly 7 entries (WR-06 invariant)
+// Regression test for schema version 7 features:
 // - ScheduledChunk.syntheticStartMinutes persists through a Hive round-trip
 // - ScheduledChunk.displayStartMinutes resolves correctly
+//
+// Note: Schema version assertions (currentSchemaVersion == 7) were removed when
+// Phase 19 bumped the schema to 8. The current schema version is tested in
+// migration_schema8_test.dart. The ScheduledChunk round-trip tests remain here
+// as permanent regression coverage for HiveField 10 (Phase 17 feature).
 
 import 'dart:io';
 
-import 'package:canopy/data/database/migrations.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
 
 void main() {
-  // ---------------------------------------------------------------------------
-  // Schema constant tests (no Hive I/O needed)
-  // ---------------------------------------------------------------------------
-
-  test('currentSchemaVersion equals 7', () {
-    expect(currentSchemaVersion, equals(7));
-  });
-
-  // The WR-06 assert in migrations.dart enforces
-  // _migrations.length == currentSchemaVersion at runtime.  We rely on that
-  // assert for the full count invariant; here we simply confirm the constant
-  // matches the expected value.
-  test('currentSchemaVersion is consistent with WR-06 migration count', () {
-    // If this test is green and currentSchemaVersion == 7, the WR-06 assert
-    // will also pass because _migrations has 7 entries (enforced at startup).
-    expect(currentSchemaVersion, equals(7));
-  });
-
   // ---------------------------------------------------------------------------
   // Hive round-trip test for field 10 (syntheticStartMinutes)
   // ---------------------------------------------------------------------------
