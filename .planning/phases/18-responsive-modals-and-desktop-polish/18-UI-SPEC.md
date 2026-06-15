@@ -159,18 +159,28 @@ The 12dp value appears in a small number of commit-era legacy callsites; it is t
 
 ## Typography
 
-All type roles are Material 3 `TextTheme` slots resolved from `Theme.of(context).textTheme`. No custom font sizes or weights are introduced in this phase.
+All type roles are Material 3 `TextTheme` slots resolved from `Theme.of(context).textTheme`. No custom font sizes are introduced in this phase.
 
-| Role | Material 3 slot | Approx size | Approx weight | Line height | Usage |
-|------|-----------------|-------------|---------------|-------------|-------|
-| Display/Heading | `titleLarge` | ~22sp | w400 | ~1.27 | Modal titles ("Add goal", "Edit goal", "New commitment") |
-| Subheading | `titleMedium` | ~16sp | w500 | ~1.5 | Section labels ("Your goals", "Now", "Next") |
+**Exactly two font weights are used:**
+
+| Weight | Token | Value | Usage |
+|--------|-------|-------|-------|
+| Regular | w400 | 400 | All base text — body, labels, captions, modal titles, and base section labels |
+| Semibold | w600 | 600 | Prominent inline headings only (the single emphasis weight) |
+
+**Weight rule:** Only w400 and w600 may be used. There is no w500. `titleMedium` renders at its base w400 weight for ordinary section labels; the `fontWeight: FontWeight.w600` override is the *only* permitted emphasis weight and is reserved for prominent inline headings.
+
+| Role | Material 3 slot | Approx size | Weight | Line height | Usage |
+|------|-----------------|-------------|--------|-------------|-------|
+| Display/Heading | `titleLarge` | ~22sp | w400 | ~1.27 | Modal titles ("Add Goal", "Edit Goal", "New commitment") |
+| Subheading | `titleMedium` | ~16sp | w400 (base) / w600 (emphasis) | ~1.5 | Section labels at w400; prominent inline headings at w600 |
 | Body | `bodyMedium` | ~14sp | w400 | ~1.43 | Body text, form hints, descriptions |
 | Label/Caption | `bodySmall` | ~12sp | w400 | ~1.33 | Metadata (days, times, subtitles, onSurfaceVariant text) |
 
-**Weight overrides used in the codebase (carry forward, do not change):**
-- `titleMedium` with `fontWeight: FontWeight.w600` for prominent inline headings ("Your day starts at…", "That's a wrap", goal section titles)
-- `titleSmall` with `color: colorScheme.primary` for goal type section headers
+**w600 emphasis is reserved for:**
+- `titleMedium` prominent inline headings ("Your day starts at…", "That's a wrap", "Up next", goal section titles)
+
+`titleSmall` goal-type section headers use the default w400 weight with `color: colorScheme.primary` for emphasis (color, not weight).
 
 **New typography in this phase:** None. The dialog title reuses the existing `titleLarge` style already in both form sheets.
 
@@ -186,17 +196,19 @@ No hex values are hardcoded in this phase. All references use `colorScheme.*` se
 | Dominant (60%) | `colorScheme.surface` | Background surfaces | Screen backgrounds, dialog backgrounds |
 | Secondary (30%) | `colorScheme.surfaceContainer` | Elevated containers | Cards, navigation rail surface, dialog surface tonal fill |
 | Accent (10%) | `colorScheme.primary` | Interactive emphasis | FAB background, `ElevatedButton` fill, section headers, selected navigation indicators |
-| Destructive | `colorScheme.error` | Destructive actions only | Archive button text color in goal form (existing); Delete button text in commitment delete dialog (existing) |
+| Destructive | `colorScheme.error` | Destructive actions only | "Archive goal" button text in goal form; "Delete commitment" button text in commitment delete dialog |
 
 **Accent reserved for:**
 - `FloatingActionButton.extended` ("Add goal", "Add commitment")
-- `ElevatedButton` / `FilledButton` primary action ("Add goal", "Save", "Save changes", "Add commitment")
+- `ElevatedButton` / `FilledButton` primary action ("Add Goal", "Save Goal", "Save changes", "Add commitment")
 - Goal type section header text (`titleSmall` with `colorScheme.primary`)
 - Navigation rail selected indicator
 
-**Not accented:** Cancel buttons (TextButton with default theme), drag handles (outlineVariant), field borders (outline), drag indicator icons (outlineVariant)
+**Not accented:** "Discard" / "Keep goal" / "Keep commitment" buttons (TextButton with default theme), drag handles (outlineVariant), field borders (outline), drag indicator icons (outlineVariant)
 
 **Dialog surface:** Material 3 `Dialog` surfaces automatically use `colorScheme.surface` with tonal elevation — no explicit color override needed.
+
+**Primary visual anchor:** On both Home and Goals, the single accent anchor the eye should land on first is the `FloatingActionButton.extended` ("Add goal") on Goals and the "Now" zone content (active chunk card / next heading) on Home — these are the only primary `colorScheme.primary` accents per screen; everything else stays on neutral surface/onSurface tones so the anchor reads unambiguously.
 
 ---
 
@@ -206,8 +218,8 @@ No hex values are hardcoded in this phase. All references use `colorScheme.*` se
 
 | Context | Dismiss mechanism |
 |---------|-------------------|
-| Desktop dialog | Tap outside barrier (default `barrierDismissible: true`), or Cancel button |
-| Mobile sheet | Swipe down below `minChildSize`, or Cancel button |
+| Desktop dialog | Tap outside barrier (default `barrierDismissible: true`), or "Discard" button |
+| Mobile sheet | Swipe down below `minChildSize`, or "Discard" button |
 
 Both dismiss without saving. No unsaved-changes warning — this is unchanged from the existing bottom sheet behavior.
 
@@ -233,34 +245,36 @@ Both dismiss without saving. No unsaved-changes warning — this is unchanged fr
 
 ## Copywriting Contract
 
-Source: pre-existing codebase strings (no new copy needed for adaptive layout mechanism).
-The following strings are in-scope for this phase and must not be changed:
+Most strings are pre-existing carry-forwards. Several generic CTA labels are upgraded to context-specific copy as **in-scope POLISH-02 copy fixes** (marked **FIX**) — they are not locked carry-forwards. All other rows are locked and must not be changed.
 
-| Element | Copy |
-|---------|------|
-| Goal form — add mode title | "Add goal" |
-| Goal form — edit mode title | "Edit goal" |
-| Goal form — primary CTA (add) | "Add goal" |
-| Goal form — primary CTA (edit) | "Save" |
-| Goal form — cancel | "Cancel" |
-| Goal form — destructive (archive) | "Archive" (TextButton, error color; existing) |
-| Commitment form — add mode title | "New commitment" |
-| Commitment form — edit mode title | "Edit commitment" |
-| Commitment form — primary CTA (add) | "Add commitment" |
-| Commitment form — primary CTA (edit) | "Save changes" |
-| Commitment delete confirm title | "Delete commitment?" |
-| Commitment delete confirm content | `block.name` (the commitment's name) |
-| Commitment delete confirm actions | "Cancel" / "Delete" |
-| Goals screen — empty state heading | "No goals yet" |
-| Goals screen — empty state body | "Add your first goal" |
-| Goal form — save error snackbar | "Could not save goal. Please try again." |
-| Commitment form — save error | (no snackbar currently; save silently fails — POLISH-02 may address) |
-| Home screen — no schedule heading | "No schedule yet" |
-| Home screen — no schedule body | "Start your morning check-in to generate today's schedule." |
+| Element | Copy | Status |
+|---------|------|--------|
+| Goal form — add mode title | "Add Goal" | FIX (sentence→specific, matches CTA) |
+| Goal form — edit mode title | "Edit Goal" | FIX (matches CTA) |
+| Goal form — primary CTA (add) | "Add Goal" | FIX (was "Add goal") |
+| Goal form — primary CTA (edit) | "Save Goal" | **FIX** — was generic "Save"; now specific verb+noun |
+| Goal form — cancel | "Discard" | **FIX** — was generic "Cancel"; context-specific |
+| Goal form — destructive (archive) | "Archive goal" (TextButton, error color) | FIX — was "Archive" |
+| Commitment form — add mode title | "New commitment" | locked |
+| Commitment form — edit mode title | "Edit commitment" | locked |
+| Commitment form — primary CTA (add) | "Add commitment" | locked |
+| Commitment form — primary CTA (edit) | "Save changes" | locked (already specific) |
+| Commitment form — cancel | "Discard" | **FIX** — was implicit "Cancel"; context-specific |
+| Commitment delete confirm title | "Delete commitment?" | locked |
+| Commitment delete confirm content | `block.name` (the commitment's name) | locked |
+| Commitment delete confirm — confirm | "Delete commitment" | FIX — was "Delete" |
+| Commitment delete confirm — cancel | "Keep commitment" | **FIX** — was generic "Cancel"; context-specific |
+| Goal archive confirm — cancel (if confirmed) | "Keep goal" | **FIX** — context-specific for any goal-destructive confirm |
+| Goals screen — empty state heading | "No goals yet" | locked |
+| Goals screen — empty state body | "Add your first goal" | locked |
+| Goal form — save error snackbar | "Could not save goal. Please try again." | locked |
+| Commitment form — save error | (no snackbar currently; save silently fails — POLISH-02 may address) | open |
+| Home screen — no schedule heading | "No schedule yet" | locked |
+| Home screen — no schedule body | "Start your morning check-in to generate today's schedule." | locked |
 
-**No new copy is introduced by the adaptive helper itself.** The helper is invisible to the user — it only changes the container, not the content.
+**Rationale for the cancel-label change:** "Discard" on a form makes the destructive consequence of dismissing legible (you lose your edits), and "Keep goal" / "Keep commitment" on a delete confirm tells the user exactly what the safe choice does — both are clearer than the ambiguous bare "Cancel".
 
-**POLISH-02 copy audit:** During the fresh desktop walkthrough, any high-friction copy nits should be logged and fixed. Placeholder: executor must document each nit in the plan task before fixing.
+**No new copy is introduced by the adaptive helper itself.** The helper is invisible to the user — it only changes the container, not the content. The CTA/cancel label upgrades above are deliberate POLISH-02 fixes applied while these forms are already being touched for the responsive work.
 
 ---
 
