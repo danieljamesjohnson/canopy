@@ -4,6 +4,7 @@ title: Goal form (and modals) don't adapt to desktop — phone bottom sheet ever
 area: ui/goals
 surfaced_during: v1.2 Phase 13 UAT (scenario 8, GOALFORM-01)
 severity: moderate
+resolves_phase: 18
 files:
   - lib/screens/goals/goals_screen.dart
   - lib/screens/goals/goal_form_sheet.dart
