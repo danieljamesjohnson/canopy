@@ -1423,4 +1423,275 @@ void main() {
       expect(work.syntheticStartMinutes, 480);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Phase 20 RED tests: VSCHED-01/02/03 + determinism
+  // These tests FAIL against the unmodified engine (RED state).
+  // Plan 20-02 will implement the engine changes that make them GREEN.
+  // ---------------------------------------------------------------------------
+
+  // VSCHED-01 (time-target): low/stormy day → gives-valence time-target appears
+  test(
+    'VSCHED-01 time-target: low/stormy day → gives-valence time-target appears',
+    () {
+      final givesGoal = makeTimeTarget(
+        name: 'Yoga',
+        weeklyHourBudget: 3,
+        valence: EnergyValence.gives,
+      );
+      final habitGoal = makeHabit(name: 'Meditation');
+      final result = sut.generate(
+        goals: [givesGoal, habitGoal],
+        blocks: [],
+        moodIndex: 1,
+        date: monday,
+        lighterDay: true,
+        completionLogs: [],
+      );
+      final givesChunks = result
+          .where(
+            (c) => c.chunkType == ChunkType.work && c.goalId == givesGoal.id,
+          )
+          .length;
+      expect(
+        givesChunks,
+        greaterThanOrEqualTo(1),
+        reason:
+            'VSCHED-01: energy-giving time-target must appear on a low-mood day',
+      );
+    },
+  );
+
+  // VSCHED-01-outcome: low day → gives-valence outcome with no deadline appears
+  test(
+    'VSCHED-01-outcome: low day → gives-valence outcome with no deadline appears',
+    () {
+      final givesOutcome = makeOutcome(
+        name: 'Read',
+        deadline: null,
+        valence: EnergyValence.gives,
+      );
+      final result = sut.generate(
+        goals: [givesOutcome],
+        blocks: [],
+        moodIndex: 1,
+        date: monday,
+        lighterDay: true,
+        completionLogs: [],
+      );
+      final chunks = result
+          .where(
+            (c) =>
+                c.chunkType == ChunkType.work && c.goalId == givesOutcome.id,
+          )
+          .length;
+      expect(
+        chunks,
+        greaterThanOrEqualTo(1),
+        reason:
+            'VSCHED-01: gives-valence outcome with no deadline must appear on low day',
+      );
+    },
+  );
+
+  // VSCHED-02: low day discretionary count < medium day count
+  test(
+    'VSCHED-02: low day discretionary count < medium day count',
+    () {
+      final givesGoal = makeTimeTarget(
+        name: 'Yoga',
+        weeklyHourBudget: 10,
+        valence: EnergyValence.gives,
+      );
+      final neutralGoal = makeTimeTarget(
+        name: 'Work',
+        weeklyHourBudget: 10,
+        valence: EnergyValence.neutral,
+      );
+      final lowResult = sut.generate(
+        goals: [givesGoal, neutralGoal],
+        blocks: [],
+        moodIndex: 1,
+        date: monday,
+        lighterDay: true,
+        completionLogs: [],
+      );
+      final medResult = sut.generate(
+        goals: [givesGoal, neutralGoal],
+        blocks: [],
+        moodIndex: 3,
+        date: monday,
+        lighterDay: true,
+        completionLogs: [],
+      );
+      final lowCount =
+          lowResult.where((c) => c.chunkType == ChunkType.work).length;
+      final medCount =
+          medResult.where((c) => c.chunkType == ChunkType.work).length;
+      expect(
+        lowCount,
+        lessThan(medCount),
+        reason:
+            'VSCHED-02: low day must have fewer discretionary chunks than medium day',
+      );
+    },
+  );
+
+  // VSCHED-02-neutral-excluded: neutral/costs time-target gets no restorative floor on low day
+  test(
+    'VSCHED-02-neutral-excluded: neutral/costs time-target gets no restorative floor on low day',
+    () {
+      // A SINGLE neutral time-target on a low day — the restorative floor must
+      // not apply (it is gives-only). The neutral goal may still appear via
+      // FILL-01, but only up to the normal FILL-01 cap of 1 on low mood.
+      // Encoding: with only a neutral goal on a low day, the restorative floor
+      // adds nothing extra — chunk count equals the FILL-01 cap of 1 (not 2).
+      final neutralGoal = makeTimeTarget(
+        name: 'Work',
+        weeklyHourBudget: 10,
+        valence: EnergyValence.neutral,
+      );
+      final result = sut.generate(
+        goals: [neutralGoal],
+        blocks: [],
+        moodIndex: 1,
+        date: monday,
+        lighterDay: true,
+        completionLogs: [],
+      );
+      final neutralChunks = result
+          .where(
+            (c) =>
+                c.chunkType == ChunkType.work && c.goalId == neutralGoal.id,
+          )
+          .length;
+      // The restorative floor is gives-only, so a neutral goal must NOT receive
+      // a floor-boosted slot. The FILL-01 demand cap on low mood is 1, so the
+      // neutral goal gets at most 1 chunk — exactly 1, not 2.
+      expect(
+        neutralChunks,
+        equals(1),
+        reason:
+            'VSCHED-02-neutral-excluded: restorative floor must not boost a neutral goal; '
+            'neutral goal gets exactly the FILL-01 cap of 1 chunk on a low day',
+      );
+    },
+  );
+
+  // VSCHED-03: high day under heavy backlog reserves a gives-valence slot
+  test(
+    'VSCHED-03: high day under heavy backlog reserves a gives-valence slot',
+    () {
+      final givesGoal = makeTimeTarget(
+        name: 'Yoga',
+        weeklyHourBudget: 10,
+        valence: EnergyValence.gives,
+      );
+      final neutralGoals = List.generate(
+        5,
+        (i) => makeTimeTarget(
+          name: 'Backlog $i',
+          weeklyHourBudget: 10,
+          valence: EnergyValence.neutral,
+        ),
+      );
+      final result = sut.generate(
+        goals: [givesGoal, ...neutralGoals],
+        blocks: [],
+        moodIndex: 4,
+        date: monday,
+        lighterDay: true,
+        completionLogs: [],
+      );
+      final givesChunks = result
+          .where(
+            (c) => c.chunkType == ChunkType.work && c.goalId == givesGoal.id,
+          )
+          .length;
+      expect(
+        givesChunks,
+        greaterThanOrEqualTo(1),
+        reason:
+            'VSCHED-03: energy-giving goal must be reserved even under heavy backlog',
+      );
+    },
+  );
+
+  // VSCHED-03-highpri-fallback: high day, no gives goal → high-priority goal reserved
+  test(
+    'VSCHED-03-highpri-fallback: high day, no gives goal → high-priority goal reserved',
+    () {
+      // No gives-valence goals. One high-priority neutral goal among several
+      // low-priority neutral backlog goals. The VSCHED-03 reservation pass must
+      // select the high-priority goal (priorityWeight >= 0.75 qualifies).
+      final highPriGoal = makeTimeTarget(
+        name: 'High Priority',
+        weeklyHourBudget: 10,
+        priorityWeight: 0.9,
+        valence: EnergyValence.neutral,
+      );
+      final lowPriGoals = List.generate(
+        5,
+        (i) => makeTimeTarget(
+          name: 'Backlog $i',
+          weeklyHourBudget: 10,
+          priorityWeight: 0.3,
+          valence: EnergyValence.neutral,
+        ),
+      );
+      final result = sut.generate(
+        goals: [highPriGoal, ...lowPriGoals],
+        blocks: [],
+        moodIndex: 4,
+        date: monday,
+        lighterDay: true,
+        completionLogs: [],
+      );
+      final highPriChunks = result
+          .where(
+            (c) =>
+                c.chunkType == ChunkType.work && c.goalId == highPriGoal.id,
+          )
+          .length;
+      expect(
+        highPriChunks,
+        greaterThanOrEqualTo(1),
+        reason:
+            'VSCHED-03-highpri-fallback: high-priority goal must be reserved when no gives-valence goal is present',
+      );
+    },
+  );
+
+  // determinism: same inputs produce same schedule
+  test(
+    'determinism: same inputs produce same schedule',
+    () {
+      final goals = [
+        makeTimeTarget(
+          name: 'T',
+          weeklyHourBudget: 5,
+          valence: EnergyValence.gives,
+        ),
+      ];
+      final r1 = sut.generate(
+        goals: goals,
+        blocks: [],
+        moodIndex: 3,
+        date: monday,
+        completionLogs: [],
+      );
+      final r2 = sut.generate(
+        goals: goals,
+        blocks: [],
+        moodIndex: 3,
+        date: monday,
+        completionLogs: [],
+      );
+      expect(
+        r1.map((c) => c.goalId).toList(),
+        equals(r2.map((c) => c.goalId).toList()),
+        reason: 'determinism: same inputs must produce same schedule',
+      );
+    },
+  );
 }
