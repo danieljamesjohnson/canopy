@@ -9,10 +9,12 @@ class CommitmentFormSheet extends StatefulWidget {
     super.key,
     required this.scrollController,
     this.block,
+    this.isDialog = false,
   });
 
   final ScrollController scrollController;
   final CommitmentBlock? block;
+  final bool isDialog;
 
   @override
   State<CommitmentFormSheet> createState() => _CommitmentFormSheetState();
@@ -116,28 +118,35 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
 
     const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
+    // Detect dialog mode: explicit parameter takes precedence; fall back to
+    // route detection so callers that omit isDialog still suppress the drag
+    // handle and viewInsets.bottom when rendered inside a Dialog.
+    final isDialog = widget.isDialog || (ModalRoute.of(context) is DialogRoute);
+
     return SingleChildScrollView(
       controller: widget.scrollController,
       padding: EdgeInsets.fromLTRB(
-        16,
-        8,
-        16,
-        32 + MediaQuery.viewInsetsOf(context).bottom,
+        24,
+        isDialog ? 24 : 8,
+        24,
+        isDialog ? 24 : 32 + MediaQuery.viewInsetsOf(context).bottom,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Drag indicator
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.outline,
-                borderRadius: BorderRadius.circular(2),
+          // Drag indicator — hidden in dialog mode (handle has no meaning
+          // in a centered Material Dialog).
+          if (!isDialog)
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colorScheme.outline,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
           const SizedBox(height: 16),
 
           // Title

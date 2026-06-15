@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/commitment_block.dart';
 import '../../providers/commitments_notifier.dart';
+import '../../widgets/adaptive_form_modal.dart';
 import 'commitment_form_sheet.dart';
 
 class CommitmentsScreen extends StatefulWidget {
@@ -24,20 +25,10 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
   }
 
   void _openAddSheet(BuildContext context, [CommitmentBlock? block]) {
-    showModalBottomSheet<void>(
+    showAdaptiveFormModal(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.65,
-        minChildSize: 0.4,
-        maxChildSize: 1.0,
-        expand: false,
-        snap: true,
-        snapSizes: const [0.65, 1.0],
-        builder: (ctx, sc) =>
-            CommitmentFormSheet(scrollController: sc, block: block),
-      ),
+      builder: (scrollController) =>
+          CommitmentFormSheet(scrollController: scrollController, block: block),
     );
   }
 
