@@ -18,14 +18,14 @@
 
 ### Energy Valence
 
-- [ ] **ENERGY-01**: A goal carries an energy valence (gives / neutral / costs), persisted via additive Hive migration; existing goals default to neutral
-- [ ] **ENERGY-02**: User can set a goal's valence in the goal form on both create and edit
-- [ ] **ENERGY-03**: User can attach an emoji/image tag to a goal; it persists and renders on the goal
-- [ ] **ENERGY-04**: Valence (and tag) is visible where goals are listed and scheduled, so the day reads restorative-vs-draining at a glance
+- [x] **ENERGY-01**: A goal carries an energy valence (gives / neutral / costs), persisted via additive Hive migration; existing goals default to neutral
+- [x] **ENERGY-02**: User can set a goal's valence in the goal form on both create and edit
+- [x] **ENERGY-03**: User can attach an emoji/image tag to a goal; it persists and renders on the goal
+- [x] **ENERGY-04**: Valence (and tag) is visible where goals are listed and scheduled, so the day reads restorative-vs-draining at a glance
 
 ### Onboarding
 
-- [ ] **ONBOARD-01**: Onboarding includes a "what gives you energy?" step that tags a couple of energy-giving activities, seeding restorative goals before first use
+- [x] **ONBOARD-01**: Onboarding includes a "what gives you energy?" step that tags a couple of energy-giving activities, seeding restorative goals before first use
 
 ### Valence-Aware Scheduling
 
@@ -68,11 +68,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 | RESP-01 | Phase 18 | Complete |
 | RESP-02 | Phase 18 | Complete |
 | RESP-03 | Phase 18 | Complete |
-| ENERGY-01 | Phase 19 | Pending |
-| ENERGY-02 | Phase 19 | Pending |
-| ENERGY-03 | Phase 19 | Pending |
-| ENERGY-04 | Phase 19 | Pending |
-| ONBOARD-01 | Phase 19 | Pending |
+| ENERGY-01 | Phase 19 | Complete |
+| ENERGY-02 | Phase 19 | Complete |
+| ENERGY-03 | Phase 19 | Complete |
+| ENERGY-04 | Phase 19 | Complete |
+| ONBOARD-01 | Phase 19 | Complete |
 | VSCHED-01 | Phase 20 | Pending |
 | VSCHED-02 | Phase 20 | Pending |
 | VSCHED-03 | Phase 20 | Pending |

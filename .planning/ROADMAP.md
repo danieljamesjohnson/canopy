@@ -112,7 +112,7 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 
 **Plans**: 5 plans
 
-- [ ] 19-01-PLAN.md — Wave 0 RED test stubs (migration safety, goal form, goal card, chunk card, onboarding)
+- [x] 19-01-PLAN.md — Wave 0 RED test stubs (migration safety, goal form, goal card, chunk card, onboarding)
 - [ ] 19-02-PLAN.md — Data model: EnergyValence enum + Goal fields 12/13 + schema bump 7→8 + no-op _migration7to8 (ENERGY-01)
 - [ ] 19-03-PLAN.md — Goal form valence picker + emoji tag picker (ENERGY-02, ENERGY-03)
 - [ ] 19-04-PLAN.md — Valence badge + emoji on goal card and schedule chunk card (ENERGY-03, ENERGY-04)
@@ -145,5 +145,5 @@ browser-verified; 247/247 tests green. See `v1.3-MILESTONE-AUDIT.md`.
 | 16. Priority Model Reconciliation | v1.3 | 1/1 | Complete | 2026-06-13 |
 | 17. Time-Anchored Home | v1.3 | 1/1 | Complete | 2026-06-14 |
 | 18. Responsive Modals and Desktop Polish | v1.4 | 5/5 | Complete   | 2026-06-15 |
-| 19. Energy Valence | v1.4 | 0/5 | Planned | - |
+| 19. Energy Valence | v1.4 | 1/5 | In Progress|  |
 | 20. Valence-Aware Engine | v1.4 | 0/? | Not started | - |
