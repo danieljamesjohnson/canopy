@@ -105,8 +105,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final pendingGoals = _getPendingGoalsForScreen4();
     final screen1Goal =
         pendingGoals.isNotEmpty && pendingGoals[0] != _screen3Habit
-            ? pendingGoals[0]
-            : null;
+        ? pendingGoals[0]
+        : null;
     if (screen1Goal != null) {
       screen1Goal.color = goalsNotifier.autoColor();
       await goalsNotifier.saveGoal(screen1Goal);
@@ -706,7 +706,9 @@ class _Screen4State extends State<_Screen4> {
     );
     setState(() {
       _quickGoals.add(goal);
-      _markedGoalIds.add(goal.id); // pre-mark as energizing, but user can unmark
+      _markedGoalIds.add(
+        goal.id,
+      ); // pre-mark as energizing, but user can unmark
       _quickAddController.clear();
       _showQuickAdd = false;
     });

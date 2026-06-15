@@ -98,7 +98,8 @@ class Goal extends HiveObject {
   EnergyValence get energyValence {
     final idx = energyValenceIndex ?? 0;
     if (idx < 0 || idx >= EnergyValence.values.length) {
-      return EnergyValence.neutral; // safe default for out-of-range index (WR-01)
+      return EnergyValence
+          .neutral; // safe default for out-of-range index (WR-01)
     }
     return EnergyValence.values[idx];
   }
