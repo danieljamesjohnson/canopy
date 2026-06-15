@@ -12,9 +12,9 @@
 
 ### Responsive Modals & Layout
 
-- [ ] **RESP-01**: Goal add/edit form renders as a centered, width-constrained dialog on desktop/web widths and as a bottom sheet on phone widths
-- [ ] **RESP-02**: On desktop width, the goal form shows the type picker, all fields, Priority, and Save/Add with nothing clipped and no scroll required
-- [ ] **RESP-03**: Commitment add/edit and any other modal callers use the same shared adaptive dialog-vs-sheet helper
+- [x] **RESP-01**: Goal add/edit form renders as a centered, width-constrained dialog on desktop/web widths and as a bottom sheet on phone widths
+- [x] **RESP-02**: On desktop width, the goal form shows the type picker, all fields, Priority, and Save/Add with nothing clipped and no scroll required
+- [x] **RESP-03**: Commitment add/edit and any other modal callers use the same shared adaptive dialog-vs-sheet helper
 
 ### Energy Valence
 
@@ -35,8 +35,8 @@
 
 ### Desktop Polish
 
-- [ ] **POLISH-01**: Primary screens (home, schedule, goals, check-in) use desktop-appropriate layout at wide widths — constrained content, not phone-stretched full-bleed
-- [ ] **POLISH-02**: Residual UI nits from a fresh desktop walkthrough are triaged and the high-friction ones fixed
+- [x] **POLISH-01**: Primary screens (home, schedule, goals, check-in) use desktop-appropriate layout at wide widths — constrained content, not phone-stretched full-bleed
+- [x] **POLISH-02**: Residual UI nits from a fresh desktop walkthrough are triaged and the high-friction ones fixed
 
 ## Future Requirements
 
@@ -65,9 +65,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RESP-01 | Phase 18 | Pending |
-| RESP-02 | Phase 18 | Pending |
-| RESP-03 | Phase 18 | Pending |
+| RESP-01 | Phase 18 | Complete |
+| RESP-02 | Phase 18 | Complete |
+| RESP-03 | Phase 18 | Complete |
 | ENERGY-01 | Phase 19 | Pending |
 | ENERGY-02 | Phase 19 | Pending |
 | ENERGY-03 | Phase 19 | Pending |
@@ -76,10 +76,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 | VSCHED-01 | Phase 20 | Pending |
 | VSCHED-02 | Phase 20 | Pending |
 | VSCHED-03 | Phase 20 | Pending |
-| POLISH-01 | Phase 18 | Pending |
-| POLISH-02 | Phase 18 | Pending |
+| POLISH-01 | Phase 18 | Complete |
+| POLISH-02 | Phase 18 | Complete |
 
 **Coverage:**
+
 - v1.4 requirements: 13 total
 - Mapped to phases: 13 (100%)
 - Unmapped: 0 ✓
