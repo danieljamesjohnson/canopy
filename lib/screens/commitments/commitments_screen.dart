@@ -25,10 +25,14 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
   }
 
   void _openAddSheet(BuildContext context, [CommitmentBlock? block]) {
+    final isDesktop = MediaQuery.of(context).size.width >= 720;
     showAdaptiveFormModal(
       context: context,
-      builder: (scrollController) =>
-          CommitmentFormSheet(scrollController: scrollController, block: block),
+      builder: (scrollController) => CommitmentFormSheet(
+        scrollController: scrollController,
+        block: block,
+        isDialog: isDesktop,
+      ),
     );
   }
 
