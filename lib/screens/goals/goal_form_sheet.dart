@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/models/energy_valence.dart';
 import '../../data/models/goal.dart';
 import '../../providers/goals_notifier.dart';
 import 'widgets/goal_type_picker.dart';
@@ -34,6 +35,8 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
   DateTime? _deadline;
   String? _outcomeDescription;
   int? _frequencyPerWeek;
+  EnergyValence _energyValence = EnergyValence.neutral;
+  String? _emojiTag;
 
   bool get _isEditMode => widget.goal != null;
 
@@ -49,6 +52,8 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
       _deadline = goal.deadline;
       _outcomeDescription = goal.outcomeDescription;
       _frequencyPerWeek = goal.frequencyPerWeek;
+      _energyValence = goal.energyValence; // getter, never null
+      _emojiTag = goal.emojiTag;
     } else {
       _nameController = TextEditingController();
     }
@@ -94,7 +99,9 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
       ..weeklyHourBudget = _weeklyHourBudget
       ..deadline = _deadline
       ..outcomeDescription = _outcomeDescription
-      ..frequencyPerWeek = _frequencyPerWeek;
+      ..frequencyPerWeek = _frequencyPerWeek
+      ..energyValenceIndex = _energyValence.index
+      ..emojiTag = _emojiTag;
 
     try {
       await notifier.saveGoal(goal);
@@ -137,6 +144,23 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
     if (picked != null) {
       setState(() => _deadline = picked);
     }
+  }
+
+  Future<void> _pickEmoji() async {
+    final isDesktop = MediaQuery.of(context).size.width >= 720;
+    String? picked;
+    if (isDesktop) {
+      picked = await showDialog<String>(
+        context: context,
+        builder: (_) => const _EmojiPickerDialog(),
+      );
+    } else {
+      picked = await showModalBottomSheet<String>(
+        context: context,
+        builder: (_) => const _EmojiPickerSheet(),
+      );
+    }
+    if (picked != null) setState(() => _emojiTag = picked);
   }
 
   @override
@@ -221,6 +245,66 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(height: 12),
+
+            // Energy valence — follows Priority label pattern exactly (w400, onSurfaceVariant)
+            Row(
+              children: [
+                Text(
+                  'Energy',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w400,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            SegmentedButton<EnergyValence>(
+              segments: const [
+                ButtonSegment(
+                  value: EnergyValence.gives,
+                  label: Text('Gives energy'),
+                  icon: Icon(Icons.bolt),
+                ),
+                ButtonSegment(
+                  value: EnergyValence.neutral,
+                  label: Text('Neutral'),
+                  icon: Icon(Icons.remove),
+                ),
+                ButtonSegment(
+                  value: EnergyValence.costs,
+                  label: Text('Costs energy'),
+                  icon: Icon(Icons.hourglass_empty),
+                ),
+              ],
+              selected: {_energyValence},
+              onSelectionChanged: (Set<EnergyValence> val) =>
+                  setState(() => _energyValence = val.first),
+            ),
+            const SizedBox(height: 8),
+
+            // Emoji tag affordance
+            _emojiTag == null
+                ? OutlinedButton.icon(
+                    icon: const Icon(Icons.emoji_emotions_outlined),
+                    label: const Text('Add emoji'),
+                    onPressed: _pickEmoji,
+                  )
+                : Row(
+                    children: [
+                      OutlinedButton(
+                        onPressed: _pickEmoji,
+                        child: Text(
+                          _emojiTag!,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => setState(() => _emojiTag = null),
+                      ),
+                    ],
+                  ),
+            const SizedBox(height: 8),
 
             // Priority control — shown for all goal types
             Row(
@@ -350,5 +434,108 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
         ),
       ),
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// File-private emoji picker widgets (used by _GoalFormSheetState._pickEmoji)
+// ---------------------------------------------------------------------------
+
+// 40-emoji set covering common activities / energy domains (Phase 19 UI-SPEC §2)
+const List<String> _kEmojiList = [
+  '🏃',
+  '🧘',
+  '📚',
+  '🎨',
+  '🎵',
+  '🌿',
+  '☕',
+  '🍎',
+  '💪',
+  '🧠',
+  '🌊',
+  '🔥',
+  '✨',
+  '🌙',
+  '☀️',
+  '🏔',
+  '🌸',
+  '🎯',
+  '💡',
+  '🛠',
+  '📝',
+  '🎮',
+  '🤝',
+  '🧹',
+  '🍳',
+  '💻',
+  '🌍',
+  '❤️',
+  '😊',
+  '🙏',
+  '🦉',
+  '🐕',
+  '🌱',
+  '🏡',
+  '⚡',
+  '🎸',
+  '🎭',
+  '📸',
+  '🧪',
+  '🎁',
+];
+
+Widget _buildEmojiGrid(BuildContext context) {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        child: Text(
+          'Choose an emoji',
+          style: Theme.of(context).textTheme.titleLarge,
+          textAlign: TextAlign.center,
+        ),
+      ),
+      GridView.count(
+        crossAxisCount: 8,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(8),
+        children: _kEmojiList.map((emoji) {
+          return InkWell(
+            onTap: () => Navigator.of(context).pop(emoji),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Center(
+                child: Text(emoji, style: const TextStyle(fontSize: 22)),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    ],
+  );
+}
+
+/// Desktop: shows emoji grid inside a Dialog.
+class _EmojiPickerDialog extends StatelessWidget {
+  const _EmojiPickerDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(child: _buildEmojiGrid(context));
+  }
+}
+
+/// Mobile: shows emoji grid inside a bottom sheet body.
+class _EmojiPickerSheet extends StatelessWidget {
+  const _EmojiPickerSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(child: _buildEmojiGrid(context));
   }
 }
