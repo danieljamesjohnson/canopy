@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:canopy/data/models/completion_log.dart';
+import 'package:canopy/data/models/energy_valence.dart';
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/models/commitment_block.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
@@ -31,11 +32,13 @@ void main() {
     String name = 'Outcome goal',
     DateTime? deadline,
     double? priorityWeight,
+    EnergyValence valence = EnergyValence.neutral,
   }) => Goal(
     name: name,
     goalTypeIndex: GoalType.outcome.index,
     deadline: deadline,
     priorityWeight: priorityWeight,
+    energyValenceIndex: valence.index,
   );
 
   CommitmentBlock makeBlock({
@@ -54,11 +57,13 @@ void main() {
     String name = 'Time-target goal',
     double? weeklyHourBudget,
     double? priorityWeight,
+    EnergyValence valence = EnergyValence.neutral,
   }) => Goal(
     name: name,
     goalTypeIndex: GoalType.timeTarget.index,
     weeklyHourBudget: weeklyHourBudget,
     priorityWeight: priorityWeight,
+    energyValenceIndex: valence.index,
   );
 
   CompletionLog makeLog({
