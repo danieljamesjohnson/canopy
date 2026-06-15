@@ -104,6 +104,7 @@ Items acknowledged and deferred at milestone close on 2026-06-14 (v1.3) — now 
 | seed | SEED-004-energy-aware-scheduling-no-ai | → Phase 19 (valence model) and Phase 20 (engine) |
 | tech-debt | FILL-02 high-priority monopoly edge | documented-accepted (3+ goals at weight ≥0.75 can starve lower-priority time-targets) |
 | tech-debt | Nyquist VALIDATION frontmatter drafts (15/16/17) | tests green; `nyquist_compliant: false` metadata only |
+| tech-debt | chunk_card.dart hardcoded `Colors.green.shade600` / `Colors.grey.shade400` | NEW (Phase 19 UI audit) — pre-existing, bypasses ColorScheme (no dark-mode/dynamic adapt). Replace with colorScheme.tertiary/outlineVariant in a future cleanup. |
 
 Carried from earlier milestones (v1.0–v1.2), still open:
 
