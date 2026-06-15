@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/daily_schedule.dart';
 import '../../data/models/energy_valence.dart';
+import '../../data/models/goal.dart';
 import '../../data/models/scheduled_chunk.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
@@ -224,11 +225,21 @@ class ScheduleScreen extends StatelessWidget {
     );
   }
 
+  /// Returns the single [Goal] for a chunk, or null for commitment-anchored
+  /// chunks (goalId == null) or when the goal is not found (IN-01).
+  /// Callers use this instead of repeating the linear scan per attribute.
+  Goal? _resolveGoal(BuildContext context, ScheduledChunk chunk) {
+    if (chunk.goalId == null) return null;
+    return context
+        .read<GoalsNotifier>()
+        .goals
+        .where((g) => g.id == chunk.goalId)
+        .firstOrNull;
+  }
+
   /// Resolves goal color for a chunk by looking up its goalId in GoalsNotifier.
   Color? _lookupGoalColor(BuildContext context, ScheduledChunk chunk) {
-    if (chunk.goalId == null) return null;
-    final goals = context.read<GoalsNotifier>().goals;
-    final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
+    final goal = _resolveGoal(context, chunk);
     if (goal?.color != null) return hexToColor(goal!.color!);
     return null;
   }
@@ -236,12 +247,8 @@ class ScheduleScreen extends StatelessWidget {
   /// Resolves goal name for a chunk by looking up its goalId in GoalsNotifier.
   /// Returns null for commitment-anchored chunks (no goalId) so they display
   /// the block name from chunk.rationale instead.
-  String? _lookupGoalName(BuildContext context, ScheduledChunk chunk) {
-    if (chunk.goalId == null) return null;
-    final goals = context.read<GoalsNotifier>().goals;
-    final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
-    return goal?.name;
-  }
+  String? _lookupGoalName(BuildContext context, ScheduledChunk chunk) =>
+      _resolveGoal(context, chunk)?.name;
 
   /// Resolves goal priority weight for a chunk by looking up its goalId in
   /// GoalsNotifier. Returns null for commitment chunks (goalId == null) so
@@ -249,12 +256,7 @@ class ScheduleScreen extends StatelessWidget {
   double? _lookupGoalPriorityWeight(
     BuildContext context,
     ScheduledChunk chunk,
-  ) {
-    if (chunk.goalId == null) return null;
-    final goals = context.read<GoalsNotifier>().goals;
-    final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
-    return goal?.priorityWeight;
-  }
+  ) => _resolveGoal(context, chunk)?.priorityWeight;
 
   /// Resolves goal energy valence for a chunk by looking up its goalId in
   /// GoalsNotifier. Returns null for commitment chunks (goalId == null) so
@@ -262,22 +264,13 @@ class ScheduleScreen extends StatelessWidget {
   EnergyValence? _lookupGoalValence(
     BuildContext context,
     ScheduledChunk chunk,
-  ) {
-    if (chunk.goalId == null) return null;
-    final goals = context.read<GoalsNotifier>().goals;
-    final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
-    return goal?.energyValence;
-  }
+  ) => _resolveGoal(context, chunk)?.energyValence;
 
   /// Resolves goal emoji tag for a chunk by looking up its goalId in
   /// GoalsNotifier. Returns null for commitment chunks (goalId == null) so
   /// they show no emoji prefix (T-19-05).
-  String? _lookupGoalEmojiTag(BuildContext context, ScheduledChunk chunk) {
-    if (chunk.goalId == null) return null;
-    final goals = context.read<GoalsNotifier>().goals;
-    final goal = goals.where((g) => g.id == chunk.goalId).firstOrNull;
-    return goal?.emojiTag;
-  }
+  String? _lookupGoalEmojiTag(BuildContext context, ScheduledChunk chunk) =>
+      _resolveGoal(context, chunk)?.emojiTag;
 
   /// Maps the raw generator rationale string to a human-readable display
   /// string. Delegates to the shared [toDisplayRationale] helper so the
