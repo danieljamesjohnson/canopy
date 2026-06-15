@@ -532,7 +532,7 @@ None — no existing behavior is removed, only extended at specific gated code p
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should VSCHED-03 apply at mood 3 or only mood 4-5?**
    - What we know: The "high day" / "sunny" framing from the CONTEXT suggests moodIndex >= 4. The generator currently uses `!isLowMood` (mood 3-5) for all "good mood" logic.
