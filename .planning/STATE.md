@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Energy-Aware
-status: verifying
+status: Awaiting next milestone
 stopped_at: None
-last_updated: "2026-06-15T03:36:50.968Z"
-last_activity: 2026-06-15 -- Phase 20 execution started
+last_updated: "2026-06-15T03:51:18.773Z"
+last_activity: 2026-06-15 — Milestone v1.4 completed and archived
 progress:
   total_phases: 3
   completed_phases: 3
@@ -24,14 +24,10 @@ progress:
 
 ## Current Position
 
-Phase: 20 (Valence-Aware Engine) — EXECUTING
-Plan: 2 of 2
-Status: Phase complete — ready for verification
-Last activity: 2026-06-15 -- Phase 20 execution started
-
-```
-Progress: [░░░░░░░░░░] 0% — Phase 18/20
-```
+Phase: Milestone v1.4 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-15 — Milestone v1.4 completed and archived
 
 ## Project Reference
 
@@ -146,3 +142,7 @@ Resume at: `/gsd-plan-phase 18`
 | Phase 19-energy-valence P05 | 15min | 2 tasks | 2 files |
 | Phase 20-valence-aware-engine P01 | 2min | 2 tasks | 1 files |
 | Phase 20-valence-aware-engine P02 | 3min | 3 tasks | 1 files |
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

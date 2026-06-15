@@ -10,22 +10,16 @@ Generate a usable daily schedule every morning — one that reflects your real g
 
 ## Current State
 
-**Shipped through v1.3 "An Honest Day" (2026-06-14).** Canopy is a working personal time-budgeting app: a daily mood check-in shapes a generated schedule of 25-min Chunks built around three goal types, with a time-anchored Home (Now/Next), an honest scheduling engine (fair capacity, truthful streaks, priority-driven allocation for all goal types, full-day fill), Goals-as-prioritization, and a quarterly review. ~11.4k LOC of app code in `lib/`, 247-test suite green, `flutter analyze` clean. Rule-based only — no LLM.
+**Shipped through v1.4 "Energy-Aware" (2026-06-15).** Canopy is a working personal time-budgeting app: a daily mood check-in shapes a generated schedule of 25-min Chunks built around three goal types, with a time-anchored Home (Now/Next), an honest + energy-aware scheduling engine (fair capacity, truthful streaks, priority-driven allocation, full-day fill, restorative low days, reserved energy slot on high days), responsive modals (centered dialog on desktop / bottom sheet on phone), per-goal energy valence (gives/neutral/costs + emoji tag) visible across goal form, goals list, and schedule, an onboarding energy step, Goals-as-prioritization, and a quarterly review. ~12k LOC of app code in `lib/`, 289-test suite green, `flutter analyze` clean. Rule-based only — no LLM.
 
-**Next:** v1.4 "Energy-Aware" — make Canopy fit the screen it's used on (responsive modals, F-03) and schedule around how activities make you feel (energy valence per goal, restorative low days). Not aiming for daily-ready; clearing known gaps for a fresh review.
+**Next:** Planning the next milestone (`/gsd-new-milestone`). Owner will dogfood v1.4 and re-review. Tracked tech debt: onboarding desktop polish (full-bleed + day-chip labels), chunk_card color-token hygiene.
 
-## Current Milestone: v1.4 Energy-Aware
+<details>
+<summary>Previous milestone: v1.4 "Energy-Aware" — SHIPPED 2026-06-15</summary>
 
-**Goal:** Make Canopy fit the screen it's used on and schedule around how activities make you feel — so a fresh review can judge a more honest, more livable day.
+3 phases (18-20), 12 plans, 13/13 requirements satisfied (browser-verified where visual), 289-test suite green. Made Canopy fit the screen and schedule around feeling: responsive adaptive modals (dialog ≥720dp / sheet below) + 720dp content constraints on primary screens (RESP-01/02/03, POLISH-01/02); per-goal energy valence (gives/neutral/costs, additive Hive migration schema 7→8, neutral-default crash-safe) + emoji tag, surfaced in goal form, goal card, and schedule chunks, with an onboarding "what gives you energy?" step (ENERGY-01/02/03/04, ONBOARD-01); and a valence-aware engine — restorative floor on low-mood days (bounded) + reserved energy/high-priority slot on high-mood days (VSCHED-01/02/03), all deterministic-unit-tested. See `.planning/milestones/v1.4-*` and `MILESTONES.md`.
 
-**Target features:**
-- **Responsive modals (F-03)** — goal form and other modals adapt to viewport: centered dialog on desktop/web width, bottom sheet on phone; Priority + Save visible without scrolling.
-- **Energy valence per goal (SEED-004)** — a gives / neutral / costs pick plus an emoji/image tag at goal creation; new Hive field + additive migration; surfaced in the goal form.
-- **Onboarding energy prompt** — a "what gives you energy?" step so a couple restorative activities exist from day one.
-- **Valence-aware engine** — low ("stormy") days let energy-giving discretionary goals through instead of required+habits only (the SEED-001 #2 restorative floor); high days reserve a slot for an energy-giving / high-value goal.
-- **Residual UI-basics polish (SEED-002)** — sweep leftover first-dogfood UI nits not already consumed by v1.2/v1.3.
-
-**Key context:** Not aiming for "daily-ready" — owner will dogfood and re-review after. Rule-based only, no LLM. Hive migration stays additive-only. Web/desktop is the primary dogfood surface.
+</details>
 
 <details>
 <summary>Previous milestone: v1.3 "An Honest Day" — SHIPPED 2026-06-14</summary>
@@ -71,14 +65,18 @@ Engine honesty + fill the day (v1.3 — *browser-verified*):
 - ✓ Regular-time goals fill open days, priority-spread and mood-capped (FILL-01/02) — v1.3
 - ✓ Goal sheet's Priority + Save proven reachable at true modal height for every goal type (GOALFORM-02) — v1.3
 
+Energy-aware + responsive (v1.4 — *browser-verified where visual*):
+- ✓ Goal form and all modal callers adapt to viewport — centered dialog ≥720dp, bottom sheet below (RESP-01/02/03) — v1.4
+- ✓ Primary screens (home/schedule/goals) constrain content to 720dp on desktop; high-friction desktop nits triaged (POLISH-01/02) — v1.4
+- ✓ Goals carry an energy valence (gives/neutral/costs) via additive Hive migration, default neutral, crash-safe (ENERGY-01) — v1.4
+- ✓ Valence set in goal form (create + edit) + optional emoji tag, persisted (ENERGY-02/03) — v1.4
+- ✓ Valence + emoji visible where goals are listed and scheduled (ENERGY-04) — v1.4
+- ✓ Onboarding "what gives you energy?" step seeds energy-giving goals before first schedule (ONBOARD-01) — v1.4
+- ✓ Engine uses valence: bounded restorative floor on low days, reserved energy/high-priority slot on high days (VSCHED-01/02/03) — v1.4
+
 ### Active
 
-Committed to v1.4 "Energy-Aware" (scoped requirements in `.planning/REQUIREMENTS.md`):
-- **F-03 responsive modals** — goal form and other modals adapt to viewport (dialog on desktop, sheet on phone).
-- **Energy valence per goal (SEED-004)** — gives / neutral / costs pick + emoji/image tag; new Hive field + additive migration; goal-form UI.
-- **Onboarding energy prompt** — seed restorative activities up front.
-- **Valence-aware engine** — restorative low days (SEED-001 #2) + reserved energy slot on high days.
-- **Residual UI-basics polish (SEED-002)** — leftover first-dogfood nits.
+None committed yet — next milestone TBD via `/gsd-new-milestone`. Owner will dogfood v1.4 (energy-aware schedule + responsive UI) and re-review before scoping the next set.
 
 ### Out of Scope
 
@@ -90,7 +88,7 @@ Committed to v1.4 "Energy-Aware" (scoped requirements in `.planning/REQUIREMENTS
 
 - Built as a personal tool first — the primary user is the developer
 - Flutter project targeting all platforms (iOS, Android, Web, Windows, macOS, Linux)
-- ~11.4k LOC of app code in `lib/`; 247-test suite green, `flutter analyze` clean (as of v1.3)
+- ~12k LOC of app code in `lib/`; 289-test suite green, `flutter analyze` clean (as of v1.4)
 - Dogfooded via a hosted **debug** web build (single dart2js bundle, no service worker) over tailscale — see CLAUDE.md "Local hosting for UAT"
 - The "Chunk" concept is like a Pomodoro (25 min) but framed around budgeting time toward goals rather than pure focus sessions
 - Every chunk is followed by a 5-min short break; after 3–4 chunks a 25-min long break is inserted (mood-adaptive cadence)
@@ -123,7 +121,11 @@ Committed to v1.4 "Energy-Aware" (scoped requirements in `.planning/REQUIREMENTS
 | Generation-time streak write-back (v1.3) | Displayed streak can't diverge from the computed walk if it's written at generation | ✓ Good — STREAK-01 |
 | Always-run round-robin fill, mood-capped (v1.3) | Fill open days with time-target goals by priority without one goal swallowing the day | ⚠️ Revisit — FILL-02 high-priority monopoly edge documented-accepted (3+ goals at weight ≥0.75 can starve lower-priority time-targets) |
 | Time-anchor Home via `resolveNowState` + 1-min timer (v1.3) | Now/Next must track the real clock window, not the first unresolved chunk; honest pre-start/day-complete states | ✓ Good — NOW-01/02 browser-verified |
-| Low-mood days stay minimal (required + habits only) (v1.3) | Owner decision: protect low days from time-target load; defer SEED-001 #2 restorative floor | — Pending — revisit if low days feel empty in dogfooding |
+| Low-mood days stay minimal (required + habits only) (v1.3) | Owner decision: protect low days from time-target load; defer SEED-001 #2 restorative floor | ✓ Resolved in v1.4 — replaced by a *bounded* restorative floor (energy-giving goals only, floor=1) so low days stay light but not empty (VSCHED-01/02) |
+| Adaptive modal helper `showAdaptiveFormModal` (v1.4) | One shared dialog-vs-sheet switch at 720dp for every form caller, instead of per-screen bottom sheets | ✓ Good — RESP-01/02/03 browser-verified; goal + commitment forms both route through it |
+| Energy valence as int-index Hive field, neutral=0 (v1.4) | Additive migration, no new HiveType/adapter; absent field reads neutral so old goals never crash | ✓ Good — ENERGY-01 migration-safety test green; mirrors existing GoalType/ChunkType pattern |
+| Valence colors use tertiary/secondaryContainer, never error (v1.4) | "Costs energy" must not read as destructive; error slot reserved for archive/delete | ✓ Good — non-destructive tonal encoding, UI-checker approved |
+| Bounded restorative floor + reserved high-day slot (v1.4) | Low days include ≥1 energy-giving goal but stay under medium-day load; high days reserve 1 energy/high-priority slot before backlog | ✓ Good — VSCHED-01/02/03 deterministic-unit-tested; double-place edge caught in review + fixed |
 
 ## Evolution
 
@@ -143,4 +145,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-14 after starting v1.4 "Energy-Aware" milestone*
+*Last updated: 2026-06-15 after shipping v1.4 "Energy-Aware" milestone*

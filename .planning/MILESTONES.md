@@ -1,5 +1,26 @@
 # Milestones
 
+## v1.4 Energy-Aware (Shipped: 2026-06-15)
+
+**Phases completed:** 3 phases, 12 plans, 24 tasks
+
+**Key accomplishments:**
+
+- Wave 0 RED test scaffolds for 5 requirements (RESP-01/02/03, POLISH-01/02) — three files covering dialog-vs-sheet routing, 720dp content-width constraints, and copy-label assertions
+- showAdaptiveFormModal helper routing goal add/edit to Dialog at >= 720dp and BottomSheet at < 720dp via ModalRoute-aware GoalFormSheet
+- CommitmentFormSheet gains isDialog param with ModalRoute fallback; commitment caller routes through showAdaptiveFormModal — completing the adaptive form migration for all user-facing forms
+- Align(topCenter)+ConstrainedBox(maxWidth: 720dp) applied to Home, Goals, and Schedule screens — primary content no longer full-bleed at desktop widths
+- POLISH-02 copy fixes applied: context-specific "Add Goal"/"Save Goal"/"Discard"/"Archive goal" in goal form, "Discard" TextButton added to commitment form, "Delete commitment"/"Keep commitment" in delete confirm — full suite 257/257 green, debug web bundle builds clean
+- Five RED TDD test stubs locking the EnergyValence + emoji behavioral contract before any implementation begins: migration safety (neutral default), Hive round-trip (fields 12+13), goal form picker, goal card badge/emoji, chunk card chip/emoji, and onboarding Screen 4 completion
+- Additive Hive migration adding EnergyValence enum and Goal fields 12/13 (energyValenceIndex, emojiTag) with schema bump 7→8, regenerated adapter (writeByte 14), and GREEN migration_schema8 test proving old-record-neutral compatibility
+- Energy valence SegmentedButton (gives/neutral/costs) + 40-emoji tag picker added to GoalFormSheet, both persisted via _save() cascade — goal_form_valence_test.dart GREEN (ENERGY-02)
+- _ValenceBadge on GoalCard title/secondary rows + _ValenceChip on ChunkCard with emoji prefix + two lookup helpers in ScheduleScreen — 14 valence tests GREEN (ENERGY-03b, ENERGY-04a, ENERGY-04b)
+- Onboarding Screen 4 "What gives you energy?" seeds EnergyValence.gives on marked goals before first schedule via stable-ID pending-goal caching and a new _completeOnboarding step 3.5
+- RED test suite for VSCHED-01/02/03 engine behaviors: 7 new test blocks added with `EnergyValence` valence param on existing helpers; VSCHED-01-outcome fails RED against unchanged engine
+- 4 surgical edits to `lib/services/schedule_generator.dart` implement all three VSCHED behaviors — energy_valence import, gives-valence outcome gate, hoisted placedCountPerGoal + restorative floor pass, VSCHED-03 reservation pass — turning all 7 RED VSCHED tests GREEN with zero regressions across 288 total tests
+
+---
+
 ## v1.3 An Honest Day (Shipped: 2026-06-14)
 
 **Phases completed:** 3 phases (15-17), 4 plans, 9 tasks
