@@ -124,14 +124,16 @@ NowState resolveNowState({
   final currentMinutes = nowDt.hour * 60 + nowDt.minute;
 
   // Filter to work chunks that have a clock position, sort by window start.
-  final allWork = chunks
-      .where(
-        (c) => c.chunkType == ChunkType.work && c.displayStartMinutes != null,
-      )
-      .toList()
-    ..sort(
-      (a, b) => a.displayStartMinutes!.compareTo(b.displayStartMinutes!),
-    );
+  final allWork =
+      chunks
+          .where(
+            (c) =>
+                c.chunkType == ChunkType.work && c.displayStartMinutes != null,
+          )
+          .toList()
+        ..sort(
+          (a, b) => a.displayStartMinutes!.compareTo(b.displayStartMinutes!),
+        );
 
   // Degenerate: no work chunks with clock times → day-complete.
   if (allWork.isEmpty) return DayComplete();
@@ -148,8 +150,9 @@ NowState resolveNowState({
   }
 
   // Find the chunk whose window has started most recently.
-  final candidates =
-      allWork.where((c) => c.displayStartMinutes! <= currentMinutes).toList();
+  final candidates = allWork
+      .where((c) => c.displayStartMinutes! <= currentMinutes)
+      .toList();
   var active = candidates.last;
 
   // Advance past resolved chunks (completed or skipped).
@@ -326,10 +329,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final moodDescription = _moodDescriptions[mood] ?? _moodDescriptions[3]!;
 
     // Classify the current moment against the day's chunk windows.
-    final nowState = resolveNowState(
-      chunks: schedule.chunks,
-      now: _nowFn,
-    );
+    final nowState = resolveNowState(chunks: schedule.chunks, now: _nowFn);
 
     // Extract the next chunk from states that carry one; null in pre-start,
     // gap-before-next, and day-complete so the Next section is hidden in
@@ -351,139 +351,154 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ScheduleProgressBar(schedule: schedule, moodColor: moodColor),
-          if (_inReviewWindow && !_bannerDismissed)
-            ReviewBanner(
-              onStart: () => context.push('/review'),
-              onDismiss: () => setState(() => _bannerDismissed = true),
-            ),
-          if (!_eodCardDismissed && _shouldShowEodCard(schedule.chunks))
-            EndOfDayCard(
-              chunks: schedule.chunks,
-              onDismiss: () => setState(() => _eodCardDismissed = true),
-              onGoToSummary: () => context.push('/summary'),
-            ),
-          // ── NOW section ──────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-            child: Text(
-              'Now',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ),
-          _buildNowContent(context, nowState),
-          // ── NEXT section ─────────────────────────────────────────────────
-          if (nextChunk != null) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Text(
-                'Next',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  letterSpacing: 0.8,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ScheduleProgressBar(schedule: schedule, moodColor: moodColor),
+              if (_inReviewWindow && !_bannerDismissed)
+                ReviewBanner(
+                  onStart: () => context.push('/review'),
+                  onDismiss: () => setState(() => _bannerDismissed = true),
+                ),
+              if (!_eodCardDismissed && _shouldShowEodCard(schedule.chunks))
+                EndOfDayCard(
+                  chunks: schedule.chunks,
+                  onDismiss: () => setState(() => _eodCardDismissed = true),
+                  onGoToSummary: () => context.push('/summary'),
+                ),
+              // ── NOW section ──────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                child: Text(
+                  'Now',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    letterSpacing: 0.8,
+                  ),
                 ),
               ),
-            ),
-            Builder(
-              builder: (context) {
-                // Compact next-chunk row: goal name + clock-time range + duration.
-                final goalName = _lookupGoalName(context, nextChunk);
-                final title = goalName ??
-                    (nextChunk.rationale.isNotEmpty
-                        ? nextChunk.rationale
-                        : 'Work block');
-                final subtitle = goalName != null
-                    ? toDisplayRationale(nextChunk.rationale)
-                    : null;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (subtitle != null && subtitle.isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                subtitle,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                    ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        nextChunk.displayStartMinutes != null
-                            ? formatTimeRange(
-                                nextChunk.displayStartMinutes!,
-                                nextChunk.displayStartMinutes! +
-                                    nextChunk.durationMinutes,
-                              )
-                            : '${nextChunk.durationMinutes} min',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-          // ── Mood row ─────────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Text(moodEmoji, style: const TextStyle(fontSize: 32)),
-                const SizedBox(width: 12),
-                Expanded(
+              _buildNowContent(context, nowState),
+              // ── NEXT section ─────────────────────────────────────────────────
+              if (nextChunk != null) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                   child: Text(
-                    moodDescription,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    'Next',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      letterSpacing: 0.8,
                     ),
                   ),
                 ),
+                Builder(
+                  builder: (context) {
+                    // Compact next-chunk row: goal name + clock-time range + duration.
+                    final goalName = _lookupGoalName(context, nextChunk);
+                    final title =
+                        goalName ??
+                        (nextChunk.rationale.isNotEmpty
+                            ? nextChunk.rationale
+                            : 'Work block');
+                    final subtitle = goalName != null
+                        ? toDisplayRationale(nextChunk.rationale)
+                        : null;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  title,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (subtitle != null &&
+                                    subtitle.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    subtitle,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            nextChunk.displayStartMinutes != null
+                                ? formatTimeRange(
+                                    nextChunk.displayStartMinutes!,
+                                    nextChunk.displayStartMinutes! +
+                                        nextChunk.durationMinutes,
+                                  )
+                                : '${nextChunk.durationMinutes} min',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ],
-            ),
+              // ── Mood row ─────────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    Text(moodEmoji, style: const TextStyle(fontSize: 32)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        moodDescription,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // ── See full schedule link ────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                child: TextButton(
+                  onPressed: () => context.go('/schedule'),
+                  child: const Text('See full schedule'),
+                ),
+              ),
+            ],
           ),
-          // ── See full schedule link ────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: TextButton(
-              onPressed: () => context.go('/schedule'),
-              child: const Text('See full schedule'),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -535,8 +550,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final bodyText = (goalName != null && goalName.isNotEmpty)
         ? '$goalName · ${firstChunk.durationMinutes} min'
         : (firstChunk.rationale.isNotEmpty
-            ? '${firstChunk.rationale} · ${firstChunk.durationMinutes} min'
-            : 'Work block · ${firstChunk.durationMinutes} min');
+              ? '${firstChunk.rationale} · ${firstChunk.durationMinutes} min'
+              : 'Work block · ${firstChunk.durationMinutes} min');
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -567,17 +582,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// complete: [next] is the upcoming unresolved chunk.
   ///
   /// Calm, no accent — mirrors pre-start visual treatment per UI-SPEC tone.
-  Widget _buildGapBeforeNextContent(
-    BuildContext context,
-    ScheduledChunk next,
-  ) {
+  Widget _buildGapBeforeNextContent(BuildContext context, ScheduledChunk next) {
     final theme = Theme.of(context);
     // Name the upcoming chunk's goal, mirroring the Next-section fallback.
     final goalName = _lookupGoalName(context, next);
-    final title = goalName ??
-        (next.rationale.isNotEmpty ? next.rationale : 'Work block');
-    final subtitle =
-        goalName != null ? toDisplayRationale(next.rationale) : null;
+    final title =
+        goalName ?? (next.rationale.isNotEmpty ? next.rationale : 'Work block');
+    final subtitle = goalName != null
+        ? toDisplayRationale(next.rationale)
+        : null;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -657,47 +670,56 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final isPreCheckin = context.watch<ThemeNotifier>().isPreCheckin;
     return Scaffold(
       appBar: AppBar(title: const Text('Canopy')),
-      body: Column(
-        children: [
-          if (_inReviewWindow && !_bannerDismissed)
-            ReviewBanner(
-              onStart: () => context.push('/review'),
-              onDismiss: () => setState(() => _bannerDismissed = true),
-            ),
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'No schedule yet',
-                      style: Theme.of(context).textTheme.titleLarge,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Column(
+            children: [
+              if (_inReviewWindow && !_bannerDismissed)
+                ReviewBanner(
+                  onStart: () => context.push('/review'),
+                  onDismiss: () => setState(() => _bannerDismissed = true),
+                ),
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'No schedule yet',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Start your morning check-in to generate today\'s schedule.',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        BreathingPulseCta(
+                          enabled: isPreCheckin,
+                          onPressed: () => context.push('/schedule/checkin'),
+                          child: OutlinedButton(
+                            onPressed: () => context.push('/schedule/checkin'),
+                            child: const Text('Start your day'),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Start your morning check-in to generate today\'s schedule.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    BreathingPulseCta(
-                      enabled: isPreCheckin,
-                      onPressed: () => context.push('/schedule/checkin'),
-                      child: OutlinedButton(
-                        onPressed: () => context.push('/schedule/checkin'),
-                        child: const Text('Start your day'),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

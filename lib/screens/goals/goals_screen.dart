@@ -87,66 +87,72 @@ class _GoalsScreenState extends State<GoalsScreen> {
               outcomeGoals.isEmpty &&
               habitGoals.isEmpty;
 
-          return CustomScrollView(
-            slivers: [
-              if (allEmpty)
-                const SliverFillRemaining(child: _EmptyState())
-              else ...[
-                // Heading sliver (GOALS-01): purpose + affordance hint.
-                // Only shown on the non-empty path.
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Your goals',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: CustomScrollView(
+                slivers: [
+                  if (allEmpty)
+                    const SliverFillRemaining(child: _EmptyState())
+                  else ...[
+                    // Heading sliver (GOALS-01): purpose + affordance hint.
+                    // Only shown on the non-empty path.
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Your goals',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Drag to prioritize. Tap to edit.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Drag to prioritize. Tap to edit.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-                if (timeTargetGoals.isNotEmpty) ...[
-                  _buildSectionHeader(context, 'Regular time'),
-                  _buildReorderableSection(
-                    context,
-                    notifier,
-                    timeTargetGoals,
-                    GoalType.timeTarget,
-                  ),
+                    if (timeTargetGoals.isNotEmpty) ...[
+                      _buildSectionHeader(context, 'Regular time'),
+                      _buildReorderableSection(
+                        context,
+                        notifier,
+                        timeTargetGoals,
+                        GoalType.timeTarget,
+                      ),
+                    ],
+                    if (outcomeGoals.isNotEmpty) ...[
+                      _buildSectionHeader(context, 'Working toward'),
+                      _buildReorderableSection(
+                        context,
+                        notifier,
+                        outcomeGoals,
+                        GoalType.outcome,
+                      ),
+                    ],
+                    if (habitGoals.isNotEmpty) ...[
+                      _buildSectionHeader(context, 'Daily habits'),
+                      _buildReorderableSection(
+                        context,
+                        notifier,
+                        habitGoals,
+                        GoalType.habit,
+                      ),
+                    ],
+                  ],
                 ],
-                if (outcomeGoals.isNotEmpty) ...[
-                  _buildSectionHeader(context, 'Working toward'),
-                  _buildReorderableSection(
-                    context,
-                    notifier,
-                    outcomeGoals,
-                    GoalType.outcome,
-                  ),
-                ],
-                if (habitGoals.isNotEmpty) ...[
-                  _buildSectionHeader(context, 'Daily habits'),
-                  _buildReorderableSection(
-                    context,
-                    notifier,
-                    habitGoals,
-                    GoalType.habit,
-                  ),
-                ],
-              ],
-            ],
+              ),
+            ),
           );
         },
       ),
