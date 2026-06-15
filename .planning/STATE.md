@@ -93,6 +93,8 @@ Items acknowledged and deferred at milestone close on 2026-06-14 (v1.3) — now 
 | todo | 2026-06-14-goal-form-desktop-layout (F-03) | routed to Phase 18 (RESP-01/02/03) |
 | seed | SEED-001-engine-product-critique | partially consumed; #2 restorative floor → Phase 20 (VSCHED-01/02) |
 | seed | SEED-002-ui-basics-rework-dogfood | residual nits → Phase 18 (POLISH-02) |
+| polish | Onboarding screens full-bleed at desktop width | NEW (Phase 18 walkthrough) — POLISH-01 scoped to home/schedule/goals/check-in; onboarding not constrained. Candidate for future polish phase. |
+| polish | Onboarding commitment-step day chips ambiguous (M/T/W/T/F/S/S) | NEW (Phase 18 walkthrough) — same issue IN-01 fixed in CommitmentFormSheet; onboarding step is a separate widget, out of Phase 18 scope. |
 | seed | SEED-004-energy-aware-scheduling-no-ai | → Phase 19 (valence model) and Phase 20 (engine) |
 | tech-debt | FILL-02 high-priority monopoly edge | documented-accepted (3+ goals at weight ≥0.75 can starve lower-priority time-targets) |
 | tech-debt | Nyquist VALIDATION frontmatter drafts (15/16/17) | tests green; `nyquist_compliant: false` metadata only |
