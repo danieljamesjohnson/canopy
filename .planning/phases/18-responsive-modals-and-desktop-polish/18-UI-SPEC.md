@@ -1,10 +1,11 @@
 ---
 phase: 18
 slug: responsive-modals-and-desktop-polish
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-06-14
+reviewed_at: 2026-06-14
 ---
 
 # Phase 18 — UI Design Contract
