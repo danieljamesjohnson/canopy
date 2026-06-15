@@ -1,6 +1,8 @@
 import 'package:hive_ce/hive.dart';
 import 'package:uuid/uuid.dart';
 
+import 'energy_valence.dart';
+
 part 'goal.g.dart';
 
 const _uuid = Uuid();
@@ -18,6 +20,8 @@ const _uuid = Uuid();
 // @HiveField 9: outcomeDescription (String?)
 // @HiveField 10: frequencyPerWeek (int?)
 // @HiveField 11: streakCount (int)
+// @HiveField 12: energyValenceIndex (int?) — Phase 19
+// @HiveField 13: emojiTag (String?) — Phase 19
 
 /// Internal goal type — never shown in UI. UI uses plain-language descriptions.
 enum GoalType { timeTarget, outcome, habit }
@@ -36,6 +40,8 @@ class Goal extends HiveObject {
     this.outcomeDescription,
     this.frequencyPerWeek,
     this.streakCount = 0,
+    this.energyValenceIndex,
+    this.emojiTag,
   }) : id = id ?? _uuid.v4();
 
   @HiveField(0)
@@ -79,4 +85,16 @@ class Goal extends HiveObject {
 
   @HiveField(11)
   int streakCount = 0; // updated by Phase 4; read-only in Phase 2
+
+  // Phase 19: Energy valence. Stored as int index; getter converts.
+  // neutral = 0 so existing records without this field read correctly.
+  @HiveField(12)
+  int? energyValenceIndex;
+
+  // Phase 19: Optional emoji tag (single Unicode character). null = no tag.
+  @HiveField(13)
+  String? emojiTag;
+
+  EnergyValence get energyValence =>
+      EnergyValence.values[energyValenceIndex ?? 0];
 }
