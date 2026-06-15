@@ -128,7 +128,7 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
     final colorScheme = Theme.of(context).colorScheme;
     final isEdit = widget.block != null;
 
-    const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const dayLabels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
     // Detect dialog mode: explicit parameter takes precedence; fall back to
     // route detection so callers that omit isDialog still suppress the drag
