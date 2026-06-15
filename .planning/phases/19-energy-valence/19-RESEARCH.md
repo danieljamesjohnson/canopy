@@ -701,7 +701,7 @@ This is the safest approach as it minimally restructures the existing flow.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Screen 4 goal source timing**
    - What we know: Goals from Screens 1 and 3 are saved inside `_completeOnboarding()`, which runs AFTER Screen 4
