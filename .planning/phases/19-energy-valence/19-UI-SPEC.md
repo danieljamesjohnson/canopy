@@ -1,7 +1,8 @@
 ---
 phase: 19
 slug: energy-valence
-status: draft
+status: approved
+reviewed_at: 2026-06-14
 shadcn_initialized: false
 preset: none
 created: 2026-06-14
@@ -66,9 +67,14 @@ Carried forward from Phase 18 (locked):
 | 3xl | 64dp | Icon size in empty states only |
 
 **Exceptions (Phase 19 additions):**
-- Valence picker segment internal padding: 8dp horizontal, 10dp vertical (matches `SegmentedButton` compact density)
+- Valence picker segment internal **vertical** padding: 10dp (matches `SegmentedButton` Material 3 compact density — the only non-4-multiple value permitted, justified by the component's built-in density). Horizontal padding is 8dp (on-grid).
 - Emoji tag button: minimum 44×44dp touch target (matches existing icon button standard)
-- Emoji overlay badge on goal card / chunk card: 18dp diameter, 4dp offset from top-right of left color bar
+
+All other Phase 19 spacing values are multiples of 4:
+- Valence badge / chip padding: 8dp horizontal, 4dp vertical
+- Valence badge / chip icon-to-text gap: 4dp
+- Emoji overlay badge on goal card / chunk card: 16dp diameter, 4dp offset from top-right of left color bar
+- Goal-card emoji-to-name gap: 8dp; chunk-card emoji-to-name gap: handled inline in the title string (no SizedBox)
 
 ---
 
@@ -141,7 +147,7 @@ The three valence values require a visual signal that reads at a glance without 
 
 **Label strategy:** "Gives energy" / "Neutral" / "Costs energy" — full descriptive labels at all widths. At narrow form widths (<320dp content) the `SegmentedButton` will wrap naturally via Flutter's internal layout; do not truncate or use icon-only segments.
 
-**Section label:** Above the picker, a `labelMedium`-styled `Text` widget with `color: colorScheme.onSurfaceVariant` reading "Energy" — matching the existing "Priority" label pattern directly above the priority `SegmentedButton`.
+**Section label:** Above the picker, a `labelMedium`-styled `Text` widget with `color: colorScheme.onSurfaceVariant` reading "Energy" — matching the existing "Priority" label pattern directly above the priority `SegmentedButton`. **Weight: explicitly `FontWeight.w400`** (NOT the M3-default w500 for `labelMedium`) to honor the locked w400/w600 two-weight contract — the "Priority" label was corrected from w500→w400 in Phase 18; keep "Energy" consistent. The onboarding emoji-picker title uses `titleLarge` (a Phase 18 carry-forward, already in the system).
 
 **State:** `_energyValence` hoisted to `_GoalFormSheetState`, initialized from `goal.energyValence ?? EnergyValence.neutral` in edit mode, `EnergyValence.neutral` in add mode.
 
@@ -189,7 +195,7 @@ Row(
 
 ```
 Container(
-  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
   decoration: BoxDecoration(
     color: {valenceBackground},
     borderRadius: BorderRadius.circular(8),
@@ -198,7 +204,7 @@ Container(
     mainAxisSize: MainAxisSize.min,
     children: [
       Icon({valenceIcon}, size: 12, color: {valenceIconColor}),
-      SizedBox(width: 3),
+      SizedBox(width: 4),
       Text({valenceLabel}, labelSmall, color: {valenceIconColor}, fontWeight: w600),
     ],
   ),
@@ -217,7 +223,7 @@ Row(
       SizedBox(width: 4),
       Text(goal.emojiTag!, style: TextStyle(fontSize: 16)),
     ],
-    SizedBox(width: 6),
+    SizedBox(width: 8), // emoji/icon-to-name gap, on-grid
     Expanded(child: Text(goal.name, titleMedium, ellipsis)),
     ...
   ],
@@ -260,6 +266,12 @@ Column(
     // Goals list — shows goals created in steps 1 and 3 (if any)
     // Each row: goal name + "Mark as energizing" toggle
     ...goalRows,
+    // Empty state — shown when no goals exist yet (user skipped steps 1 & 3)
+    if (goalRows.isEmpty)
+      Text(
+        "No goals yet — add one below.",
+        bodyMedium, color: onSurfaceVariant, textAlign: center,
+      ),
     SizedBox(height: 16),
     // Quick-add a new energizing goal
     OutlinedButton.icon(
@@ -373,7 +385,8 @@ The PageView uses `NeverScrollableScrollPhysics` (existing). No back button is p
 | Onboarding energy step — chip label | "Energizing" | FilterChip label; short, positive framing |
 | Onboarding energy step — quick-add button | "Add something energizing" | `OutlinedButton.icon` with `Icons.add` |
 | Onboarding energy step — skip | "Skip" | `TextButton`, consistent with all other onboarding skip buttons |
-| Onboarding energy step — primary CTA | "Let's go" | `ElevatedButton`; matches Screen 3 ("Let's go") for continuity at the final onboarding step |
+| Onboarding energy step — primary CTA | "Let's go" | Carry-forward — Screen 4 is now the final onboarding step, so it inherits Screen 3's "Let's go" end-of-sequence CTA verbatim for continuity. Not a new generic-CTA introduction; the verb+noun convention does not apply to this established sequence-terminating label. |
+| Onboarding energy step — empty state | "No goals yet — add one below." | Shown above the "Add something energizing" button when the user reached this step having created zero goals (skipped Screens 1 and 3); `bodyMedium`, `onSurfaceVariant`, centered |
 | Goal form — save error snackbar | "Could not save goal. Please try again." | Locked carry-forward from Phase 18 |
 | Onboarding quick-add confirm tooltip | "Add goal" | `Icons.check_circle_outlined` button tooltip |
 
