@@ -65,27 +65,25 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RESP-01 | TBD | Pending |
-| RESP-02 | TBD | Pending |
-| RESP-03 | TBD | Pending |
-| ENERGY-01 | TBD | Pending |
-| ENERGY-02 | TBD | Pending |
-| ENERGY-03 | TBD | Pending |
-| ENERGY-04 | TBD | Pending |
-| ONBOARD-01 | TBD | Pending |
-| VSCHED-01 | TBD | Pending |
-| VSCHED-02 | TBD | Pending |
-| VSCHED-03 | TBD | Pending |
-| POLISH-01 | TBD | Pending |
-| POLISH-02 | TBD | Pending |
+| RESP-01 | Phase 18 | Pending |
+| RESP-02 | Phase 18 | Pending |
+| RESP-03 | Phase 18 | Pending |
+| ENERGY-01 | Phase 19 | Pending |
+| ENERGY-02 | Phase 19 | Pending |
+| ENERGY-03 | Phase 19 | Pending |
+| ENERGY-04 | Phase 19 | Pending |
+| ONBOARD-01 | Phase 19 | Pending |
+| VSCHED-01 | Phase 20 | Pending |
+| VSCHED-02 | Phase 20 | Pending |
+| VSCHED-03 | Phase 20 | Pending |
+| POLISH-01 | Phase 18 | Pending |
+| POLISH-02 | Phase 18 | Pending |
 
 **Coverage:**
 - v1.4 requirements: 13 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 13 ⚠️
+- Mapped to phases: 13 (100%)
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-14*
-*Last updated: 2026-06-14 after initial definition*
-</content>
-</invoke>
+*Last updated: 2026-06-14 after roadmap creation*

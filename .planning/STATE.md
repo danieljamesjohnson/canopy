@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Energy-Aware
 status: planning
-last_updated: "2026-06-14T23:56:15.114Z"
+last_updated: "2026-06-14T00:00:00.000Z"
 last_activity: 2026-06-14
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,23 +17,35 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-14T00:33:03.492Z
+**Last session:** 2026-06-14
 
 ---
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 18 — Responsive Modals and Desktop Polish (Not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-14 — Milestone v1.4 started
+Status: Roadmap defined; ready to plan Phase 18
+Last activity: 2026-06-14 — v1.4 roadmap created (3 phases: 18-20)
+
+```
+Progress: [░░░░░░░░░░] 0% — Phase 18/20
+```
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Planning the next milestone (v1.3 shipped 2026-06-14)
+**Current focus:** v1.4 "Energy-Aware" — responsive modals + energy valence + valence-aware engine
+
+## v1.4 Phase Summary
+
+| Phase | Goal | Requirements | Status |
+|-------|------|--------------|--------|
+| 18 — Responsive Modals and Desktop Polish | Modals and primary screens fit the viewport on desktop | RESP-01/02/03, POLISH-01/02 | Not started |
+| 19 — Energy Valence | Goals carry valence; visible in form, list, schedule; onboarding seeds restorative activities | ENERGY-01/02/03/04, ONBOARD-01 | Not started |
+| 20 — Valence-Aware Engine | Engine uses valence to shape low days (restorative) and high days (purposeful) | VSCHED-01/02/03 | Not started |
 
 ## Accumulated Context
 
@@ -42,7 +54,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 Key decisions are in PROJECT.md. Decisions relevant to v1.3:
 
 - [Phase 14-02]: Priority drives composite score (remainingHours × priorityWeight) for time-targets; habit sort pre-filtered by priority. Both patterns extended in Phase 15.
-- [v1.3 scope]: Low-mood restorative floor (SEED-001 #2) deferred by owner — low days stay required + habits only.
+- [v1.3 scope]: Low-mood restorative floor (SEED-001 #2) deferred by owner — low days stay required + habits only. Now addressed in v1.4 Phase 20 (VSCHED-01/02).
 - [v1.3 baseline]: Several items pre-paid by 2026-06-13 dogfood commits: schedule starts near now, weekday-biased habit frequency, regular-time default 3 hrs/week, pace prompt removed, humane empty-day copy.
 - [Phase ?]: CAP-01: use ceil(cap/2) for habit ceiling
 - [Phase ?]: PRIORITY-02: flat +1 chunk for high-priority habits/outcomes on good-mood days
@@ -53,21 +65,29 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.3:
 - [Phase ?]: Use find.byType(Scrollable).first as scrollable arg to scrollUntilVisible in modal tests — SingleChildScrollView is not a Scrollable and causes type cast error at runtime
 - [Phase ?]: goal_form_sheet.dart not modified — SingleChildScrollView already wraps the form; no restructuring needed for any goal type at true modal height
 
+### Engine Constraints (carry-forward for Phase 20)
+
+- Rule-based only — no LLM
+- Hive migrations are additive-only (new fields with defaults, never remove/rename)
+- Habit ceiling: `ceil(cap/2)` — habits cannot monopolize the discretionary cap
+- Low-mood days currently: required + habits only (VSCHED-01/02 relaxes this with a bounded restorative floor)
+- High-mood days currently: raise the cap and fill backlog (VSCHED-03 reserves one energy-giving slot)
+- Schedule generator lives in `lib/services/schedule_generator.dart` — deterministic, covered by unit tests
+
 ### Blockers / Concerns
 
 None.
 
 ## Deferred Items
 
-Items acknowledged and deferred at milestone close on 2026-06-14 (v1.3):
+Items acknowledged and deferred at milestone close on 2026-06-14 (v1.3) — now tracked for v1.4:
 
 | Category | Item | Status |
 |----------|------|--------|
-| todo | 2026-06-14-goal-form-desktop-layout (F-03) | pending — route to next milestone (top dogfood usability gap) |
-| seed | SEED-001-engine-product-critique | dormant — partially consumed (CAP/STREAK); #2 restorative floor deferred |
-| seed | SEED-002-ui-basics-rework-dogfood | dormant — consumed by v1.2; residual items candidate for next milestone |
-| seed | SEED-003-v1.2-adversarial-gaps | dormant — fully consumed by v1.3 (NOW/PRIORITY/GOALFORM) |
-| seed | SEED-004-energy-aware-scheduling-no-ai | dormant — candidate theme for a follow-on milestone |
+| todo | 2026-06-14-goal-form-desktop-layout (F-03) | routed to Phase 18 (RESP-01/02/03) |
+| seed | SEED-001-engine-product-critique | partially consumed; #2 restorative floor → Phase 20 (VSCHED-01/02) |
+| seed | SEED-002-ui-basics-rework-dogfood | residual nits → Phase 18 (POLISH-02) |
+| seed | SEED-004-energy-aware-scheduling-no-ai | → Phase 19 (valence model) and Phase 20 (engine) |
 | tech-debt | FILL-02 high-priority monopoly edge | documented-accepted (3+ goals at weight ≥0.75 can starve lower-priority time-targets) |
 | tech-debt | Nyquist VALIDATION frontmatter drafts (15/16/17) | tests green; `nyquist_compliant: false` metadata only |
 
@@ -89,9 +109,9 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 
 ## Session Continuity
 
-Last session: 2026-06-13
-Stopped at: Completed 16-priority-model-reconciliation-01-PLAN.md
-Resume file: None
+Last session: 2026-06-14
+Stopped at: v1.4 roadmap created
+Resume at: `/gsd-plan-phase 18`
 
 ## Performance Metrics
 
@@ -101,7 +121,3 @@ Resume file: None
 | Phase 15-engine-honesty P02 | 230 | 1 tasks | 2 files |
 | Phase 16-priority-model-reconciliation P01 | 25 | 2 tasks | 2 files |
 | Phase 17-time-anchored-home P01 | 7 | 3 tasks | 3 files |
-
-## Operator Next Steps
-
-- Start the next milestone with /gsd-new-milestone
