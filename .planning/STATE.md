@@ -4,13 +4,13 @@ milestone: v1.4
 milestone_name: Energy-Aware
 status: executing
 stopped_at: None
-last_updated: "2026-06-15T02:35:27.384Z"
+last_updated: "2026-06-15T02:42:54.248Z"
 last_activity: 2026-06-15 -- Phase 19 execution started
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 9
   percent: 33
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-15T02:35:27.381Z
+**Last session:** 2026-06-15T02:42:50.441Z
 
 ---
 
 ## Current Position
 
 Phase: 19 (Energy Valence) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-06-15 -- Phase 19 execution started
 
@@ -72,6 +72,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.3:
 - [Phase ?]: POLISH-02 copy convention: all destructive-confirm cancel buttons use 'Keep <noun>' pattern; primary CTA uses verb+noun (Save Goal, Add Goal, Delete commitment)
 - [Phase 19-energy-valence]: EnergyValence is a plain Dart enum with no @HiveType — stored as int index in Goal.energyValenceIndex (HiveField 12) — Follows existing GoalType/ChunkType pattern; no new typeId needed; neutral=0 ensures old records read correctly via getter default
 - [Phase 19-energy-valence]: No Goal repository changes needed: HiveGoalRepository stores whole Goal objects; new fields are transparent via regenerated adapter — Verified: no in_memory_goal_repository; hive_goal_repository uses box.put(goal.id, goal)
+- [Phase ?]: _ValenceBadge and _ValenceChip are intentionally file-private duplicates, not shared widgets — consistent with existing _PriorityChip duplication pattern
+- [Phase ?]: Valence colors: tertiaryContainer for gives, secondaryContainer for costs — colorScheme.error excluded per UI-SPEC
 
 ### Engine Constraints (carry-forward for Phase 20)
 
@@ -137,3 +139,4 @@ Resume at: `/gsd-plan-phase 18`
 | Phase 18-responsive-modals-and-desktop-polish P05 | 25 | 2 tasks | 4 files |
 | Phase 19-energy-valence P01 | 6 | 2 tasks | 5 files |
 | Phase 19-energy-valence P02 | 5min | 2 tasks | 6 files |
+| Phase 19-energy-valence P04 | 4 | 2 tasks | 4 files |
