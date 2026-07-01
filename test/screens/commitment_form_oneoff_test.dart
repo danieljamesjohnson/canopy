@@ -142,6 +142,28 @@ void main() {
     expect(find.text('Days'), findsNothing);
   });
 
+  testWidgets('a sub-25-minute window blocks save and shows a warning', (
+    tester,
+  ) async {
+    // A 10-minute window (09:00–09:10): too short to materialize a 25-min chunk.
+    final block = CommitmentBlock(
+      name: 'Quick call',
+      daysOfWeek: const [1],
+      startMinutes: 9 * 60,
+      endMinutes: 9 * 60 + 10,
+    );
+    await _pumpForm(tester, existing: block);
+
+    expect(
+      find.text('End must be at least 25 minutes after start.'),
+      findsOneWidget,
+    );
+    final saveButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Save changes'),
+    );
+    expect(saveButton.onPressed, isNull, reason: 'save must be disabled');
+  });
+
   testWidgets('re-editing a PAST-dated one-off does not crash the date picker', (
     tester,
   ) async {

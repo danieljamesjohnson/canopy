@@ -148,4 +148,34 @@ void main() {
     expect(inserted, isFalse);
     expect(notifier.todaySchedule!.chunks.length, 1); // unchanged
   });
+
+  test('creates a minimal today schedule when none exists (empty-state add)', () async {
+    // No schedule pre-seeded — the empty Today screen path.
+    final repo = _InMemoryScheduleRepository();
+    final notifier = ScheduleNotifier(
+      now: () => DateTime(2026, 3, 23),
+      repo: repo,
+      logRepo: _InMemoryLogRepository(),
+      goalRepo: _InMemoryGoalRepository(),
+    );
+    await notifier.init();
+    expect(notifier.hasScheduleToday, isFalse);
+
+    final block = CommitmentBlock(
+      name: 'Dentist',
+      daysOfWeek: const [],
+      startMinutes: 14 * 60,
+      endMinutes: 15 * 60,
+      date: DateTime(2026, 3, 23),
+    );
+    final placed = await notifier.addEventToday(block);
+
+    expect(placed, isTrue);
+    expect(notifier.hasScheduleToday, isTrue);
+    final chunks = notifier.todaySchedule!.chunks;
+    expect(chunks.length, 2);
+    expect(chunks.every((c) => c.rationale == 'Dentist'), isTrue);
+    // Persisted, so it survives a reload.
+    expect(await repo.getByDate('2026-03-23'), isNotNull);
+  });
 }

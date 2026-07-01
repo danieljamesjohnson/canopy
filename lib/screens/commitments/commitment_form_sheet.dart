@@ -135,9 +135,16 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
     );
   }
 
+  /// A chunk is 25 minutes, so a window shorter than that materializes zero
+  /// chunks and would silently never appear on the schedule. Require at least
+  /// one chunk's worth of time.
+  static const int _minWindowMinutes = 25;
+
+  bool get _windowTooShort => _endMinutes - _startMinutes < _minWindowMinutes;
+
   bool get _canSave =>
       _nameController.text.trim().isNotEmpty &&
-      _endMinutes > _startMinutes &&
+      !_windowTooShort &&
       (_isOneOff ? _date != null : _selectedDays.isNotEmpty);
 
   Future<void> _pickDate() async {
@@ -353,6 +360,15 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
               ),
             ],
           ),
+          if (_windowTooShort) ...[
+            const SizedBox(height: 8),
+            Text(
+              'End must be at least 25 minutes after start.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.error,
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
 
           // Discard button — lets the user cancel without saving

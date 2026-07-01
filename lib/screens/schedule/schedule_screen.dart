@@ -395,6 +395,14 @@ class ScheduleScreen extends StatelessWidget {
                       onPressed: () => context.push('/schedule/checkin'),
                       child: const Text('Start your day'),
                     ),
+                    const SizedBox(height: 8),
+                    // Let a human put an event on today WITHOUT first doing a
+                    // mood check-in — addEventToday creates a minimal day.
+                    TextButton.icon(
+                      onPressed: () => _openAddEvent(context),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add an event'),
+                    ),
                   ],
                 ),
               ),

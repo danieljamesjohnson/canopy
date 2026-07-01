@@ -196,12 +196,14 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
   /// screen and see it land immediately, rather than only after a mood
   /// re-check-in that would rebuild the whole day.
   ///
-  /// Returns true when the block anchors on today and was inserted; false when
-  /// there is no schedule for today yet, or the block is for another day (a
-  /// future/other-weekday commitment — nothing to show on today).
+  /// Returns true when the block anchors on today and was placed on today's
+  /// schedule; false when the block is for another day (a future/other-weekday
+  /// commitment — nothing to show on today). When today has no schedule yet,
+  /// a minimal one is CREATED containing just this event, so a human can enter
+  /// an event from the empty Today screen WITHOUT a forced mood check-in. The
+  /// event is a saved commitment, so a later check-in re-anchors it (the
+  /// silent-replace generate() reads it back from blocks).
   Future<bool> addEventToday(CommitmentBlock block) async {
-    if (!hasScheduleToday || _todaySchedule == null) return false;
-
     final now = _now();
     final date = DateTime(now.year, now.month, now.day);
     final bool anchorsToday;
@@ -215,7 +217,9 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     if (!anchorsToday) return false;
 
     // Build 25-minute anchored work chunks across the block window — mirrors the
-    // commitment-anchoring step in ScheduleGeneratorService.generate().
+    // commitment-anchoring step in ScheduleGeneratorService.generate(). The
+    // form enforces a >= 25-minute window, so this is never empty in practice;
+    // guard anyway so a degenerate window can never claim a false success.
     final newChunks = <ScheduledChunk>[];
     int cursor = block.startMinutes;
     while (cursor + 25 <= block.endMinutes) {
@@ -233,14 +237,32 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     }
     if (newChunks.isEmpty) return false;
 
-    final merged = [..._todaySchedule!.chunks, ...newChunks]
-      ..sort((a, b) {
-        final aStart = a.displayStartMinutes ?? 9999;
-        final bStart = b.displayStartMinutes ?? 9999;
-        return aStart.compareTo(bStart);
-      });
-    _todaySchedule!.chunks = merged;
-    await _repo.save(_todaySchedule!);
+    if (hasScheduleToday && _todaySchedule != null) {
+      // Insert in place, preserving existing chunks and their progress.
+      final merged = [..._todaySchedule!.chunks, ...newChunks]
+        ..sort((a, b) {
+          final aStart = a.displayStartMinutes ?? 9999;
+          final bStart = b.displayStartMinutes ?? 9999;
+          return aStart.compareTo(bStart);
+        });
+      _todaySchedule!.chunks = merged;
+      await _repo.save(_todaySchedule!);
+    } else {
+      // No day built yet — create a minimal schedule holding just this event so
+      // it shows immediately. moodIndex defaults to neutral (3); a subsequent
+      // mood check-in regenerates the day and re-anchors this saved commitment.
+      final dateYmd = DateFormat('yyyy-MM-dd').format(now);
+      final existing = await _repo.getByDate(dateYmd);
+      if (existing != null) await _repo.delete(existing.id);
+      final schedule = DailySchedule(
+        dateYmd: dateYmd,
+        moodIndex: 3,
+        chunks: newChunks,
+      );
+      schedule.generatedAt = now.toUtc();
+      await _repo.save(schedule);
+      _todaySchedule = schedule;
+    }
     notifyListeners();
     return true;
   }
