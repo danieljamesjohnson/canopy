@@ -141,4 +141,28 @@ void main() {
     expect(find.text('Date'), findsOneWidget);
     expect(find.text('Days'), findsNothing);
   });
+
+  testWidgets('re-editing a PAST-dated one-off does not crash the date picker', (
+    tester,
+  ) async {
+    // A stale appointment: its date is well in the past. Opening the picker
+    // must not trip showDatePicker's initialDate >= firstDate assert.
+    final past = DateTime(2000, 1, 1);
+    final block = CommitmentBlock(
+      name: 'Old appt',
+      daysOfWeek: const [],
+      startMinutes: 540,
+      endMinutes: 600,
+      date: past,
+    );
+    await _pumpForm(tester, existing: block);
+
+    // Tap the date tile (renders the formatted past date "Jan 1, 2000").
+    await tester.tap(find.text('Jan 1, 2000'));
+    await tester.pumpAndSettle();
+
+    // Picker opened without throwing; dismiss it.
+    expect(tester.takeException(), isNull);
+    expect(find.text('OK'), findsOneWidget);
+  });
 }

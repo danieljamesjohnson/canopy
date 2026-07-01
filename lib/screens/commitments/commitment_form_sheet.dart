@@ -10,11 +10,26 @@ class CommitmentFormSheet extends StatefulWidget {
     required this.scrollController,
     this.block,
     this.isDialog = false,
+    this.initialOneOff = false,
+    this.initialDate,
+    this.onSaved,
   });
 
   final ScrollController scrollController;
   final CommitmentBlock? block;
   final bool isDialog;
+
+  /// When creating a NEW commitment (block == null), open pre-set to the
+  /// one-off ("event") mode. Lets the Today screen offer "Add an event"
+  /// straight into dated entry. Ignored when editing an existing block.
+  final bool initialOneOff;
+
+  /// When [initialOneOff] is set, pre-select this date (e.g. today).
+  final DateTime? initialDate;
+
+  /// Fired after a successful save, with the saved block. Lets a caller react
+  /// (e.g. the Today screen inserts a same-day event into today's schedule).
+  final ValueChanged<CommitmentBlock>? onSaved;
 
   @override
   State<CommitmentFormSheet> createState() => _CommitmentFormSheetState();
@@ -38,8 +53,12 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
     _startMinutes = block?.startMinutes ?? 9 * 60; // 9:00am
     _endMinutes = block?.endMinutes ?? 17 * 60; // 5:00pm
     _color = block?.color ?? '#607D8B';
-    _isOneOff = block?.date != null;
-    _date = block?.date;
+    // Editing: mirror the block. Creating: honor the caller's one-off default
+    // (e.g. "Add an event" from the Today screen) with a preselected date.
+    _isOneOff = block != null ? block.date != null : widget.initialOneOff;
+    _date = block != null
+        ? block.date
+        : (widget.initialOneOff ? widget.initialDate : null);
   }
 
   static const _monthAbbr = [
@@ -123,11 +142,17 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
-    final initial = _date ?? now;
+    final firstDate = DateTime(now.year, now.month, now.day);
+    // Clamp the seed up to firstDate: a one-off whose date is already in the
+    // past (a stale appointment) would otherwise pass initialDate < firstDate
+    // and trip showDatePicker's assert — a hard throw in the asserts-on debug
+    // build. Re-editing a past one-off opens the picker at today instead.
+    final seed = _date ?? now;
+    final initial = seed.isBefore(firstDate) ? firstDate : seed;
     final result = await showDatePicker(
       context: context,
       initialDate: initial,
-      firstDate: DateTime(now.year, now.month, now.day),
+      firstDate: firstDate,
       lastDate: DateTime(now.year + 2, now.month, now.day),
     );
     if (result != null) {
@@ -153,6 +178,7 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
     block.color = _color;
     try {
       await context.read<CommitmentsNotifier>().saveBlock(block);
+      widget.onSaved?.call(block);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {

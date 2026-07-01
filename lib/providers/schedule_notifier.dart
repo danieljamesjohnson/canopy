@@ -4,6 +4,7 @@ import '../data/models/commitment_block.dart';
 import '../data/models/completion_log.dart';
 import '../data/models/daily_schedule.dart';
 import '../data/models/goal.dart';
+import '../data/models/scheduled_chunk.dart';
 import '../data/repositories/completion_log_repository.dart';
 import '../data/repositories/daily_schedule_repository.dart';
 import '../data/repositories/goal_repository.dart';
@@ -187,6 +188,61 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     await _repo.save(schedule);
     _todaySchedule = schedule;
     notifyListeners();
+  }
+
+  /// Inserts a commitment [block]'s anchored work chunks into TODAY's existing
+  /// schedule, in place, WITHOUT regenerating (so completed/skipped progress is
+  /// preserved). This is what lets a human add an actual event from the Today
+  /// screen and see it land immediately, rather than only after a mood
+  /// re-check-in that would rebuild the whole day.
+  ///
+  /// Returns true when the block anchors on today and was inserted; false when
+  /// there is no schedule for today yet, or the block is for another day (a
+  /// future/other-weekday commitment — nothing to show on today).
+  Future<bool> addEventToday(CommitmentBlock block) async {
+    if (!hasScheduleToday || _todaySchedule == null) return false;
+
+    final now = _now();
+    final date = DateTime(now.year, now.month, now.day);
+    final bool anchorsToday;
+    if (block.date != null) {
+      final d = block.date!;
+      anchorsToday =
+          d.year == date.year && d.month == date.month && d.day == date.day;
+    } else {
+      anchorsToday = block.daysOfWeek.contains(date.weekday);
+    }
+    if (!anchorsToday) return false;
+
+    // Build 25-minute anchored work chunks across the block window — mirrors the
+    // commitment-anchoring step in ScheduleGeneratorService.generate().
+    final newChunks = <ScheduledChunk>[];
+    int cursor = block.startMinutes;
+    while (cursor + 25 <= block.endMinutes) {
+      newChunks.add(
+        ScheduledChunk(
+          chunkTypeIndex: ChunkType.work.index,
+          goalId: null,
+          commitmentId: block.id,
+          durationMinutes: 25,
+          anchoredStartMinutes: cursor,
+          rationale: block.name,
+        ),
+      );
+      cursor += 25;
+    }
+    if (newChunks.isEmpty) return false;
+
+    final merged = [..._todaySchedule!.chunks, ...newChunks]
+      ..sort((a, b) {
+        final aStart = a.displayStartMinutes ?? 9999;
+        final bStart = b.displayStartMinutes ?? 9999;
+        return aStart.compareTo(bStart);
+      });
+    _todaySchedule!.chunks = merged;
+    await _repo.save(_todaySchedule!);
+    notifyListeners();
+    return true;
   }
 
   /// Marks the chunk with [chunkId] as completed, saves the updated schedule,

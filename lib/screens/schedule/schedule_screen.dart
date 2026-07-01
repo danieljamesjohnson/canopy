@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/models/commitment_block.dart';
 import '../../data/models/daily_schedule.dart';
 import '../../data/models/energy_valence.dart';
 import '../../data/models/goal.dart';
@@ -11,6 +12,8 @@ import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
 import '../../utils/rationale_mapper.dart';
 import '../../utils/time_format.dart';
+import '../../widgets/adaptive_form_modal.dart';
+import '../commitments/commitment_form_sheet.dart';
 import 'widgets/chunk_card.dart';
 import 'widgets/chunk_detail_sheet.dart';
 import 'widgets/now_marker.dart';
@@ -50,6 +53,11 @@ class ScheduleScreen extends StatelessWidget {
         backgroundColor: moodColor,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Add an event',
+            onPressed: () => _openAddEvent(context),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Re-check-in',
@@ -300,6 +308,37 @@ class ScheduleScreen extends StatelessWidget {
         goalColor: goalColor,
         goalName: goalName,
         displayRationale: displayRationale,
+      ),
+    );
+  }
+
+  /// Opens the commitment form pre-set to a one-off event on today, straight
+  /// from the Today screen — where a human actually looks to enter their
+  /// schedule. On save, the event is inserted into today's schedule in place
+  /// (progress preserved) so it appears immediately without a re-check-in.
+  void _openAddEvent(BuildContext context) {
+    final scheduleNotifier = context.read<ScheduleNotifier>();
+    final messenger = ScaffoldMessenger.of(context);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    showAdaptiveFormModal(
+      context: context,
+      builder: (scrollController) => CommitmentFormSheet(
+        scrollController: scrollController,
+        initialOneOff: true,
+        initialDate: today,
+        onSaved: (CommitmentBlock block) async {
+          final inserted = await scheduleNotifier.addEventToday(block);
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                inserted
+                    ? 'Added "${block.name}" to today'
+                    : 'Added "${block.name}" to your commitments',
+              ),
+            ),
+          );
+        },
       ),
     );
   }
