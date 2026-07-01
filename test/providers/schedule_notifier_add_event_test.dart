@@ -280,6 +280,67 @@ void main() {
     }
   });
 
+  for (final windowMin in [30, 60, 45]) {
+    test('a $windowMin-min event protects its FULL window from discretionary work', () async {
+      final repo = _InMemoryScheduleRepository();
+      // A work-filled morning of discretionary chunks.
+      final chunks = <ScheduledChunk>[
+        for (int i = 0; i < 6; i++)
+          ScheduledChunk(
+            id: 'w$i',
+            chunkTypeIndex: ChunkType.work.index,
+            goalId: 'goal-1',
+            durationMinutes: 25,
+            syntheticStartMinutes: 8 * 60 + i * 30,
+            rationale: 'Deep work',
+          ),
+      ];
+      await repo.save(
+        DailySchedule(
+          id: 'sched-1',
+          dateYmd: testDateYmd,
+          moodIndex: 3,
+          chunks: chunks,
+        ),
+      );
+      final notifier = ScheduleNotifier(
+        now: () => DateTime(2026, 3, 23),
+        repo: repo,
+        logRepo: _InMemoryLogRepository(),
+        goalRepo: _InMemoryGoalRepository(),
+      );
+      await notifier.init();
+
+      final start = 9 * 60; // 9:00
+      final end = start + windowMin;
+      await notifier.addEventToday(
+        CommitmentBlock(
+          name: 'Meeting',
+          daysOfWeek: const [],
+          startMinutes: start,
+          endMinutes: end,
+          date: DateTime(2026, 3, 23),
+        ),
+      );
+
+      // No discretionary work chunk (goalId != null) may overlap the FULL
+      // entered window [start, end) — not just the 25-min anchored slots.
+      for (final c in notifier.todaySchedule!.chunks) {
+        if (c.goalId == null) continue; // skip the anchored event + breaks
+        final s = c.displayStartMinutes;
+        if (s == null) continue; // untimed overflow is fine
+        final e = s + c.durationMinutes;
+        expect(
+          s < end && start < e,
+          isFalse,
+          reason:
+              'discretionary work @$s must not overlap the committed '
+              'window [$start,$end) of a $windowMin-min event',
+        );
+      }
+    });
+  }
+
   test('editing an event re-anchors today (idempotent by commitmentId)', () async {
     final repo = _InMemoryScheduleRepository();
     final notifier = await makeNotifier(repo);

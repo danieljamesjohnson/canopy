@@ -241,18 +241,26 @@ class ScheduleGeneratorService {
       }
       if (!anchoredToday) continue;
       int cursor = block.startMinutes;
+      ScheduledChunk? lastForBlock;
       while (cursor + 25 <= block.endMinutes) {
-        workChunks.add(
-          ScheduledChunk(
-            chunkTypeIndex: ChunkType.work.index,
-            goalId: null,
-            commitmentId: block.id, // CLOSE-03: real block id for attribution
-            durationMinutes: 25,
-            anchoredStartMinutes: cursor,
-            rationale: block.name,
-          ),
+        final chunk = ScheduledChunk(
+          chunkTypeIndex: ChunkType.work.index,
+          goalId: null,
+          commitmentId: block.id, // CLOSE-03: real block id for attribution
+          durationMinutes: 25,
+          anchoredStartMinutes: cursor,
+          rationale: block.name,
         );
+        workChunks.add(chunk);
+        lastForBlock = chunk;
         cursor += 25;
+      }
+      // Honor the full committed window: stretch the last chunk to reach
+      // endMinutes so a sub-25-min tail is covered (and discretionary packing
+      // treats the whole window as occupied, never booking work into the tail).
+      if (lastForBlock != null) {
+        lastForBlock.durationMinutes =
+            block.endMinutes - lastForBlock.anchoredStartMinutes!;
       }
     }
 

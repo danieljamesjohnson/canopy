@@ -265,6 +265,14 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       );
       cursor += 25;
     }
+    // Honor the FULL entered window: stretch the last chunk to reach endMinutes
+    // so a sub-25-min tail (e.g. a 9:00–9:40 meeting's last 15 min) is covered
+    // and the reflow's occupancy windows protect it — otherwise goal-work would
+    // be booked into the human's committed time.
+    if (newChunks.isNotEmpty) {
+      final last = newChunks.last;
+      last.durationMinutes = block.endMinutes - last.anchoredStartMinutes!;
+    }
     if (newChunks.isEmpty) {
       if (removedStale) {
         await _repo.save(_todaySchedule!);
