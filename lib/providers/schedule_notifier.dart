@@ -196,13 +196,24 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
   /// screen and see it land immediately, rather than only after a mood
   /// re-check-in that would rebuild the whole day.
   ///
-  /// Returns true when the block anchors on today and was placed on today's
-  /// schedule; false when the block is for another day (a future/other-weekday
-  /// commitment — nothing to show on today). When today has no schedule yet,
-  /// a minimal one is CREATED containing just this event, so a human can enter
-  /// an event from the empty Today screen WITHOUT a forced mood check-in. The
-  /// event is a saved commitment, so a later check-in re-anchors it (the
-  /// silent-replace generate() reads it back from blocks).
+  /// Reconciles a commitment [block] onto TODAY's schedule in place, WITHOUT a
+  /// full regenerate (so completed/skipped progress is preserved). This is what
+  /// lets a human add — or edit — an actual event and see it land immediately,
+  /// rather than only after a mood re-check-in that would rebuild the whole day.
+  ///
+  /// Idempotent by commitmentId: any chunks already on today for this block are
+  /// removed first, so EDITING an event (e.g. changing its time on the
+  /// Commitments screen) re-anchors correctly instead of leaving a stale copy.
+  /// After inserting the event's anchored chunks, unresolved discretionary work
+  /// chunks that would overlap the event are reflowed into free time, so a
+  /// manual add can never silently double-book the timeline.
+  ///
+  /// Returns true when the block anchors on today and was placed; false when the
+  /// block is for another day (nothing to show on today — any stale chunks for
+  /// it are still cleared). When today has no schedule yet, a minimal one is
+  /// CREATED containing just this event, so a human can enter an event from the
+  /// empty Today screen WITHOUT a forced mood check-in. The event is a saved
+  /// commitment, so a later check-in re-anchors it (silent-replace generate()).
   Future<bool> addEventToday(CommitmentBlock block) async {
     final now = _now();
     final date = DateTime(now.year, now.month, now.day);
@@ -214,12 +225,31 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     } else {
       anchorsToday = block.daysOfWeek.contains(date.weekday);
     }
-    if (!anchorsToday) return false;
+
+    // Idempotent re-anchor: drop any existing chunks for this block from today
+    // (handles edit; also clears stale chunks when a block is moved off today).
+    var removedStale = false;
+    if (hasScheduleToday && _todaySchedule != null) {
+      final kept = _todaySchedule!.chunks
+          .where((c) => c.commitmentId != block.id)
+          .toList();
+      removedStale = kept.length != _todaySchedule!.chunks.length;
+      _todaySchedule!.chunks = kept;
+    }
+
+    if (!anchorsToday) {
+      // Block no longer belongs to today — persist any stale removal and stop.
+      if (removedStale) {
+        await _repo.save(_todaySchedule!);
+        notifyListeners();
+      }
+      return false;
+    }
 
     // Build 25-minute anchored work chunks across the block window — mirrors the
-    // commitment-anchoring step in ScheduleGeneratorService.generate(). The
-    // form enforces a >= 25-minute window, so this is never empty in practice;
-    // guard anyway so a degenerate window can never claim a false success.
+    // commitment-anchoring step in ScheduleGeneratorService.generate(). The form
+    // enforces a >= 25-minute window, so this is never empty in practice; guard
+    // anyway so a degenerate window can never claim a false success.
     final newChunks = <ScheduledChunk>[];
     int cursor = block.startMinutes;
     while (cursor + 25 <= block.endMinutes) {
@@ -235,17 +265,25 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       );
       cursor += 25;
     }
-    if (newChunks.isEmpty) return false;
+    if (newChunks.isEmpty) {
+      if (removedStale) {
+        await _repo.save(_todaySchedule!);
+        notifyListeners();
+      }
+      return false;
+    }
 
     if (hasScheduleToday && _todaySchedule != null) {
-      // Insert in place, preserving existing chunks and their progress.
-      final merged = [..._todaySchedule!.chunks, ...newChunks]
-        ..sort((a, b) {
-          final aStart = a.displayStartMinutes ?? 9999;
-          final bStart = b.displayStartMinutes ?? 9999;
-          return aStart.compareTo(bStart);
-        });
-      _todaySchedule!.chunks = merged;
+      final chunks = [..._todaySchedule!.chunks, ...newChunks];
+      // Reflow unresolved discretionary work around the (now updated) set of
+      // anchored commitment windows so nothing double-books the new event.
+      _reflowDiscretionaryWork(chunks);
+      chunks.sort((a, b) {
+        final aStart = a.displayStartMinutes ?? 9999;
+        final bStart = b.displayStartMinutes ?? 9999;
+        return aStart.compareTo(bStart);
+      });
+      _todaySchedule!.chunks = chunks;
       await _repo.save(_todaySchedule!);
     } else {
       // No day built yet — create a minimal schedule holding just this event so
@@ -265,6 +303,66 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     }
     notifyListeners();
     return true;
+  }
+
+  /// Re-packs unresolved discretionary WORK chunks (goal-driven, not anchored,
+  /// not yet completed/skipped) into free 25-minute slots that avoid every
+  /// anchored commitment window AND every already-resolved chunk, so inserting
+  /// or editing an event never leaves two work chunks claiming the same clock
+  /// time. Anchored (commitment) chunks, resolved chunks, and breaks keep their
+  /// positions; only movable work chunks are relocated. Mirrors the generator's
+  /// slot logic (8:00–22:00) but operates in place to preserve progress.
+  void _reflowDiscretionaryWork(List<ScheduledChunk> chunks) {
+    const dayStart = 480; // 8:00 AM
+    const dayEnd = 1320; // 10:00 PM
+
+    // Fixed (immovable) occupied windows: anchored commitments + resolved chunks.
+    final fixed = <List<int>>[];
+    for (final c in chunks) {
+      final resolved = c.isCompleted || c.isSkipped;
+      if (c.anchoredStartMinutes != null) {
+        fixed.add([
+          c.anchoredStartMinutes!,
+          c.anchoredStartMinutes! + c.durationMinutes,
+        ]);
+      } else if (resolved && c.displayStartMinutes != null) {
+        fixed.add([
+          c.displayStartMinutes!,
+          c.displayStartMinutes! + c.durationMinutes,
+        ]);
+      }
+    }
+
+    final movable = chunks
+        .where(
+          (c) =>
+              c.anchoredStartMinutes == null &&
+              c.chunkType == ChunkType.work &&
+              !c.isCompleted &&
+              !c.isSkipped,
+        )
+        .toList();
+    if (movable.isEmpty) return;
+
+    bool overlaps(List<List<int>> wins, int s, int e) =>
+        wins.any((w) => s < w[1] && w[0] < e);
+
+    final placed = <List<int>>[];
+    int cursor = dayStart;
+    for (final c in movable) {
+      int s = cursor;
+      while (s + 25 <= dayEnd &&
+          (overlaps(fixed, s, s + 25) || overlaps(placed, s, s + 25))) {
+        s += 5; // step by 5 for tidy start boundaries
+      }
+      if (s + 25 <= dayEnd) {
+        c.syntheticStartMinutes = s;
+        placed.add([s, s + 25]);
+        cursor = s + 25;
+      }
+      // If the day is genuinely full, leave the chunk where it was; it sorts by
+      // its prior time and the human still sees it (no silent loss).
+    }
   }
 
   /// Marks the chunk with [chunkId] as completed, saves the updated schedule,

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/commitment_block.dart';
 import '../../providers/commitments_notifier.dart';
+import '../../providers/schedule_notifier.dart';
 import '../../widgets/adaptive_form_modal.dart';
 import 'commitment_form_sheet.dart';
 
@@ -26,12 +27,16 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
 
   void _openAddSheet(BuildContext context, [CommitmentBlock? block]) {
     final isDesktop = MediaQuery.of(context).size.width >= 720;
+    final scheduleNotifier = context.read<ScheduleNotifier>();
     showAdaptiveFormModal(
       context: context,
       builder: (scrollController) => CommitmentFormSheet(
         scrollController: scrollController,
         block: block,
         isDialog: isDesktop,
+        // Re-anchor today's schedule so an added/edited event renders at its
+        // current time immediately, without waiting for a mood re-check-in.
+        onSaved: (saved) => scheduleNotifier.addEventToday(saved),
       ),
     );
   }

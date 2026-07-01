@@ -149,6 +149,98 @@ void main() {
     expect(notifier.todaySchedule!.chunks.length, 1); // unchanged
   });
 
+  test('adding an event reflows overlapping discretionary work (no double-book)', () async {
+    final repo = _InMemoryScheduleRepository();
+    // Seed a populated day: a discretionary work chunk placed at 2:00pm.
+    final work = ScheduledChunk(
+      id: 'work-1',
+      chunkTypeIndex: ChunkType.work.index,
+      goalId: 'goal-1',
+      durationMinutes: 25,
+      syntheticStartMinutes: 14 * 60, // 2:00pm — collides with the event below
+      rationale: 'Deep work',
+    );
+    await repo.save(
+      DailySchedule(
+        id: 'sched-1',
+        dateYmd: testDateYmd,
+        moodIndex: 3,
+        chunks: [work],
+      ),
+    );
+    final notifier = ScheduleNotifier(
+      now: () => DateTime(2026, 3, 23),
+      repo: repo,
+      logRepo: _InMemoryLogRepository(),
+      goalRepo: _InMemoryGoalRepository(),
+    );
+    await notifier.init();
+
+    // Add a fixed event 2:00–3:00pm — directly over the discretionary chunk.
+    final event = CommitmentBlock(
+      name: 'Doctor',
+      daysOfWeek: const [],
+      startMinutes: 14 * 60,
+      endMinutes: 15 * 60,
+      date: DateTime(2026, 3, 23),
+    );
+    final placed = await notifier.addEventToday(event);
+    expect(placed, isTrue);
+
+    // No two WORK chunks may share overlapping display windows.
+    final workChunks = notifier.todaySchedule!.chunks
+        .where((c) => c.chunkType == ChunkType.work)
+        .toList();
+    for (int i = 0; i < workChunks.length; i++) {
+      for (int j = i + 1; j < workChunks.length; j++) {
+        final a = workChunks[i], b = workChunks[j];
+        final as = a.displayStartMinutes!, ae = as + a.durationMinutes;
+        final bs = b.displayStartMinutes!, be = bs + b.durationMinutes;
+        expect(
+          as < be && bs < ae,
+          isFalse,
+          reason: 'work chunks must not overlap after adding an event',
+        );
+      }
+    }
+    // The discretionary chunk was moved off the event window.
+    final moved = notifier.todaySchedule!.chunks
+        .firstWhere((c) => c.id == 'work-1');
+    expect(moved.displayStartMinutes, isNot(14 * 60));
+  });
+
+  test('editing an event re-anchors today (idempotent by commitmentId)', () async {
+    final repo = _InMemoryScheduleRepository();
+    final notifier = await makeNotifier(repo);
+
+    final block = CommitmentBlock(
+      name: 'Call',
+      daysOfWeek: const [],
+      startMinutes: 10 * 60,
+      endMinutes: 11 * 60,
+      date: DateTime(2026, 3, 23),
+    );
+    await notifier.addEventToday(block); // first placement at 10:00
+    expect(
+      notifier.todaySchedule!.chunks
+          .where((c) => c.commitmentId == block.id)
+          .isNotEmpty,
+      isTrue,
+    );
+
+    // Edit the SAME block (same id) to a new time and re-anchor.
+    block.startMinutes = 16 * 60;
+    block.endMinutes = 17 * 60;
+    await notifier.addEventToday(block);
+
+    final callChunks = notifier.todaySchedule!.chunks
+        .where((c) => c.commitmentId == block.id)
+        .toList();
+    // Exactly the new placement — no stale 10:00 copy left behind.
+    expect(callChunks.length, 2);
+    expect(callChunks.every((c) => c.anchoredStartMinutes! >= 16 * 60), isTrue);
+  });
+
   test('creates a minimal today schedule when none exists (empty-state add)', () async {
     // No schedule pre-seeded — the empty Today screen path.
     final repo = _InMemoryScheduleRepository();
