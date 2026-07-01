@@ -12,6 +12,7 @@ import 'screens/schedule/checkin_screen.dart';
 import 'screens/schedule/schedule_screen.dart';
 import 'screens/focus/focus_screen.dart';
 import 'screens/quarterly_review/quarterly_review_screen.dart';
+import 'screens/restoratives/restoratives_screen.dart';
 import 'screens/settings/past_reviews_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'widgets/responsive_shell.dart';
@@ -105,6 +106,12 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
       GoRoute(
         path: '/commitments',
         builder: (context, state) => const CommitmentsScreen(),
+      ),
+      // Restoratives — settings-style focused screen (same pattern as
+      // commitments): manage what recharges you, kept separate from goals.
+      GoRoute(
+        path: '/restoratives',
+        builder: (context, state) => const RestorativesScreen(),
       ),
       // End-of-day summary is outside the shell — no bottom nav shown.
       GoRoute(

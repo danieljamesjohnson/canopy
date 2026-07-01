@@ -8,6 +8,7 @@ import 'data/database/hive_database.dart';
 import 'platform/window_setup.dart';
 import 'providers/goals_notifier.dart';
 import 'providers/commitments_notifier.dart';
+import 'providers/restoratives_notifier.dart';
 import 'providers/schedule_notifier.dart';
 import 'providers/settings_notifier.dart';
 import 'providers/theme_notifier.dart';
@@ -57,6 +58,11 @@ void main() async {
 
   final commitmentsNotifier = CommitmentsNotifier();
   await commitmentsNotifier.loadBlocks();
+
+  // Restoratives (what recharges the user, kept separate from goals). Loaded on
+  // cold launch so the low-energy-day surface has the list ready.
+  final restorativesNotifier = RestorativesNotifier();
+  await restorativesNotifier.loadItems();
 
   // Initialize notification service before runApp.
   // Web: no-op (in-app banner used instead).
@@ -109,6 +115,7 @@ void main() async {
       themeNotifier: themeNotifier,
       goalsNotifier: goalsNotifier,
       commitmentsNotifier: commitmentsNotifier,
+      restorativesNotifier: restorativesNotifier,
       router: router,
     ),
   );
@@ -122,6 +129,7 @@ class CanopyApp extends StatelessWidget {
     required this.themeNotifier,
     required this.goalsNotifier,
     required this.commitmentsNotifier,
+    required this.restorativesNotifier,
     required this.router,
   });
 
@@ -130,6 +138,7 @@ class CanopyApp extends StatelessWidget {
   final ThemeNotifier themeNotifier;
   final GoalsNotifier goalsNotifier;
   final CommitmentsNotifier commitmentsNotifier;
+  final RestorativesNotifier restorativesNotifier;
   final GoRouter router;
 
   @override
@@ -141,6 +150,9 @@ class CanopyApp extends StatelessWidget {
         ChangeNotifierProvider<GoalsNotifier>.value(value: goalsNotifier),
         ChangeNotifierProvider<CommitmentsNotifier>.value(
           value: commitmentsNotifier,
+        ),
+        ChangeNotifierProvider<RestorativesNotifier>.value(
+          value: restorativesNotifier,
         ),
         ChangeNotifierProvider<ScheduleNotifier>.value(value: scheduleNotifier),
         ChangeNotifierProvider<SettingsNotifier>.value(value: settingsNotifier),

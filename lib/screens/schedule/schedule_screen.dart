@@ -9,6 +9,7 @@ import '../../data/models/energy_valence.dart';
 import '../../data/models/goal.dart';
 import '../../data/models/scheduled_chunk.dart';
 import '../../providers/goals_notifier.dart';
+import '../../providers/restoratives_notifier.dart';
 import '../../providers/schedule_notifier.dart';
 import '../../utils/rationale_mapper.dart';
 import '../../utils/time_format.dart';
@@ -105,6 +106,12 @@ class ScheduleScreen extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: 720),
                 child: ListView(
                   children:
+                      [
+                        // Low-energy days (mood 1–2) resurface the user's
+                        // restoratives — gentle, no-pressure suggestions that
+                        // are deliberately NOT scheduled work.
+                        if (mood <= 2) _buildRestorativeSuggestions(context),
+                      ] +
                       _buildActiveChunkItems(context, activeChunks) +
                       [
                         // "Skipped today" expansion tile — hidden when no skipped chunks.
@@ -116,6 +123,79 @@ class ScheduleScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Low-energy-day surface for restoratives. Rendered only when mood ≤ 2.
+  /// Lists the user's saved restorative activities as gentle suggestions; if
+  /// they have none yet, shows a soft prompt to set some up. These never affect
+  /// the schedule — they are the deliberate non-goal counterpart to the plan.
+  Widget _buildRestorativeSuggestions(BuildContext context) {
+    final restoratives = context.watch<RestorativesNotifier>();
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    if (restoratives.isEmpty) {
+      return Card(
+        margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+        color: scheme.surfaceContainerHighest,
+        child: ListTile(
+          leading: Icon(Icons.spa_outlined, color: scheme.primary),
+          title: const Text('Low on energy today?'),
+          subtitle: const Text(
+            'Add a few things that restore you — they\'ll show up here on '
+            'days like this.',
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/restoratives'),
+        ),
+      );
+    }
+
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      color: scheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.spa_outlined, size: 20, color: scheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'A lighter day — here\'s what restores you',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final item in restoratives.items)
+                  Chip(
+                    avatar: (item.emojiTag != null && item.emojiTag!.isNotEmpty)
+                        ? Text(
+                            item.emojiTag!,
+                            style: const TextStyle(fontSize: 16),
+                          )
+                        : null,
+                    label: Text(item.name),
+                    backgroundColor: scheme.secondaryContainer,
+                    side: BorderSide.none,
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

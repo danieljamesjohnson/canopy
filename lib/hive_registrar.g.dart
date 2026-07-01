@@ -9,6 +9,7 @@ import 'package:canopy/data/models/completion_log.dart';
 import 'package:canopy/data/models/daily_schedule.dart';
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/models/quarterly_snapshot.dart';
+import 'package:canopy/data/models/restorative_item.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 
 extension HiveRegistrar on HiveInterface {
@@ -19,6 +20,7 @@ extension HiveRegistrar on HiveInterface {
     registerAdapter(DailyScheduleAdapter());
     registerAdapter(GoalAdapter());
     registerAdapter(QuarterlySnapshotAdapter());
+    registerAdapter(RestorativeItemAdapter());
     registerAdapter(ScheduledChunkAdapter());
   }
 }
@@ -31,6 +33,7 @@ extension IsolatedHiveRegistrar on IsolatedHiveInterface {
     registerAdapter(DailyScheduleAdapter());
     registerAdapter(GoalAdapter());
     registerAdapter(QuarterlySnapshotAdapter());
+    registerAdapter(RestorativeItemAdapter());
     registerAdapter(ScheduledChunkAdapter());
   }
 }

@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-const int currentSchemaVersion = 8;
+const int currentSchemaVersion = 9;
 
 typedef MigrationFn = Future<void> Function();
 
@@ -15,6 +15,7 @@ final List<MigrationFn> _migrations = [
   _migration5to6,
   _migration6to7,
   _migration7to8,
+  _migration8to9,
 ];
 
 Future<void> _migration0to1() async {
@@ -79,6 +80,13 @@ Future<void> _migration7to8() async {
   // Hive CE binary reader returns null for missing fields in existing records.
   // null energyValenceIndex → Goal.energyValence getter returns EnergyValence.neutral.
   // No data transformation needed.
+}
+
+Future<void> _migration8to9() async {
+  // New RestorativeItem aggregate (typeId 7) in its own 'restorative_items'
+  // box — restorative activities kept separate from goals, surfaced only on
+  // low-energy days. Brand-new empty box; no existing records to transform.
+  // The box is opened in HiveDatabase.init before migrations run.
 }
 
 Future<void> runMigrations(SharedPreferences prefs) async {

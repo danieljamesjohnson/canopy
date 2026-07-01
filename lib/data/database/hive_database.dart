@@ -8,6 +8,7 @@ import '../models/scheduled_chunk.dart';
 import '../models/completion_log.dart';
 import '../models/quarterly_snapshot.dart';
 import '../models/app_settings.dart';
+import '../models/restorative_item.dart';
 import 'migrations.dart';
 import 'resilient_box.dart';
 
@@ -26,6 +27,7 @@ class HiveDatabase {
     Hive.registerAdapter(CompletionLogAdapter()); // typeId 4
     Hive.registerAdapter(QuarterlySnapshotAdapter()); // typeId 5
     Hive.registerAdapter(AppSettingsAdapter()); // typeId 6
+    Hive.registerAdapter(RestorativeItemAdapter()); // typeId 7
 
     // Open all boxes. Each open is resilient: if a box holds a record from an
     // older app version that the current adapters cannot deserialize, that box
@@ -41,6 +43,7 @@ class HiveDatabase {
     await _openBox<CompletionLog>('completion_logs');
     await _openBox<QuarterlySnapshot>('quarterly_snapshots');
     await _openBox<AppSettings>('app_settings');
+    await _openBox<RestorativeItem>('restorative_items');
 
     await runMigrations(prefs);
   }

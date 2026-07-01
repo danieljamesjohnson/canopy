@@ -63,12 +63,19 @@ class _GoalsScreenState extends State<GoalsScreen> {
               if (value == 'commitments') {
                 context.push('/commitments');
               }
+              if (value == 'restoratives') {
+                context.push('/restoratives');
+              }
             },
             itemBuilder: (context) => const [
               PopupMenuItem(value: 'archived', child: Text('View archived')),
               PopupMenuItem(
                 value: 'commitments',
                 child: Text('Commitment blocks'),
+              ),
+              PopupMenuItem(
+                value: 'restoratives',
+                child: Text('What restores you'),
               ),
             ],
           ),

@@ -20,15 +20,17 @@ void main() {
   // Schema constant tests (no Hive I/O needed)
   // ---------------------------------------------------------------------------
 
-  test('currentSchemaVersion equals 8', () {
-    expect(currentSchemaVersion, equals(8));
+  // Bumped to 9 when the RestorativeItem aggregate (typeId 7) was added in its
+  // own box with migration 8→9. The WR-06 count invariant moves in lockstep.
+  test('currentSchemaVersion equals 9', () {
+    expect(currentSchemaVersion, equals(9));
   });
 
   // The WR-06 assert in migrations.dart enforces
   // _migrations.length == currentSchemaVersion at runtime in debug mode.
   // We confirm the constant value here; the assert is the count gate.
   test('currentSchemaVersion is consistent with WR-06 migration count', () {
-    expect(currentSchemaVersion, equals(8));
+    expect(currentSchemaVersion, equals(9));
   });
 
   // ---------------------------------------------------------------------------
