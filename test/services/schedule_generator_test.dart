@@ -1743,4 +1743,91 @@ void main() {
       );
     },
   );
+
+  // ---------------------------------------------------------------------------
+  // One-off (dated) commitments — a human entering a real event on a specific
+  // day. A dated block anchors ONLY on its date, ignoring weekdays.
+  // ---------------------------------------------------------------------------
+  group('one-off dated commitments', () {
+    // A one-off block on Monday 2026-03-23, 09:00–10:00 (60-min → 2 slots).
+    CommitmentBlock oneOffOnMonday() => CommitmentBlock(
+      name: 'Dentist',
+      daysOfWeek: const [], // one-off carries no recurring weekdays
+      startMinutes: 540,
+      endMinutes: 600,
+      date: DateTime(2026, 3, 23),
+    );
+
+    test('anchors on its specific date', () {
+      final result = sut.generate(
+        goals: [],
+        blocks: [oneOffOnMonday()],
+        moodIndex: 3,
+        date: monday, // 2026-03-23
+        completionLogs: [],
+      );
+      final workChunks = result
+          .where((c) => c.chunkType == ChunkType.work)
+          .toList();
+      expect(workChunks.length, 2);
+      expect(workChunks[0].anchoredStartMinutes, 540);
+      expect(workChunks[0].rationale, 'Dentist');
+    });
+
+    test('does NOT anchor on a different date (even same weekday)', () {
+      // Monday 2026-03-30 — same weekday as the block's date but a week later.
+      final nextMonday = DateTime(2026, 3, 30);
+      final result = sut.generate(
+        goals: [],
+        blocks: [oneOffOnMonday()],
+        moodIndex: 3,
+        date: nextMonday,
+        completionLogs: [],
+      );
+      expect(result, isEmpty);
+    });
+
+    test('date-only equality ignores any time component on the date', () {
+      final block = CommitmentBlock(
+        name: 'Appt',
+        daysOfWeek: const [],
+        startMinutes: 540,
+        endMinutes: 600,
+        date: DateTime(2026, 3, 23, 14, 30), // 2:30pm component
+      );
+      final result = sut.generate(
+        goals: [],
+        blocks: [block],
+        moodIndex: 3,
+        date: monday, // midnight 2026-03-23
+        completionLogs: [],
+      );
+      expect(
+        result.where((c) => c.chunkType == ChunkType.work).length,
+        2,
+        reason: 'day-equality must match regardless of time-of-day component',
+      );
+    });
+
+    test('recurring and one-off blocks coexist on a matching day', () {
+      final recurring = makeBlock(
+        name: 'Work',
+        daysOfWeek: const [1], // Monday
+        startMinutes: 600,
+        endMinutes: 650,
+      );
+      final result = sut.generate(
+        goals: [],
+        blocks: [recurring, oneOffOnMonday()],
+        moodIndex: 3,
+        date: monday,
+        completionLogs: [],
+      );
+      final names = result
+          .where((c) => c.chunkType == ChunkType.work)
+          .map((c) => c.rationale)
+          .toSet();
+      expect(names, containsAll(<String>['Work', 'Dentist']));
+    });
+  });
 }

@@ -89,8 +89,16 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
     return '$displayHour:${minute.toString().padLeft(2, '0')}$period';
   }
 
+  static const _monthAbbr = [
+    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
   String _commitmentCardSubtitle(CommitmentBlock block) {
-    return '${_formatDays(block.daysOfWeek)} · ${_formatTime(block.startMinutes)}–${_formatTime(block.endMinutes)}';
+    final when = block.date != null
+        ? '${_monthAbbr[block.date!.month]} ${block.date!.day}'
+        : _formatDays(block.daysOfWeek);
+    return '$when · ${_formatTime(block.startMinutes)}–${_formatTime(block.endMinutes)}';
   }
 
   Color _parseColor(String hex) {

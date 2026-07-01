@@ -13,6 +13,7 @@ class CommitmentBlock extends HiveObject {
     required this.daysOfWeek,
     required this.startMinutes,
     required this.endMinutes,
+    this.date,
   }) : id = id ?? _uuid.v4();
 
   @HiveField(0)
@@ -35,4 +36,15 @@ class CommitmentBlock extends HiveObject {
 
   @HiveField(5)
   String color = '#FF5722'; // default deep orange
+
+  /// Optional specific calendar date for a ONE-OFF commitment (e.g. a dentist
+  /// appointment this Thursday). When non-null the block is anchored only on
+  /// that single day and [daysOfWeek] is ignored; when null the block is a
+  /// recurring weekly commitment driven by [daysOfWeek]. Additive field — old
+  /// records deserialize with date == null and stay recurring.
+  @HiveField(6)
+  DateTime? date;
+
+  /// True when this is a single-date commitment rather than a recurring one.
+  bool get isOneOff => date != null;
 }

@@ -26,6 +26,8 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
   late int _startMinutes;
   late int _endMinutes;
   late String _color;
+  late bool _isOneOff;
+  DateTime? _date;
 
   @override
   void initState() {
@@ -36,7 +38,27 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
     _startMinutes = block?.startMinutes ?? 9 * 60; // 9:00am
     _endMinutes = block?.endMinutes ?? 17 * 60; // 5:00pm
     _color = block?.color ?? '#607D8B';
+    _isOneOff = block?.date != null;
+    _date = block?.date;
   }
+
+  static const _monthAbbr = [
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  String _formatDate(DateTime d) => '${_monthAbbr[d.month]} ${d.day}, ${d.year}';
 
   @override
   void dispose() {
@@ -96,17 +118,37 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
 
   bool get _canSave =>
       _nameController.text.trim().isNotEmpty &&
-      _selectedDays.isNotEmpty &&
-      _endMinutes > _startMinutes;
+      _endMinutes > _startMinutes &&
+      (_isOneOff ? _date != null : _selectedDays.isNotEmpty);
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final initial = _date ?? now;
+    final result = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: DateTime(now.year + 2, now.month, now.day),
+    );
+    if (result != null) {
+      // Store date-only (midnight local) so day-equality in the generator is
+      // unaffected by any time component.
+      setState(
+        () => _date = DateTime(result.year, result.month, result.day),
+      );
+    }
+  }
 
   Future<void> _save() async {
     if (!_canSave) return;
     final block = CommitmentBlock(
       id: widget.block?.id,
       name: _nameController.text.trim(),
-      daysOfWeek: _selectedDays.toList()..sort(),
+      // A one-off carries no recurring weekdays; a recurring block carries no date.
+      daysOfWeek: _isOneOff ? const [] : (_selectedDays.toList()..sort()),
       startMinutes: _startMinutes,
       endMinutes: _endMinutes,
+      date: _isOneOff ? _date : null,
     );
     block.color = _color;
     try {
@@ -180,33 +222,89 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
           ),
           const SizedBox(height: 16),
 
-          // Day chips section
-          Text(
-            'Days',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+          // Repeat mode: recurring weekly vs a single dated event. This is what
+          // lets a human enter an actual one-off event on a specific day.
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(
+                value: false,
+                label: Text('Repeats weekly'),
+                icon: Icon(Icons.repeat),
+              ),
+              ButtonSegment(
+                value: true,
+                label: Text('One-off date'),
+                icon: Icon(Icons.event),
+              ),
+            ],
+            selected: {_isOneOff},
+            onSelectionChanged: (sel) =>
+                setState(() => _isOneOff = sel.first),
+          ),
+          const SizedBox(height: 16),
+
+          // Either weekday chips (recurring) or a single date picker (one-off).
+          if (_isOneOff) ...[
+            Text(
+              'Date',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            children: List.generate(7, (i) {
-              final day = i + 1;
-              return FilterChip(
-                label: Text(dayLabels[i]),
-                selected: _selectedDays.contains(day),
-                onSelected: (sel) {
-                  setState(() {
-                    if (sel) {
-                      _selectedDays.add(day);
-                    } else {
-                      _selectedDays.remove(day);
-                    }
-                  });
-                },
-              );
-            }),
-          ),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: _pickDate,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(color: colorScheme.outline),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today, size: 18, color: colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Text(
+                      _date == null ? 'Pick a date' : _formatDate(_date!),
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ] else ...[
+            Text(
+              'Days',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              children: List.generate(7, (i) {
+                final day = i + 1;
+                return FilterChip(
+                  label: Text(dayLabels[i]),
+                  selected: _selectedDays.contains(day),
+                  onSelected: (sel) {
+                    setState(() {
+                      if (sel) {
+                        _selectedDays.add(day);
+                      } else {
+                        _selectedDays.remove(day);
+                      }
+                    });
+                  },
+                );
+              }),
+            ),
+          ],
           const SizedBox(height: 16),
 
           // Time row

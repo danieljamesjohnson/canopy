@@ -227,7 +227,19 @@ class ScheduleGeneratorService {
     // Step 1: Commitment block chunks (anchored; not counted against cap).
     // -------------------------------------------------------------------------
     for (final block in blocks) {
-      if (!block.daysOfWeek.contains(date.weekday)) continue;
+      // A one-off (dated) commitment anchors only on its specific calendar day;
+      // a recurring commitment anchors on its weekly [daysOfWeek]. This is what
+      // lets a human enter an actual dated event ("dentist this Thursday") and
+      // see it land on that day only.
+      final bool anchoredToday;
+      if (block.date != null) {
+        final d = block.date!;
+        anchoredToday =
+            d.year == date.year && d.month == date.month && d.day == date.day;
+      } else {
+        anchoredToday = block.daysOfWeek.contains(date.weekday);
+      }
+      if (!anchoredToday) continue;
       int cursor = block.startMinutes;
       while (cursor + 25 <= block.endMinutes) {
         workChunks.add(

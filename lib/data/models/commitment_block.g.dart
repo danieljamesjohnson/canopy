@@ -22,13 +22,14 @@ class CommitmentBlockAdapter extends TypeAdapter<CommitmentBlock> {
       daysOfWeek: (fields[2] as List).cast<int>(),
       startMinutes: (fields[3] as num).toInt(),
       endMinutes: (fields[4] as num).toInt(),
+      date: fields[6] as DateTime?,
     )..color = fields[5] as String;
   }
 
   @override
   void write(BinaryWriter writer, CommitmentBlock obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -40,7 +41,9 @@ class CommitmentBlockAdapter extends TypeAdapter<CommitmentBlock> {
       ..writeByte(4)
       ..write(obj.endMinutes)
       ..writeByte(5)
-      ..write(obj.color);
+      ..write(obj.color)
+      ..writeByte(6)
+      ..write(obj.date);
   }
 
   @override
