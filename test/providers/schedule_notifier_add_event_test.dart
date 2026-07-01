@@ -209,6 +209,77 @@ void main() {
     expect(moved.displayStartMinutes, isNot(14 * 60));
   });
 
+  test('adding an event leaves NO work-vs-break overlap (breaks re-emitted)', () async {
+    final repo = _InMemoryScheduleRepository();
+    // A normal generated morning: work/break/work/break/work interleaved.
+    ScheduledChunk work(String id, int start) => ScheduledChunk(
+      id: id,
+      chunkTypeIndex: ChunkType.work.index,
+      goalId: 'goal-1',
+      durationMinutes: 25,
+      syntheticStartMinutes: start,
+      rationale: 'Deep work',
+    );
+    ScheduledChunk brk(String id, int start) => ScheduledChunk(
+      id: id,
+      chunkTypeIndex: ChunkType.shortBreak.index,
+      durationMinutes: 5,
+      syntheticStartMinutes: start,
+      rationale: '',
+    );
+    await repo.save(
+      DailySchedule(
+        id: 'sched-1',
+        dateYmd: testDateYmd,
+        moodIndex: 3,
+        chunks: [
+          work('w1', 480),
+          brk('b1', 505),
+          work('w2', 510),
+          brk('b2', 535),
+          work('w3', 540),
+        ],
+      ),
+    );
+    final notifier = ScheduleNotifier(
+      now: () => DateTime(2026, 3, 23),
+      repo: repo,
+      logRepo: _InMemoryLogRepository(),
+      goalRepo: _InMemoryGoalRepository(),
+    );
+    await notifier.init();
+
+    // Add a noon meeting.
+    await notifier.addEventToday(
+      CommitmentBlock(
+        name: 'Meeting',
+        daysOfWeek: const [],
+        startMinutes: 12 * 60,
+        endMinutes: 13 * 60,
+        date: DateTime(2026, 3, 23),
+      ),
+    );
+
+    // No chunk of ANY type may overlap another (work-vs-work, work-vs-break).
+    final timed = notifier.todaySchedule!.chunks
+        .where((c) => c.displayStartMinutes != null)
+        .toList();
+    for (int i = 0; i < timed.length; i++) {
+      for (int j = i + 1; j < timed.length; j++) {
+        final a = timed[i], b = timed[j];
+        final as = a.displayStartMinutes!, ae = as + a.durationMinutes;
+        final bs = b.displayStartMinutes!, be = bs + b.durationMinutes;
+        expect(
+          as < be && bs < ae,
+          isFalse,
+          reason:
+              'no two timed chunks may overlap after an add '
+              '(${a.chunkType}@$as vs ${b.chunkType}@$bs)',
+        );
+      }
+    }
+  });
+
   test('editing an event re-anchors today (idempotent by commitmentId)', () async {
     final repo = _InMemoryScheduleRepository();
     final notifier = await makeNotifier(repo);

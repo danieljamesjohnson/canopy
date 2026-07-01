@@ -277,13 +277,14 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       final chunks = [..._todaySchedule!.chunks, ...newChunks];
       // Reflow unresolved discretionary work around the (now updated) set of
       // anchored commitment windows so nothing double-books the new event.
-      _reflowDiscretionaryWork(chunks);
-      chunks.sort((a, b) {
-        final aStart = a.displayStartMinutes ?? 9999;
-        final bStart = b.displayStartMinutes ?? 9999;
-        return aStart.compareTo(bStart);
-      });
-      _todaySchedule!.chunks = chunks;
+      final nowMinutes = now.hour * 60 + now.minute;
+      final reflowed = _reflowDiscretionaryWork(chunks, nowMinutes: nowMinutes)
+        ..sort((a, b) {
+          final aStart = a.displayStartMinutes ?? 9999;
+          final bStart = b.displayStartMinutes ?? 9999;
+          return aStart.compareTo(bStart);
+        });
+      _todaySchedule!.chunks = reflowed;
       await _repo.save(_todaySchedule!);
     } else {
       // No day built yet — create a minimal schedule holding just this event so
@@ -309,60 +310,95 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
   /// not yet completed/skipped) into free 25-minute slots that avoid every
   /// anchored commitment window AND every already-resolved chunk, so inserting
   /// or editing an event never leaves two work chunks claiming the same clock
-  /// time. Anchored (commitment) chunks, resolved chunks, and breaks keep their
-  /// positions; only movable work chunks are relocated. Mirrors the generator's
-  /// slot logic (8:00–22:00) but operates in place to preserve progress.
-  void _reflowDiscretionaryWork(List<ScheduledChunk> chunks) {
+  /// time. Anchored (commitment) chunks and resolved chunks keep their positions.
+  ///
+  /// Break chunks are NOT frozen: the old (unresolved) breaks are DROPPED and
+  /// fresh short/long breaks are re-emitted between the repacked work chunks
+  /// (mirroring the generator's cadence), so a reflow can never leave a break
+  /// overlapping a work chunk or orphan the Pomodoro spacing. Packing starts at
+  /// max(8:00, [nowMinutes]) so an add mid-day never schedules work into hours
+  /// that have already passed. Returns the rebuilt chunk list (callers sort it).
+  List<ScheduledChunk> _reflowDiscretionaryWork(
+    List<ScheduledChunk> chunks, {
+    required int nowMinutes,
+  }) {
     const dayStart = 480; // 8:00 AM
     const dayEnd = 1320; // 10:00 PM
+    const longBreakEvery = 4;
 
-    // Fixed (immovable) occupied windows: anchored commitments + resolved chunks.
-    final fixed = <List<int>>[];
+    // Partition: keep anchored + resolved (incl. resolved work); collect movable
+    // unresolved work; DROP unresolved breaks (re-emitted below).
+    final kept = <ScheduledChunk>[];
+    final movable = <ScheduledChunk>[];
     for (final c in chunks) {
       final resolved = c.isCompleted || c.isSkipped;
-      if (c.anchoredStartMinutes != null) {
-        fixed.add([
-          c.anchoredStartMinutes!,
-          c.anchoredStartMinutes! + c.durationMinutes,
-        ]);
-      } else if (resolved && c.displayStartMinutes != null) {
-        fixed.add([
-          c.displayStartMinutes!,
-          c.displayStartMinutes! + c.durationMinutes,
-        ]);
+      if (c.anchoredStartMinutes != null || resolved) {
+        kept.add(c);
+      } else if (c.chunkType == ChunkType.work) {
+        movable.add(c);
       }
+      // else: an unresolved break chunk — dropped, re-derived after repacking.
     }
+    if (movable.isEmpty) return kept;
 
-    final movable = chunks
-        .where(
-          (c) =>
-              c.anchoredStartMinutes == null &&
-              c.chunkType == ChunkType.work &&
-              !c.isCompleted &&
-              !c.isSkipped,
-        )
-        .toList();
-    if (movable.isEmpty) return;
-
-    bool overlaps(List<List<int>> wins, int s, int e) =>
-        wins.any((w) => s < w[1] && w[0] < e);
-
+    // Fixed occupied windows come from the kept (immovable) chunks.
+    final fixed = <List<int>>[
+      for (final c in kept)
+        if (c.displayStartMinutes != null)
+          [c.displayStartMinutes!, c.displayStartMinutes! + c.durationMinutes],
+    ];
     final placed = <List<int>>[];
-    int cursor = dayStart;
-    for (final c in movable) {
+    bool hits(int s, int e) =>
+        fixed.any((w) => s < w[1] && w[0] < e) ||
+        placed.any((w) => s < w[1] && w[0] < e);
+
+    final result = <ScheduledChunk>[...kept];
+    // Round the now-floor up to the next 5-minute boundary, clamped into the day.
+    final floor = (((nowMinutes + 4) ~/ 5) * 5).clamp(dayStart, dayEnd);
+    int cursor = floor;
+    int breakCount = 0;
+    for (int i = 0; i < movable.length; i++) {
+      final c = movable[i];
       int s = cursor;
-      while (s + 25 <= dayEnd &&
-          (overlaps(fixed, s, s + 25) || overlaps(placed, s, s + 25))) {
+      while (s + 25 <= dayEnd && hits(s, s + 25)) {
         s += 5; // step by 5 for tidy start boundaries
       }
-      if (s + 25 <= dayEnd) {
-        c.syntheticStartMinutes = s;
-        placed.add([s, s + 25]);
-        cursor = s + 25;
+      if (s + 25 > dayEnd) {
+        // Day genuinely full — leave the chunk untimed (sorts to the end) rather
+        // than stacking it on an occupied slot.
+        c.syntheticStartMinutes = null;
+        result.add(c);
+        continue;
       }
-      // If the day is genuinely full, leave the chunk where it was; it sorts by
-      // its prior time and the human still sees it (no silent loss).
+      c.syntheticStartMinutes = s;
+      placed.add([s, s + 25]);
+      result.add(c);
+      cursor = s + 25;
+
+      // Reserve + emit a break after this work chunk when more work remains and
+      // it fits contiguously — same 5-min short / 25-min long cadence the
+      // generator uses.
+      if (i + 1 < movable.length) {
+        breakCount++;
+        final isLong = breakCount % longBreakEvery == 0;
+        final dur = isLong ? 25 : 5;
+        if (cursor + dur <= dayEnd && !hits(cursor, cursor + dur)) {
+          result.add(
+            ScheduledChunk(
+              chunkTypeIndex: (isLong ? ChunkType.longBreak : ChunkType.shortBreak)
+                  .index,
+              goalId: null,
+              durationMinutes: dur,
+              syntheticStartMinutes: cursor,
+              rationale: '',
+            ),
+          );
+          placed.add([cursor, cursor + dur]);
+          cursor += dur;
+        }
+      }
     }
+    return result;
   }
 
   /// Marks the chunk with [chunkId] as completed, saves the updated schedule,
