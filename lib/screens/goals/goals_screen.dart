@@ -369,17 +369,16 @@ class _QuickAddBarState extends State<_QuickAddBar> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    final raw = _controller.text;
+  /// Adds one or more goals from [raw] (newline-separated), then keeps focus so
+  /// the next goal can go straight in. Multi-add shows a brief confirmation.
+  Future<void> _commit(String raw) async {
     if (raw.trim().isEmpty || _submitting) {
-      // Nothing to add — just keep focus for the next attempt.
       _focusNode.requestFocus();
       return;
     }
     setState(() => _submitting = true);
     final added = await widget.onSubmit(raw);
     if (!mounted) return;
-    _controller.clear();
     setState(() => _submitting = false);
     // Keep the keyboard up and the cursor ready for the next goal.
     _focusNode.requestFocus();
@@ -391,6 +390,26 @@ class _QuickAddBarState extends State<_QuickAddBar> {
         ),
       );
     }
+  }
+
+  /// The field is multi-line so a pasted newline-separated slate survives (a
+  /// single-line field silently strips newlines and collapses the paste into
+  /// one goal). Every COMPLETE line — i.e. text followed by a newline, whether
+  /// from pressing Enter or from a paste — is committed immediately; any
+  /// trailing text with no newline stays in the field as the in-progress goal.
+  /// This makes Enter act as "add" for typing AND explodes a paste into N goals.
+  void _onChanged(String value) {
+    final lastNewline = value.lastIndexOf('\n');
+    if (lastNewline < 0) return; // still typing the current line
+    final complete = value.substring(0, lastNewline);
+    final remainder = value.substring(lastNewline + 1);
+    // Strip the committed lines from the field WITHOUT triggering onChanged
+    // (programmatic controller edits don't re-fire the TextField callback).
+    _controller.value = TextEditingValue(
+      text: remainder,
+      selection: TextSelection.collapsed(offset: remainder.length),
+    );
+    _commit(complete);
   }
 
   @override
@@ -410,10 +429,19 @@ class _QuickAddBarState extends State<_QuickAddBar> {
         controller: _controller,
         focusNode: _focusNode,
         autofocus: count == 0,
-        enabled: !_submitting,
+        // Multi-line so pasted newlines survive; grows a little, then scrolls.
+        minLines: 1,
+        maxLines: 4,
+        keyboardType: TextInputType.multiline,
         textInputAction: TextInputAction.done,
         textCapitalization: TextCapitalization.sentences,
-        onSubmitted: (_) => _submit(),
+        onChanged: _onChanged,
+        // Fallback commit path (e.g. desktop "Done" that doesn't insert a
+        // newline): flush whatever is in the field and clear it.
+        onSubmitted: (value) {
+          _controller.clear();
+          _commit(value);
+        },
         decoration: InputDecoration(
           hintText: hint,
           prefixIcon: const Icon(Icons.add),
@@ -422,9 +450,15 @@ class _QuickAddBarState extends State<_QuickAddBar> {
           suffixIcon: IconButton(
             tooltip: 'Add goal',
             icon: const Icon(Icons.subdirectory_arrow_left),
-            onPressed: _submitting ? null : _submit,
+            onPressed: _submitting
+                ? null
+                : () {
+                    final text = _controller.text;
+                    _controller.clear();
+                    _commit(text);
+                  },
           ),
-          helperText: 'Press Enter after each — refine details later',
+          helperText: 'Enter after each, or paste a list — refine details later',
           helperStyle: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
