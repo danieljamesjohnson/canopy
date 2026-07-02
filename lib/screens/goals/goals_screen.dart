@@ -109,8 +109,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                           timeTargetGoals.length +
                           outcomeGoals.length +
                           habitGoals.length,
-                      onSubmit: (raw) =>
-                          notifier.quickAddGoals(raw.split('\n')),
+                      onSubmit: (names) => notifier.quickAddGoals(names),
                     ),
                   ),
                   if (allEmpty)
@@ -350,8 +349,8 @@ class _QuickAddBar extends StatefulWidget {
   /// Current number of active goals — drives the encouraging progress hint.
   final int goalCount;
 
-  /// Adds goals from the raw field text; returns how many were created.
-  final Future<int> Function(String raw) onSubmit;
+  /// Adds the given goal names; returns how many were actually created.
+  final Future<int> Function(List<String> names) onSubmit;
 
   @override
   State<_QuickAddBar> createState() => _QuickAddBarState();
@@ -360,7 +359,13 @@ class _QuickAddBar extends StatefulWidget {
 class _QuickAddBarState extends State<_QuickAddBar> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
-  bool _submitting = false;
+
+  // Drop-free entry: completed goal names are queued and a single worker drains
+  // the queue serially. A prior save being in-flight must NEVER cause an
+  // already-stripped line to be lost — so we queue instead of guarding-and-
+  // bailing. This holds even when goals are entered faster than each save.
+  final List<String> _queue = [];
+  bool _draining = false;
 
   @override
   void dispose() {
@@ -369,23 +374,33 @@ class _QuickAddBarState extends State<_QuickAddBar> {
     super.dispose();
   }
 
-  /// Adds one or more goals from [raw] (newline-separated), then keeps focus so
-  /// the next goal can go straight in. Multi-add shows a brief confirmation.
-  Future<void> _commit(String raw) async {
-    if (raw.trim().isEmpty || _submitting) {
-      _focusNode.requestFocus();
-      return;
+  /// Queue [names] for saving and ensure the drain worker is running. Blank
+  /// names are skipped. Never drops, regardless of in-flight saves.
+  void _enqueue(Iterable<String> names) {
+    _queue.addAll(names.map((n) => n.trim()).where((n) => n.isNotEmpty));
+    _drain();
+  }
+
+  /// Serially persist everything in the queue, then keep focus for the next
+  /// goal. Reentrancy-guarded by [_draining]; anything enqueued mid-drain is
+  /// picked up by the loop before it exits, so no entry is ever dropped.
+  Future<void> _drain() async {
+    if (_draining) return;
+    _draining = true;
+    var totalAdded = 0;
+    while (_queue.isNotEmpty) {
+      final batch = List<String>.from(_queue);
+      _queue.clear();
+      totalAdded += await widget.onSubmit(batch);
     }
-    setState(() => _submitting = true);
-    final added = await widget.onSubmit(raw);
+    _draining = false;
     if (!mounted) return;
-    setState(() => _submitting = false);
     // Keep the keyboard up and the cursor ready for the next goal.
     _focusNode.requestFocus();
-    if (added > 1) {
+    if (totalAdded > 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Added $added goals'),
+          content: Text('Added $totalAdded goals'),
           duration: const Duration(seconds: 1),
         ),
       );
@@ -395,9 +410,9 @@ class _QuickAddBarState extends State<_QuickAddBar> {
   /// The field is multi-line so a pasted newline-separated slate survives (a
   /// single-line field silently strips newlines and collapses the paste into
   /// one goal). Every COMPLETE line — i.e. text followed by a newline, whether
-  /// from pressing Enter or from a paste — is committed immediately; any
-  /// trailing text with no newline stays in the field as the in-progress goal.
-  /// This makes Enter act as "add" for typing AND explodes a paste into N goals.
+  /// from pressing Enter or from a paste — is queued immediately; any trailing
+  /// text with no newline stays in the field as the in-progress goal. This
+  /// makes Enter act as "add" for typing AND explodes a paste into N goals.
   void _onChanged(String value) {
     final lastNewline = value.lastIndexOf('\n');
     if (lastNewline < 0) return; // still typing the current line
@@ -409,7 +424,7 @@ class _QuickAddBarState extends State<_QuickAddBar> {
       text: remainder,
       selection: TextSelection.collapsed(offset: remainder.length),
     );
-    _commit(complete);
+    _enqueue(complete.split('\n'));
   }
 
   @override
@@ -440,7 +455,7 @@ class _QuickAddBarState extends State<_QuickAddBar> {
         // newline): flush whatever is in the field and clear it.
         onSubmitted: (value) {
           _controller.clear();
-          _commit(value);
+          _enqueue(value.split('\n'));
         },
         decoration: InputDecoration(
           hintText: hint,
@@ -450,13 +465,11 @@ class _QuickAddBarState extends State<_QuickAddBar> {
           suffixIcon: IconButton(
             tooltip: 'Add goal',
             icon: const Icon(Icons.subdirectory_arrow_left),
-            onPressed: _submitting
-                ? null
-                : () {
-                    final text = _controller.text;
-                    _controller.clear();
-                    _commit(text);
-                  },
+            onPressed: () {
+              final text = _controller.text;
+              _controller.clear();
+              _enqueue(text.split('\n'));
+            },
           ),
           helperText: 'Enter after each, or paste a list — refine details later',
           helperStyle: theme.textTheme.bodySmall?.copyWith(

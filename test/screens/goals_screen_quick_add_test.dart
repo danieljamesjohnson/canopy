@@ -17,6 +17,11 @@ import '../test_helpers/mood_pump.dart';
 class _InMemoryGoalRepository implements GoalRepository {
   final Map<String, Goal> _store = {};
 
+  /// Artificial per-save latency, to expose drop-on-busy races.
+  final Duration saveDelay;
+
+  _InMemoryGoalRepository({this.saveDelay = Duration.zero});
+
   @override
   Future<List<Goal>> getAll() async => _store.values.toList();
 
@@ -24,7 +29,10 @@ class _InMemoryGoalRepository implements GoalRepository {
   Future<Goal?> getById(String id) async => _store[id];
 
   @override
-  Future<void> save(Goal goal) async => _store[goal.id] = goal;
+  Future<void> save(Goal goal) async {
+    if (saveDelay > Duration.zero) await Future<void>.delayed(saveDelay);
+    _store[goal.id] = goal;
+  }
 
   @override
   Future<void> delete(String id) async => _store.remove(id);
@@ -92,6 +100,32 @@ void main() {
       expect(notifier.goals.single.name, 'Exercise');
       // Field is cleared and ready for the next goal.
       expect(tester.widget<TextField>(field).controller!.text, '');
+    });
+
+    testWidgets('rapid entry faster than saves drops nothing', (tester) async {
+      // Slow saves: each Enter lands while the prior save is still in flight —
+      // the exact condition that previously dropped goals via the busy guard.
+      repo = _InMemoryGoalRepository(
+        saveDelay: const Duration(milliseconds: 50),
+      );
+      notifier = GoalsNotifier(repository: repo);
+      await notifier.loadGoals();
+      await pump(tester);
+
+      final field = find.byType(TextField).first;
+      // Three goals entered ~5ms apart while each save takes 50ms.
+      await tester.enterText(field, 'Alpha\n');
+      await tester.pump(const Duration(milliseconds: 5));
+      await tester.enterText(field, 'Beta\n');
+      await tester.pump(const Duration(milliseconds: 5));
+      await tester.enterText(field, 'Gamma\n');
+      await tester.pumpAndSettle();
+
+      expect(notifier.goals.map((g) => g.name).toSet(), {
+        'Alpha',
+        'Beta',
+        'Gamma',
+      });
     });
   });
 }
