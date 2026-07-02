@@ -56,6 +56,43 @@ class GoalsNotifier extends ChangeNotifier {
     await loadGoals();
   }
 
+  /// Frictionless bulk entry: create one or more goals from plain names, so a
+  /// user can lay down a full slate with the least effort (type a name, Enter,
+  /// repeat — or paste a newline-separated list).
+  ///
+  /// Each goal gets sensible defaults: regular-time type with a 3 hrs/week
+  /// budget (so it actually schedules out of the box — a null budget produces
+  /// zero chunks forever), normal priority (null → 0.5), and the next palette
+  /// color. Type and everything else stay refine-able later via the edit sheet.
+  ///
+  /// Blank/whitespace-only names are skipped. New goals are appended after any
+  /// existing ones. Returns the count actually added. Reloads once at the end.
+  Future<int> quickAddGoals(Iterable<String> names) async {
+    final cleaned = names
+        .map((n) => n.trim())
+        .where((n) => n.isNotEmpty)
+        .toList();
+    if (cleaned.isEmpty) return 0;
+
+    final startCount = _goals.length;
+    var nextSort = _goals.isEmpty
+        ? 0
+        : _goals.map((g) => g.sortOrder).reduce((a, b) => a > b ? a : b) + 1;
+
+    for (var i = 0; i < cleaned.length; i++) {
+      final goal = Goal(
+        name: cleaned[i],
+        goalTypeIndex: GoalType.timeTarget.index,
+        color: _colorPalette[(startCount + i) % _colorPalette.length],
+        weeklyHourBudget: 3.0,
+        sortOrder: nextSort++,
+      );
+      await _repository.save(goal);
+    }
+    await loadGoals();
+    return cleaned.length;
+  }
+
   /// Archives a goal by id — sets isArchived = true, does NOT delete.
   Future<void> archiveGoal(String id) async {
     final goal = await _repository.getById(id);

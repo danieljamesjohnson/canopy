@@ -100,8 +100,21 @@ class _GoalsScreenState extends State<GoalsScreen> {
               constraints: const BoxConstraints(maxWidth: 720),
               child: CustomScrollView(
                 slivers: [
+                  // Frictionless slate entry (always available): type a name,
+                  // press Enter, keep going. The full form (FAB) stays for
+                  // refining type/energy/etc.
+                  SliverToBoxAdapter(
+                    child: _QuickAddBar(
+                      goalCount:
+                          timeTargetGoals.length +
+                          outcomeGoals.length +
+                          habitGoals.length,
+                      onSubmit: (raw) =>
+                          notifier.quickAddGoals(raw.split('\n')),
+                    ),
+                  ),
                   if (allEmpty)
-                    const SliverFillRemaining(child: _EmptyState())
+                    const SliverToBoxAdapter(child: _EmptyState())
                   else ...[
                     // Heading sliver (GOALS-01): purpose + affordance hint.
                     // Only shown on the non-empty path.
@@ -297,25 +310,125 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.flag_outlined,
-            size: 64,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 16),
-          Text('No goals yet', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(
-            'Add your first goal',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.outline,
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.flag_outlined, size: 64, color: colorScheme.outline),
+            const SizedBox(height: 16),
+            Text(
+              'Lay down your slate',
+              style: Theme.of(context).textTheme.titleMedium,
             ),
+            const SizedBox(height: 8),
+            Text(
+              'Type a goal above and press Enter — keep going to add your '
+              'whole week. You can refine type, priority, and energy later by '
+              'tapping any goal.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Sticky, always-available rapid entry. Type a name and press Enter to add a
+/// goal with sensible defaults; the field clears and keeps focus so a full
+/// slate goes in with type-Enter-type-Enter. Also accepts a pasted,
+/// newline-separated list (each line becomes a goal).
+class _QuickAddBar extends StatefulWidget {
+  const _QuickAddBar({required this.goalCount, required this.onSubmit});
+
+  /// Current number of active goals — drives the encouraging progress hint.
+  final int goalCount;
+
+  /// Adds goals from the raw field text; returns how many were created.
+  final Future<int> Function(String raw) onSubmit;
+
+  @override
+  State<_QuickAddBar> createState() => _QuickAddBarState();
+}
+
+class _QuickAddBarState extends State<_QuickAddBar> {
+  final _controller = TextEditingController();
+  final _focusNode = FocusNode();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final raw = _controller.text;
+    if (raw.trim().isEmpty || _submitting) {
+      // Nothing to add — just keep focus for the next attempt.
+      _focusNode.requestFocus();
+      return;
+    }
+    setState(() => _submitting = true);
+    final added = await widget.onSubmit(raw);
+    if (!mounted) return;
+    _controller.clear();
+    setState(() => _submitting = false);
+    // Keep the keyboard up and the cursor ready for the next goal.
+    _focusNode.requestFocus();
+    if (added > 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Added $added goals'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final count = widget.goalCount;
+    // Encourage a full slate; "8" is the reference the whole job is measured by.
+    final hint = count == 0
+        ? 'Add a goal'
+        : count < 8
+        ? 'Add another ($count so far)'
+        : 'Add another ($count goals)';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: TextField(
+        controller: _controller,
+        focusNode: _focusNode,
+        autofocus: count == 0,
+        enabled: !_submitting,
+        textInputAction: TextInputAction.done,
+        textCapitalization: TextCapitalization.sentences,
+        onSubmitted: (_) => _submit(),
+        decoration: InputDecoration(
+          hintText: hint,
+          prefixIcon: const Icon(Icons.add),
+          border: const OutlineInputBorder(),
+          isDense: true,
+          suffixIcon: IconButton(
+            tooltip: 'Add goal',
+            icon: const Icon(Icons.subdirectory_arrow_left),
+            onPressed: _submitting ? null : _submit,
           ),
-        ],
+          helperText: 'Press Enter after each — refine details later',
+          helperStyle: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
       ),
     );
   }
