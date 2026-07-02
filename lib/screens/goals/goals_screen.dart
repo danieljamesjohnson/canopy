@@ -443,22 +443,23 @@ class _QuickAddBarState extends State<_QuickAddBar> {
 
   /// The field is multi-line so a pasted newline-separated slate survives (a
   /// single-line field silently strips newlines and collapses the paste into
-  /// one goal). Every COMPLETE line — i.e. text followed by a newline, whether
-  /// from pressing Enter or from a paste — is queued immediately; any trailing
-  /// text with no newline stays in the field as the in-progress goal. This
-  /// makes Enter act as "add" for typing AND explodes a paste into N goals.
+  /// one goal).
+  ///
+  /// Any newline in the incoming value means at least one line is complete, so
+  /// we queue EVERY non-empty line and clear the field. This covers all three
+  /// entry shapes with one rule:
+  ///  - type-then-Enter  → "Run\n"      → adds "Run"
+  ///  - paste WITH a trailing newline   → adds every line
+  ///  - paste WITHOUT a trailing newline (copying lines from notes — the common
+  ///    case) → the final line is committed too, not stranded in the field.
+  /// While typing a single goal the only newline that ever appears is the
+  /// terminal Enter (nothing follows it), so this is identical to committing
+  /// per-Enter for that flow — it just also captures a paste's last line.
   void _onChanged(String value) {
-    final lastNewline = value.lastIndexOf('\n');
-    if (lastNewline < 0) return; // still typing the current line
-    final complete = value.substring(0, lastNewline);
-    final remainder = value.substring(lastNewline + 1);
-    // Strip the committed lines from the field WITHOUT triggering onChanged
-    // (programmatic controller edits don't re-fire the TextField callback).
-    _controller.value = TextEditingValue(
-      text: remainder,
-      selection: TextSelection.collapsed(offset: remainder.length),
-    );
-    _enqueue(complete.split('\n'));
+    if (!value.contains('\n')) return; // still typing the current line
+    // Clear WITHOUT re-triggering onChanged (programmatic edits don't re-fire).
+    _controller.clear();
+    _enqueue(value.split('\n'));
   }
 
   @override

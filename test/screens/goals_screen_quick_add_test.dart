@@ -71,22 +71,41 @@ void main() {
       await tester.pump(); // settle addPostFrameCallback loadGoals
     }
 
-    testWidgets('pasting a newline-separated slate creates N goals', (
+    testWidgets(
+      'pasting a slate of 8 with NO trailing newline creates all 8',
+      (tester) async {
+        await pump(tester);
+
+        // The normal shape when copying lines from notes: no trailing newline.
+        final names = List.generate(8, (i) => 'Goal ${i + 1}');
+        await tester.enterText(
+          find.byType(TextField).first,
+          names.join('\n'),
+        );
+        await tester.pumpAndSettle();
+
+        // No extra keystroke needed — the paste alone yields all 8.
+        expect(notifier.goals, hasLength(8));
+        expect(notifier.goals.map((g) => g.name).toSet(), names.toSet());
+        // And the field is empty (nothing stranded).
+        expect(
+          tester.widget<TextField>(find.byType(TextField).first).controller!.text,
+          '',
+        );
+        // The confirmation reports the honest count.
+        expect(find.text('Added 8 goals'), findsOneWidget);
+      },
+    );
+
+    testWidgets('pasting a slate WITH a trailing newline creates all 8', (
       tester,
     ) async {
       await pump(tester);
-
-      // Simulate a paste of a full slate of 8 into the quick-add field.
       final names = List.generate(8, (i) => 'Goal ${i + 1}');
       await tester.enterText(
         find.byType(TextField).first,
-        names.join('\n'),
+        '${names.join('\n')}\n',
       );
-      await tester.pumpAndSettle();
-
-      // Every complete line (all but the last, which has no trailing newline)
-      // commits immediately; flush the trailing one via the field's submit.
-      await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
 
       expect(notifier.goals, hasLength(8));
