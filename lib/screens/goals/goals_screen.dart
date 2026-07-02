@@ -384,20 +384,41 @@ class _QuickAddBarState extends State<_QuickAddBar> {
   /// Serially persist everything in the queue, then keep focus for the next
   /// goal. Reentrancy-guarded by [_draining]; anything enqueued mid-drain is
   /// picked up by the loop before it exits, so no entry is ever dropped.
+  ///
+  /// [_draining] is reset in a `finally` so a save failure can NEVER wedge the
+  /// worker permanently (which would silently drop every later goal). If a
+  /// batch only partially persists, the unsaved tail is put back into the field
+  /// and the failure is surfaced — the user never loses what they typed.
   Future<void> _drain() async {
     if (_draining) return;
     _draining = true;
     var totalAdded = 0;
-    while (_queue.isNotEmpty) {
-      final batch = List<String>.from(_queue);
-      _queue.clear();
-      totalAdded += await widget.onSubmit(batch);
+    var saveFailed = false;
+    try {
+      while (_queue.isNotEmpty) {
+        final batch = List<String>.from(_queue);
+        _queue.clear();
+        final added = await widget.onSubmit(batch);
+        totalAdded += added;
+        if (added < batch.length) {
+          // Persistence failed partway — restore the tail that didn't land so
+          // the user can retry, and stop draining.
+          _restoreToField(batch.sublist(added));
+          saveFailed = true;
+          break;
+        }
+      }
+    } finally {
+      _draining = false;
     }
-    _draining = false;
     if (!mounted) return;
     // Keep the keyboard up and the cursor ready for the next goal.
     _focusNode.requestFocus();
-    if (totalAdded > 1) {
+    if (saveFailed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save. Check and try again.')),
+      );
+    } else if (totalAdded > 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Added $totalAdded goals'),
@@ -405,6 +426,19 @@ class _QuickAddBarState extends State<_QuickAddBar> {
         ),
       );
     }
+  }
+
+  /// Puts unsaved goal names back into the field (ahead of any in-progress
+  /// text) so a failed write is recoverable — the user just retries.
+  void _restoreToField(List<String> names) {
+    final existing = _controller.text;
+    final restored = existing.isEmpty
+        ? names.join('\n')
+        : '${names.join('\n')}\n$existing';
+    _controller.value = TextEditingValue(
+      text: restored,
+      selection: TextSelection.collapsed(offset: restored.length),
+    );
   }
 
   /// The field is multi-line so a pasted newline-separated slate survives (a

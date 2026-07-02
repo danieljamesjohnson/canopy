@@ -28,9 +28,16 @@ class _InMemoryGoalRepository implements GoalRepository {
   @override
   Future<Goal?> getById(String id) async => _store[id];
 
+  /// When > 0, the next [failNextSaves] save calls throw, then saves recover.
+  int failNextSaves = 0;
+
   @override
   Future<void> save(Goal goal) async {
     if (saveDelay > Duration.zero) await Future<void>.delayed(saveDelay);
+    if (failNextSaves > 0) {
+      failNextSaves--;
+      throw StateError('simulated save failure');
+    }
     _store[goal.id] = goal;
   }
 
@@ -126,6 +133,34 @@ void main() {
         'Beta',
         'Gamma',
       });
+    });
+
+    testWidgets('a failed save recovers the name and does not wedge the worker', (
+      tester,
+    ) async {
+      await pump(tester);
+      final field = find.byType(TextField).first;
+
+      // First save fails: the goal must NOT vanish silently.
+      repo.failNextSaves = 1;
+      await tester.enterText(field, 'Meditate\n');
+      await tester.pumpAndSettle();
+
+      expect(notifier.goals, isEmpty); // nothing persisted
+      // The unsaved name is restored to the field so the user can retry.
+      expect(
+        tester.widget<TextField>(field).controller!.text,
+        contains('Meditate'),
+      );
+
+      // Worker is not wedged: retry (saves now succeed) actually persists,
+      // and a further goal also lands — proving _draining was reset.
+      await tester.enterText(field, 'Meditate\n');
+      await tester.pumpAndSettle();
+      await tester.enterText(field, 'Run\n');
+      await tester.pumpAndSettle();
+
+      expect(notifier.goals.map((g) => g.name).toSet(), {'Meditate', 'Run'});
     });
   });
 }

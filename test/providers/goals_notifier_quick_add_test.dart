@@ -85,5 +85,33 @@ void main() {
       expect(added, 0);
       expect(notifier.goals, isEmpty);
     });
+
+    test('reports accurate count and does not throw when a save fails', () async {
+      // Repo that throws on the 3rd save — simulates disk full / closed box.
+      final failing = _FailAfterNRepository(failOnSaveNumber: 3);
+      final n = GoalsNotifier(repository: failing);
+      await n.loadGoals();
+
+      final added = await n.quickAddGoals(['A', 'B', 'C', 'D']);
+      // First two persisted; the failing 3rd stops the run.
+      expect(added, 2);
+      expect(n.goals.map((g) => g.name).toSet(), {'A', 'B'});
+    });
   });
+}
+
+/// Repository that throws on the Nth save call (1-indexed).
+class _FailAfterNRepository extends _InMemoryGoalRepository {
+  _FailAfterNRepository({required this.failOnSaveNumber});
+  final int failOnSaveNumber;
+  int _saveCount = 0;
+
+  @override
+  Future<void> save(Goal goal) async {
+    _saveCount++;
+    if (_saveCount == failOnSaveNumber) {
+      throw StateError('simulated save failure');
+    }
+    return super.save(goal);
+  }
 }

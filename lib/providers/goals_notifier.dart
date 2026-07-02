@@ -79,6 +79,12 @@ class GoalsNotifier extends ChangeNotifier {
         ? 0
         : _goals.map((g) => g.sortOrder).reduce((a, b) => a > b ? a : b) + 1;
 
+    // Persist one at a time, counting only what actually lands. On a save
+    // failure (closed/errored box, disk full) we stop and report the honest
+    // count rather than throwing — the caller restores the unsaved tail so a
+    // failed write never silently drops the user's input. Names are saved in
+    // order, so the first [saved] of [cleaned] are the ones that persisted.
+    var saved = 0;
     for (var i = 0; i < cleaned.length; i++) {
       final goal = Goal(
         name: cleaned[i],
@@ -87,10 +93,15 @@ class GoalsNotifier extends ChangeNotifier {
         weeklyHourBudget: 3.0,
         sortOrder: nextSort++,
       );
-      await _repository.save(goal);
+      try {
+        await _repository.save(goal);
+        saved++;
+      } catch (_) {
+        break;
+      }
     }
     await loadGoals();
-    return cleaned.length;
+    return saved;
   }
 
   /// Archives a goal by id — sets isArchived = true, does NOT delete.
