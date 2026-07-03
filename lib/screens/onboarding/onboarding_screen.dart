@@ -9,6 +9,7 @@ import '../../providers/goals_notifier.dart';
 import '../../providers/restoratives_notifier.dart';
 import '../../providers/settings_notifier.dart';
 import '../../services/notification_service.dart';
+import '../../utils/commitment_window.dart';
 import '../../widgets/quick_add_field.dart';
 
 /// Onboarding as "let the app get to know you", in four warm beats:
@@ -498,11 +499,23 @@ class _JobBeatState extends State<_JobBeat> {
     }
   }
 
-  bool get _hasValidJob =>
-      _nameController.text.trim().isNotEmpty && _selectedDays.isNotEmpty;
+  /// The user has started describing a job (typed a name) — so we must save a
+  /// real, schedulable commitment rather than silently drop it.
+  bool get _hasStartedJob => _nameController.text.trim().isNotEmpty;
 
+  bool get _windowTooShort =>
+      commitmentWindowTooShort(_startMinutes, _endMinutes);
+
+  /// A started job is only savable with at least one day and a window that can
+  /// actually hold a chunk (guards the inverted/night-shift case that would
+  /// otherwise persist a commitment the scheduler turns into zero chunks).
+  bool get _jobValid =>
+      _hasStartedJob && _selectedDays.isNotEmpty && !_windowTooShort;
+
+  /// Finishes onboarding, saving the job only when it's fully valid. Never
+  /// called for a started-but-invalid job — that path is blocked in the UI.
   Future<void> _finishWithJob() async {
-    final job = _hasValidJob
+    final job = _jobValid
         ? CommitmentBlock(
             name: _nameController.text.trim(),
             daysOfWeek: _selectedDays.toList()..sort(),
@@ -511,6 +524,12 @@ class _JobBeatState extends State<_JobBeat> {
           )
         : null;
     await widget.onFinish(job: job);
+  }
+
+  /// Finishes onboarding WITHOUT the job (used to escape a half-filled,
+  /// invalid job rather than trapping the user).
+  Future<void> _finishWithoutJob() async {
+    await widget.onFinish();
   }
 
   @override
@@ -603,6 +622,26 @@ class _JobBeatState extends State<_JobBeat> {
 
           const Spacer(),
 
+          // Inline warning when a job is half-described but not schedulable.
+          // Without this, an inverted/too-short window would save a commitment
+          // that silently produces zero chunks.
+          if (_hasStartedJob && _windowTooShort)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                'End time needs to be at least 25 minutes after the start.',
+                style: textTheme.bodySmall?.copyWith(color: colorScheme.error),
+              ),
+            )
+          else if (_hasStartedJob && _selectedDays.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Pick at least one day for this commitment.',
+                style: textTheme.bodySmall?.copyWith(color: colorScheme.error),
+              ),
+            ),
+
           Row(
             children: [
               TextButton(
@@ -612,14 +651,30 @@ class _JobBeatState extends State<_JobBeat> {
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: widget.isFinishing ? null : _finishWithJob,
+                  // Enabled when there's no job (clean finish) or the job is
+                  // fully valid. A started-but-invalid job disables this so a
+                  // broken commitment can't be saved.
+                  onPressed: (widget.isFinishing || (_hasStartedJob && !_jobValid))
+                      ? null
+                      : _finishWithJob,
                   child: Text(
-                    _hasValidJob ? 'Add & finish' : "Finish — I'm ready",
+                    _hasStartedJob ? 'Add & finish' : "Finish — I'm ready",
                   ),
                 ),
               ),
             ],
           ),
+
+          // Escape hatch: if a job is half-filled and invalid, let the user
+          // finish without it rather than being trapped behind validation.
+          if (_hasStartedJob && !_jobValid)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: TextButton(
+                onPressed: widget.isFinishing ? null : _finishWithoutJob,
+                child: const Text('Skip the job and finish'),
+              ),
+            ),
         ],
       ),
     );

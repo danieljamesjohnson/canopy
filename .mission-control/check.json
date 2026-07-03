@@ -1,12 +1,13 @@
 {
-  "status": "pass",
-  "at": "2026-07-02T20:12:05Z",
-  "label": "jury 4/4 convinced",
+  "status": "fail",
+  "at": "2026-07-03T10:13:19Z",
+  "label": "jury 3/4 convinced",
   "jury": {
-    "convinced": 4,
+    "convinced": 3,
     "total": 4,
     "threshold": "unanimous",
-    "objections": []
-  },
-  "final": true
+    "objections": [
+      "[edge-cases] The onboarding Job beat has no start<end window validation (_hasValidJob checks only name+days), so a realistic night-shift or mis-tapped inverted/zero-length window (e.g. 10pm–6am) saves a CommitmentBlock whose endMinutes<startMinutes, which the schedule generator t"
+    ]
+  }
 }

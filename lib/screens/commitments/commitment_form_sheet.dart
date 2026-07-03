@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/commitment_block.dart';
 import '../../providers/commitments_notifier.dart';
+import '../../utils/commitment_window.dart';
 
 class CommitmentFormSheet extends StatefulWidget {
   const CommitmentFormSheet({
@@ -135,12 +136,8 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
     );
   }
 
-  /// A chunk is 25 minutes, so a window shorter than that materializes zero
-  /// chunks and would silently never appear on the schedule. Require at least
-  /// one chunk's worth of time.
-  static const int _minWindowMinutes = 25;
-
-  bool get _windowTooShort => _endMinutes - _startMinutes < _minWindowMinutes;
+  bool get _windowTooShort =>
+      commitmentWindowTooShort(_startMinutes, _endMinutes);
 
   bool get _canSave =>
       _nameController.text.trim().isNotEmpty &&

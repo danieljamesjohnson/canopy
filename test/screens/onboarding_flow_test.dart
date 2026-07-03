@@ -182,6 +182,55 @@ void main() {
     expect(commitments.blocks.map((b) => b.name), contains('Work'));
   });
 
+  testWidgets(
+    'a named job with no days cannot be saved, but can be skipped',
+    (tester) async {
+      await pump(tester);
+
+      // Advance to the Job beat.
+      await tester.enterText(quickAddField(), 'Read\n');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
+      await tester.pumpAndSettle();
+
+      // Name a job, then clear every day chip → the job is not schedulable.
+      await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Work');
+      await tester.pumpAndSettle();
+      for (final label in const ['M', 'T', 'W', 'T', 'F']) {
+        // Only the selected weekday chips are present; tapping toggles them off.
+        final chip = find.widgetWithText(FilterChip, label);
+        if (chip.evaluate().isNotEmpty) {
+          // Tap each matching chip that is currently selected.
+          for (final e in chip.evaluate()) {
+            final w = e.widget as FilterChip;
+            if (w.selected) {
+              await tester.tap(find.byWidget(w));
+              await tester.pumpAndSettle();
+            }
+          }
+        }
+      }
+
+      // Finish is blocked and a warning is shown.
+      final finish = find.widgetWithText(ElevatedButton, 'Add & finish');
+      expect(tester.widget<ElevatedButton>(finish).onPressed, isNull);
+      expect(
+        find.text('Pick at least one day for this commitment.'),
+        findsOneWidget,
+      );
+
+      // The escape hatch finishes onboarding without saving a broken job.
+      await tester.tap(find.text('Skip the job and finish'));
+      await tester.pumpAndSettle();
+      expect(settings.completed, isTrue);
+      expect(commitments.blocks, isEmpty);
+    },
+  );
+
   testWidgets('job beat can finish with no commitment', (tester) async {
     await pump(tester);
 
