@@ -1,13 +1,12 @@
 {
-  "status": "fail",
-  "at": "2026-07-03T10:26:30Z",
-  "label": "jury 3/4 convinced",
+  "status": "pass",
+  "at": "2026-07-03T11:19:15Z",
+  "label": "jury 4/4 convinced",
   "jury": {
-    "convinced": 3,
+    "convinced": 4,
     "total": 4,
     "threshold": "unanimous",
-    "objections": [
-      "[edge-cases] The final _finish() step (onboarding_screen.dart:74-88) awaits saveBlock/setOnboardingComplete with no try-catch and never resets _isFinishing, so any Hive write failure on the last tap permanently disables every button with no error or retry, trapping the user one s"
-    ]
-  }
+    "objections": []
+  },
+  "final": true
 }

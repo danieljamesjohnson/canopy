@@ -12,16 +12,16 @@ import '../../services/notification_service.dart';
 import '../../utils/commitment_window.dart';
 import '../../widgets/quick_add_field.dart';
 
-/// Onboarding as "let the app get to know you", in four warm beats:
-///   1. Goals    — what do you want to make time for? (a whole slate, fast)
-///   2. Energy   — which of those lift you up, and which drain you?
-///   3. Restore  — what recharges you when you're low?
+/// Onboarding as "let the app get to know you", in four short, centered beats:
+///   1. Goals    — what do you want to make time for?
+///   2. Recharge — what helps you recharge? (restoratives)
+///   3. Energy   — which of those goals lift you up, and which drain you?
 ///   4. Job      — any fixed commitment we should schedule around?
 ///
-/// Goals and restoratives are persisted immediately as they're entered (via the
-/// shared [QuickAddField]), so the later beats can read them straight back and
-/// the user's input can never be lost mid-flow. Completion just flips the
-/// onboarding flag, which the router watches to leave onboarding.
+/// Goals and restoratives are captured with tappable preset chips plus a fast
+/// type/paste field, and persist immediately so the energy beat reads them
+/// straight back. Completion just flips the onboarding flag, which the router
+/// watches to leave onboarding.
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -39,8 +39,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   void initState() {
     super.initState();
-    // Load any pre-existing data so lists render immediately (also covers the
-    // case where a user re-enters an incomplete onboarding).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<GoalsNotifier>().loadGoals();
@@ -68,14 +66,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  /// Saves the optional job commitment (if provided), marks onboarding complete
-  /// — which the router redirect watches to leave onboarding — and schedules
-  /// the morning notification. Guarded against double-tap.
+  /// Saves the optional job, marks onboarding complete (router watches this to
+  /// leave onboarding), and schedules the morning notification. On a write
+  /// failure we re-enable and let the user retry rather than trap them.
   Future<void> _finish({CommitmentBlock? job}) async {
     if (_isFinishing) return;
     setState(() => _isFinishing = true);
 
-    // Capture before any await so we don't touch context across async gaps.
     final settings = context.read<SettingsNotifier>();
     final commitments = context.read<CommitmentsNotifier>();
     final messenger = ScaffoldMessenger.of(context);
@@ -90,11 +87,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           settings.morningNotificationMinutes,
         );
       }
-      // On success the onboarding flag flips and the router navigates away —
-      // this widget unmounts, so we must NOT reset state here.
+      // On success the flag flips and the router navigates away — this widget
+      // unmounts, so we must NOT reset state here.
     } catch (_) {
-      // A write failed on the very last step. Re-enable the buttons and let the
-      // user retry rather than trapping them one tap from done.
       if (!mounted) return;
       setState(() => _isFinishing = false);
       messenger.showSnackBar(
@@ -121,8 +116,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 onPageChanged: (p) => setState(() => _currentPage = p),
                 children: [
                   _GoalsBeat(onNext: _next),
-                  _EnergyBeat(onNext: _next, onBack: _back),
                   _RestorativesBeat(onNext: _next, onBack: _back),
+                  _EnergyBeat(onNext: _next, onBack: _back),
                   _JobBeat(
                     isFinishing: _isFinishing,
                     onBack: _back,
@@ -137,6 +132,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 }
+
+// Preset "big buttons" — one tap adds the item; the type/paste field stays for
+// anything not listed.
+const List<String> _goalPresets = [
+  'Exercise',
+  'Reading',
+  'Family time',
+  'Side project',
+  'Learn something',
+  'Outdoors',
+  'Creative time',
+  'Rest',
+];
+
+const List<String> _restorativePresets = [
+  'Walk',
+  'Music',
+  'Nap',
+  'Nature',
+  'Call a friend',
+  'Bath',
+  'Stretch',
+  'Games',
+];
 
 // ---------------------------------------------------------------------------
 // Beat 1: Goals
@@ -154,75 +173,51 @@ class _GoalsBeat extends StatefulWidget {
 class _GoalsBeatState extends State<_GoalsBeat> {
   final _quickAdd = QuickAddController();
 
-  /// Commit any typed-but-unsubmitted goal, then advance — so tapping Continue
-  /// without pressing Enter first never drops the name.
   void _continue() {
-    _quickAdd.flush();
+    _quickAdd.flush(); // don't drop a name typed but not yet Entered
     widget.onNext();
   }
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
     return _ScreenLayout(
       child: Consumer<GoalsNotifier>(
         builder: (context, goals, _) {
-          final list = goals.goals;
+          final added = [
+            for (final g in goals.goals) _Entry(g.id, g.name, g.emojiTag),
+          ];
+          final goalsNotifier = context.read<GoalsNotifier>();
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('What do you want to make time for?', style: textTheme.headlineSmall),
-              const SizedBox(height: 8),
-              Text(
-                'Add as many as come to mind — big or small. You can change '
-                'them anytime.',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 20),
-              QuickAddField(
-                controller: _quickAdd,
-                onSubmit: (names) => context
-                    .read<GoalsNotifier>()
-                    .quickAddGoals(names),
-                autofocus: list.isEmpty,
-                multiAddNoun: 'goals',
-                addTooltip: 'Add goal',
-                hintText: list.isEmpty ? 'e.g. Exercise' : 'Add another',
-                helperText: 'Press Enter after each, or paste a list',
-              ),
+              const _BeatTitle('What are your goals?'),
               const SizedBox(height: 16),
               Expanded(
-                child: list.isEmpty
-                    ? _EmptyHint(
-                        text: 'Your goals will appear here as you add them.',
-                      )
-                    : ListView(
-                        children: [
-                          for (final g in list)
-                            _GoalChipRow(goal: g),
-                        ],
-                      ),
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: list.isEmpty ? null : _continue,
-                child: const Text('Continue'),
-              ),
-              if (list.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    'Add at least one goal to continue.',
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                child: SingleChildScrollView(
+                  child: _ChipCloud(
+                    added: added,
+                    suggestions: _suggestionsFor(_goalPresets, added),
+                    onAdd: (name) => goalsNotifier.quickAddGoals([name]),
+                    onRemove: goalsNotifier.archiveGoal,
                   ),
                 ),
+              ),
+              const SizedBox(height: 12),
+              QuickAddField(
+                controller: _quickAdd,
+                onSubmit: (names) => goalsNotifier.quickAddGoals(names),
+                autofocus: added.isEmpty,
+                multiAddNoun: 'goals',
+                addTooltip: 'Add goal',
+                hintText: 'Add your own',
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: added.isEmpty ? null : _continue,
+                child: const Text('Continue'),
+              ),
+              if (added.isEmpty)
+                const _CenteredHint('Add at least one to continue.'),
             ],
           );
         },
@@ -231,42 +226,86 @@ class _GoalsBeatState extends State<_GoalsBeat> {
   }
 }
 
-class _GoalChipRow extends StatelessWidget {
-  const _GoalChipRow({required this.goal});
+// ---------------------------------------------------------------------------
+// Beat 2: Recharge (restoratives)
+// ---------------------------------------------------------------------------
 
-  final Goal goal;
+class _RestorativesBeat extends StatefulWidget {
+  const _RestorativesBeat({required this.onNext, required this.onBack});
+
+  final VoidCallback onNext;
+  final VoidCallback onBack;
+
+  @override
+  State<_RestorativesBeat> createState() => _RestorativesBeatState();
+}
+
+class _RestorativesBeatState extends State<_RestorativesBeat> {
+  final _quickAdd = QuickAddController();
+
+  void _navigate(VoidCallback move) {
+    _quickAdd.flush();
+    move();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          if (goal.emojiTag != null) ...[
-            Text(goal.emojiTag!, style: const TextStyle(fontSize: 18)),
-            const SizedBox(width: 8),
-          ] else ...[
-            Icon(
-              Icons.flag_outlined,
-              size: 18,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            const SizedBox(width: 8),
-          ],
-          Expanded(
-            child: Text(
-              goal.name,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ),
-        ],
+    return _ScreenLayout(
+      child: Consumer<RestorativesNotifier>(
+        builder: (context, restoratives, _) {
+          final added = [
+            for (final i in restoratives.items) _Entry(i.id, i.name, i.emojiTag),
+          ];
+          final notifier = context.read<RestorativesNotifier>();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const _BeatTitle('What helps you recharge?'),
+              const SizedBox(height: 16),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: _ChipCloud(
+                    added: added,
+                    suggestions: _suggestionsFor(_restorativePresets, added),
+                    onAdd: (name) => notifier.quickAddItems([name]),
+                    onRemove: notifier.deleteItem,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              QuickAddField(
+                controller: _quickAdd,
+                onSubmit: (names) => notifier.quickAddItems(names),
+                multiAddNoun: 'restoratives',
+                addTooltip: 'Add restorative',
+                hintText: 'Add your own',
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () => _navigate(widget.onBack),
+                    child: const Text('Back'),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => _navigate(widget.onNext),
+                      child: Text(added.isEmpty ? 'Skip' : 'Continue'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Beat 2: Energy
+// Beat 3: Energy (sorts the goals)
 // ---------------------------------------------------------------------------
 
 class _EnergyBeat extends StatelessWidget {
@@ -277,9 +316,6 @@ class _EnergyBeat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
     return _ScreenLayout(
       child: Consumer<GoalsNotifier>(
         builder: (context, goals, _) {
@@ -287,26 +323,16 @@ class _EnergyBeat extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Which of these lift you up?', style: textTheme.headlineSmall),
-              const SizedBox(height: 8),
-              Text(
-                "Mark what gives you energy and what drains you — we'll lean on "
-                'the good ones when your energy is low.',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 20),
+              const _BeatTitle('Which of these lift you up?'),
+              const SizedBox(height: 16),
               Expanded(
                 child: list.isEmpty
-                    ? _EmptyHint(text: 'No goals yet — go back and add a few.')
+                    ? const _CenteredHint('No goals yet — go back and add a few.')
                     : ListView(
-                        children: [
-                          for (final g in list) _EnergyRow(goal: g),
-                        ],
+                        children: [for (final g in list) _EnergyRow(goal: g)],
                       ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   TextButton(onPressed: onBack, child: const Text('Back')),
@@ -341,15 +367,22 @@ class _EnergyRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (goal.emojiTag != null) ...[
                 Text(goal.emojiTag!, style: const TextStyle(fontSize: 16)),
                 const SizedBox(width: 6),
               ],
-              Expanded(child: Text(goal.name, style: textTheme.bodyLarge)),
+              Flexible(
+                child: Text(
+                  goal.name,
+                  style: textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           SegmentedButton<EnergyValence>(
             showSelectedIcon: false,
             segments: const [
@@ -376,116 +409,6 @@ class _EnergyRow extends StatelessWidget {
             },
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Beat 3: Restoratives
-// ---------------------------------------------------------------------------
-
-class _RestorativesBeat extends StatefulWidget {
-  const _RestorativesBeat({required this.onNext, required this.onBack});
-
-  final VoidCallback onNext;
-  final VoidCallback onBack;
-
-  @override
-  State<_RestorativesBeat> createState() => _RestorativesBeatState();
-}
-
-class _RestorativesBeatState extends State<_RestorativesBeat> {
-  final _quickAdd = QuickAddController();
-
-  /// Commit any typed-but-unsubmitted restorative before navigating, so a
-  /// name isn't lost when Continue/Skip/Back is tapped without Enter.
-  void _navigate(VoidCallback move) {
-    _quickAdd.flush();
-    move();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return _ScreenLayout(
-      child: Consumer<RestorativesNotifier>(
-        builder: (context, restoratives, _) {
-          final list = restoratives.items;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('What helps you recharge?', style: textTheme.headlineSmall),
-              const SizedBox(height: 8),
-              Text(
-                "A walk, music, a long bath — the small things that restore you. "
-                "These aren't goals; we'll gently suggest them on low days.",
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 20),
-              QuickAddField(
-                controller: _quickAdd,
-                onSubmit: (names) => context
-                    .read<RestorativesNotifier>()
-                    .quickAddItems(names),
-                multiAddNoun: 'restoratives',
-                addTooltip: 'Add restorative',
-                hintText: list.isEmpty ? 'e.g. Listen to music' : 'Add another',
-                helperText: 'Press Enter after each, or paste a list',
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: list.isEmpty
-                    ? _EmptyHint(
-                        text: 'Optional — but even one helps on a hard day.',
-                      )
-                    : ListView(
-                        children: [
-                          for (final item in list)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    item.emojiTag ?? '🌿',
-                                    style: const TextStyle(fontSize: 18),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      item.name,
-                                      style: textTheme.bodyLarge,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  TextButton(
-                    onPressed: () => _navigate(widget.onBack),
-                    child: const Text('Back'),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => _navigate(widget.onNext),
-                      child: Text(list.isEmpty ? 'Skip' : 'Continue'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          );
-        },
       ),
     );
   }
@@ -550,21 +473,14 @@ class _JobBeatState extends State<_JobBeat> {
     }
   }
 
-  /// The user has started describing a job (typed a name) — so we must save a
-  /// real, schedulable commitment rather than silently drop it.
   bool get _hasStartedJob => _nameController.text.trim().isNotEmpty;
 
   bool get _windowTooShort =>
       commitmentWindowTooShort(_startMinutes, _endMinutes);
 
-  /// A started job is only savable with at least one day and a window that can
-  /// actually hold a chunk (guards the inverted/night-shift case that would
-  /// otherwise persist a commitment the scheduler turns into zero chunks).
   bool get _jobValid =>
       _hasStartedJob && _selectedDays.isNotEmpty && !_windowTooShort;
 
-  /// Finishes onboarding, saving the job only when it's fully valid. Never
-  /// called for a started-but-invalid job — that path is blocked in the UI.
   Future<void> _finishWithJob() async {
     final job = _jobValid
         ? CommitmentBlock(
@@ -577,54 +493,30 @@ class _JobBeatState extends State<_JobBeat> {
     await widget.onFinish(job: job);
   }
 
-  /// Finishes onboarding WITHOUT the job (used to escape a half-filled,
-  /// invalid job rather than trapping the user).
-  Future<void> _finishWithoutJob() async {
-    await widget.onFinish();
-  }
+  Future<void> _finishWithoutJob() async => widget.onFinish();
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
     return _ScreenLayout(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Do you have a job or fixed commitment?',
-            style: textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "We'll always schedule around it, whatever your mood. "
-            'No worries if not — just finish.',
-            style: textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 20),
+          const _BeatTitle('Do you have a job or fixed commitment?'),
+          const SizedBox(height: 16),
 
           TextField(
             controller: _nameController,
             onChanged: (_) => setState(() {}),
+            textAlign: TextAlign.center,
             decoration: const InputDecoration(
-              labelText: 'Name',
               hintText: 'e.g. Work, Class, Gym',
               border: OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 16),
 
-          Text(
-            'Days',
-            style: textTheme.labelMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 8),
           Wrap(
+            alignment: WrapAlignment.center,
             spacing: 6,
             children: List.generate(7, (i) {
               final day = i + 1;
@@ -673,24 +565,15 @@ class _JobBeatState extends State<_JobBeat> {
 
           const Spacer(),
 
-          // Inline warning when a job is half-described but not schedulable.
-          // Without this, an inverted/too-short window would save a commitment
-          // that silently produces zero chunks.
           if (_hasStartedJob && _windowTooShort)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                'End time needs to be at least 25 minutes after the start.',
-                style: textTheme.bodySmall?.copyWith(color: colorScheme.error),
-              ),
+            _CenteredHint(
+              'End time needs to be at least 25 minutes after the start.',
+              error: true,
             )
           else if (_hasStartedJob && _selectedDays.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                'Pick at least one day for this commitment.',
-                style: textTheme.bodySmall?.copyWith(color: colorScheme.error),
-              ),
+            _CenteredHint(
+              'Pick at least one day for this commitment.',
+              error: true,
             ),
 
           Row(
@@ -702,9 +585,6 @@ class _JobBeatState extends State<_JobBeat> {
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton(
-                  // Enabled when there's no job (clean finish) or the job is
-                  // fully valid. A started-but-invalid job disables this so a
-                  // broken commitment can't be saved.
                   onPressed: (widget.isFinishing || (_hasStartedJob && !_jobValid))
                       ? null
                       : _finishWithJob,
@@ -716,15 +596,10 @@ class _JobBeatState extends State<_JobBeat> {
             ],
           ),
 
-          // Escape hatch: if a job is half-filled and invalid, let the user
-          // finish without it rather than being trapped behind validation.
           if (_hasStartedJob && !_jobValid)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: TextButton(
-                onPressed: widget.isFinishing ? null : _finishWithoutJob,
-                child: const Text('Skip the job and finish'),
-              ),
+            TextButton(
+              onPressed: widget.isFinishing ? null : _finishWithoutJob,
+              child: const Text('Skip the job and finish'),
             ),
         ],
       ),
@@ -736,19 +611,95 @@ class _JobBeatState extends State<_JobBeat> {
 // Shared bits
 // ---------------------------------------------------------------------------
 
-class _EmptyHint extends StatelessWidget {
-  const _EmptyHint({required this.text});
+/// A single added/suggested entry (a goal or a restorative).
+class _Entry {
+  const _Entry(this.id, this.name, this.emoji);
+  final String id;
+  final String name;
+  final String? emoji;
+}
+
+/// Presets not already added (case-insensitive), so a preset the user has
+/// added shows as a removable chip rather than a duplicate suggestion.
+List<String> _suggestionsFor(List<String> presets, List<_Entry> added) {
+  final have = {for (final e in added) e.name.toLowerCase()};
+  return [for (final p in presets) if (!have.contains(p.toLowerCase())) p];
+}
+
+/// Added items (removable input chips) + preset suggestions (add chips), all
+/// centered. Tapping a suggestion adds it; tapping the × on an added chip
+/// removes it.
+class _ChipCloud extends StatelessWidget {
+  const _ChipCloud({
+    required this.added,
+    required this.suggestions,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final List<_Entry> added;
+  final List<String> suggestions;
+  final void Function(String name) onAdd;
+  final void Function(String id) onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final e in added)
+          InputChip(
+            avatar: e.emoji != null ? Text(e.emoji!) : null,
+            label: Text(e.name),
+            backgroundColor: colorScheme.secondaryContainer,
+            onDeleted: () => onRemove(e.id),
+          ),
+        for (final s in suggestions)
+          ActionChip(
+            avatar: const Icon(Icons.add, size: 18),
+            label: Text(s),
+            onPressed: () => onAdd(s),
+          ),
+      ],
+    );
+  }
+}
+
+/// Short, centered beat heading.
+class _BeatTitle extends StatelessWidget {
+  const _BeatTitle(this.text);
 
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return Text(
+      text,
+      textAlign: TextAlign.center,
+      style: Theme.of(context).textTheme.headlineSmall,
+    );
+  }
+}
+
+class _CenteredHint extends StatelessWidget {
+  const _CenteredHint(this.text, {this.error = false});
+
+  final String text;
+  final bool error;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
       child: Text(
         text,
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          color: error ? colorScheme.error : colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -788,6 +739,8 @@ class _StepDots extends StatelessWidget {
   }
 }
 
+/// Centers content and constrains it to a comfortable reading width so nothing
+/// stretches edge-to-edge on desktop.
 class _ScreenLayout extends StatelessWidget {
   const _ScreenLayout({required this.child});
 
@@ -795,9 +748,14 @@ class _ScreenLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-      child: child,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: child,
+        ),
+      ),
     );
   }
 }

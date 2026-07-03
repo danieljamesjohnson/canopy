@@ -136,7 +136,7 @@ void main() {
   testWidgets('beat 1 requires a goal, then reveals it', (tester) async {
     await pump(tester);
 
-    expect(find.text('What do you want to make time for?'), findsOneWidget);
+    expect(find.text('What are your goals?'), findsOneWidget);
     // Continue is disabled until at least one goal exists.
     final continueBtn = find.widgetWithText(ElevatedButton, 'Continue');
     expect(tester.widget<ElevatedButton>(continueBtn).onPressed, isNull);
@@ -148,7 +148,24 @@ void main() {
     expect(tester.widget<ElevatedButton>(continueBtn).onPressed, isNotNull);
   });
 
-  testWidgets('full walk-through: goals → energy → restore → finish', (
+  testWidgets('tapping a preset chip adds that goal', (tester) async {
+    await pump(tester);
+    // The preset "big buttons" are one-tap adds.
+    await tester.tap(find.widgetWithText(ActionChip, 'Reading'));
+    await tester.pumpAndSettle();
+    expect(goals.goals.map((g) => g.name), contains('Reading'));
+    // Continue is now enabled off the single preset tap.
+    expect(
+      tester
+          .widget<ElevatedButton>(
+            find.widgetWithText(ElevatedButton, 'Continue'),
+          )
+          .onPressed,
+      isNotNull,
+    );
+  });
+
+  testWidgets('full walk-through: goals → recharge → energy → finish', (
     tester,
   ) async {
     await pump(tester);
@@ -159,7 +176,15 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
     await tester.pumpAndSettle();
 
-    // Beat 2 — energy. The goal is shown and can be marked as draining.
+    // Beat 2 — recharge (restoratives).
+    expect(find.text('What helps you recharge?'), findsOneWidget);
+    await tester.enterText(quickAddField(), 'Listen to music\n');
+    await tester.pumpAndSettle();
+    expect(restoratives.items.map((i) => i.name), contains('Listen to music'));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+    await tester.pumpAndSettle();
+
+    // Beat 3 — energy. The goal is shown and can be marked as draining.
     expect(find.text('Which of these lift you up?'), findsOneWidget);
     expect(find.text('Exercise'), findsOneWidget);
     await tester.tap(find.text('Drains'));
@@ -168,18 +193,10 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
     await tester.pumpAndSettle();
 
-    // Beat 3 — restoratives.
-    expect(find.text('What helps you recharge?'), findsOneWidget);
-    await tester.enterText(quickAddField(), 'Listen to music\n');
-    await tester.pumpAndSettle();
-    expect(restoratives.items.map((i) => i.name), contains('Listen to music'));
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
-    await tester.pumpAndSettle();
-
     // Beat 4 — job. Fill it, finish.
     expect(find.text('Do you have a job or fixed commitment?'), findsOneWidget);
     await tester.enterText(
-      find.widgetWithText(TextField, 'Name'),
+      find.widgetWithText(TextField, 'e.g. Work, Class, Gym'),
       'Work',
     );
     await tester.pumpAndSettle();
@@ -217,10 +234,8 @@ void main() {
     (tester) async {
       await pump(tester);
 
-      // Advance to the restoratives beat.
+      // Advance to the restoratives beat (right after goals).
       await tester.enterText(quickAddField(), 'Read\n');
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
       await tester.pumpAndSettle();
@@ -239,18 +254,21 @@ void main() {
     (tester) async {
       await pump(tester);
 
-      // Advance to the Job beat.
+      // Advance to the Job beat: goals → recharge → energy → job.
       await tester.enterText(quickAddField(), 'Read\n');
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
       await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
 
       // Name a job, then clear every day chip → the job is not schedulable.
-      await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Work');
+      await tester.enterText(
+        find.widgetWithText(TextField, 'e.g. Work, Class, Gym'),
+        'Work',
+      );
       await tester.pumpAndSettle();
       for (final label in const ['M', 'T', 'W', 'T', 'F']) {
         // Only the selected weekday chips are present; tapping toggles them off.
@@ -288,14 +306,14 @@ void main() {
     (tester) async {
       await pump(tester);
 
-      // Walk to the job beat with no commitment.
+      // Walk to the job beat: goals → recharge (Skip) → energy → job.
       await tester.enterText(quickAddField(), 'Read\n');
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
-      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
       await tester.pumpAndSettle();
 
       // First finish tap fails the write.
@@ -331,10 +349,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
     await tester.pumpAndSettle();
-    // Beat 2 → 3 → 4 without touching anything.
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
-    await tester.pumpAndSettle();
+    // Recharge (Skip) → energy (Continue) → job.
     await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
     await tester.pumpAndSettle();
 
     // Beat 4: no name entered → the CTA offers a clean finish.
