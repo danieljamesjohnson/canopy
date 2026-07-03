@@ -124,10 +124,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 // Beat 1: Goals
 // ---------------------------------------------------------------------------
 
-class _GoalsBeat extends StatelessWidget {
+class _GoalsBeat extends StatefulWidget {
   const _GoalsBeat({required this.onNext});
 
   final VoidCallback onNext;
+
+  @override
+  State<_GoalsBeat> createState() => _GoalsBeatState();
+}
+
+class _GoalsBeatState extends State<_GoalsBeat> {
+  final _quickAdd = QuickAddController();
+
+  /// Commit any typed-but-unsubmitted goal, then advance — so tapping Continue
+  /// without pressing Enter first never drops the name.
+  void _continue() {
+    _quickAdd.flush();
+    widget.onNext();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -152,6 +166,7 @@ class _GoalsBeat extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               QuickAddField(
+                controller: _quickAdd,
                 onSubmit: (names) => context
                     .read<GoalsNotifier>()
                     .quickAddGoals(names),
@@ -176,7 +191,7 @@ class _GoalsBeat extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               ElevatedButton(
-                onPressed: list.isEmpty ? null : onNext,
+                onPressed: list.isEmpty ? null : _continue,
                 child: const Text('Continue'),
               ),
               if (list.isEmpty)
@@ -352,11 +367,25 @@ class _EnergyRow extends StatelessWidget {
 // Beat 3: Restoratives
 // ---------------------------------------------------------------------------
 
-class _RestorativesBeat extends StatelessWidget {
+class _RestorativesBeat extends StatefulWidget {
   const _RestorativesBeat({required this.onNext, required this.onBack});
 
   final VoidCallback onNext;
   final VoidCallback onBack;
+
+  @override
+  State<_RestorativesBeat> createState() => _RestorativesBeatState();
+}
+
+class _RestorativesBeatState extends State<_RestorativesBeat> {
+  final _quickAdd = QuickAddController();
+
+  /// Commit any typed-but-unsubmitted restorative before navigating, so a
+  /// name isn't lost when Continue/Skip/Back is tapped without Enter.
+  void _navigate(VoidCallback move) {
+    _quickAdd.flush();
+    move();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -381,6 +410,7 @@ class _RestorativesBeat extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               QuickAddField(
+                controller: _quickAdd,
                 onSubmit: (names) => context
                     .read<RestorativesNotifier>()
                     .quickAddItems(names),
@@ -422,11 +452,14 @@ class _RestorativesBeat extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  TextButton(onPressed: onBack, child: const Text('Back')),
+                  TextButton(
+                    onPressed: () => _navigate(widget.onBack),
+                    child: const Text('Back'),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: onNext,
+                      onPressed: () => _navigate(widget.onNext),
                       child: Text(list.isEmpty ? 'Skip' : 'Continue'),
                     ),
                   ),

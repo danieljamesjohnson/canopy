@@ -1,5 +1,23 @@
 import 'package:flutter/material.dart';
 
+/// Handle for imperatively flushing a [QuickAddField]'s in-progress text.
+///
+/// Navigating away (tapping Continue/Skip/Back) must not silently discard a
+/// name the user typed but hadn't pressed Enter on. The owning widget holds a
+/// controller and calls [flush] before it navigates, guaranteeing the pending
+/// text is committed for saving first.
+class QuickAddController {
+  _QuickAddFieldState? _state;
+
+  void _attach(_QuickAddFieldState state) => _state = state;
+  void _detach(_QuickAddFieldState state) {
+    if (identical(_state, state)) _state = null;
+  }
+
+  /// Commit any typed-but-unsubmitted text so it isn't lost on navigation.
+  void flush() => _state?._flushPending();
+}
+
 /// A sticky, frictionless multi-add text field. Type a name and press Enter to
 /// add an item; the field clears and keeps focus so a whole slate goes in with
 /// type-Enter-type-Enter. Also accepts a pasted, newline-separated list — each
@@ -18,7 +36,12 @@ class QuickAddField extends StatefulWidget {
     this.autofocus = false,
     this.multiAddNoun = 'items',
     this.addTooltip = 'Add',
+    this.controller,
   });
+
+  /// Optional handle so an owner can [QuickAddController.flush] pending text
+  /// before navigating away (otherwise typed-but-not-Entered text is lost).
+  final QuickAddController? controller;
 
   /// Persists the given names; returns how many were actually created. Must not
   /// throw — report the honest saved count instead so the unsaved tail can be
@@ -54,10 +77,43 @@ class _QuickAddFieldState extends State<QuickAddField> {
   bool _draining = false;
 
   @override
+  void initState() {
+    super.initState();
+    widget.controller?._attach(this);
+    // Blur-commit: if focus leaves the field with text still in it (e.g. the
+    // user tapped elsewhere), commit it rather than lose it.
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(QuickAddField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.controller, widget.controller)) {
+      oldWidget.controller?._detach(this);
+      widget.controller?._attach(this);
+    }
+  }
+
+  @override
   void dispose() {
+    widget.controller?._detach(this);
+    _focusNode.removeListener(_onFocusChange);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus) _flushPending();
+  }
+
+  /// Commit any text typed but not yet submitted (no trailing newline), so it
+  /// isn't discarded when focus leaves or the owner navigates away.
+  void _flushPending() {
+    final text = _controller.text;
+    if (text.trim().isEmpty) return;
+    _controller.clear();
+    _enqueue(text.split('\n'));
   }
 
   /// Queue [names] for saving and ensure the drain worker is running. Blank

@@ -1,13 +1,13 @@
 {
   "status": "fail",
-  "at": "2026-07-03T10:13:19Z",
+  "at": "2026-07-03T10:19:56Z",
   "label": "jury 3/4 convinced",
   "jury": {
     "convinced": 3,
     "total": 4,
     "threshold": "unanimous",
     "objections": [
-      "[edge-cases] The onboarding Job beat has no start<end window validation (_hasValidJob checks only name+days), so a realistic night-shift or mis-tapped inverted/zero-length window (e.g. 10pm–6am) saves a CommitmentBlock whose endMinutes<startMinutes, which the schedule generator t"
+      "[edge-cases] Typing a goal or restorative into the QuickAddField and then tapping the primary Continue/Skip/Back button (without first pressing Enter) advances the beat via bare onNext, silently discarding that typed text so the answer is never saved — an unrecovered drop that de"
     ]
   }
 }

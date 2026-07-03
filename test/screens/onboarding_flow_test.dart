@@ -183,6 +183,49 @@ void main() {
   });
 
   testWidgets(
+    'tapping Continue without pressing Enter still saves the typed goal',
+    (tester) async {
+      await pump(tester);
+
+      // Establish one saved goal so Continue is enabled, then type a SECOND
+      // goal but do NOT press Enter before continuing.
+      await tester.enterText(quickAddField(), 'Exercise\n');
+      await tester.pumpAndSettle();
+      await tester.enterText(quickAddField(), 'Meditation');
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+
+      // Both goals persisted — the in-progress one was flushed, not dropped.
+      expect(
+        goals.goals.map((g) => g.name).toSet(),
+        {'Exercise', 'Meditation'},
+      );
+    },
+  );
+
+  testWidgets(
+    'tapping Continue without Enter still saves the typed restorative',
+    (tester) async {
+      await pump(tester);
+
+      // Advance to the restoratives beat.
+      await tester.enterText(quickAddField(), 'Read\n');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+
+      // Type a restorative, then leave via Skip WITHOUT pressing Enter.
+      await tester.enterText(quickAddField(), 'Hot bath');
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
+      await tester.pumpAndSettle();
+
+      expect(restoratives.items.map((i) => i.name), contains('Hot bath'));
+    },
+  );
+
+  testWidgets(
     'a named job with no days cannot be saved, but can be skipped',
     (tester) async {
       await pump(tester);
