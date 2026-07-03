@@ -1,12 +1,13 @@
 {
-  "status": "pass",
-  "at": "2026-07-03T11:19:15Z",
-  "label": "jury 4/4 convinced",
+  "status": "fail",
+  "at": "2026-07-03T11:50:05Z",
+  "label": "jury 3/4 convinced",
   "jury": {
-    "convinced": 4,
+    "convinced": 3,
     "total": 4,
     "threshold": "unanimous",
-    "objections": []
-  },
-  "final": true
+    "objections": [
+      "[edge-cases] The job beat opens fully pre-filled (M–F, 9:00am–5:00pm), so a user with a standard job taps the prominent \"Finish — I'm ready\" button to confirm and, because saving is gated on a typed name (`_hasStartedJob`), their fixed commitment is silently discarded rather than"
+    ]
+  }
 }

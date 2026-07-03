@@ -473,23 +473,24 @@ class _JobBeatState extends State<_JobBeat> {
     }
   }
 
-  bool get _hasStartedJob => _nameController.text.trim().isNotEmpty;
-
   bool get _windowTooShort =>
       commitmentWindowTooShort(_startMinutes, _endMinutes);
 
-  bool get _jobValid =>
-      _hasStartedJob && _selectedDays.isNotEmpty && !_windowTooShort;
+  /// The pre-filled (or edited) schedule is savable. Name is NOT required — the
+  /// beat opens fully pre-filled (M–F 9–5), so tapping the primary action must
+  /// capture that job rather than silently discard it. A blank name defaults to
+  /// "Work" so the user's fixed commitment is never lost just for skipping a
+  /// field.
+  bool get _scheduleValid => _selectedDays.isNotEmpty && !_windowTooShort;
 
-  Future<void> _finishWithJob() async {
-    final job = _jobValid
-        ? CommitmentBlock(
-            name: _nameController.text.trim(),
-            daysOfWeek: _selectedDays.toList()..sort(),
-            startMinutes: _startMinutes,
-            endMinutes: _endMinutes,
-          )
-        : null;
+  Future<void> _addAndFinish() async {
+    final typed = _nameController.text.trim();
+    final job = CommitmentBlock(
+      name: typed.isEmpty ? 'Work' : typed,
+      daysOfWeek: _selectedDays.toList()..sort(),
+      startMinutes: _startMinutes,
+      endMinutes: _endMinutes,
+    );
     await widget.onFinish(job: job);
   }
 
@@ -565,12 +566,13 @@ class _JobBeatState extends State<_JobBeat> {
 
           const Spacer(),
 
-          if (_hasStartedJob && _windowTooShort)
+          // Warn only when the user has broken the pre-filled schedule.
+          if (_windowTooShort)
             _CenteredHint(
               'End time needs to be at least 25 minutes after the start.',
               error: true,
             )
-          else if (_hasStartedJob && _selectedDays.isEmpty)
+          else if (_selectedDays.isEmpty)
             _CenteredHint(
               'Pick at least one day for this commitment.',
               error: true,
@@ -585,22 +587,23 @@ class _JobBeatState extends State<_JobBeat> {
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: (widget.isFinishing || (_hasStartedJob && !_jobValid))
+                  // Saves the pre-filled/edited job. Disabled only if the user
+                  // broke the schedule (no days / too-short window).
+                  onPressed: (widget.isFinishing || !_scheduleValid)
                       ? null
-                      : _finishWithJob,
-                  child: Text(
-                    _hasStartedJob ? 'Add & finish' : "Finish — I'm ready",
-                  ),
+                      : _addAndFinish,
+                  child: const Text('Add & finish'),
                 ),
               ),
             ],
           ),
 
-          if (_hasStartedJob && !_jobValid)
-            TextButton(
-              onPressed: widget.isFinishing ? null : _finishWithoutJob,
-              child: const Text('Skip the job and finish'),
-            ),
+          // Always-available escape for anyone without a fixed commitment, so
+          // the prominent action can safely capture the pre-filled job.
+          TextButton(
+            onPressed: widget.isFinishing ? null : _finishWithoutJob,
+            child: const Text("I don't have a fixed commitment"),
+          ),
         ],
       ),
     );

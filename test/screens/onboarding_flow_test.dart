@@ -294,10 +294,40 @@ void main() {
       );
 
       // The escape hatch finishes onboarding without saving a broken job.
-      await tester.tap(find.text('Skip the job and finish'));
+      await tester.tap(find.text("I don't have a fixed commitment"));
       await tester.pumpAndSettle();
       expect(settings.completed, isTrue);
       expect(commitments.blocks, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'a standard pre-filled job is captured on Add & finish without typing a name',
+    (tester) async {
+      await pump(tester);
+
+      // To the job beat: goals → recharge (Skip) → energy → job.
+      await tester.enterText(quickAddField(), 'Read\n');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+
+      // The beat opens pre-filled (M–F 9–5). Tapping the primary action WITHOUT
+      // typing a name must capture that job, not discard it.
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add & finish'));
+      await tester.pumpAndSettle();
+
+      expect(settings.completed, isTrue);
+      expect(commitments.blocks, hasLength(1));
+      final block = commitments.blocks.single;
+      expect(block.name, 'Work'); // sensible default for a blank name
+      expect(block.daysOfWeek, [1, 2, 3, 4, 5]);
+      expect(block.startMinutes, 9 * 60);
+      expect(block.endMinutes, 17 * 60);
     },
   );
 
@@ -318,7 +348,7 @@ void main() {
 
       // First finish tap fails the write.
       settings.failNextComplete = true;
-      final finish = find.widgetWithText(ElevatedButton, "Finish — I'm ready");
+      final finish = find.widgetWithText(ElevatedButton, 'Add & finish');
       await tester.tap(finish);
       await tester.pumpAndSettle();
 
@@ -355,8 +385,8 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
     await tester.pumpAndSettle();
 
-    // Beat 4: no name entered → the CTA offers a clean finish.
-    await tester.tap(find.widgetWithText(ElevatedButton, "Finish — I'm ready"));
+    // Beat 4: no fixed job → the explicit escape finishes without saving one.
+    await tester.tap(find.text("I don't have a fixed commitment"));
     await tester.pumpAndSettle();
 
     expect(settings.completed, isTrue);
