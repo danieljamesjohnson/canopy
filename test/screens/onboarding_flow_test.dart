@@ -133,6 +133,16 @@ void main() {
 
   Finder quickAddField() => find.byType(TextField).first;
 
+  // Scroll a control into view (it may be below the fold on a short viewport or
+  // at large text scale) before tapping it.
+  Future<void> tapButton(WidgetTester tester, String label) async {
+    final f = find.widgetWithText(ElevatedButton, label);
+    await tester.ensureVisible(f);
+    await tester.pumpAndSettle();
+    await tester.tap(f);
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('beat 1 requires a goal, then reveals it', (tester) async {
     await pump(tester);
 
@@ -393,15 +403,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Walk to the job beat.
+      // Walk to the job beat (buttons may be below the fold → scroll to them).
       await tester.enterText(quickAddField(), 'Read\n');
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
-      await tester.pumpAndSettle();
+      await tapButton(tester, 'Continue');
+      await tapButton(tester, 'Skip');
+      await tapButton(tester, 'Continue');
 
       // No RenderFlex overflow was thrown getting here. The finish action is
       // reachable by scrolling and works.
@@ -413,6 +420,50 @@ void main() {
 
       expect(settings.completed, isTrue);
       expect(commitments.blocks, hasLength(1));
+    },
+  );
+
+  testWidgets(
+    'large text scale on a small phone does not lock the user on beat 1',
+    (tester) async {
+      // Reproduces the accessibility lockout: at 2x text on a small phone the
+      // beats must scroll, not overflow and hide the primary button.
+      setViewport(tester, const Size(320, 568));
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<GoalsNotifier>.value(value: goals),
+            ChangeNotifierProvider<RestorativesNotifier>.value(
+              value: restoratives,
+            ),
+            ChangeNotifierProvider<CommitmentsNotifier>.value(value: commitments),
+            ChangeNotifierProvider<SettingsNotifier>.value(value: settings),
+          ],
+          child: MaterialApp(
+            home: const OnboardingScreen(),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: const TextScaler.linear(2.0),
+              ),
+              child: child!,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Add a goal via a preset chip (at the top), then reach Continue by
+      // scrolling — it must be reachable, not stranded off-screen.
+      final chip = find.widgetWithText(ActionChip, 'Reading');
+      await tester.ensureVisible(chip);
+      await tester.pumpAndSettle();
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+
+      await tapButton(tester, 'Continue');
+
+      // We advanced to beat 2 — not locked out.
+      expect(find.text('What helps you recharge?'), findsOneWidget);
     },
   );
 

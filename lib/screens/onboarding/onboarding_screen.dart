@@ -189,20 +189,17 @@ class _GoalsBeatState extends State<_GoalsBeat> {
           final goalsNotifier = context.read<GoalsNotifier>();
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
               const _BeatTitle('What are your goals?'),
               const SizedBox(height: 16),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: _ChipCloud(
-                    added: added,
-                    suggestions: _suggestionsFor(_goalPresets, added),
-                    onAdd: (name) => goalsNotifier.quickAddGoals([name]),
-                    onRemove: goalsNotifier.archiveGoal,
-                  ),
-                ),
+              _ChipCloud(
+                added: added,
+                suggestions: _suggestionsFor(_goalPresets, added),
+                onAdd: (name) => goalsNotifier.quickAddGoals([name]),
+                onRemove: goalsNotifier.archiveGoal,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
               QuickAddField(
                 controller: _quickAdd,
                 onSubmit: (names) => goalsNotifier.quickAddGoals(names),
@@ -259,20 +256,17 @@ class _RestorativesBeatState extends State<_RestorativesBeat> {
           final notifier = context.read<RestorativesNotifier>();
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
               const _BeatTitle('What helps you recharge?'),
               const SizedBox(height: 16),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: _ChipCloud(
-                    added: added,
-                    suggestions: _suggestionsFor(_restorativePresets, added),
-                    onAdd: (name) => notifier.quickAddItems([name]),
-                    onRemove: notifier.deleteItem,
-                  ),
-                ),
+              _ChipCloud(
+                added: added,
+                suggestions: _suggestionsFor(_restorativePresets, added),
+                onAdd: (name) => notifier.quickAddItems([name]),
+                onRemove: notifier.deleteItem,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
               QuickAddField(
                 controller: _quickAdd,
                 onSubmit: (names) => notifier.quickAddItems(names),
@@ -322,17 +316,15 @@ class _EnergyBeat extends StatelessWidget {
           final list = goals.goals;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
               const _BeatTitle('Which of these lift you up?'),
               const SizedBox(height: 16),
-              Expanded(
-                child: list.isEmpty
-                    ? const _CenteredHint('No goals yet — go back and add a few.')
-                    : ListView(
-                        children: [for (final g in list) _EnergyRow(goal: g)],
-                      ),
-              ),
-              const SizedBox(height: 12),
+              if (list.isEmpty)
+                const _CenteredHint('No goals yet — go back and add a few.')
+              else
+                for (final g in list) _EnergyRow(goal: g),
+              const SizedBox(height: 20),
               Row(
                 children: [
                   TextButton(onPressed: onBack, child: const Text('Back')),
@@ -499,15 +491,11 @@ class _JobBeatState extends State<_JobBeat> {
   @override
   Widget build(BuildContext context) {
     return _ScreenLayout(
-      // Fill the height when there's room (Spacer pushes the buttons down), but
-      // SCROLL when the viewport shrinks — otherwise raising the soft keyboard
-      // on the name field pushes the finish buttons off-screen and traps the
-      // user on the last step.
-      child: _FillOrScroll(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const _BeatTitle('Do you have a job or fixed commitment?'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const _BeatTitle('Do you have a job or fixed commitment?'),
           const SizedBox(height: 16),
 
           TextField(
@@ -569,7 +557,7 @@ class _JobBeatState extends State<_JobBeat> {
             ],
           ),
 
-          const Spacer(),
+          const SizedBox(height: 24),
 
           // Warn only when the user has broken the pre-filled schedule.
           if (_windowTooShort)
@@ -609,8 +597,7 @@ class _JobBeatState extends State<_JobBeat> {
             onPressed: widget.isFinishing ? null : _finishWithoutJob,
             child: const Text("I don't have a fixed commitment"),
           ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -619,32 +606,6 @@ class _JobBeatState extends State<_JobBeat> {
 // ---------------------------------------------------------------------------
 // Shared bits
 // ---------------------------------------------------------------------------
-
-/// Fills the available height when there's room (so a trailing [Spacer] can
-/// push content to the bottom) but SCROLLS when the viewport is shorter than
-/// the content — e.g. when the soft keyboard raises. Without this a fixed
-/// Column+Spacer overflows and pushes its buttons off-screen behind the
-/// keyboard. (Not usable with [Expanded] children — those beats already scroll
-/// via their own inner scroll region.)
-class _FillOrScroll extends StatelessWidget {
-  const _FillOrScroll({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: IntrinsicHeight(child: child),
-          ),
-        );
-      },
-    );
-  }
-}
 
 /// A single added/suggested entry (a goal or a restorative).
 class _Entry {
@@ -774,8 +735,13 @@ class _StepDots extends StatelessWidget {
   }
 }
 
-/// Centers content and constrains it to a comfortable reading width so nothing
-/// stretches edge-to-edge on desktop.
+/// Centers content and constrains it to a comfortable reading width, and makes
+/// EVERY beat fill-the-height-or-scroll: a trailing [Spacer] pins actions to
+/// the bottom when there's room, but the whole beat scrolls when the viewport
+/// is shorter than the content — a shrunk viewport (soft keyboard) OR large
+/// accessibility text scale. Without this, a fixed column overflows and pushes
+/// its primary button off-screen; because the PageView can't scroll and the
+/// router gates the app behind onboarding, that would lock the user out.
 class _ScreenLayout extends StatelessWidget {
   const _ScreenLayout({required this.child});
 
@@ -786,9 +752,24 @@ class _ScreenLayout extends StatelessWidget {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-          child: child,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                // Vertically center the content when it fits; when it's taller
+                // than the viewport (small phone, large text, or keyboard up)
+                // the ConstrainedBox grows and the whole beat scrolls. No
+                // IntrinsicHeight/Spacer — those misbehave with the chip Wrap.
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                    child: child,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
