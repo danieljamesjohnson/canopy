@@ -1,0 +1,1 @@
+Rebuild onboarding so the app gets to know a new person: it asks their goals, lets them say whether each one energizes or drains them, asks what restores them, and finally whether they have a job or fixed commitment. The outcome: a new user finishes onboarding feeling genuinely known — and gets there quickly.

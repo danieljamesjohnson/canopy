@@ -7,8 +7,17 @@ import 'package:provider/provider.dart';
 import '../../data/models/goal.dart';
 import '../../providers/goals_notifier.dart';
 import '../../widgets/adaptive_form_modal.dart';
+import '../../widgets/quick_add_field.dart';
 import 'goal_form_sheet.dart';
 import 'widgets/goal_card.dart';
+
+/// Encouraging placeholder for the quick-add field; "8" is the reference the
+/// frictionless-slate goal is measured by.
+String _quickAddHint(int count) => count == 0
+    ? 'Add a goal'
+    : count < 8
+    ? 'Add another ($count so far)'
+    : 'Add another ($count goals)';
 
 class GoalsScreen extends StatefulWidget {
   const GoalsScreen({super.key});
@@ -104,12 +113,21 @@ class _GoalsScreenState extends State<GoalsScreen> {
                   // press Enter, keep going. The full form (FAB) stays for
                   // refining type/energy/etc.
                   SliverToBoxAdapter(
-                    child: _QuickAddBar(
-                      goalCount:
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      child: QuickAddField(
+                        onSubmit: (names) => notifier.quickAddGoals(names),
+                        autofocus: allEmpty,
+                        multiAddNoun: 'goals',
+                        addTooltip: 'Add goal',
+                        helperText:
+                            'Enter after each, or paste a list — refine details later',
+                        hintText: _quickAddHint(
                           timeTargetGoals.length +
-                          outcomeGoals.length +
-                          habitGoals.length,
-                      onSubmit: (names) => notifier.quickAddGoals(names),
+                              outcomeGoals.length +
+                              habitGoals.length,
+                        ),
+                      ),
                     ),
                   ),
                   if (allEmpty)
@@ -333,183 +351,6 @@ class _EmptyState extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Sticky, always-available rapid entry. Type a name and press Enter to add a
-/// goal with sensible defaults; the field clears and keeps focus so a full
-/// slate goes in with type-Enter-type-Enter. Also accepts a pasted,
-/// newline-separated list (each line becomes a goal).
-class _QuickAddBar extends StatefulWidget {
-  const _QuickAddBar({required this.goalCount, required this.onSubmit});
-
-  /// Current number of active goals — drives the encouraging progress hint.
-  final int goalCount;
-
-  /// Adds the given goal names; returns how many were actually created.
-  final Future<int> Function(List<String> names) onSubmit;
-
-  @override
-  State<_QuickAddBar> createState() => _QuickAddBarState();
-}
-
-class _QuickAddBarState extends State<_QuickAddBar> {
-  final _controller = TextEditingController();
-  final _focusNode = FocusNode();
-
-  // Drop-free entry: completed goal names are queued and a single worker drains
-  // the queue serially. A prior save being in-flight must NEVER cause an
-  // already-stripped line to be lost — so we queue instead of guarding-and-
-  // bailing. This holds even when goals are entered faster than each save.
-  final List<String> _queue = [];
-  bool _draining = false;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  /// Queue [names] for saving and ensure the drain worker is running. Blank
-  /// names are skipped. Never drops, regardless of in-flight saves.
-  void _enqueue(Iterable<String> names) {
-    _queue.addAll(names.map((n) => n.trim()).where((n) => n.isNotEmpty));
-    _drain();
-  }
-
-  /// Serially persist everything in the queue, then keep focus for the next
-  /// goal. Reentrancy-guarded by [_draining]; anything enqueued mid-drain is
-  /// picked up by the loop before it exits, so no entry is ever dropped.
-  ///
-  /// [_draining] is reset in a `finally` so a save failure can NEVER wedge the
-  /// worker permanently (which would silently drop every later goal). If a
-  /// batch only partially persists, the unsaved tail is put back into the field
-  /// and the failure is surfaced — the user never loses what they typed.
-  Future<void> _drain() async {
-    if (_draining) return;
-    _draining = true;
-    var totalAdded = 0;
-    var saveFailed = false;
-    try {
-      while (_queue.isNotEmpty) {
-        final batch = List<String>.from(_queue);
-        _queue.clear();
-        final added = await widget.onSubmit(batch);
-        totalAdded += added;
-        if (added < batch.length) {
-          // Persistence failed partway — restore the tail that didn't land so
-          // the user can retry, and stop draining.
-          _restoreToField(batch.sublist(added));
-          saveFailed = true;
-          break;
-        }
-      }
-    } finally {
-      _draining = false;
-    }
-    if (!mounted) return;
-    // Keep the keyboard up and the cursor ready for the next goal.
-    _focusNode.requestFocus();
-    if (saveFailed) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save. Check and try again.')),
-      );
-    } else if (totalAdded > 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Added $totalAdded goals'),
-          duration: const Duration(seconds: 1),
-        ),
-      );
-    }
-  }
-
-  /// Puts unsaved goal names back into the field (ahead of any in-progress
-  /// text) so a failed write is recoverable — the user just retries.
-  void _restoreToField(List<String> names) {
-    final existing = _controller.text;
-    final restored = existing.isEmpty
-        ? names.join('\n')
-        : '${names.join('\n')}\n$existing';
-    _controller.value = TextEditingValue(
-      text: restored,
-      selection: TextSelection.collapsed(offset: restored.length),
-    );
-  }
-
-  /// The field is multi-line so a pasted newline-separated slate survives (a
-  /// single-line field silently strips newlines and collapses the paste into
-  /// one goal).
-  ///
-  /// Any newline in the incoming value means at least one line is complete, so
-  /// we queue EVERY non-empty line and clear the field. This covers all three
-  /// entry shapes with one rule:
-  ///  - type-then-Enter  → "Run\n"      → adds "Run"
-  ///  - paste WITH a trailing newline   → adds every line
-  ///  - paste WITHOUT a trailing newline (copying lines from notes — the common
-  ///    case) → the final line is committed too, not stranded in the field.
-  /// While typing a single goal the only newline that ever appears is the
-  /// terminal Enter (nothing follows it), so this is identical to committing
-  /// per-Enter for that flow — it just also captures a paste's last line.
-  void _onChanged(String value) {
-    if (!value.contains('\n')) return; // still typing the current line
-    // Clear WITHOUT re-triggering onChanged (programmatic edits don't re-fire).
-    _controller.clear();
-    _enqueue(value.split('\n'));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final count = widget.goalCount;
-    // Encourage a full slate; "8" is the reference the whole job is measured by.
-    final hint = count == 0
-        ? 'Add a goal'
-        : count < 8
-        ? 'Add another ($count so far)'
-        : 'Add another ($count goals)';
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: TextField(
-        controller: _controller,
-        focusNode: _focusNode,
-        autofocus: count == 0,
-        // Multi-line so pasted newlines survive; grows a little, then scrolls.
-        minLines: 1,
-        maxLines: 4,
-        keyboardType: TextInputType.multiline,
-        textInputAction: TextInputAction.done,
-        textCapitalization: TextCapitalization.sentences,
-        onChanged: _onChanged,
-        // Fallback commit path (e.g. desktop "Done" that doesn't insert a
-        // newline): flush whatever is in the field and clear it.
-        onSubmitted: (value) {
-          _controller.clear();
-          _enqueue(value.split('\n'));
-        },
-        decoration: InputDecoration(
-          hintText: hint,
-          prefixIcon: const Icon(Icons.add),
-          border: const OutlineInputBorder(),
-          isDense: true,
-          suffixIcon: IconButton(
-            tooltip: 'Add goal',
-            icon: const Icon(Icons.subdirectory_arrow_left),
-            onPressed: () {
-              final text = _controller.text;
-              _controller.clear();
-              _enqueue(text.split('\n'));
-            },
-          ),
-          helperText: 'Enter after each, or paste a list — refine details later',
-          helperStyle: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
         ),
       ),
     );

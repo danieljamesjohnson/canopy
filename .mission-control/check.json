@@ -1,0 +1,12 @@
+{
+  "status": "pass",
+  "at": "2026-07-02T20:12:05Z",
+  "label": "jury 4/4 convinced",
+  "jury": {
+    "convinced": 4,
+    "total": 4,
+    "threshold": "unanimous",
+    "objections": []
+  },
+  "final": true
+}

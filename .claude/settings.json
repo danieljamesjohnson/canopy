@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"/home/dan/CodeProjects/missioncontrol/bin/idea-intake-hook\" SessionStart"
+          }
+        ]
+      }
+    ]
+  }
+}

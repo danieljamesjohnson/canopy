@@ -33,6 +33,36 @@ class RestorativesNotifier extends ChangeNotifier {
     await loadItems();
   }
 
+  /// Frictionless bulk entry: create one or more restoratives from plain names
+  /// (type a name + Enter, repeat — or paste a newline-separated list). Blank
+  /// names are skipped; new items are appended after existing ones. On a save
+  /// failure we stop and return the honest count actually persisted rather than
+  /// throwing, so the caller can recover the unsaved tail. Reloads once.
+  Future<int> quickAddItems(Iterable<String> names) async {
+    final cleaned = names
+        .map((n) => n.trim())
+        .where((n) => n.isNotEmpty)
+        .toList();
+    if (cleaned.isEmpty) return 0;
+
+    var nextSort = _items.isEmpty
+        ? 0
+        : _items.map((i) => i.sortOrder).reduce((a, b) => a > b ? a : b) + 1;
+
+    var saved = 0;
+    for (final name in cleaned) {
+      final item = RestorativeItem(name: name, sortOrder: nextSort++);
+      try {
+        await _repository.save(item);
+        saved++;
+      } catch (_) {
+        break;
+      }
+    }
+    await loadItems();
+    return saved;
+  }
+
   /// Hard-deletes a restorative item by id and reloads the list.
   Future<void> deleteItem(String id) async {
     await _repository.delete(id);

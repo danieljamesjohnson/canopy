@@ -18,6 +18,7 @@
 
 import 'package:canopy/providers/commitments_notifier.dart';
 import 'package:canopy/providers/goals_notifier.dart';
+import 'package:canopy/providers/restoratives_notifier.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/settings_notifier.dart';
 import 'package:canopy/providers/theme_notifier.dart';
@@ -66,6 +67,13 @@ class _FakeScheduleNotifier extends ScheduleNotifier {
 /// be defensive against future additions.
 class _FakeCommitmentsNotifier extends CommitmentsNotifier {}
 
+/// Test double — OnboardingScreen loads restoratives in a post-frame callback;
+/// no-op it so the redirect-to-/onboarding cases don't touch Hive.
+class _FakeRestorativesNotifier extends RestorativesNotifier {
+  @override
+  Future<void> loadItems() async {}
+}
+
 /// Test double — overrides `init()` and `isPreCheckin` to avoid Hive/Timer.
 /// HomeScreen reads `context.watch<ThemeNotifier>().isPreCheckin` so this
 /// provider must be in the tree when the redirect lands on /home (NAV-01).
@@ -100,6 +108,8 @@ Future<GoRouter> _pumpRouter(
       providers: [
         ChangeNotifierProvider<SettingsNotifier>.value(value: settings),
         ChangeNotifierProvider<GoalsNotifier>(create: (_) => _FakeGoalsNotifier()),
+        ChangeNotifierProvider<RestorativesNotifier>(
+            create: (_) => _FakeRestorativesNotifier()),
         ChangeNotifierProvider<ScheduleNotifier>(
             create: (_) => _FakeScheduleNotifier()),
         ChangeNotifierProvider<CommitmentsNotifier>(
