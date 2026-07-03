@@ -1,1 +1,3 @@
 Rebuild onboarding so the app gets to know a new person: it asks their goals, lets them say whether each one energizes or drains them, asks what restores them, and finally whether they have a job or fixed commitment. The outcome: a new user finishes onboarding feeling genuinely known — and gets there quickly.
+
+Scope note (Dan, 2026-07-03): midnight-crossing / overnight commitments (e.g. a 10pm–6am night shift) are OUT OF SCOPE for this job. Canopy does not support overnight commitments anywhere yet (the normal commitment form can't either); it is a tracked whole-app limitation, not an onboarding gap. Onboarding must simply not save a broken/zero-chunk commitment — rejecting an invalid window and letting the user skip is the correct, in-scope behavior.
