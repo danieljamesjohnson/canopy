@@ -1,13 +1,12 @@
 {
-  "status": "fail",
-  "at": "2026-07-03T12:08:29Z",
-  "label": "jury 3/4 convinced",
+  "status": "pass",
+  "at": "2026-07-03T12:23:01Z",
+  "label": "jury 4/4 convinced",
   "jury": {
-    "convinced": 3,
+    "convinced": 4,
     "total": 4,
     "threshold": "unanimous",
-    "objections": [
-      "[edge-cases] On a small phone at large accessibility text scale (reproduced at 320x568, textScaler 2.0), the goals and recharge beats overflow (80px) and push their primary Continue/Skip button off-screen with no scroll fallback (only the job beat has _FillOrScroll; the PageView "
-    ]
-  }
+    "objections": []
+  },
+  "final": true
 }

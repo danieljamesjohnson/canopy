@@ -512,11 +512,19 @@ class _JobBeatState extends State<_JobBeat> {
           Wrap(
             alignment: WrapAlignment.center,
             spacing: 6,
+            runSpacing: 6,
             children: List.generate(7, (i) {
               final day = i + 1;
               return FilterChip(
                 label: Text(_dayLabels[i]),
                 selected: _selectedDays.contains(day),
+                // Drop the checkmark (the selected fill already signals state)
+                // and tighten padding so all 7 days fit on one row instead of
+                // wrapping Sunday onto its own line.
+                showCheckmark: false,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 6),
                 onSelected: (sel) => setState(() {
                   if (sel) {
                     _selectedDays.add(day);
@@ -590,6 +598,7 @@ class _JobBeatState extends State<_JobBeat> {
               ),
             ],
           ),
+          const SizedBox(height: 8),
 
           // Always-available escape for anyone without a fixed commitment, so
           // the prominent action can safely capture the pre-filled job.
