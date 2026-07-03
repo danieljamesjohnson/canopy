@@ -76,12 +76,21 @@ class _InMemoryCommitmentRepository implements CommitmentBlockRepository {
 /// finish path doesn't reach the platform NotificationService.
 class _FakeSettingsNotifier extends SettingsNotifier {
   bool completed = false;
+
+  /// When true, the NEXT setOnboardingComplete throws (then clears), to
+  /// simulate a Hive write failure on the final onboarding step.
+  bool failNextComplete = false;
+
   @override
   bool get onboardingComplete => completed;
   @override
   bool get morningNotificationEnabled => false;
   @override
   Future<void> setOnboardingComplete(bool value) async {
+    if (failNextComplete) {
+      failNextComplete = false;
+      throw StateError('simulated write failure');
+    }
     completed = value;
     notifyListeners();
   }
@@ -271,6 +280,46 @@ void main() {
       await tester.pumpAndSettle();
       expect(settings.completed, isTrue);
       expect(commitments.blocks, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'a failure on the final step is recoverable, not a dead end',
+    (tester) async {
+      await pump(tester);
+
+      // Walk to the job beat with no commitment.
+      await tester.enterText(quickAddField(), 'Read\n');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
+      await tester.pumpAndSettle();
+
+      // First finish tap fails the write.
+      settings.failNextComplete = true;
+      final finish = find.widgetWithText(ElevatedButton, "Finish — I'm ready");
+      await tester.tap(finish);
+      await tester.pumpAndSettle();
+
+      // Not stuck: still on onboarding, error surfaced, button re-enabled.
+      expect(settings.completed, isFalse);
+      expect(
+        find.text("Couldn't finish setup. Please try again."),
+        findsOneWidget,
+      );
+      expect(tester.widget<ElevatedButton>(finish).onPressed, isNotNull);
+
+      // Let the error SnackBar auto-dismiss so it isn't covering the button.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+
+      // Retry succeeds.
+      await tester.tap(finish);
+      await tester.pumpAndSettle();
+      expect(settings.completed, isTrue);
     },
   );
 

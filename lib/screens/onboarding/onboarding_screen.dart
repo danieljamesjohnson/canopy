@@ -75,14 +75,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_isFinishing) return;
     setState(() => _isFinishing = true);
 
+    // Capture before any await so we don't touch context across async gaps.
     final settings = context.read<SettingsNotifier>();
-    if (job != null) {
-      await context.read<CommitmentsNotifier>().saveBlock(job);
-    }
-    await settings.setOnboardingComplete(true);
-    if (settings.morningNotificationEnabled) {
-      await NotificationService.scheduleMorningNotification(
-        settings.morningNotificationMinutes,
+    final commitments = context.read<CommitmentsNotifier>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      if (job != null) {
+        await commitments.saveBlock(job);
+      }
+      await settings.setOnboardingComplete(true);
+      if (settings.morningNotificationEnabled) {
+        await NotificationService.scheduleMorningNotification(
+          settings.morningNotificationMinutes,
+        );
+      }
+      // On success the onboarding flag flips and the router navigates away —
+      // this widget unmounts, so we must NOT reset state here.
+    } catch (_) {
+      // A write failed on the very last step. Re-enable the buttons and let the
+      // user retry rather than trapping them one tap from done.
+      if (!mounted) return;
+      setState(() => _isFinishing = false);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text("Couldn't finish setup. Please try again."),
+        ),
       );
     }
   }

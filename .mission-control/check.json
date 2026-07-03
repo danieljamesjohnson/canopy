@@ -1,13 +1,13 @@
 {
   "status": "fail",
-  "at": "2026-07-03T10:19:56Z",
+  "at": "2026-07-03T10:26:30Z",
   "label": "jury 3/4 convinced",
   "jury": {
     "convinced": 3,
     "total": 4,
     "threshold": "unanimous",
     "objections": [
-      "[edge-cases] Typing a goal or restorative into the QuickAddField and then tapping the primary Continue/Skip/Back button (without first pressing Enter) advances the beat via bare onNext, silently discarding that typed text so the answer is never saved — an unrecovered drop that de"
+      "[edge-cases] The final _finish() step (onboarding_screen.dart:74-88) awaits saveBlock/setOnboardingComplete with no try-catch and never resets _isFinishing, so any Hive write failure on the last tap permanently disables every button with no error or retry, trapping the user one s"
     ]
   }
 }
