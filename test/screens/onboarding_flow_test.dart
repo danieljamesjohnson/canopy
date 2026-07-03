@@ -371,6 +371,51 @@ void main() {
     },
   );
 
+  testWidgets(
+    'job beat scrolls (not overflows) when the viewport is short (keyboard up)',
+    (tester) async {
+      // A short viewport stands in for the soft keyboard shrinking the screen.
+      // The old fixed Column+Spacer overflowed and pushed the buttons off; the
+      // beat must now scroll and keep the finish action reachable.
+      setViewport(tester, const Size(360, 320));
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<GoalsNotifier>.value(value: goals),
+            ChangeNotifierProvider<RestorativesNotifier>.value(
+              value: restoratives,
+            ),
+            ChangeNotifierProvider<CommitmentsNotifier>.value(value: commitments),
+            ChangeNotifierProvider<SettingsNotifier>.value(value: settings),
+          ],
+          child: const MaterialApp(home: OnboardingScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Walk to the job beat.
+      await tester.enterText(quickAddField(), 'Read\n');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+
+      // No RenderFlex overflow was thrown getting here. The finish action is
+      // reachable by scrolling and works.
+      final finish = find.widgetWithText(ElevatedButton, 'Add & finish');
+      await tester.ensureVisible(finish);
+      await tester.pumpAndSettle();
+      await tester.tap(finish);
+      await tester.pumpAndSettle();
+
+      expect(settings.completed, isTrue);
+      expect(commitments.blocks, hasLength(1));
+    },
+  );
+
   testWidgets('job beat can finish with no commitment', (tester) async {
     await pump(tester);
 

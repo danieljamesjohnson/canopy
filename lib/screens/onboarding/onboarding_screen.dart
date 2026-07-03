@@ -499,10 +499,15 @@ class _JobBeatState extends State<_JobBeat> {
   @override
   Widget build(BuildContext context) {
     return _ScreenLayout(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _BeatTitle('Do you have a job or fixed commitment?'),
+      // Fill the height when there's room (Spacer pushes the buttons down), but
+      // SCROLL when the viewport shrinks — otherwise raising the soft keyboard
+      // on the name field pushes the finish buttons off-screen and traps the
+      // user on the last step.
+      child: _FillOrScroll(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _BeatTitle('Do you have a job or fixed commitment?'),
           const SizedBox(height: 16),
 
           TextField(
@@ -604,7 +609,8 @@ class _JobBeatState extends State<_JobBeat> {
             onPressed: widget.isFinishing ? null : _finishWithoutJob,
             child: const Text("I don't have a fixed commitment"),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -613,6 +619,32 @@ class _JobBeatState extends State<_JobBeat> {
 // ---------------------------------------------------------------------------
 // Shared bits
 // ---------------------------------------------------------------------------
+
+/// Fills the available height when there's room (so a trailing [Spacer] can
+/// push content to the bottom) but SCROLLS when the viewport is shorter than
+/// the content — e.g. when the soft keyboard raises. Without this a fixed
+/// Column+Spacer overflows and pushes its buttons off-screen behind the
+/// keyboard. (Not usable with [Expanded] children — those beats already scroll
+/// via their own inner scroll region.)
+class _FillOrScroll extends StatelessWidget {
+  const _FillOrScroll({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(child: child),
+          ),
+        );
+      },
+    );
+  }
+}
 
 /// A single added/suggested entry (a goal or a restorative).
 class _Entry {
