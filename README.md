@@ -7,12 +7,6 @@ your mood, and that shapes how demanding the generated schedule is. Time is allo
 focused **Chunks** across your goals, fixed commitments are always honored regardless of mood, and
 every quarter the app shows you where your time really went versus where you said it should go.
 
-<p align="center">
-  <img src="docs/screenshots/checkin.jpg" alt="Morning mood check-in" width="280">
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/schedule.jpg" alt="Generated daily schedule" width="280">
-</p>
-
 ## Why it's rule-based
 
 There is no LLM in the scheduling engine, on purpose. A schedule you can't predict is a schedule
@@ -54,10 +48,22 @@ flutter analyze      # clean
 
 ## Status
 
-Shipped through **v1.4 "Energy-Aware."** Working and dogfooded daily. Development history,
-milestone records, and requirement tracking live in [`.planning/`](.planning/) — this project is
-built with [GSD](https://github.com/open-gsd/gsd-core), so the full planning trail is in the repo
-alongside the code.
+Early, and honest about it. The engine is real — v1.4 "Energy-Aware," dogfooded daily, 340 tests —
+but the UI is plain. Effort so far has gone into making the scheduling logic correct and
+predictable rather than into making it look good, and it shows.
+
+The open question I'm working on here is **where AI actually belongs in a product like this.**
+Keeping it out of the scheduling engine (see above) is a deliberate answer for one part of the
+app, not a position on the whole thing. The parts that look more promising — reflection prompts
+at end of day, turning a vague intention into a shaped goal, noticing patterns across a quarter
+that you wouldn't spot yourself — are exactly the parts where being non-deterministic costs
+nothing and judgment helps. Canopy is the sandbox I'm using to find out which of those hold up in
+daily use and which just add noise. Nothing shipped on that front yet.
+
+Development history, milestone records, and requirement tracking live in
+[`.planning/`](.planning/) — this project is built with
+[GSD](https://github.com/open-gsd/gsd-core), so the full planning trail is in the repo alongside
+the code.
 
 ## License
 
