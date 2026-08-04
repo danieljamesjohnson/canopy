@@ -1,0 +1,68 @@
+# Requirements: Canopy — v1.5 "Right Now"
+
+**Defined:** 2026-08-04
+**Core Value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
+**Source:** Dan's dogfood pass on the hosted debug build (2026-08-04). Research skipped — every item lands on an existing surface.
+
+## v1.5 Requirements
+
+### Unified Today Screen
+
+- [ ] **UNIFY-01**: User sees what's happening now and the rest of the day on one screen, without switching tabs
+- [ ] **UNIFY-02**: Shell navigation reflects the merge, and every existing entry point (notification tap, in-app links to `/schedule`) lands on the unified screen rather than a dead route
+
+### Live Activity Tracking
+
+- [ ] **LIVE-01**: The screen always names what the user is doing right now, including breaks — a running break reads as a break, never as empty time
+- [ ] **LIVE-02**: Time remaining in the current activity is shown and counts down while the screen is open
+- [ ] **LIVE-03**: The honest edge states survive the merge — before the day starts, between activities, and day-complete each read truthfully
+
+### Mood-Scaled Breaks
+
+- [ ] **BREAK-01**: Chunks-before-a-long-break scales with the morning mood — roughly 2 on a low day, 5 on a sunny one — deterministically and unit-tested
+- [ ] **BREAK-02**: The 25-min chunk / 5-min short break interleave and the 25-min long break are preserved through the change
+
+### Tone
+
+- [ ] **TONE-01**: No "behind this week" framing anywhere; a time-target goal's rationale reads as what the schedule is doing for the user, not as a deficit report
+
+## Implementation Notes
+
+Known starting points, captured at definition time so planning doesn't re-derive them:
+
+- `resolveNowState` (`lib/screens/home/home_screen.dart:115`) filters to **work chunks only** — this is why a running break is invisible to "now". Its five states (`PreStart`/`Active`/`Overdue`/`GapBeforeNext`/`DayComplete`) are the extension point for LIVE-01.
+- The now-tick is a 1-minute `Timer.periodic` (`home_screen.dart:263`). LIVE-02's granularity (per-minute vs. per-second) is an open design choice for phase planning.
+- Long-break cadence is a single constant: `final int longBreakEvery = isLowMood ? 3 : 4;` (`lib/services/schedule_generator.dart:220`). Three tests in `test/services/schedule_generator_test.dart` (~lines 492–543) assert the every-4 behavior and change with it.
+- The "behind" string is `lib/services/schedule_generator.dart:190`; its sibling branch already reads "On track this week".
+- Screens to merge: `lib/screens/home/home_screen.dart` (848 lines) and `lib/screens/schedule/schedule_screen.dart` (495 lines), plus their `widgets/` folders.
+- `lib/widgets/responsive_shell.dart` hardcodes four destinations (Home/Goals/Schedule/Settings) and cites a UI-SPEC "icon library lock" — that contract is revisited by UNIFY-02.
+- Notification taps route via `router.go('/schedule')` (`lib/main.dart:86`); `home_screen.dart:495` also navigates there.
+
+## Future Requirements
+
+Deferred — tracked, not in this roadmap.
+
+- Start/stop focus timer per chunk (clock-in tracking, as opposed to the app simply reporting where you are). `/focus` exists; this milestone deliberately reads "active tracking" as the reporting sense.
+- Drag-to-reorder restoratives (sortOrder is stored and honored; no reorder UI).
+- Restoratives in onboarding — screen 4 flags goals as energy-giving but doesn't invite a first restorative.
+
+## Out of Scope
+
+- **LLM-powered scheduling / any in-app AI surface** — permanent product position, see PROJECT.md "Out of Scope".
+- **Overnight / midnight-crossing commitments** — a tracked whole-app limitation, deliberately not folded into UI work.
+- **Calendar sync** — v2 consideration, unrelated to this milestone.
+
+## Traceability
+
+Filled by the roadmapper — each requirement maps to exactly one phase.
+
+| Requirement | Phase |
+|-------------|-------|
+| UNIFY-01 | — |
+| UNIFY-02 | — |
+| LIVE-01 | — |
+| LIVE-02 | — |
+| LIVE-03 | — |
+| BREAK-01 | — |
+| BREAK-02 | — |
+| TONE-01 | — |
