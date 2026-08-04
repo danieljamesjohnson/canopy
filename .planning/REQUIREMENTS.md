@@ -54,15 +54,25 @@ Deferred — tracked, not in this roadmap.
 
 ## Traceability
 
-Filled by the roadmapper — each requirement maps to exactly one phase.
+Which phases cover which requirements. Populated during roadmap creation.
 
-| Requirement | Phase |
-|-------------|-------|
-| UNIFY-01 | — |
-| UNIFY-02 | — |
-| LIVE-01 | — |
-| LIVE-02 | — |
-| LIVE-03 | — |
-| BREAK-01 | — |
-| BREAK-02 | — |
-| TONE-01 | — |
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| UNIFY-01 | Phase 22 | Pending |
+| UNIFY-02 | Phase 22 | Pending |
+| LIVE-01 | Phase 23 | Pending |
+| LIVE-02 | Phase 23 | Pending |
+| LIVE-03 | Phase 23 | Pending |
+| BREAK-01 | Phase 21 | Pending |
+| BREAK-02 | Phase 21 | Pending |
+| TONE-01 | Phase 21 | Pending |
+
+**Coverage:**
+
+- v1.5 requirements: 8 total
+- Mapped to phases: 8 (100%)
+- Unmapped: 0 ✓
+
+---
+*Requirements defined: 2026-08-04*
+*Last updated: 2026-08-04 after roadmap creation*

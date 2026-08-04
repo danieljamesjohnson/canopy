@@ -1,7 +1,7 @@
 # Canopy — Roadmap
 
 **Created:** 2026-02-24
-**Last updated:** 2026-06-14 (v1.4 roadmap added)
+**Last updated:** 2026-08-04 (v1.5 roadmap added)
 
 ## Milestones
 
@@ -10,6 +10,7 @@
 - ✅ **v1.2 — Make It Usable** — Phases 12-14 (shipped 2026-06-13)
 - ✅ **v1.3 — An Honest Day** — Phases 15-17 (shipped 2026-06-14)
 - ✅ **v1.4 — Energy-Aware** — Phases 18-20 (shipped 2026-06-15)
+- 🚧 **v1.5 — Right Now** — Phases 21-23 (in progress)
 
 Full per-milestone detail (phase goals, success criteria, coverage maps) is archived in
 `.planning/milestones/`: `v1.2-ROADMAP.md` carries the complete cumulative roadmap through v1.2;
@@ -78,6 +79,51 @@ browser-verified; 289/289 tests green. See `v1.4-MILESTONE-AUDIT.md`.
 
 </details>
 
+### 🚧 v1.5 Right Now (In Progress)
+
+**Milestone Goal:** Make Canopy answer "what am I doing right now?" in one place — and stop telling the user they're behind.
+
+- [ ] **Phase 21: Mood-Scaled Breaks & Honest Rationale** - Long-break cadence scales with morning mood; time-target rationale drops "behind" framing
+- [ ] **Phase 22: Unified Today Screen** - Home and Schedule merge into one destination; every existing entry point still resolves somewhere real
+- [ ] **Phase 23: Live Activity Tracking** - The unified screen always names the current activity, including breaks, with a live countdown
+
+## Phase Details
+
+### Phase 21: Mood-Scaled Breaks & Honest Rationale
+**Goal**: The schedule's break cadence adapts to the morning mood, and a time-target goal's rationale never frames the user as behind
+**Depends on**: Nothing (parallel-safe with Phase 22 — self-contained engine + copy change, no shared surface with the screen merge)
+**Requirements**: BREAK-01, BREAK-02, TONE-01
+**Success Criteria** (what must be TRUE):
+  1. On a low-mood day, the generated schedule inserts a long break after roughly every 2 chunks; on a sunny-mood day, after roughly every 5 chunks — deterministic and unit-tested
+  2. Every chunk is still followed by its 5-min short break, and every long break is still 25 minutes — only the cadence count changed, not the break structure
+  3. No schedule or rationale text anywhere reads "behind this week"; a time-target goal's rationale reads as what the schedule is doing for the user, not as a deficit report
+**Plans**: TBD
+
+### Phase 22: Unified Today Screen
+**Goal**: Home and Schedule merge into a single destination — users see what's happening now and the rest of the day without switching tabs, and every existing entry point still lands somewhere real
+**Depends on**: Nothing (parallel-safe with Phase 21; structural/navigation work only — live-tracking behavior is layered on afterward in Phase 23)
+**Requirements**: UNIFY-01, UNIFY-02
+**Success Criteria** (what must be TRUE):
+  1. Opening the app lands the user on one screen that shows both what's happening now and the rest of the day's chunks — no tab switch required
+  2. The shell's destination list reflects the merge — Home and Schedule no longer point at two separate screens for the same underlying content
+  3. Tapping a Chunk reminder notification lands on the working unified screen, not a dead or blank route (currently `router.go('/schedule')`, `lib/main.dart:86`)
+  4. The in-app "See full schedule" link (`lib/screens/home/home_screen.dart:495`) resolves to something coherent post-merge, not a stale destination
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 23: Live Activity Tracking
+**Goal**: The unified screen always tells the truth about what's happening right now, including breaks, with a live countdown
+**Depends on**: Phase 22 (the live readout is layered onto the merged screen's now-state; wiring it against a screen that's still split in two would mean redoing it once the merge lands)
+**Requirements**: LIVE-01, LIVE-02, LIVE-03
+**Success Criteria** (what must be TRUE):
+  1. When a break is running, the screen names it as a break with time remaining — never reads as empty or idle time (extends `resolveNowState`, `lib/screens/home/home_screen.dart:115`, past its current work-chunks-only filter)
+  2. Time remaining in the current activity (chunk or break) visibly counts down while the screen stays open
+  3. Before the day's first chunk starts, in a gap between activities, and after the day is complete, the screen shows a distinct, truthful state for each case
+**Plans**: TBD
+**UI hint**: yes
+
+**Open design decision for phase planning:** LIVE-02's tick granularity is not decided here. The existing `Timer.periodic` (`home_screen.dart:263`) fires once a minute; a countdown that visibly moves may need a faster tick for the active card while other regions stay on the coarser cadence. Phase planning must pick and justify a granularity rather than silently inherit the 1-minute timer.
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -91,3 +137,6 @@ browser-verified; 289/289 tests green. See `v1.4-MILESTONE-AUDIT.md`.
 | 18. Responsive Modals and Desktop Polish | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 19. Energy Valence | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
+| 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 0/? | Not started | - |
+| 22. Unified Today Screen | v1.5 | 0/? | Not started | - |
+| 23. Live Activity Tracking | v1.5 | 0/? | Not started | - |

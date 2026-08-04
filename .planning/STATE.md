@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: planning
-last_updated: "2026-08-04T12:54:52.103Z"
+last_updated: "2026-08-04T00:00:00.000Z"
 last_activity: 2026-08-04
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,69 +17,66 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-06-15T03:36:50.965Z
+**Last session:** 2026-08-04
 
 ---
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 21 — Mood-Scaled Breaks & Honest Rationale (Not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-08-04 — Milestone v1.5 started
+Status: Roadmap defined; ready to plan Phase 21
+Last activity: 2026-08-04 — v1.5 roadmap created (3 phases: 21-23)
+
+```
+Progress: [░░░░░░░░░░] 0% — Phase 21/23
+```
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-15)
+See: `.planning/PROJECT.md` (updated 2026-08-04)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** v1.4 "Energy-Aware" shipped (2026-06-15). Planning next milestone (`/gsd-new-milestone`) after dogfooding.
+**Current focus:** v1.5 "Right Now" — merge Home/Schedule, live activity tracking, mood-scaled breaks, drop "behind" framing
 
-## v1.4 Phase Summary
+## v1.5 Phase Summary
 
 | Phase | Goal | Requirements | Status |
 |-------|------|--------------|--------|
-| 18 — Responsive Modals and Desktop Polish | Modals and primary screens fit the viewport on desktop | RESP-01/02/03, POLISH-01/02 | Not started |
-| 19 — Energy Valence | Goals carry valence; visible in form, list, schedule; onboarding seeds restorative activities | ENERGY-01/02/03/04, ONBOARD-01 | Not started |
-| 20 — Valence-Aware Engine | Engine uses valence to shape low days (restorative) and high days (purposeful) | VSCHED-01/02/03 | Not started |
+| 21 — Mood-Scaled Breaks & Honest Rationale | Break cadence scales with mood; time-target rationale drops "behind" framing | BREAK-01/02, TONE-01 | Not started |
+| 22 — Unified Today Screen | Home and Schedule merge into one destination; every entry point still resolves | UNIFY-01/02 | Not started |
+| 23 — Live Activity Tracking | The unified screen always names the current activity, including breaks, with a live countdown | LIVE-01/02/03 | Not started |
 
 ## Accumulated Context
 
 ### Decisions
 
-Key decisions are in PROJECT.md. Decisions relevant to v1.3:
+Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 
-- [Phase 14-02]: Priority drives composite score (remainingHours × priorityWeight) for time-targets; habit sort pre-filtered by priority. Both patterns extended in Phase 15.
-- [v1.3 scope]: Low-mood restorative floor (SEED-001 #2) deferred by owner — low days stay required + habits only. Now addressed in v1.4 Phase 20 (VSCHED-01/02).
-- [v1.3 baseline]: Several items pre-paid by 2026-06-13 dogfood commits: schedule starts near now, weekday-biased habit frequency, regular-time default 3 hrs/week, pace prompt removed, humane empty-day copy.
-- [Phase ?]: CAP-01: use ceil(cap/2) for habit ceiling
-- [Phase ?]: PRIORITY-02: flat +1 chunk for high-priority habits/outcomes on good-mood days
-- [Phase ?]: FILL-01/FILL-02: always-run round-robin Step 4 with isLowMood?1:demand per-goal cap
-- [Phase ?]: CLOSE-02 deferred carry-in intentionally bypasses habitCeiling — user-explicit deferral honored
-- [Phase ?]: Use non-due-weekday as testDate
-- [Phase ?]: No-op guard + try/catch for streak write-back
-- [Phase ?]: Use find.byType(Scrollable).first as scrollable arg to scrollUntilVisible in modal tests — SingleChildScrollView is not a Scrollable and causes type cast error at runtime
-- [Phase ?]: goal_form_sheet.dart not modified — SingleChildScrollView already wraps the form; no restructuring needed for any goal type at true modal height
-- [Phase ?]: Enables test helpers to omit isDialog:true and still get correct dialog behavior
-- [Phase ?]: CommitmentFormSheet mirrors GoalFormSheet isDialog pattern with ModalRoute fallback detection — no explicit isDialog at call site needed
-- [Phase ?]: All user-facing form callers route through showAdaptiveFormModal; no screen calls showModalBottomSheet directly for forms
-- [Phase ?]: Align(topCenter)+ConstrainedBox(maxWidth: 720) applied to Home, Goals, Schedule body content for POLISH-01
-- [Phase ?]: POLISH-02 copy convention: all destructive-confirm cancel buttons use 'Keep <noun>' pattern; primary CTA uses verb+noun (Save Goal, Add Goal, Delete commitment)
-- [Phase 19-energy-valence]: EnergyValence is a plain Dart enum with no @HiveType — stored as int index in Goal.energyValenceIndex (HiveField 12) — Follows existing GoalType/ChunkType pattern; no new typeId needed; neutral=0 ensures old records read correctly via getter default
-- [Phase 19-energy-valence]: No Goal repository changes needed: HiveGoalRepository stores whole Goal objects; new fields are transparent via regenerated adapter — Verified: no in_memory_goal_repository; hive_goal_repository uses box.put(goal.id, goal)
-- [Phase ?]: _ValenceBadge and _ValenceChip are intentionally file-private duplicates, not shared widgets — consistent with existing _PriorityChip duplication pattern
-- [Phase ?]: Valence colors: tertiaryContainer for gives, secondaryContainer for costs — colorScheme.error excluded per UI-SPEC
-- [Phase ?]: 19-05: Pending-goal caching gives stable UUIDs for Screen 4 marked-ID set
-- [Phase ?]: 19-05: Screen 3 onComplete/onSkip calls _nextPage() to advance to Screen 4 instead of directly completing onboarding
+- [v1.5 roadmap]: Phase 21 (engine + copy) is parallel-safe with Phase 22 (screen merge) — no shared surface, so either can run first.
+- [v1.5 roadmap]: Phase 23 (live activity tracking) sequenced after Phase 22 (unified screen) — the live readout is layered onto the merged screen's now-state rather than built against the soon-to-be-replaced split Home/Schedule screens.
+- [v1.5 roadmap]: LIVE-02's tick granularity (per-minute vs. per-second) deliberately left open — flagged for Phase 23 planning to decide and justify, not inherited silently from the existing 1-min `Timer.periodic`.
+- [Phase 14-02]: Priority drives composite score (remainingHours × priorityWeight) for time-targets; habit sort pre-filtered by priority.
+- [Phase 19-energy-valence]: EnergyValence is a plain Dart enum with no @HiveType — stored as int index in Goal.energyValenceIndex (HiveField 12) — Follows existing GoalType/ChunkType pattern; no new typeId needed; neutral=0 ensures old records read correctly via getter default.
+- [Phase ?]: Align(topCenter)+ConstrainedBox(maxWidth: 720) applied to Home, Goals, Schedule body content for POLISH-01 — relevant precedent for whatever layout Phase 22's merged screen uses.
+- [Phase ?]: Valence colors: tertiaryContainer for gives, secondaryContainer for costs — colorScheme.error excluded per UI-SPEC.
 
-### Engine Constraints (carry-forward for Phase 20)
+### Engine Constraints (carry-forward for Phase 21)
 
 - Rule-based only — no LLM
 - Hive migrations are additive-only (new fields with defaults, never remove/rename)
-- Habit ceiling: `ceil(cap/2)` — habits cannot monopolize the discretionary cap
-- Low-mood days currently: required + habits only (VSCHED-01/02 relaxes this with a bounded restorative floor)
-- High-mood days currently: raise the cap and fill backlog (VSCHED-03 reserves one energy-giving slot)
+- Long-break cadence is currently a single constant: `final int longBreakEvery = isLowMood ? 3 : 4;` (`lib/services/schedule_generator.dart:220`) — BREAK-01 replaces this with a mood-scaled value (~2 low, ~5 sunny)
+- Three existing tests in `test/services/schedule_generator_test.dart` (~lines 492–543) assert the every-4 cadence and must change with it
+- The "behind" string lives at `lib/services/schedule_generator.dart:190`; its sibling branch already reads "On track this week" — use that framing as the model
 - Schedule generator lives in `lib/services/schedule_generator.dart` — deterministic, covered by unit tests
+
+### UI Constraints (carry-forward for Phase 22/23)
+
+- `resolveNowState` (`lib/screens/home/home_screen.dart:115`) filters to work chunks only — extension point for LIVE-01, currently makes a running break invisible to "now"
+- Now-tick is a 1-minute `Timer.periodic` (`home_screen.dart:263`) — LIVE-02 open design decision, see above
+- `lib/widgets/responsive_shell.dart` hardcodes four destinations (Home/Goals/Schedule/Settings) citing a UI-SPEC "icon library lock" — UNIFY-02 revisits this contract
+- Notification taps route via `router.go('/schedule')` (`lib/main.dart:86`); `home_screen.dart:495` also navigates there — both must land on the unified screen after Phase 22, not a dead route
+- Screens to merge: `lib/screens/home/home_screen.dart` (848 lines) and `lib/screens/schedule/schedule_screen.dart` (495 lines), plus their `widgets/` folders
 
 ### Blockers / Concerns
 
@@ -87,19 +84,18 @@ None.
 
 ## Deferred Items
 
-Items acknowledged and deferred at milestone close on 2026-06-14 (v1.3) — now tracked for v1.4:
+Items acknowledged and deferred at milestone close on 2026-06-15 (v1.4) — carried forward, not yet routed to v1.5 (out of this milestone's scope per REQUIREMENTS.md Future Requirements / Out of Scope):
 
 | Category | Item | Status |
 |----------|------|--------|
-| todo | 2026-06-14-goal-form-desktop-layout (F-03) | routed to Phase 18 (RESP-01/02/03) |
-| seed | SEED-001-engine-product-critique | partially consumed; #2 restorative floor → Phase 20 (VSCHED-01/02) |
-| seed | SEED-002-ui-basics-rework-dogfood | residual nits → Phase 18 (POLISH-02) |
-| polish | Onboarding screens full-bleed at desktop width | NEW (Phase 18 walkthrough) — POLISH-01 scoped to home/schedule/goals/check-in; onboarding not constrained. Candidate for future polish phase. |
-| polish | Onboarding commitment-step day chips ambiguous (M/T/W/T/F/S/S) | NEW (Phase 18 walkthrough) — same issue IN-01 fixed in CommitmentFormSheet; onboarding step is a separate widget, out of Phase 18 scope. |
-| seed | SEED-004-energy-aware-scheduling-no-ai | → Phase 19 (valence model) and Phase 20 (engine) |
+| todo | Onboarding screens full-bleed at desktop width | Candidate for future polish phase — not in v1.5 scope |
+| todo | Onboarding commitment-step day chips ambiguous (M/T/W/T/F/S/S) | Candidate for future polish phase — not in v1.5 scope |
 | tech-debt | FILL-02 high-priority monopoly edge | documented-accepted (3+ goals at weight ≥0.75 can starve lower-priority time-targets) |
 | tech-debt | Nyquist VALIDATION frontmatter drafts (15/16/17) | tests green; `nyquist_compliant: false` metadata only |
-| tech-debt | chunk_card.dart hardcoded `Colors.green.shade600` / `Colors.grey.shade400` | NEW (Phase 19 UI audit) — pre-existing, bypasses ColorScheme (no dark-mode/dynamic adapt). Replace with colorScheme.tertiary/outlineVariant in a future cleanup. |
+| tech-debt | chunk_card.dart hardcoded `Colors.green.shade600` / `Colors.grey.shade400` | pre-existing, bypasses ColorScheme (no dark-mode/dynamic adapt) — worth revisiting if Phase 22/23 touch chunk_card.dart anyway |
+| product | Start/stop focus timer per chunk (clock-in tracking) | deferred — see REQUIREMENTS.md Future Requirements |
+| product | Drag-to-reorder restoratives | deferred — see REQUIREMENTS.md Future Requirements |
+| product | Restoratives in onboarding (screen 4 invite) | deferred — see REQUIREMENTS.md Future Requirements |
 
 Carried from earlier milestones (v1.0–v1.2), still open:
 
@@ -119,9 +115,9 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 
 ## Session Continuity
 
-Last session: 2026-06-14
-Stopped at: None
-Resume at: `/gsd-new-milestone` (v1.4 shipped)
+Last session: 2026-08-04
+Stopped at: v1.5 roadmap created
+Resume at: `/gsd-plan-phase 21`
 
 ## Performance Metrics
 
@@ -141,7 +137,3 @@ Resume at: `/gsd-new-milestone` (v1.4 shipped)
 | Phase 19-energy-valence P05 | 15min | 2 tasks | 2 files |
 | Phase 20-valence-aware-engine P01 | 2min | 2 tasks | 1 files |
 | Phase 20-valence-aware-engine P02 | 3min | 3 tasks | 1 files |
-
-## Operator Next Steps
-
-- Start the next milestone with /gsd-new-milestone
