@@ -52,18 +52,18 @@ Early, and honest about it. The engine is real — v1.4 "Energy-Aware," dogfoode
 but the UI is plain. Effort so far has gone into making the scheduling logic correct and
 predictable rather than into making it look good, and it shows.
 
-The open question I'm working on here is **where AI actually belongs in a product like this.**
-Keeping it out of the scheduling engine (see above) is a deliberate answer for one part of the
-app, not a position on the whole thing. The parts that look more promising — reflection prompts
-at end of day, turning a vague intention into a shaped goal, noticing patterns across a quarter
-that you wouldn't spot yourself — are exactly the parts where being non-deterministic costs
-nothing and judgment helps. Canopy is the sandbox I'm using to find out which of those hold up in
-daily use and which just add noise. Nothing shipped on that front yet.
+Canopy is a **dumb app on purpose.** It exists to give you control over your own time, which rules
+out a model quietly deciding your day — the engine stays rule-based (see above). The likeliest
+place AI shows up is at the edge rather than inside: an MCP server so an assistant can read and
+update your schedule the way you would, with the same rules still applying.
 
-Development history, milestone records, and requirement tracking live in
-[`.planning/`](.planning/) — this project is built with
-[GSD](https://github.com/open-gsd/gsd-core), so the full planning trail is in the repo alongside
-the code.
+The other reason it exists is that it's my **test bed for product thinking on a real app built
+with AI as the developer.** Not a demo or a toy — something with real users' worth of edge cases
+that I use every day, so the product decisions have consequences. Every requirement, milestone,
+and decision trail lives in [`.planning/`](.planning/), built with
+[GSD](https://github.com/open-gsd/gsd-core), so the full planning history sits in the repo next to
+the code it produced. That's the actual experiment: whether disciplined scoping, requirements, and
+honest verification hold up when the implementation is delegated to a model.
 
 ## License
 
