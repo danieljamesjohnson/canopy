@@ -5,6 +5,13 @@ area: ui/goals
 surfaced_during: v1.2 Phase 13 UAT (scenario 8, GOALFORM-01)
 severity: moderate
 resolves_phase: 18
+resolved: 2026-08-04
+resolution: Shipped in Phase 18 (v1.4, RESP-01/02/03). Verified 2026-08-04 —
+  `showAdaptiveFormModal` (lib/widgets/adaptive_form_modal.dart) switches
+  centered dialog vs bottom sheet at 720dp; both goal paths
+  (goals_screen.dart:40 add, :51 edit) route through it, as do the commitment
+  form (commitments_screen.dart:31) and the schedule's caller
+  (schedule_screen.dart:404) — so the "audit other modals" ask is covered too.
 files:
   - lib/screens/goals/goals_screen.dart
   - lib/screens/goals/goal_form_sheet.dart
