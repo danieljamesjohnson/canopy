@@ -233,7 +233,7 @@ void main() {
     /// clock-window selection under the new time-anchored logic (NOW-01).
     /// Tests using this schedule inject now: () => DateTime(2026,6,13,9,5)
     /// so the first chunk (starts 9:00 = 540 min) is the active Now.
-    DailySchedule _scheduleWithTwoChunks() {
+    DailySchedule scheduleWithTwoChunks() {
       final today = DateTime.now();
       final ymd =
           '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
@@ -271,7 +271,7 @@ void main() {
     /// traversal → DayComplete" path — not the degenerate allWork.isEmpty path
     /// (CR-03 fix: previously chunks had null syntheticStartMinutes and no now
     /// injection, so DayComplete was returned by the null-filter shortcut).
-    DailySchedule _scheduleAllResolved() {
+    DailySchedule scheduleAllResolved() {
       final today = DateTime.now();
       final ymd =
           '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
@@ -303,16 +303,16 @@ void main() {
     // enters the traversal loop, advances past completed c1 then past skipped
     // c2, runs out of candidates, and returns DayComplete for the correct
     // structural reason (CR-03: genuine all-resolved path, not null shortcut).
-    final allResolvedNow = () => DateTime(2026, 6, 13, 10, 5);
+    DateTime allResolvedNow() => DateTime(2026, 6, 13, 10, 5);
 
     // Injected now for NAV-02 layout tests: 9:05 AM places us inside the
     // first chunk's window (9:00–9:25 = syntheticStartMinutes 540, dur 25).
     // This is required so the time-anchored resolveNowState sees an Active
     // state and renders ActiveChunkCard for c1 and Next for c2 (NOW-01).
-    final navNow = () => DateTime(2026, 6, 13, 9, 5);
+    DateTime navNow() => DateTime(2026, 6, 13, 9, 5);
 
     testWidgets('shows "Now" section label when chunks remain', (tester) async {
-      final sn = _FakeScheduleNotifierWithSchedule(_scheduleWithTwoChunks());
+      final sn = _FakeScheduleNotifierWithSchedule(scheduleWithTwoChunks());
       await _pumpHomeScreen(tester, scheduleNotifier: sn, now: navNow);
       expect(
         find.text('Now'),
@@ -322,7 +322,7 @@ void main() {
     });
 
     testWidgets('shows ActiveChunkCard for current chunk', (tester) async {
-      final sn = _FakeScheduleNotifierWithSchedule(_scheduleWithTwoChunks());
+      final sn = _FakeScheduleNotifierWithSchedule(scheduleWithTwoChunks());
       await _pumpHomeScreen(tester, scheduleNotifier: sn, now: navNow);
       expect(
         find.byType(ActiveChunkCard),
@@ -333,7 +333,7 @@ void main() {
 
     testWidgets('shows "Next" section label when second chunk exists',
         (tester) async {
-      final sn = _FakeScheduleNotifierWithSchedule(_scheduleWithTwoChunks());
+      final sn = _FakeScheduleNotifierWithSchedule(scheduleWithTwoChunks());
       await _pumpHomeScreen(tester, scheduleNotifier: sn, now: navNow);
       expect(
         find.text('Next'),
@@ -343,7 +343,7 @@ void main() {
     });
 
     testWidgets('shows "See full schedule" link', (tester) async {
-      final sn = _FakeScheduleNotifierWithSchedule(_scheduleWithTwoChunks());
+      final sn = _FakeScheduleNotifierWithSchedule(scheduleWithTwoChunks());
       await _pumpHomeScreen(tester, scheduleNotifier: sn, now: navNow);
       expect(
         find.text('See full schedule'),
@@ -354,7 +354,7 @@ void main() {
 
     testWidgets('shows "That\'s a wrap" when all chunks resolved',
         (tester) async {
-      final sn = _FakeScheduleNotifierWithSchedule(_scheduleAllResolved());
+      final sn = _FakeScheduleNotifierWithSchedule(scheduleAllResolved());
       // Inject now inside c2's window so resolveNowState traverses the
       // resolution-checking branch and reaches DayComplete for the correct
       // reason — not via the null-syntheticStartMinutes degenerate shortcut
@@ -374,7 +374,7 @@ void main() {
 
     testWidgets('shows no ActiveChunkCard when all chunks resolved',
         (tester) async {
-      final sn = _FakeScheduleNotifierWithSchedule(_scheduleAllResolved());
+      final sn = _FakeScheduleNotifierWithSchedule(scheduleAllResolved());
       // Same now injection as the companion test above (CR-03).
       await _pumpHomeScreen(
         tester,

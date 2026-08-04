@@ -2,6 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Product position (read before proposing features)
+
+Canopy is a **dumb app on purpose**. It exists to give the user control over their own time, so the
+scheduling engine is rule-based and deterministic and stays that way — **do not propose or add LLM
+calls, "smart" suggestions, or any in-app AI surface.** A schedule the user can't predict is one
+they won't trust. The only sanctioned AI shape is *at the edge*: a possible future MCP server that
+lets an external assistant read and update the schedule under the same rules the app already
+enforces. See "Out of Scope" in `.planning/PROJECT.md`.
+
+The repo is public as a work sample, and the AI angle here is that **AI is the developer** — the
+`.planning/` trail is part of what's on display, so keep it honest and current rather than
+flattering.
+
 ## Commands
 
 ```bash
@@ -99,7 +112,7 @@ This is a Flutter app targeting Android, iOS, Web, Windows, Linux, and macOS. Co
 - `lib/screens/` — one folder per feature (home, onboarding, schedule, goals, commitments, focus, end_of_day, quarterly_review, settings).
 - `lib/services/` — `schedule_generator`, `notification_service`, `export_service`, `quarterly_aggregation_service`.
 - `lib/widgets/` (`responsive_shell`), `lib/platform/` (desktop window setup via conditional io/stub imports), `lib/utils/`, `lib/dev/` (dev data loader).
-- `lib/main.dart` (~166 lines) is bootstrap only: window setup → `HiveDatabase.init` → construct notifiers → `runApp`. `lib/router.dart` builds the routing.
+- `lib/main.dart` (~180 lines) is bootstrap only: window setup → `HiveDatabase.init` → construct notifiers → `runApp`. `lib/router.dart` builds the routing.
 
 Key choices:
 

@@ -4,13 +4,19 @@
 
 Canopy is a personal time budgeting app that generates a daily schedule built around your goals. Each day starts with a mood check-in that shapes how demanding the day's plan is. Time is organized into 25-minute focused sessions ("Chunks"), and every quarter the app reviews how your time was actually spent.
 
+It is a **dumb app on purpose** — the point is giving the user control over their own time, so no model decides the day. The engine is rule-based and stays that way. The likeliest AI integration is at the edge, not inside: an MCP server so an assistant can read and update the schedule the way the user would, under the same rules.
+
+Canopy is also the owner's test bed for applying product thinking to a real, daily-used app where **AI is the developer** — the experiment is whether disciplined scoping, requirements, and honest verification hold up when implementation is delegated to a model. The planning trail in `.planning/` is part of the artifact, not scaffolding.
+
 ## Core Value
 
 Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
 
 ## Current State
 
-**Shipped through v1.4 "Energy-Aware" (2026-06-15).** Canopy is a working personal time-budgeting app: a daily mood check-in shapes a generated schedule of 25-min Chunks built around three goal types, with a time-anchored Home (Now/Next), an honest + energy-aware scheduling engine (fair capacity, truthful streaks, priority-driven allocation, full-day fill, restorative low days, reserved energy slot on high days), responsive modals (centered dialog on desktop / bottom sheet on phone), per-goal energy valence (gives/neutral/costs + emoji tag) visible across goal form, goals list, and schedule, an onboarding energy step, Goals-as-prioritization, and a quarterly review. ~12k LOC of app code in `lib/`, 289-test suite green, `flutter analyze` clean. Rule-based only — no LLM.
+**Shipped through v1.4 "Energy-Aware" (2026-06-15).** Canopy is a working personal time-budgeting app: a daily mood check-in shapes a generated schedule of 25-min Chunks built around three goal types, with a time-anchored Home (Now/Next), an honest + energy-aware scheduling engine (fair capacity, truthful streaks, priority-driven allocation, full-day fill, restorative low days, reserved energy slot on high days), responsive modals (centered dialog on desktop / bottom sheet on phone), per-goal energy valence (gives/neutral/costs + emoji tag) visible across goal form, goals list, and schedule, an onboarding energy step, Goals-as-prioritization, and a quarterly review. Post-v1.4 dogfooding produced a run of onboarding fixes (keyboard/scroll reachability, day-chip fit, pre-filled job capture). ~14k LOC of app code in `lib/`, 340-test suite green, `flutter analyze` clean. Rule-based only — no LLM, by design rather than by schedule.
+
+The engine is solid; the UI is plain. Effort has gone into correct, predictable scheduling rather than visual polish, and that trade is deliberate at this stage.
 
 **Next:** Planning the next milestone (`/gsd-new-milestone`). Owner will dogfood v1.4 and re-review. Tracked tech debt: onboarding desktop polish (full-bleed + day-chip labels), chunk_card color-token hygiene.
 
@@ -80,15 +86,21 @@ None committed yet — next milestone TBD via `/gsd-new-milestone`. Owner will d
 
 ### Out of Scope
 
-- LLM-powered scheduling — deferred to v2 after rule-based engine is validated
+- LLM-powered scheduling — **permanently out**, not deferred. A model deciding the day contradicts the reason the app exists (user control over their own time), and an unpredictable schedule is one you can't trust.
+- In-app AI features generally — the app stays "dumb". Any AI integration goes at the edge (see below), not into the product surface.
 - Multi-user / team features — personal tool only
 - Calendar sync (Google Calendar, etc.) — v2 consideration
+
+### Considered, not committed
+
+- **MCP server** exposing read/update of schedule, goals, and commitments, so an external assistant can drive Canopy on the user's behalf while the rule-based engine still owns every allocation decision. This is the sanctioned AI shape: outside the app, under the app's rules.
 
 ## Context
 
 - Built as a personal tool first — the primary user is the developer
+- Doubles as a product-thinking test bed with AI as the implementer; the repo is public as a work sample, so `.planning/` is read by outsiders and should stay honest about state
 - Flutter project targeting all platforms (iOS, Android, Web, Windows, macOS, Linux)
-- ~12k LOC of app code in `lib/`; 289-test suite green, `flutter analyze` clean (as of v1.4)
+- ~14k LOC of app code in `lib/`; 340-test suite green (1 skipped), `flutter analyze` clean (verified 2026-08-04)
 - Dogfooded via a hosted **debug** web build (single dart2js bundle, no service worker) over tailscale — see CLAUDE.md "Local hosting for UAT"
 - The "Chunk" concept is like a Pomodoro (25 min) but framed around budgeting time toward goals rather than pure focus sessions
 - Every chunk is followed by a 5-min short break; after 3–4 chunks a 25-min long break is inserted (mood-adaptive cadence)
@@ -100,8 +112,8 @@ None committed yet — next milestone TBD via `/gsd-new-milestone`. Owner will d
 
 ## Constraints
 
-- **Tech stack**: Flutter/Dart — no external state management library initially, `StatefulWidget` + `setState()`
-- **AI**: No LLM API calls in v1 — rule-based scheduling only
+- **Tech stack**: Flutter/Dart — Provider + `ChangeNotifier` for cross-screen state (adopted Phase 2), `StatefulWidget` + `setState()` for screen-local state only
+- **AI**: No LLM API calls in the app, ever — rule-based scheduling only. Not a v1 constraint; it's the product position (see Out of Scope)
 - **Platforms**: Must work on all Flutter targets (mobile-first UX, all platforms supported)
 - **Data**: Local storage only for v1 — no backend/sync
 
@@ -109,7 +121,7 @@ None committed yet — next milestone TBD via `/gsd-new-milestone`. Owner will d
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Rule-based scheduling (not AI) | Ship and validate the core loop without API dependency | ✓ Good — engine is deterministic and testable through v1.2 |
+| Rule-based scheduling (not AI) | Product position, not a shortcut: the app exists to give the user control of their time, and a schedule you can't predict is one you won't trust | ✓ Good — engine is deterministic and testable; a surprising schedule is a bug, not a mystery |
 | 25-minute Chunks | Proven focused session length (Pomodoro research), familiar concept | ✓ Good |
 | Three goal types | Relationships/wellness need time targets; projects need outcomes; habits need consistency | ✓ Good |
 | Commitment blocks | Real-world obligations (job, school) always scheduled; v2 will read from calendar | ✓ Good |
@@ -145,4 +157,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-15 after shipping v1.4 "Energy-Aware" milestone*
+*Last updated: 2026-08-04 — positioning pass (dumb-app-by-design, AI-as-developer) and refreshed counts; last milestone shipped was v1.4 "Energy-Aware" on 2026-06-15*

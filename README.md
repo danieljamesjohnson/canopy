@@ -9,10 +9,11 @@ every quarter the app shows you where your time really went versus where you sai
 
 ## Why it's rule-based
 
-There is no LLM in the scheduling engine, on purpose. A schedule you can't predict is a schedule
-you won't trust — and trust is the whole product. Every allocation decision is deterministic and
-unit-tested, so the same goals and the same mood always produce the same day, and a surprising
-schedule is a bug rather than a mystery.
+There is no LLM in the scheduling engine, on purpose, and there isn't going to be. The app exists
+to give you control over your own time, so a model quietly deciding your day would defeat the
+point — and a schedule you can't predict is a schedule you won't trust. Every allocation decision
+is deterministic and unit-tested, so the same goals and the same mood always produce the same day,
+and a surprising schedule is a bug rather than a mystery.
 
 ## How it works
 
