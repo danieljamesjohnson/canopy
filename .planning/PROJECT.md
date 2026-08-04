@@ -18,7 +18,21 @@ Generate a usable daily schedule every morning — one that reflects your real g
 
 The engine is solid; the UI is plain. Effort has gone into correct, predictable scheduling rather than visual polish, and that trade is deliberate at this stage.
 
-**Next:** Planning the next milestone (`/gsd-new-milestone`). Owner will dogfood v1.4 and re-review. Tracked tech debt: onboarding desktop polish (full-bleed + day-chip labels), chunk_card color-token hygiene.
+**Next:** Executing milestone **v1.5 "Right Now"** (below). Tracked tech debt: onboarding desktop polish (full-bleed + day-chip labels), chunk_card color-token hygiene.
+
+## Current Milestone: v1.5 Right Now
+
+**Goal:** Make Canopy answer "what am I doing right now?" in one place — and stop telling the user they're behind.
+
+**Target features:**
+- **One screen** — Home and Schedule merge into a single destination instead of two shell tabs.
+- **Live activity tracking** — always name the current activity, *including breaks*, with time remaining. `resolveNowState` filters to work chunks today, so a running break resolves to "next chunk at 8:00" rather than "on a break, 4 min left".
+- **Mood-scaled break cadence** — keep 25-min chunks + 5-min short breaks; scale chunks-before-a-long-break with the morning mood (low day ~2, sunny day ~5). Currently hardcoded `isLowMood ? 3 : 4`.
+- **No "behind"** — drop the `'Xh behind this week'` rationale. The schedule exists to absorb the catching-up, not to report a deficit.
+
+**Source:** Dan's dogfood pass on the hosted debug build, 2026-08-04. Research skipped — no new domain territory; all four items are existing surfaces.
+
+**Key context:** The break cadence and the "behind" copy are contained changes (one constant, one string, three tests asserting the every-4 cadence). The merged screen and live tracking are the milestone proper, and they converge — the unified screen is where "right now" wants to live. The UI-SPEC's lock on four shell destinations gets revisited. Notification taps currently deep-link to `/schedule` (`main.dart:86`), so that entry point must survive the merge.
 
 <details>
 <summary>Previous milestone: v1.4 "Energy-Aware" — SHIPPED 2026-06-15</summary>
@@ -82,7 +96,11 @@ Energy-aware + responsive (v1.4 — *browser-verified where visual*):
 
 ### Active
 
-None committed yet — next milestone TBD via `/gsd-new-milestone`. Owner will dogfood v1.4 (energy-aware schedule + responsive UI) and re-review before scoping the next set.
+Milestone v1.5 "Right Now" — full list with REQ-IDs in [`REQUIREMENTS.md`](REQUIREMENTS.md):
+- Unified Today screen (UNIFY-01/02) — one destination for now + the rest of the day; every existing entry point still lands somewhere real
+- Live activity tracking (LIVE-01/02/03) — current activity always named including breaks, time remaining counts down, honest pre-start/gap/day-complete states survive the merge
+- Mood-scaled breaks (BREAK-01/02) — chunks-before-a-long-break scales with mood, chunk/short-break interleave preserved
+- Tone (TONE-01) — no "behind this week" framing
 
 ### Out of Scope
 
