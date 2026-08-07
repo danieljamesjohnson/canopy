@@ -4,12 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'providers/settings_notifier.dart';
 import 'screens/commitments/commitments_screen.dart';
 import 'screens/end_of_day/end_of_day_summary_screen.dart';
-import 'screens/home/home_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/goals/archived_goals_screen.dart';
 import 'screens/goals/goals_screen.dart';
 import 'screens/schedule/checkin_screen.dart';
-import 'screens/schedule/schedule_screen.dart';
+import 'screens/today/today_screen.dart';
 import 'screens/focus/focus_screen.dart';
 import 'screens/quarterly_review/quarterly_review_screen.dart';
 import 'screens/restoratives/restoratives_screen.dart';
@@ -24,14 +23,22 @@ final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 GoRouter createRouter(SettingsNotifier settingsNotifier) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: '/home',
+    initialLocation: '/today',
     refreshListenable: settingsNotifier,
     redirect: (context, state) {
       final onboardingDone = settingsNotifier.onboardingComplete;
       final onOnboarding = state.matchedLocation == '/onboarding';
 
       if (!onboardingDone && !onOnboarding) return '/onboarding';
-      if (onboardingDone && onOnboarding) return '/home';
+      if (onboardingDone && onOnboarding) return '/today';
+      // UNIFY-02: normalise a bare /schedule to the merged /today route.
+      // Exact-match ONLY — a startsWith or a route-level redirect on the
+      // parent GoRoute would also fire for /schedule/checkin and break the
+      // daily check-in flow (T-22-15). This is a belt-and-braces redirect:
+      // main.dart:86 (router.go('/schedule') on notification tap) depends on
+      // it, and the /schedule route below builds TodayScreen directly as a
+      // defensive fallback even if this redirect ever regresses (T-22-14).
+      if (state.matchedLocation == '/schedule') return '/today';
       return null;
     },
     routes: [
@@ -43,8 +50,25 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/home',
-                builder: (context, state) => const HomeScreen(),
+                path: '/today',
+                builder: (context, state) => const TodayScreen(),
+              ),
+              // Kept as a declared route purely so /schedule/checkin has a
+              // parent to attach to (a child route cannot outlive its
+              // parent). The top-level redirect above normalises a bare
+              // /schedule to /today before this builder ever runs; building
+              // TodayScreen here too is a defensive fallback so even a
+              // regression in the redirect can't produce a dead route
+              // (UNIFY-02, T-22-14).
+              GoRoute(
+                path: '/schedule',
+                builder: (context, state) => const TodayScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'checkin',
+                    builder: (context, state) => const CheckinScreen(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -57,20 +81,6 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
                   GoRoute(
                     path: 'archived',
                     builder: (context, state) => const ArchivedGoalsScreen(),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/schedule',
-                builder: (context, state) => const ScheduleScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'checkin',
-                    builder: (context, state) => const CheckinScreen(),
                   ),
                 ],
               ),

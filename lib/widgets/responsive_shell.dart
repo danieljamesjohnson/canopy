@@ -8,11 +8,15 @@
 //     [NavigationRail | VerticalDivider | Expanded(navigationShell)] with
 //     Material 3 defaults (80dp rail width, surfaceContainer surface,
 //     secondaryContainer selected indicator).
-//   - UI-SPEC §Design System icon library lock: the four destinations are
-//     Home / Goals / Schedule / Settings using `Icons.*_outlined` glyphs.
 //   - UI-SPEC §Two-Column Adaptive Layout: NavigationRail uses
 //     `NavigationRailLabelType.all` so labels are always visible (the mood
 //     warming theme should always read on text — never icon-only).
+//
+// Phase 22 (D-09, UNIFY-02): the Phase 6 UI-SPEC's "four destinations locked"
+// icon-library note is SUPERSEDED. Home and Schedule merged into one Today
+// destination — see 22-UI-SPEC.md §Navigation contract (UNIFY-02) for the
+// current three-destination contract (Today / Goals / Settings). Recorded
+// here explicitly per D-09 rather than silently violating the old lock.
 //
 // This widget is intentionally PUBLIC (no leading underscore) so that
 // `test/screens/responsive_layout_test.dart` (Plan 06) can import it directly
@@ -26,26 +30,27 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Adaptive shell scaffold for the four primary branches (Home / Goals /
-/// Schedule / Settings). Swaps between a bottom [NavigationBar] (< 720dp)
+/// Adaptive shell scaffold for the three primary branches (Today / Goals /
+/// Settings). Swaps between a bottom [NavigationBar] (< 720dp)
 /// and a side [NavigationRail] (>= 720dp) via [LayoutBuilder].
 ///
 /// Used by `lib/router.dart` as the builder for
-/// `StatefulShellRoute.indexedStack`. The 720dp threshold and the four
-/// destinations are locked by UI-SPEC §Two-Column Adaptive Layout and
-/// Phase 6 Decision D-11.
+/// `StatefulShellRoute.indexedStack`. The 720dp threshold is locked by
+/// Phase 6 Decision D-11; the three-destination contract is
+/// 22-UI-SPEC.md §Navigation contract (UNIFY-02), which supersedes the
+/// earlier four-destination UI-SPEC lock (D-09).
 class ResponsiveShell extends StatelessWidget {
   const ResponsiveShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
-  /// The four primary destinations. Order matches the branch order in
-  /// `createRouter` (Home=0, Goals=1, Schedule=2, Settings=3). Icons are
-  /// locked by UI-SPEC §Design System icon library lock.
+  /// The three primary destinations. Order matches the branch order in
+  /// `createRouter` (Today=0, Goals=1, Settings=2). Superseded from the
+  /// original four-destination UI-SPEC icon-library lock by Phase 22's
+  /// merge — see 22-UI-SPEC.md §Navigation contract (UNIFY-02, D-09).
   static const List<({IconData icon, String label})> _destinations = [
-    (icon: Icons.home_outlined, label: 'Home'),
+    (icon: Icons.today_outlined, label: 'Today'),
     (icon: Icons.flag_outlined, label: 'Goals'),
-    (icon: Icons.calendar_today_outlined, label: 'Schedule'),
     (icon: Icons.settings_outlined, label: 'Settings'),
   ];
 
