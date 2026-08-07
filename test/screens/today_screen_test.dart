@@ -123,9 +123,7 @@ Future<void> _pumpTodayScreen(
   await tester.pumpWidget(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider<ScheduleNotifier>.value(
-          value: scheduleNotifier,
-        ),
+        ChangeNotifierProvider<ScheduleNotifier>.value(value: scheduleNotifier),
         ChangeNotifierProvider<GoalsNotifier>.value(
           value: _FakeGoalsNotifier(),
         ),
@@ -136,7 +134,10 @@ Future<void> _pumpTodayScreen(
           value: restorativesNotifier ?? _FakeRestorativesNotifier(),
         ),
       ],
-      child: MaterialApp(theme: theme, home: TodayScreen(now: now)),
+      child: MaterialApp(
+        theme: theme,
+        home: TodayScreen(now: now),
+      ),
     ),
   );
 }
@@ -157,10 +158,7 @@ void main() {
     testWidgets('empty state keeps every affordance from both old screens', (
       tester,
     ) async {
-      await _pumpTodayScreen(
-        tester,
-        scheduleNotifier: _FakeScheduleNotifier(),
-      );
+      await _pumpTodayScreen(tester, scheduleNotifier: _FakeScheduleNotifier());
 
       expect(
         find.byType(BreathingPulseCta),
@@ -179,10 +177,7 @@ void main() {
     testWidgets('tapping Add an event from the empty state opens a modal', (
       tester,
     ) async {
-      await _pumpTodayScreen(
-        tester,
-        scheduleNotifier: _FakeScheduleNotifier(),
-      );
+      await _pumpTodayScreen(tester, scheduleNotifier: _FakeScheduleNotifier());
 
       await tester.tap(find.widgetWithText(TextButton, 'Add an event'));
       await tester.pump();
@@ -194,10 +189,7 @@ void main() {
       tester,
     ) async {
       setViewport(tester, const Size(1024, 768));
-      await _pumpTodayScreen(
-        tester,
-        scheduleNotifier: _FakeScheduleNotifier(),
-      );
+      await _pumpTodayScreen(tester, scheduleNotifier: _FakeScheduleNotifier());
 
       final boxes = tester.widgetList<ConstrainedBox>(
         find.byType(ConstrainedBox),
@@ -220,10 +212,7 @@ void main() {
           reason: 'exactly one refresh action, not two',
         );
         expect(
-          find.widgetWithIcon(
-            IconButton,
-            Icons.center_focus_strong_outlined,
-          ),
+          find.widgetWithIcon(IconButton, Icons.center_focus_strong_outlined),
           findsOneWidget,
         );
       },
