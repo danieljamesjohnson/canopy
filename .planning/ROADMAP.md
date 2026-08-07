@@ -83,7 +83,7 @@ browser-verified; 289/289 tests green. See `v1.4-MILESTONE-AUDIT.md`.
 
 **Milestone Goal:** Make Canopy answer "what am I doing right now?" in one place — and stop telling the user they're behind.
 
-- [ ] **Phase 21: Mood-Scaled Breaks & Honest Rationale** - Long-break cadence scales with morning mood; time-target rationale drops "behind" framing
+- [x] **Phase 21: Mood-Scaled Breaks & Honest Rationale** - Long-break cadence scales with morning mood; time-target rationale drops "behind" framing (completed 2026-08-07)
 - [ ] **Phase 22: Unified Today Screen** - Home and Schedule merge into one destination; every existing entry point still resolves somewhere real
 - [ ] **Phase 23: Live Activity Tracking** - The unified screen always names the current activity, including breaks, with a live countdown
 
@@ -107,7 +107,7 @@ browser-verified; 289/289 tests green. See `v1.4-MILESTONE-AUDIT.md`.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 21-02-honest-time-target-rationale-PLAN.md — `_timeTargetRationale` deficit branch becomes "Working toward N.Nh this week", pinned by tests on both branches and a repo-wide grep gate (wave 2)
+- [x] 21-02-honest-time-target-rationale-PLAN.md — `_timeTargetRationale` deficit branch becomes "Working toward N.Nh this week", pinned by tests on both branches and a repo-wide grep gate (wave 2)
 
 **Note**: the long-standing carry-forward claim that "three tests at ~lines 492-543 assert the every-4 cadence and must change" is stale — 21-RESEARCH.md verified empirically that all 54 existing tests pass unchanged under the new mapping. There was zero discriminating cadence coverage before this phase, which is why the new tests are the substance of plan 21-01 rather than an afterthought.
 
@@ -164,6 +164,6 @@ Plans:
 | 18. Responsive Modals and Desktop Polish | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 19. Energy Valence | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
-| 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 1/2 | In Progress|  |
+| 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 2/2 | Complete   | 2026-08-07 |
 | 22. Unified Today Screen | v1.5 | 0/4 | Planned | - |
 | 23. Live Activity Tracking | v1.5 | 0/? | Not started | - |

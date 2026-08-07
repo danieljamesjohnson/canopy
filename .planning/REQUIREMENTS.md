@@ -24,7 +24,7 @@
 
 ### Tone
 
-- [ ] **TONE-01**: No "behind this week" framing anywhere; a time-target goal's rationale reads as what the schedule is doing for the user, not as a deficit report
+- [x] **TONE-01**: No "behind this week" framing anywhere; a time-target goal's rationale reads as what the schedule is doing for the user, not as a deficit report
 
 ## Implementation Notes
 
@@ -65,7 +65,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | LIVE-03 | Phase 23 | Pending |
 | BREAK-01 | Phase 21 | Complete |
 | BREAK-02 | Phase 21 | Complete |
-| TONE-01 | Phase 21 | Pending |
+| TONE-01 | Phase 21 | Complete |
 
 **Coverage:**
 
