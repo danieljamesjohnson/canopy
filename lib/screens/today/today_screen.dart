@@ -90,6 +90,20 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   bool _inReviewWindow = false;
   String? _lastScheduleDateYmd;
 
+  /// Centre-on-open (D-02) plumbing. [_liveRowKey] tags the live row's
+  /// TimelineRowTile so [Scrollable.ensureVisible] can find it;
+  /// [_dayScrollController] owns the day list's scroll position.
+  /// [_didCentreLiveRow] is a ONE-SHOT flag: the screen rebuilds every
+  /// minute (the ticker above), and re-running ensureVisible on every tick
+  /// would drag the list out from under a reading user (T-22-08). It is
+  /// set synchronously in build() — before the post-frame callback is even
+  /// scheduled — and is reset only when the schedule's dateYmd changes (a
+  /// new day), never on a tick. Do NOT add a sticky bar, floating pill, or
+  /// jump button here (D-03) — that is the rejected sketch variant B.
+  final GlobalKey _liveRowKey = GlobalKey();
+  final ScrollController _dayScrollController = ScrollController();
+  bool _didCentreLiveRow = false;
+
   @override
   void initState() {
     super.initState();
@@ -120,6 +134,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     _nowTimer?.cancel();
+    _dayScrollController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -133,6 +148,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       setState(() {
         _lastScheduleDateYmd = newDateYmd;
         _eodCardDismissed = false; // new schedule → show card again
+        _didCentreLiveRow = false; // a new day re-centres; a tick never does
       });
     }
   }
@@ -267,6 +283,103 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     );
   }
 
+  /// Quiet edge-state line directly beneath the mood chip. Renders a
+  /// two-line status for PreStart, GapBeforeNext and DayComplete; renders
+  /// nothing for Active/Overdue — the live row in the list speaks for
+  /// those (D-01). Copy is carried across WORD FOR WORD from
+  /// home_screen.dart's now-removed pre-start / gap / day-complete content
+  /// builders (LIVE-03 input) — Phase 23 / LIVE-03 owns any future wording
+  /// change here, not this plan. Styled quiet (bodyMedium/titleMedium on
+  /// onSurfaceVariant, no Card, no elevation, no accent fill): a header
+  /// line, NOT a hero card (D-01) and NOT sticky (D-03).
+  Widget _buildEdgeStateLine(BuildContext context, NowState nowState) {
+    final theme = Theme.of(context);
+    final onVariant = theme.colorScheme.onSurfaceVariant;
+    final headingStyle = theme.textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: onVariant,
+    );
+    final bodyStyle = theme.textTheme.bodyMedium?.copyWith(color: onVariant);
+
+    switch (nowState) {
+      case PreStart(:final firstChunk):
+        final title = _chunkTitle(context, firstChunk);
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Your day starts at '
+                '${formatMinutes(firstChunk.displayStartMinutes!)}',
+                style: headingStyle,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                '$title · ${firstChunk.durationMinutes} min',
+                style: bodyStyle,
+              ),
+            ],
+          ),
+        );
+      case GapBeforeNext(:final next):
+        final goalName = _lookupGoalName(context, next);
+        final title = _chunkTitle(context, next);
+        final subtitle = goalName != null
+            ? _toDisplayRationale(next.rationale)
+            : null;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Up next', style: headingStyle),
+              const SizedBox(height: 24),
+              Text(title, style: headingStyle, overflow: TextOverflow.ellipsis),
+              if (subtitle != null && subtitle.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(color: onVariant),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                next.displayStartMinutes != null
+                    ? 'Starts at ${formatMinutes(next.displayStartMinutes!)}'
+                    : 'Starting soon',
+                style: bodyStyle,
+              ),
+            ],
+          ),
+        );
+      case DayComplete():
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("That's a wrap", style: headingStyle),
+              const SizedBox(height: 24),
+              Text(
+                "You've reached the end of today's schedule.",
+                style: bodyStyle,
+              ),
+            ],
+          ),
+        );
+      case Active():
+      case Overdue():
+        // The live row in the list speaks for these states (D-01) — no
+        // separate header content.
+        return const SizedBox.shrink();
+    }
+  }
+
   /// Low-energy-day surface for restoratives, ported from schedule_screen.
   /// Rendered only when mood ≤ 2. These never affect the schedule — they
   /// are the deliberate non-goal counterpart to the plan (P11).
@@ -364,9 +477,14 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         );
       case ChunkRow(:final chunk, :final isLive):
         if (isLive) {
-          return TimelineRowTile(
-            startMinutes: chunk.displayStartMinutes,
-            child: _buildLiveRow(context, chunk, nowState),
+          // Keyed so build()'s centre-on-open can find this row's context
+          // via Scrollable.ensureVisible without a second "now" scan.
+          return KeyedSubtree(
+            key: _liveRowKey,
+            child: TimelineRowTile(
+              startMinutes: chunk.displayStartMinutes,
+              child: _buildLiveRow(context, chunk, nowState),
+            ),
           );
         }
         final goalColor = _lookupGoalColor(context, chunk);
@@ -608,6 +726,30 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       nowState: nowState,
     );
 
+    // Centre-on-open (D-02): schedule the scroll exactly once. The flag is
+    // set synchronously here — before the post-frame callback even runs —
+    // so a rebuild triggered by the same tick that flips this bit can never
+    // schedule a second one (T-22-08). See the field doc comment for why
+    // this is a one-shot, not a listener.
+    final hasLiveRow = timelineRows.any((row) => row is ChunkRow && row.isLive);
+    if (!_didCentreLiveRow && hasLiveRow) {
+      _didCentreLiveRow = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final liveRowContext = _liveRowKey.currentContext;
+        // T-22-10: guarded on a non-null, still-mounted context — the day
+        // uses SingleChildScrollView (eager layout) so the target is
+        // always laid out by the time this callback runs.
+        if (liveRowContext == null) return;
+        Scrollable.ensureVisible(
+          liveRowContext,
+          alignment: 0.5,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      });
+    }
+
     return Scaffold(
       appBar: _buildAppBar(context, schedule),
       body: Align(
@@ -630,14 +772,16 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                   onGoToSummary: () => context.push('/summary'),
                 ),
               _buildHeader(context, schedule, mood),
+              _buildEdgeStateLine(context, nowState),
               // SingleChildScrollView + Column, deliberately NOT a ListView:
-              // Task 3's centre-on-open needs the live row already laid out,
-              // and a lazy ListView may not have built a row far down the
-              // day. A day is bounded at a few dozen rows, so eager layout
-              // is the cheap correct answer and avoids a scroll-positioning
-              // package (P1 doc comment carried into the render layer).
+              // the centre-on-open above needs the live row already laid
+              // out, and a lazy ListView may not have built a row far down
+              // the day. A day is bounded at a few dozen rows, so eager
+              // layout is the cheap correct answer and avoids a
+              // scroll-positioning package.
               Expanded(
                 child: SingleChildScrollView(
+                  controller: _dayScrollController,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
