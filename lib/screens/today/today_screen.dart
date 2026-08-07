@@ -616,7 +616,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   void _openAddEvent(BuildContext context) {
     final scheduleNotifier = context.read<ScheduleNotifier>();
     final messenger = ScaffoldMessenger.of(context);
-    final now = DateTime.now();
+    final now = _nowFn();
     final today = DateTime(now.year, now.month, now.day);
     showAdaptiveFormModal(
       context: context,
