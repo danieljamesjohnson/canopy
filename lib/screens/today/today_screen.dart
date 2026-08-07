@@ -624,15 +624,20 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   /// bar, AND the fast-timer decision ([_syncFastTimer]) — because all three
   /// read this one value, they can never disagree (P-5). Returns `null`
   /// unless [nowState] is [Active] and its current chunk has a clock
-  /// position (`displayStartMinutes`). Reads the clock only through
-  /// [_nowFn].
-  int? _liveSecondsRemaining(NowState nowState) {
+  /// position (`displayStartMinutes`).
+  ///
+  /// [nowDt] must be the SAME sample used to produce [nowState] (see the
+  /// call site in `build()`) — this function does not read the clock
+  /// itself. Reusing the caller's sample instead of re-reading `_nowFn()`
+  /// avoids the exact hazard [resolveNowState]'s own doc comment warns
+  /// about: two independent clock reads in the same render pass straddling
+  /// a second boundary and disagreeing (WR-01).
+  int? _liveSecondsRemaining(NowState nowState, DateTime nowDt) {
     if (nowState is! Active) return null;
     final current = nowState.current;
     final start = current.displayStartMinutes;
     if (start == null) return null;
     final end = start + current.durationMinutes;
-    final nowDt = _nowFn();
     final endSeconds = end * 60;
     final nowSeconds = nowDt.hour * 3600 + nowDt.minute * 60 + nowDt.second;
     final rawSecondsLeft = endSeconds - nowSeconds;
@@ -864,8 +869,14 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     // 22-PATTERNS.md section 5): this samples the clock exactly once,
     // buildTimeline turns that classification into a row list, and nothing
     // below this point re-derives which chunk is current.
-    final nowState = resolveNowState(chunks: schedule.chunks, now: _nowFn);
-    final liveSecondsLeft = _liveSecondsRemaining(nowState);
+    //
+    // nowDt is sampled here and threaded into BOTH resolveNowState (via a
+    // closure that always returns this same value) and _liveSecondsRemaining
+    // directly — a single clock read per build, so the two consumers can
+    // never straddle a second/minute boundary and disagree (WR-01).
+    final nowDt = _nowFn();
+    final nowState = resolveNowState(chunks: schedule.chunks, now: () => nowDt);
+    final liveSecondsLeft = _liveSecondsRemaining(nowState, nowDt);
     // The only place the fast-timer decision is made (P-5).
     _syncFastTimer(liveSecondsLeft != null && liveSecondsLeft < 60);
     final timelineRows = buildTimeline(

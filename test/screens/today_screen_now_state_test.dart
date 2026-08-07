@@ -1242,6 +1242,65 @@ void main() {
       expect(find.text('30s left · until 8:30 AM'), findsOneWidget);
     });
 
+    // ── WR-01 regression: one clock sample per build, threaded not re-read ──
+    //
+    // resolveNowState's own doc comment explains why it samples `now()`
+    // exactly once — a second, independent read in the same render pass
+    // can straddle a boundary and disagree with the first. Before the
+    // WR-01 fix, `_liveSecondsRemaining` called `_nowFn()` a second time
+    // instead of reusing the sample `resolveNowState` had already taken.
+    // This test drives an injected clock that returns a DIFFERENT value on
+    // each successive call within the same build and asserts the rendered
+    // countdown matches the FIRST (classifying) sample, not a later one —
+    // it fails against the pre-fix re-read and passes against the fix,
+    // which threads a single `nowDt` into both consumers.
+    testWidgets(
+      'the countdown matches the sample that classified the state, not a '
+      'later clock read (WR-01)',
+      (tester) async {
+        // TodayScreen.build() makes exactly two `_nowFn()` calls per build
+        // in the fixed code: one shared sample for resolveNowState AND
+        // _liveSecondsRemaining, and a second, independent one later for
+        // the header's date text. The pre-fix code made three: a first for
+        // resolveNowState, a second (independent) one for
+        // _liveSecondsRemaining, and a third for the header. Supplying
+        // distinct values for the first two calls means the fixed code
+        // renders using only callValues[0], while the pre-fix code would
+        // have rendered its countdown using callValues[1] instead.
+        final callValues = [
+          DateTime(2026, 6, 13, 8, 29, 15), // 45s remaining
+          DateTime(2026, 6, 13, 8, 29, 25), // 35s remaining — must not leak in
+        ];
+        var callIndex = 0;
+        DateTime nowFn() {
+          final value =
+              callValues[callIndex < callValues.length
+                  ? callIndex
+                  : callValues.length - 1];
+          callIndex++;
+          return value;
+        }
+
+        final sn = _FakeScheduleNotifierWithSchedule(
+          DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'w1',
+                syntheticStartMinutes: 480,
+                durationMinutes: 30,
+              ),
+            ],
+          ),
+        );
+        await _pumpTodayScreen(tester, scheduleNotifier: sn, now: nowFn);
+
+        expect(find.text('45s left · until 8:30 AM'), findsOneWidget);
+        expect(find.textContaining('35s left'), findsNothing);
+      },
+    );
+
     testWidgets('the progress bar tracks the same value as the label', (
       tester,
     ) async {
