@@ -235,6 +235,13 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
           .toList();
       removedStale = kept.length != _todaySchedule!.chunks.length;
       _todaySchedule!.chunks = kept;
+      // If the removed block was the day's chronologically-last item, a break
+      // that used to sit before it is now trailing with no re-trim (CR-01,
+      // Phase 23 review iteration 2). Both branches below (`!anchorsToday`
+      // early return and the `newChunks.isEmpty` guard) persist directly from
+      // here without going through `_reflowDiscretionaryWork`, so re-trim now
+      // rather than relying on either of those call sites remembering to.
+      _trimTrailingNonWork();
     }
 
     if (!anchorsToday) {
@@ -312,6 +319,32 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     }
     notifyListeners();
     return true;
+  }
+
+  /// Removes trailing non-work chunks from `_todaySchedule!.chunks`, mirroring
+  /// `ScheduleGeneratorService.generate()`'s STEP E trim
+  /// (`schedule_generator.dart`). `addEventToday`'s stale-chunk-removal above
+  /// can leave a break as the day's new trailing item when the commitment
+  /// that used to follow it moves off today; without this trim, that
+  /// dangling break survives into persisted state and whatever reads it next
+  /// (e.g. `resolveNowState`). No-op if `_todaySchedule` is null or already
+  /// trailing-work-clean.
+  ///
+  /// `chunks` is not guaranteed clock-sorted at this point, so trim against a
+  /// sorted copy and remove by identity from the real list — "trailing"
+  /// means the same thing here as it does in `resolveNowState`.
+  void _trimTrailingNonWork() {
+    final schedule = _todaySchedule;
+    if (schedule == null) return;
+    final sorted = List<ScheduledChunk>.from(schedule.chunks)
+      ..sort((a, b) {
+        final aStart = a.displayStartMinutes ?? 9999;
+        final bStart = b.displayStartMinutes ?? 9999;
+        return aStart.compareTo(bStart);
+      });
+    while (sorted.isNotEmpty && sorted.last.chunkType != ChunkType.work) {
+      schedule.chunks.remove(sorted.removeLast());
+    }
   }
 
   /// Re-packs unresolved discretionary WORK chunks (goal-driven, not anchored,
@@ -393,8 +426,8 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
         if (cursor + dur <= dayEnd && !hits(cursor, cursor + dur)) {
           result.add(
             ScheduledChunk(
-              chunkTypeIndex: (isLong ? ChunkType.longBreak : ChunkType.shortBreak)
-                  .index,
+              chunkTypeIndex:
+                  (isLong ? ChunkType.longBreak : ChunkType.shortBreak).index,
               goalId: null,
               durationMinutes: dur,
               syntheticStartMinutes: cursor,

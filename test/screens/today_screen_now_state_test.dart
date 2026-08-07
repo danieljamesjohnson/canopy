@@ -518,51 +518,53 @@ void main() {
       expect(state, isA<DayComplete>());
     });
 
-    test('WR-02: a trailing break past its own window trips the debug assert '
-        'instead of silently misclassifying DayComplete', () {
-      // Deliberately malformed input: bypasses the two upstream
-      // mechanisms that are supposed to guarantee the chronologically-
-      // last scheduled chunk is always work-typed
-      // (schedule_generator.dart STEP E and
-      // ScheduleNotifier._reflowDiscretionaryWork — see resolveNowState's
-      // doc comment) by constructing a chunk list directly with a break
-      // as the trailing item. Pins the WR-02 defensive assert: a future
-      // regression in either upstream mechanism now fails loudly here,
-      // at the exact moment the trailing boundary would otherwise decide
-      // DayComplete, instead of silently reporting DayComplete against
-      // the wrong chunk's window end.
-      final chunks = [
-        _workChunk(id: 'w1', syntheticStartMinutes: 480, durationMinutes: 25),
-        _breakChunk(id: 'b1', syntheticStartMinutes: 505, durationMinutes: 5),
-      ];
-      expect(
-        () => resolveNowState(
-          chunks: chunks,
-          now: () => DateTime(2026, 6, 13, 18, 0), // well past b1's window
-        ),
-        throwsA(isA<AssertionError>()),
-      );
-    });
-
-    test('WR-02: the same trailing-break fixture is unaffected by the assert '
-        'while its own window is still current (Active)', () {
-      // Companion to the assert-trip test above: confirms the WR-02
-      // guard is scoped ONLY to the trailing-boundary DayComplete
-      // decision, not to every call — a legitimate in-progress state
-      // (the break itself is the live activity) must resolve normally,
-      // exactly as the pre-existing "a running break gets the same
-      // countdown treatment" widget test already relies on.
+    test('CR-01: a trailing break past its own window resolves to '
+        'DayComplete truthfully instead of throwing', () {
+      // This exact chunk shape (a break as the chronologically-last
+      // scheduled item) is what Phase 23 review iteration 2 (CR-01) proved
+      // reachable through ScheduleNotifier.addEventToday's stale-chunk-
+      // removal branch (see schedule_notifier_add_event_test.dart's
+      // matching CR-01 test for the write-side repro) — this is no longer
+      // "deliberately malformed" input the way the retired WR-02 assert
+      // treated it. Once `currentMinutes` is past this trailing break's own
+      // window end, nothing else is scheduled today regardless of its
+      // type, so DayComplete is the correct, truthful answer — and,
+      // per CR-01, resolveNowState must reach it without throwing.
       final chunks = [
         _workChunk(id: 'w1', syntheticStartMinutes: 480, durationMinutes: 25),
         _breakChunk(id: 'b1', syntheticStartMinutes: 505, durationMinutes: 5),
       ];
       final state = resolveNowState(
         chunks: chunks,
-        now: () => DateTime(2026, 6, 13, 8, 27), // inside b1's window
+        now: () => DateTime(2026, 6, 13, 18, 0), // well past b1's window
       );
-      expect(state, isA<Active>());
-      expect((state as Active).current.id, 'b1');
+      expect(state, isA<DayComplete>());
     });
+
+    test(
+      'CR-01: the same trailing-break fixture still resolves Active '
+      'while its own window is current (unaffected by the assert removal)',
+      () {
+        // Companion to the DayComplete test above: confirms the trailing
+        // boundary check only ever fires once `currentMinutes` is past the
+        // trailing chunk's own window — a legitimate in-progress state (the
+        // break itself is the live activity) must keep resolving normally,
+        // exactly as the pre-existing "a running break gets the same
+        // countdown treatment" widget test already relies on. This behavior
+        // is unchanged by CR-01's fix (removing the WR-02 assert did not
+        // touch this code path at all).
+        final chunks = [
+          _workChunk(id: 'w1', syntheticStartMinutes: 480, durationMinutes: 25),
+          _breakChunk(id: 'b1', syntheticStartMinutes: 505, durationMinutes: 5),
+        ];
+        final state = resolveNowState(
+          chunks: chunks,
+          now: () => DateTime(2026, 6, 13, 8, 27), // inside b1's window
+        );
+        expect(state, isA<Active>());
+        expect((state as Active).current.id, 'b1');
+      },
+    );
   });
 
   // ── Widget tests: TodayScreen time-anchored Now (NOW-01/NOW-02) ──────────

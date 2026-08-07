@@ -70,17 +70,23 @@ class DayComplete extends NowState {}
 ///    then sort ascending by that value. As of LIVE-01, breaks participate
 ///    here too (the filter used to exclude them) — this is what lets a
 ///    running break resolve to [Active] instead of a false [GapBeforeNext].
-///    Two independent generation paths both guarantee the last scheduled
-///    chunk is work-typed, so the [DayComplete] window check below is
-///    unaffected by breaks joining the input set: (a) `schedule_generator
-///    .dart` STEP E trims any trailing non-work chunk after a full-day
-///    `generate()`, and (b) `ScheduleNotifier._reflowDiscretionaryWork`
-///    (which mutates the day's chunks directly, without calling
-///    `generate()`, from `addEventToday`) only ever emits a break *between*
-///    two movable work chunks (`if (i + 1 < movable.length)`), so it can
-///    never leave a trailing break either. A future edit to either
-///    mechanism that breaks this guarantee would silently regress
-///    [DayComplete] here — keep them in sync.
+///    The [DayComplete] window check below (step 4) does NOT depend on the
+///    trailing chunk being work-typed: `scheduled` is exhaustive over every
+///    chunk with a clock position, so once `currentMinutes` passes the LAST
+///    one's window end, nothing else is scheduled today regardless of that
+///    chunk's type. An earlier version of this doc comment claimed this was
+///    a cross-file invariant ("two independent generation paths guarantee
+///    the last scheduled chunk is work-typed") that a debug `assert`
+///    enforced here — but Phase 23 review iteration 2 (CR-01) found a
+///    third, pre-existing mutation path (`ScheduleNotifier.addEventToday`'s
+///    stale-chunk-removal branch) that didn't hold up that invariant
+///    (editing a commitment off today could leave a break as the persisted
+///    trailing chunk), turning a merely-unnecessary assumption into a
+///    user-visible crash in the debug build this project hosts for UAT. The
+///    assert is gone; `ScheduleNotifier._trimTrailingNonWork` now keeps a
+///    normal day's trailing chunk work-typed at the write side (mirroring
+///    `schedule_generator.dart`'s STEP E), and this read-side check no
+///    longer needs — or claims to need — that guarantee to be truthful.
 /// 2. Empty result → [DayComplete] (documented departure — see class doc).
 /// 3. currentMinutes < first chunk start → [PreStart].
 /// 4. currentMinutes ≥ last chunk end → [DayComplete].
@@ -132,29 +138,22 @@ NowState resolveNowState({
     return PreStart(scheduled.first);
   }
 
-  // Past the last chunk's window end.
+  // Past the last chunk's window end. This is correct regardless of
+  // `scheduled.last`'s chunk type: `scheduled` is exhaustive over every
+  // chunk with a clock position, sorted by start, so once `currentMinutes`
+  // is past the LAST one's window end, nothing else is scheduled to happen
+  // today — whether that trailing item is work or a break. CR-01 (Phase 23
+  // review iteration 2) removed a debug `assert` that used to gate this
+  // branch on `scheduled.last.chunkType == ChunkType.work`: that invariant
+  // is enforced at the write side (see
+  // `ScheduleNotifier._trimTrailingNonWork`) for a normal generated day, but
+  // is not actually load-bearing for this comparison to be truthful, and a
+  // pre-existing write-side gap (`ScheduleNotifier.addEventToday`'s
+  // stale-chunk-removal branch) could leave it briefly false — which used to
+  // crash the debug build UAT hosts, rather than just returning the correct
+  // DayComplete this branch already computes without the assert.
   if (currentMinutes >=
       scheduled.last.displayStartMinutes! + scheduled.last.durationMinutes) {
-    // WR-02 defensive check: this DayComplete-via-trailing-boundary decision
-    // trusts that the chronologically-last scheduled chunk is always
-    // work-typed — a cross-file invariant enforced only by
-    // schedule_generator.dart's STEP E trim and
-    // ScheduleNotifier._reflowDiscretionaryWork (see the class-level doc
-    // comment above), neither of which is re-checked here at runtime.
-    // Scoped to ONLY this branch (rather than unconditionally on every
-    // call) so a legitimate day whose last item is a break that's still
-    // PreStart/Active/Overdue never trips it — the invariant is only load-
-    // bearing at the exact moment this boundary decides DayComplete.
-    // Debug-only: a future regression in either upstream mechanism should
-    // fail loudly here instead of silently misclassifying DayComplete
-    // against a trailing break's window — see the trailing-break
-    // regression test in today_screen_now_state_test.dart (WR-02).
-    assert(
-      scheduled.last.chunkType == ChunkType.work,
-      'DayComplete invariant violated: trailing scheduled chunk must be '
-      'work-typed (see resolveNowState doc comment) but was '
-      '${scheduled.last.chunkType}',
-    );
     return DayComplete();
   }
 
