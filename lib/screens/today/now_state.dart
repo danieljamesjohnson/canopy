@@ -70,9 +70,17 @@ class DayComplete extends NowState {}
 ///    then sort ascending by that value. As of LIVE-01, breaks participate
 ///    here too (the filter used to exclude them) — this is what lets a
 ///    running break resolve to [Active] instead of a false [GapBeforeNext].
-///    `schedule_generator.dart` STEP E trims any trailing non-work chunk, so
-///    the last scheduled chunk is always work-typed and the [DayComplete]
-///    window check below is unaffected by breaks joining the input set.
+///    Two independent generation paths both guarantee the last scheduled
+///    chunk is work-typed, so the [DayComplete] window check below is
+///    unaffected by breaks joining the input set: (a) `schedule_generator
+///    .dart` STEP E trims any trailing non-work chunk after a full-day
+///    `generate()`, and (b) `ScheduleNotifier._reflowDiscretionaryWork`
+///    (which mutates the day's chunks directly, without calling
+///    `generate()`, from `addEventToday`) only ever emits a break *between*
+///    two movable work chunks (`if (i + 1 < movable.length)`), so it can
+///    never leave a trailing break either. A future edit to either
+///    mechanism that breaks this guarantee would silently regress
+///    [DayComplete] here — keep them in sync.
 /// 2. Empty result → [DayComplete] (documented departure — see class doc).
 /// 3. currentMinutes < first chunk start → [PreStart].
 /// 4. currentMinutes ≥ last chunk end → [DayComplete].
