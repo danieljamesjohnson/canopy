@@ -34,7 +34,7 @@ import '../test_helpers/viewport.dart';
 /// (`onboardingComplete`) and skips any Hive I/O.
 class _FakeSettingsNotifier extends SettingsNotifier {
   _FakeSettingsNotifier({required bool onboardingComplete})
-      : _flag = onboardingComplete;
+    : _flag = onboardingComplete;
   bool _flag;
   @override
   bool get onboardingComplete => _flag;
@@ -75,8 +75,8 @@ class _FakeRestorativesNotifier extends RestorativesNotifier {
 }
 
 /// Test double — overrides `init()` and `isPreCheckin` to avoid Hive/Timer.
-/// HomeScreen reads `context.watch<ThemeNotifier>().isPreCheckin` so this
-/// provider must be in the tree when the redirect lands on /home (NAV-01).
+/// TodayScreen reads `context.watch<ThemeNotifier>().isPreCheckin` so this
+/// provider must be in the tree when the redirect lands on /today (UNIFY-02).
 class _FakeThemeNotifier extends ThemeNotifier {
   @override
   Future<void> init() async {}
@@ -97,7 +97,9 @@ Future<GoRouter> _pumpRouter(
   // surface as test failures even though they're cosmetic.
   setViewport(tester, const Size(1200, 1200));
 
-  final settings = _FakeSettingsNotifier(onboardingComplete: onboardingComplete);
+  final settings = _FakeSettingsNotifier(
+    onboardingComplete: onboardingComplete,
+  );
   final router = createRouter(settings);
   // Force the initial route BEFORE the widget pumps so the redirect runs on
   // the very first frame.
@@ -107,15 +109,21 @@ Future<GoRouter> _pumpRouter(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<SettingsNotifier>.value(value: settings),
-        ChangeNotifierProvider<GoalsNotifier>(create: (_) => _FakeGoalsNotifier()),
+        ChangeNotifierProvider<GoalsNotifier>(
+          create: (_) => _FakeGoalsNotifier(),
+        ),
         ChangeNotifierProvider<RestorativesNotifier>(
-            create: (_) => _FakeRestorativesNotifier()),
+          create: (_) => _FakeRestorativesNotifier(),
+        ),
         ChangeNotifierProvider<ScheduleNotifier>(
-            create: (_) => _FakeScheduleNotifier()),
+          create: (_) => _FakeScheduleNotifier(),
+        ),
         ChangeNotifierProvider<CommitmentsNotifier>(
-            create: (_) => _FakeCommitmentsNotifier()),
+          create: (_) => _FakeCommitmentsNotifier(),
+        ),
         ChangeNotifierProvider<ThemeNotifier>(
-            create: (_) => _FakeThemeNotifier()),
+          create: (_) => _FakeThemeNotifier(),
+        ),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -159,61 +167,144 @@ void main() {
     );
 
     testWidgets(
-      'onboardingComplete=true → /schedule deep link loads /schedule',
+      'onboardingComplete=true → /schedule deep link resolves to /today '
+      '(UNIFY-02, D-08)',
       (tester) async {
         final router = await _pumpRouter(
           tester,
           onboardingComplete: true,
           initialPath: '/schedule',
         );
-        expect(_currentPath(router), '/schedule');
+        expect(_currentPath(router), '/today');
       },
     );
 
-    testWidgets(
-      'onboardingComplete=true → /goals deep link loads /goals',
-      (tester) async {
-        final router = await _pumpRouter(
-          tester,
-          onboardingComplete: true,
-          initialPath: '/goals',
-        );
-        expect(_currentPath(router), '/goals');
-      },
-    );
+    testWidgets('onboardingComplete=true → /goals deep link loads /goals', (
+      tester,
+    ) async {
+      final router = await _pumpRouter(
+        tester,
+        onboardingComplete: true,
+        initialPath: '/goals',
+      );
+      expect(_currentPath(router), '/goals');
+    });
 
     testWidgets(
-      'onboardingComplete=true → /onboarding deep link redirects to /home',
+      'onboardingComplete=true → /onboarding deep link redirects to /today',
       (tester) async {
-        // NAV-01: The router's redirect callback sends already-onboarded users
-        // away from /onboarding to /home (was /goals before Phase 12).
+        // UNIFY-02: The router's redirect callback sends already-onboarded
+        // users away from /onboarding to /today (was /home before this plan).
         //
         // We use _pumpRouter but verify the path immediately after the redirect
-        // runs (before HomeScreen.initState's async _checkReviewWindow can throw).
-        // The path read is synchronous; the assertion completes before the Hive
-        // Future resolves in FakeAsync. This matches the existing test pattern
-        // (a single tester.pump() is used, not pumpAndSettle).
+        // runs (before TodayScreen.initState's async _checkReviewWindow can
+        // throw). The path read is synchronous; the assertion completes before
+        // the Hive Future resolves in FakeAsync. This matches the existing test
+        // pattern (a single tester.pump() is used, not pumpAndSettle).
         final router = await _pumpRouter(
           tester,
           onboardingComplete: true,
           initialPath: '/onboarding',
         );
-        expect(_currentPath(router), '/home');
+        expect(_currentPath(router), '/today');
+      },
+    );
+
+    testWidgets('cold launch with onboardingComplete=true lands on /today', (
+      tester,
+    ) async {
+      // UNIFY-02: createRouter uses initialLocation: '/today'. The redirect
+      // guard must not send already-onboarded users away from /today.
+      final router = await _pumpRouter(
+        tester,
+        onboardingComplete: true,
+        initialPath: '/today',
+      );
+      expect(_currentPath(router), '/today');
+    });
+
+    testWidgets('onboardingComplete=true → /today deep link loads /today', (
+      tester,
+    ) async {
+      final router = await _pumpRouter(
+        tester,
+        onboardingComplete: true,
+        initialPath: '/today',
+      );
+      expect(_currentPath(router), '/today');
+    });
+
+    testWidgets(
+      'onboardingComplete=true → router.go(\'/schedule\') (the literal '
+      'notification-tap call from main.dart:86) resolves to /today (G3, D-08)',
+      (tester) async {
+        final router = await _pumpRouter(
+          tester,
+          onboardingComplete: true,
+          initialPath: '/today',
+        );
+        // Simulate the notification-tap navigation happening mid-session,
+        // after the app has already settled on some other route — this is
+        // exactly what NotificationService.onTapCallback does in main.dart.
+        router.go('/schedule');
+        await tester.pump();
+        expect(_currentPath(router), '/today');
       },
     );
 
     testWidgets(
-      'cold launch with onboardingComplete=true lands on /home',
+      'onboardingComplete=true → /schedule/checkin resolves to itself, '
+      'NOT swallowed by the /schedule redirect (T-22-15)',
       (tester) async {
-        // NAV-01: createRouter uses initialLocation: '/home'. The redirect guard
-        // must not send already-onboarded users away from /home.
         final router = await _pumpRouter(
           tester,
           onboardingComplete: true,
-          initialPath: '/home',
+          initialPath: '/schedule/checkin',
         );
-        expect(_currentPath(router), '/home');
+        expect(_currentPath(router), '/schedule/checkin');
+      },
+    );
+
+    testWidgets(
+      'onboardingComplete=false → /schedule/checkin still redirects to '
+      '/onboarding — the gate runs before the /schedule normalisation '
+      '(T-22-13)',
+      (tester) async {
+        final router = await _pumpRouter(
+          tester,
+          onboardingComplete: false,
+          initialPath: '/schedule/checkin',
+        );
+        expect(_currentPath(router), '/onboarding');
       },
     );
   });
+
+  group(
+    'ResponsiveShell destinations after the 4-to-3 collapse (UNIFY-02, G2)',
+    () {
+      testWidgets('at a 1200dp viewport, the NavigationRail has exactly three '
+          'destinations, none labelled Home or Schedule, one labelled Today', (
+        tester,
+      ) async {
+        // _pumpRouter already sets a 1200x1200 viewport, well above the
+        // 720dp NavigationRail breakpoint.
+        await _pumpRouter(
+          tester,
+          onboardingComplete: true,
+          initialPath: '/today',
+        );
+
+        final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+        expect(rail.destinations.length, 3);
+
+        final labels = rail.destinations
+            .map((d) => (d.label as Text).data)
+            .toList();
+        expect(labels, isNot(contains('Home')));
+        expect(labels, isNot(contains('Schedule')));
+        expect(labels, contains('Today'));
+      });
+    },
+  );
 }
