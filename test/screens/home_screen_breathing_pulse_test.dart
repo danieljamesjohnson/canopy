@@ -19,7 +19,7 @@
 
 import 'dart:ui' show AccessibilityFeatures;
 
-import 'package:canopy/screens/home/home_screen.dart';
+import 'package:canopy/screens/today/widgets/breathing_pulse_cta.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
