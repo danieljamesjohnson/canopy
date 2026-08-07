@@ -148,7 +148,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 23-01-PLAN.md — Break-aware now-state: drop resolveNowState's work-only filter, name a running break in the live row and in every "next" line, and exclude breaks from the "Start focus" target (LIVE-01)
+- [x] 23-01-PLAN.md — Break-aware now-state: drop resolveNowState's work-only filter, name a running break in the live row and in every "next" line, and exclude breaks from the "Start focus" target (LIVE-01)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -183,4 +183,4 @@ Plans:
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 2/2 | Complete   | 2026-08-07 |
 | 22. Unified Today Screen | v1.5 | 4/4 | Complete   | 2026-08-07 |
-| 23. Live Activity Tracking | v1.5 | 0/4 | Planned | - |
+| 23. Live Activity Tracking | v1.5 | 1/4 | In Progress|  |

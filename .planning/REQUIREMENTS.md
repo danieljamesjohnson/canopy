@@ -13,7 +13,7 @@
 
 ### Live Activity Tracking
 
-- [ ] **LIVE-01**: The screen always names what the user is doing right now, including breaks — a running break reads as a break, never as empty time
+- [x] **LIVE-01**: The screen always names what the user is doing right now, including breaks — a running break reads as a break, never as empty time
 - [ ] **LIVE-02**: Time remaining in the current activity is shown and counts down while the screen is open
 - [ ] **LIVE-03**: The honest edge states survive the merge — before the day starts, between activities, and day-complete each read truthfully
 
@@ -60,7 +60,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 |-------------|-------|--------|
 | UNIFY-01 | Phase 22 | Complete |
 | UNIFY-02 | Phase 22 | Complete |
-| LIVE-01 | Phase 23 | Pending |
+| LIVE-01 | Phase 23 | Complete |
 | LIVE-02 | Phase 23 | Pending |
 | LIVE-03 | Phase 23 | Pending |
 | BREAK-01 | Phase 21 | Complete |

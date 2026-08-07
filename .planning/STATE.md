@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: executing
-stopped_at: Completed 22-04-navigation-merge-and-cleanup-PLAN.md
-last_updated: "2026-08-07T21:57:23.208Z"
-last_activity: 2026-08-07 -- Phase 22 execution started
+stopped_at: Completed 23-01-PLAN.md
+last_updated: "2026-08-07T22:09:46.806Z"
+last_activity: 2026-08-07 -- Phase 23 execution started
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 10
+  completed_plans: 7
   percent: 67
 ---
 
@@ -18,16 +18,16 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-07T20:38:10.559Z
+**Last session:** 2026-08-07T22:09:46.803Z
 
 ---
 
 ## Current Position
 
-Phase: 22 (Unified Today Screen) — EXECUTING
-Plan: 4 of 4
+Phase: 23 (Live Activity Tracking) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-08-07 -- Phase 22 execution started
+Last activity: 2026-08-07 -- Phase 23 execution started
 
 ```
 Progress: [░░░░░░░░░░] 0% — Phase 21/23
@@ -38,7 +38,7 @@ Progress: [░░░░░░░░░░] 0% — Phase 21/23
 See: `.planning/PROJECT.md` (updated 2026-08-04)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Phase 22 — Unified Today Screen
+**Current focus:** Phase 23 — Live Activity Tracking
 
 ## v1.5 Phase Summary
 
@@ -69,6 +69,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 22-03]: Task 2's fixture uses a work-typed 5-minute 'live' chunk rather than a real break — resolveNowState's work-only filter is untouched per scope boundary; Phase 23 (LIVE-01) widens it, not this plan
 - [Phase 22-04]: Kept /schedule declared (building TodayScreen) instead of deleting it, so /schedule/checkin keeps a parent and the notification-tap path has a defensive fallback if the redirect regresses — T-22-14: belt-and-braces dead-route prevention
 - [Phase 22-04]: Generalized the WR-03 no-double-timer test from a hardcoded 1-call assumption to a captured per-tick baseline, since TodayScreen reads the clock from 3 call sites per build vs HomeScreen's 1 — The actual invariant (no leaked duplicate Timer.periodic) is preserved; only the call-count magnitude assumption was wrong for the new screen's structure
+- [Phase ?]: [Phase 23-01] Broadened resolveNowState by dropping the ChunkType.work filter clause (single-line fix); the KEY INVARIANT ordering and minute-only clock sampling are unchanged — Extends the single now-detector rather than adding a parallel path, per Phase 22's single-detector invariant
+- [Phase ?]: [Phase 23-01] _liveKicker checks the two break ChunkType values explicitly rather than != ChunkType.work, to keep the plan's ChunkType.work occurrence-count acceptance criterion exact — Task 2's _liveKicker legitimately added a fourth ChunkType.work site that Task 3's acceptance criteria (written against only 3 pre-existing sites) didn't anticipate
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -152,7 +154,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-04
-Stopped at: Completed 22-04-navigation-merge-and-cleanup-PLAN.md
+Stopped at: Completed 23-01-PLAN.md
 Resume at: `/gsd-plan-phase 21`
 
 ## Performance Metrics
@@ -179,3 +181,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 22 P02 | 8min | 3 tasks | 8 files |
 | Phase 22-unified-today-screen P03 | 16min | 3 tasks | 5 files |
 | Phase 22-unified-today-screen P04 | 9min | 3 tasks | 20 files |
+| Phase 23 P01 | 10min | 3 tasks | 5 files |
