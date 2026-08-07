@@ -1,6 +1,6 @@
 ---
 phase: 21-mood-scaled-breaks-honest-rationale
-reviewed: 2026-08-07T19:19:52Z
+reviewed: 2026-08-07T00:00:00Z
 depth: standard
 files_reviewed: 2
 files_reviewed_list:
@@ -8,70 +8,79 @@ files_reviewed_list:
   - test/services/schedule_generator_test.dart
 findings:
   critical: 0
-  warning: 2
-  info: 1
-  total: 3
-status: issues_found
+  warning: 0
+  info: 0
+  total: 0
+status: clean
 ---
 
 # Phase 21: Code Review Report
 
-**Reviewed:** 2026-08-07T19:19:52Z
+**Reviewed:** 2026-08-07T00:00:00Z
 **Depth:** standard
 **Files Reviewed:** 2
-**Status:** issues_found
+**Status:** clean
 
 ## Summary
 
-Reviewed the phase 21 diff (`git diff 0134924..HEAD -- lib/ test/`), which is exactly the two changes described: (1) `_moodBreakCadence` lookup table `{1:2, 2:3, 3:4, 4:4, 5:5}` replacing the `isLowMood ? 3 : 4` ternary, and (2) the `_timeTargetRationale` deficit-branch string change from `'${remaining}h behind this week'` to `'Working toward ${remaining}h this week'`, plus eight new tests.
+Iteration 2. Reviewed the cumulative phase diff (`git diff 0134924..HEAD -- lib/ test/`), which now
+includes three fixer commits on top of the original feature work: `b91a785` (WR-01 disclosure),
+`de7e17d` (WR-02 assert), `a764b62` (IN-01 rewrap). All three genuinely resolve the iteration-1
+findings, and none introduces a new defect.
 
-Traced both changes line-by-line and re-derived the arithmetic behind every new test (habit ceiling, cap, break-count-modulo positions) by hand — all six BREAK-01 tests and both TONE-01 tests compute correct expected values against the actual algorithm; none of the new assertions are wrong.
+**WR-01 (mood=2 / mood=4 test disclosure).** Diffed `b91a785` in isolation: the only change to both
+tests is the test-name string, now reading `"(regression lock — also true under the pre-BREAK-01
+formula, does not by itself prove the new table is wired up)"`. Every `expect(...)` call, every
+in-body comment, and the arithmetic derivations are byte-for-byte unchanged. The new label is
+factually accurate — hand-re-tracing the old `isLowMood ? 3 : 4` ternary against
+`_moodBreakCadence[2] = 3` and `_moodBreakCadence[4] = 4` confirms both moods produced the same
+cadence under old and new code, exactly as iteration 1 found. The mood=1 and mood=5 tests (which do
+discriminate old vs. new behavior) were correctly left unlabeled. WR-01 is resolved.
 
-`_moodBreakCadence[moodIndex] ?? 4` has a sensible, non-crashing fallback for an out-of-range/missing key, and it mirrors the pre-existing `_moodCap[moodIndex] ?? 8` idiom already in the file — not a new gap introduced by this phase. No nondeterminism was introduced (no `Random`, no wall-clock reads, no unordered-collection iteration driving output order); the change is a pure `Map` lookup with a constant fallback.
+**WR-02 (assert on `moodIndex` range).** `assert(moodIndex >= 1 && moodIndex <= 5);` was added as the
+first statement in `generate()`, before `_effectiveCap`, `isLowMood`, and the
+`_moodBreakCadence[moodIndex] ?? 4` lookup — it can't be short-circuited by an earlier return. Traced
+every call site: `ScheduleGeneratorService.generate()` has exactly one production caller
+(`ScheduleNotifier.generateToday()` in `lib/providers/schedule_notifier.dart:131`), which forwards
+`moodIndex` verbatim from its own caller. That caller is `CheckinScreen._generate()`
+(`lib/screens/schedule/checkin_screen.dart:110`), which passes `_selectedMood!` — a value that can
+only ever be a key of the `_moodEmojis` map, a fixed literal `{1: '🌧️', 2: '🌥️', 3: '⛅', 4: '🌤️',
+5: '☀️'}` (`checkin_screen.dart:25-31, 236-247`). There is no code path where `moodIndex` is read back
+out of a persisted `DailySchedule.moodIndex` (which is the theoretical corruption vector the fixer's
+comment names) and fed into `generate()` — the one place that constructs a `DailySchedule` with a
+hardcoded, non-UI `moodIndex` (`schedule_notifier.dart:304-308`, the `addEventToday` minimal-schedule
+path, `moodIndex: 3`) never calls `generate()` at all. So: the assert is live in the debug build this
+project hosts for UAT (per CLAUDE.md, assertions run in that build), but it is **not reachable** with
+an out-of-range value through any exercised path — it's a genuine dead-guard against a scenario
+(corrupt/legacy Hive `moodIndex`) that isn't currently exploitable, matching exactly what the fixer's
+own comment claims. Also grepped every test call site (`grep -rn "moodIndex:" test/`) — every value is
+a literal 1-5 or a loop bound `1..5`; none regressed. Ran `flutter test test/services/
+schedule_generator_test.dart` and the full `flutter test` suite (348 tests) with the assert compiled
+in (Dart test runner always runs with assertions on) — all green. WR-02 is resolved and did not
+introduce a reachable crash.
 
-The one real gap: the phase's stated premise was that the *old* cadence tests "passed regardless of cadence and therefore proved nothing" — but two of the six new cadence tests (mood=2, mood=4) have exactly the same defect, undisclosed. Confirmed by hand-tracing the old formula (`isLowMood ? 3 : 4`, where `isLowMood = moodIndex <= 2`) against the new table: mood=2 was 3 under both old and new; mood=4 was 4 under both old and new. Only mood=1 (3→2) and mood=5 (4→5) actually changed, and only those two tests (plus the mood=3 "baseline unchanged" test, which is honestly labeled as non-discriminating) would fail against the pre-phase code. See WR-01 below.
+**IN-01 (manual rewrap).** Diffed `a764b62` in isolation: the only change is reflowing the
+single-line `test('TONE-01: ...', () { ... });` call into the file's prevailing multi-line
+`test(\n  'name',\n  () { ... },\n);` shape. Confirmed no `expect()`, no string literal content, and
+no logic changed — including the `reason:` string, which was split across a line break but is
+identical when concatenated. Ran `dart format --output=none --set-exit-if-changed` on both files: it
+still reports the test file as needing changes, but diffing the formatter's proposed output against
+the current file shows every remaining delta is in **pre-existing, unrelated** code (e.g. lines
+~1038, ~1201, ~1244, ~1498-1538) that predates this phase — none of it touches the TONE-01 hunk the
+fixer rewrapped, which is itself fully format-clean. This confirms the fixer's stated reason for
+doing a manual rewrap instead of a whole-file `dart format` (it would have touched ~150 unrelated
+lines) and confirms the manual rewrap didn't leave the touched region non-conformant. (The
+pre-existing formatting drift elsewhere in the file is out of scope for this phase and was not
+introduced by any of the three fix commits.) IN-01 is resolved.
 
-Also confirmed no other file in the codebase pattern-matches on the rationale string (no UI logic parses `"behind"` out of `rationale`), so the TONE-01 copy change is a safe, contained edit with no reachable regression outside the two reviewed files.
+`flutter analyze lib/services/schedule_generator.dart test/services/schedule_generator_test.dart`
+reports no issues. Full `flutter test` suite: 348 tests, all passing.
 
-## Warnings
-
-### WR-01: Two of six new cadence tests do not discriminate old vs. new behavior, contrary to the phase's own premise
-
-**File:** `test/services/schedule_generator_test.dart:1878-1900` (mood=2 test), `test/services/schedule_generator_test.dart:1959-1985` (mood=4 test)
-**Issue:** The phase was explicitly motivated by "the previous tests passed regardless of cadence and therefore proved nothing" (see phase context / BREAK-01 rationale). The mood=1 and mood=5 tests correctly close that gap — hand-tracing confirms they assert a chunk-type sequence that the old `isLowMood ? 3 : 4` formula would get wrong (old mood=1 cadence was 3, not 2; old mood=5 cadence was 4, not 5).
-
-However:
-- The **mood=2** test (`'BREAK-01: mood=2 places a long break after every 3 work chunks'`) asserts a long break after the 3rd work chunk. Under the *old* formula, mood=2 is low-mood (`moodIndex <= 2`) so cadence was already 3 — identical to the new table's `_moodBreakCadence[2] = 3`. This test passes unchanged under both the buggy and fixed implementation.
-- The **mood=4** test (`'BREAK-01: mood=4 places a long break after every 4 work chunks'`) asserts a long break after the 4th work chunk. Under the old formula, mood=4 is not low-mood, so cadence was already 4 — identical to `_moodBreakCadence[4] = 4`. Same non-discriminating result.
-
-The mood=3 test is explicitly titled *"(baseline unchanged)"* and its comment discloses that it locks in pre-existing behavior rather than proving the fix — that test is honest about what it covers. The mood=2 and mood=4 tests carry no such disclosure; they read as if they're validating the new mood-scaled table (like the mood=1/5 tests) when in fact they'd pass identically against the old single-ternary code. This silently reintroduces the exact test-design failure the phase was created to fix, just for two of the five mood tiers instead of all of them.
-
-**Fix:** Either add a comment analogous to the mood=3 test's ("(unchanged from old cadence — this locks in the plateau value, not a regression test for the table itself)"), or restructure the assertion to be explicit that it's a regression lock rather than proof of the new table, so a future reader doesn't mistake "6 cadence tests" for "6 tests that prove the cadence table was wired up correctly."
-
-```dart
-test(
-  'BREAK-01: mood=2 places a long break after every 3 work chunks '
-  '(also true under the pre-BREAK-01 formula — regression lock, not a table-wiring proof)',
-  () { /* ... unchanged body ... */ },
-);
-```
-
-### WR-02: `_moodBreakCadence` has no explicit range validation on `moodIndex`, relying entirely on Map.[] returning null for a silent fallback
-
-**File:** `lib/services/schedule_generator.dart:231`
-**Issue:** `moodIndex` originates from `DailySchedule.moodIndex` (`lib/data/models/daily_schedule.dart`), which is deserialized straight from Hive via `(fields[2] as num).toInt()` with no range check or migration guard. If a corrupted/legacy record ever stored a value outside 1-5 (e.g. `0` from an old default, or a value from a future mood-scale expansion), `_moodBreakCadence[moodIndex] ?? 4` silently falls back to `4` — not a crash, but also not obviously correct, and `isLowMood = moodIndex <= 2` would independently disagree with the fallback cadence for `moodIndex <= 0` (treated as low-mood for habit/outcome gating, but given the non-low-mood cadence of 4). This is a **pre-existing pattern** — `_effectiveCap`'s `_moodCap[moodIndex] ?? 8` has the identical shape and was not introduced by this phase — so it is not a regression, but the phase had an explicit opportunity to add a shared assertion/clamp when introducing the second copy of this idiom and didn't.
-**Fix:** Not blocking, but worth doing once (covers both maps): add `assert(moodIndex >= 1 && moodIndex <= 5)` at the top of `generate()`, matching the existing `assert(freq >= 1 && freq <= 7)` pattern already used in `computeDueWeekdays`.
-
-## Info
-
-### IN-01: New single-line test definition exceeds the file's prevailing formatting style
-
-**File:** `test/services/schedule_generator_test.dart:2104`
-**Issue:** `test('TONE-01: under-pace time-target rationale reads as working toward, not behind', () {` is written as a single un-wrapped line (100+ columns), inconsistent with the `dart format`-style wrapping used by every other `test(...)` call in the file (name and callback split across lines). Cosmetic only — `dart format lib/` per CLAUDE.md commands would normalize it if run.
-**Fix:** Run `dart format test/services/schedule_generator_test.dart`.
+No new findings. All reviewed source was touched only by the three targeted fix commits described
+above; no unrelated changes were smuggled in.
 
 ---
 
-_Reviewed: 2026-08-07T19:19:52Z_
+_Reviewed: 2026-08-07T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
