@@ -6,12 +6,86 @@
 // Pure widget work — nothing here knows what time it is; the screen
 // (plan 22-03) decides what's live and passes it in.
 
+import 'package:canopy/data/models/scheduled_chunk.dart';
+import 'package:canopy/providers/schedule_notifier.dart';
+import 'package:canopy/screens/schedule/widgets/chunk_card.dart';
+import 'package:canopy/screens/schedule/widgets/swipeable_chunk_card.dart';
 import 'package:canopy/screens/today/widgets/free_time_row.dart';
 import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 import '../test_helpers/mood_pump.dart';
+
+// ─── Fakes (per-file convention — see active_chunk_card_test.dart) ─────────
+
+/// Records the last chunkId passed to markComplete/markSkipped, and stubs
+/// init to avoid Hive I/O. Shared by the ChunkCard and LiveRowCard groups.
+class _FakeScheduleNotifier extends ScheduleNotifier {
+  @override
+  Future<void> init() async {}
+
+  String? lastCompletedId;
+  String? lastSkippedId;
+
+  @override
+  Future<void> markComplete(String chunkId) async {
+    lastCompletedId = chunkId;
+  }
+
+  @override
+  Future<void> markSkipped(String chunkId) async {
+    lastSkippedId = chunkId;
+  }
+}
+
+// ─── Chunk factories ─────────────────────────────────────────────────────
+
+ScheduledChunk _workChunk({
+  String id = 'w1',
+  bool completed = false,
+  bool skipped = false,
+  String? commitmentId,
+  int? startMinutes,
+}) =>
+    ScheduledChunk(
+        id: id,
+        chunkTypeIndex: ChunkType.work.index,
+        goalId: commitmentId == null ? 'goal-1' : null,
+        durationMinutes: 25,
+        rationale: 'Deep work',
+        commitmentId: commitmentId,
+        syntheticStartMinutes: startMinutes,
+      )
+      ..isCompleted = completed
+      ..isSkipped = skipped;
+
+ScheduledChunk _breakChunk({required ChunkType type, bool completed = false}) =>
+    ScheduledChunk(
+      id: 'b1',
+      chunkTypeIndex: type.index,
+      durationMinutes: type == ChunkType.shortBreak ? 5 : 25,
+    )..isCompleted = completed;
+
+Future<void> _pumpChunkCard(
+  WidgetTester tester,
+  ScheduledChunk chunk, {
+  bool? showStartTime,
+  _FakeScheduleNotifier? scheduleNotifier,
+}) async {
+  await pumpWithMood(
+    tester,
+    showStartTime == null
+        ? ChunkCard(chunk: chunk)
+        : ChunkCard(chunk: chunk, showStartTime: showStartTime),
+    extraProviders: [
+      ChangeNotifierProvider<ScheduleNotifier>.value(
+        value: scheduleNotifier ?? _FakeScheduleNotifier(),
+      ),
+    ],
+  );
+}
 
 void main() {
   group('TimelineRowTile (D-04, D-06)', () {
@@ -76,6 +150,134 @@ void main() {
 
       await pumpWithMood(tester, const FreeTimeRow.gap(durationMinutes: 100));
       expect(find.byType(Card), findsNothing);
+    });
+  });
+
+  group('ChunkCard row vocabulary (D-06, D-07, P10)', () {
+    testWidgets('completed work chunk: struck through + primary check icon', (
+      tester,
+    ) async {
+      await _pumpChunkCard(tester, _workChunk(completed: true));
+      final titleText = tester.widget<Text>(find.text('Deep work'));
+      expect(titleText.style?.decoration, TextDecoration.lineThrough);
+
+      final context = tester.element(find.byType(ChunkCard));
+      final icon = tester.widget<Icon>(find.byIcon(Icons.check_circle));
+      expect(icon.color, Theme.of(context).colorScheme.primary);
+    });
+
+    testWidgets('skipped work chunk: struck through + literal "skipped" text', (
+      tester,
+    ) async {
+      await _pumpChunkCard(tester, _workChunk(skipped: true));
+      final titleText = tester.widget<Text>(find.text('Deep work'));
+      expect(titleText.style?.decoration, TextDecoration.lineThrough);
+      expect(find.text('skipped'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_forward), findsNothing);
+    });
+
+    testWidgets(
+      'unresolved work chunk: no strikethrough, unchecked icon, Complete/Skip present',
+      (tester) async {
+        await _pumpChunkCard(tester, _workChunk());
+        final titleText = tester.widget<Text>(find.text('Deep work'));
+        expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
+        expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
+        expect(find.widgetWithText(FilledButton, 'Complete'), findsOneWidget);
+        expect(find.widgetWithText(OutlinedButton, 'Skip'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'showStartTime false renders duration, not the clock-time range',
+      (tester) async {
+        await _pumpChunkCard(
+          tester,
+          _workChunk(startMinutes: 565),
+          showStartTime: false,
+        );
+        expect(find.text('25 min'), findsOneWidget);
+        expect(find.textContaining('9:25 AM'), findsNothing);
+      },
+    );
+
+    testWidgets('showStartTime omitted still renders the clock-time range', (
+      tester,
+    ) async {
+      await _pumpChunkCard(tester, _workChunk(startMinutes: 565));
+      expect(find.text('9:25 AM – 9:50 AM'), findsOneWidget);
+    });
+
+    testWidgets(
+      'SwipeableChunkCard forwards showStartTime false and keeps swipe',
+      (tester) async {
+        await pumpWithMood(
+          tester,
+          SwipeableChunkCard(
+            chunk: _workChunk(startMinutes: 565),
+            showStartTime: false,
+          ),
+          extraProviders: [
+            ChangeNotifierProvider<ScheduleNotifier>.value(
+              value: _FakeScheduleNotifier(),
+            ),
+          ],
+        );
+        expect(find.text('25 min'), findsOneWidget);
+        expect(find.byType(Dismissible), findsOneWidget);
+      },
+    );
+
+    testWidgets('short break: "Short break" label, no Card, dashed outline', (
+      tester,
+    ) async {
+      await _pumpChunkCard(tester, _breakChunk(type: ChunkType.shortBreak));
+      expect(find.text('Short break'), findsOneWidget);
+      expect(find.byType(Card), findsNothing);
+      expect(find.byType(CustomPaint), findsWidgets);
+    });
+
+    testWidgets('long break: "Long break" label, same dashed treatment', (
+      tester,
+    ) async {
+      await _pumpChunkCard(tester, _breakChunk(type: ChunkType.longBreak));
+      expect(find.text('Long break'), findsOneWidget);
+      expect(find.byType(Card), findsNothing);
+      expect(find.byType(CustomPaint), findsWidgets);
+    });
+
+    testWidgets('completed break also renders the check icon', (tester) async {
+      await _pumpChunkCard(
+        tester,
+        _breakChunk(type: ChunkType.shortBreak, completed: true),
+      );
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+    });
+
+    testWidgets(
+      'commitment work chunk uses tertiaryContainer, no outline, no left bar',
+      (tester) async {
+        await _pumpChunkCard(tester, _workChunk(commitmentId: 'commitment-1'));
+        final context = tester.element(find.byType(ChunkCard));
+        final card = tester.widget<Card>(find.byType(Card));
+        expect(card.color, Theme.of(context).colorScheme.tertiaryContainer);
+        final shape = card.shape as RoundedRectangleBorder;
+        expect(shape.side, BorderSide.none);
+        final positionedBars = tester
+            .widgetList<Positioned>(find.byType(Positioned))
+            .where((p) => p.width == 4);
+        expect(positionedBars, isEmpty);
+      },
+    );
+
+    testWidgets('no hardcoded Colors literal reaches the widget tree', (
+      tester,
+    ) async {
+      // Static grep gate (flutter analyze + task verify) is the real check;
+      // this just proves the mood-3 render path still completes cleanly
+      // after the ColorScheme migration.
+      await _pumpChunkCard(tester, _workChunk(completed: true));
+      expect(find.byType(ChunkCard), findsOneWidget);
     });
   });
 }
