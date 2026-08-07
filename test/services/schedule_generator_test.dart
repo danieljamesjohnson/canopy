@@ -2089,4 +2089,62 @@ void main() {
       }
     },
   );
+
+  // ---------------------------------------------------------------------------
+  // Time-target rationale copy (requirement TONE-01): the deficit-framed
+  // "Xh behind this week" string must become "Working toward Xh this week";
+  // the on-track sibling branch is a regression guard and must not move.
+  // ---------------------------------------------------------------------------
+
+  // Test A arithmetic: budget 5.0h, zero completion logs -> completedHrs =
+  // 0.0, remaining = (5.0 - 0.0).clamp(0.0, inf) = 5.0 ->
+  // toStringAsFixed(1) = '5.0'. Demand = ceil(5.0*60/25/7) = 2 chunks (Monday
+  // -> daysLeft = 7), so generate() emits exactly 3 chunks: work, shortBreak,
+  // work; both work chunks carry the time-target rationale.
+  test('TONE-01: under-pace time-target rationale reads as working toward, not behind', () {
+    final goals = [makeTimeTarget(name: 'Reading', weeklyHourBudget: 5)];
+    final result = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 3,
+      date: monday,
+      completionLogs: [],
+      lighterDay: false,
+    );
+
+    expect(result.length, 3);
+    expect(result[0].rationale, 'Working toward 5.0h this week');
+    expect(result[2].rationale, 'Working toward 5.0h this week');
+
+    for (final chunk in result) {
+      expect(
+        chunk.rationale.toLowerCase(),
+        isNot(contains('behind')),
+        reason:
+            'TONE-01 requires that no rationale text ever read "behind" — chunk '
+            '${chunk.chunkType} had rationale "${chunk.rationale}"',
+      );
+    }
+  });
+
+  // Test B arithmetic: budget 0.45h, one completed 25-minute chunk ->
+  // completedHrs = 25/60 = 0.4167, remaining = (0.45 - 0.4167).clamp(0.0,
+  // inf) = 0.033 -- above zero (so demand is still 1 and a chunk is
+  // generated) but below the 0.1 on-track threshold, so the unchanged
+  // 'On track this week' branch fires.
+  test('TONE-01: on-track branch is unchanged', () {
+    final goal = makeTimeTarget(name: 'Almost', weeklyHourBudget: 0.45);
+    final logs = [makeLog(goalId: goal.id, dateYmd: '2026-03-23')];
+    final result = sut.generate(
+      goals: [goal],
+      blocks: [],
+      moodIndex: 3,
+      date: monday,
+      completionLogs: logs,
+      lighterDay: false,
+    );
+
+    expect(result.length, 1);
+    expect(result[0].rationale, 'On track this week');
+  });
 }
