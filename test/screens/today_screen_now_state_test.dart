@@ -1,18 +1,21 @@
-// Unit tests for resolveNowState() and HomeScreen time-anchored widget tests.
-// Phase 17 Plan 01 — NOW-01, NOW-02.
+// Unit tests for resolveNowState() and TodayScreen time-anchored widget tests.
+// Phase 17 Plan 01 — NOW-01, NOW-02. Relocated in Phase 22 Plan 04 (UNIFY-02)
+// when home_screen.dart was deleted and its now-state widget coverage
+// repointed at the merged TodayScreen / LiveRowCard.
 //
-// Task 1 (Wave 0): Written before production symbols exist (RED state).
-// Tests are expected to fail to compile until Task 2 lands NowState, PreStart,
-// Active, Overdue, DayComplete, and resolveNowState in home_screen.dart.
+// The resolveNowState unit-test group below is byte-identical to the
+// original home_screen_now_state_test.dart — it is the strongest existing
+// asset in this phase and is not rewritten, only relocated.
 
 import 'package:canopy/data/models/daily_schedule.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/providers/goals_notifier.dart';
+import 'package:canopy/providers/restoratives_notifier.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/theme_notifier.dart';
-import 'package:canopy/screens/home/home_screen.dart';
-import 'package:canopy/screens/home/widgets/active_chunk_card.dart';
 import 'package:canopy/screens/today/now_state.dart';
+import 'package:canopy/screens/today/today_screen.dart';
+import 'package:canopy/screens/today/widgets/live_row_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -50,7 +53,14 @@ class _FakeThemeNotifier extends ThemeNotifier {
   bool get isPreCheckin => false;
 }
 
-/// ScheduleNotifier fake that exposes a pre-built schedule for HomeScreen tests.
+/// TodayScreen reads RestorativesNotifier for the mood-gated restoratives
+/// card; no-op loadItems so the widget-pump tests never touch Hive.
+class _FakeRestorativesNotifier extends RestorativesNotifier {
+  @override
+  Future<void> loadItems() async {}
+}
+
+/// ScheduleNotifier fake that exposes a pre-built schedule for TodayScreen tests.
 class _FakeScheduleNotifierWithSchedule extends _FakeScheduleNotifier {
   _FakeScheduleNotifierWithSchedule(this._schedule);
   final DailySchedule _schedule;
@@ -92,10 +102,10 @@ ScheduledChunk _workChunk({
 
 // ─── Pump helper ─────────────────────────────────────────────────────────────
 
-/// Pumps HomeScreen with the necessary provider tree.
-/// Accepts an injectable [now] function forwarded to HomeScreen(now:)
+/// Pumps TodayScreen with the necessary provider tree.
+/// Accepts an injectable [now] function forwarded to TodayScreen(now:)
 /// so widget tests can simulate specific wall-clock times without sleeping.
-Future<void> _pumpHomeScreen(
+Future<void> _pumpTodayScreen(
   WidgetTester tester, {
   required ScheduleNotifier scheduleNotifier,
   required DateTime Function() now,
@@ -114,10 +124,13 @@ Future<void> _pumpHomeScreen(
         ChangeNotifierProvider<ThemeNotifier>.value(
           value: _FakeThemeNotifier(),
         ),
+        ChangeNotifierProvider<RestorativesNotifier>.value(
+          value: _FakeRestorativesNotifier(),
+        ),
       ],
       child: MaterialApp(
         theme: theme,
-        home: HomeScreen(now: now),
+        home: TodayScreen(now: now),
       ),
     ),
   );
@@ -377,9 +390,9 @@ void main() {
     );
   });
 
-  // ── Widget tests: HomeScreen time-anchored Now (NOW-01/NOW-02) ───────────
+  // ── Widget tests: TodayScreen time-anchored Now (NOW-01/NOW-02) ──────────
 
-  group('HomeScreen time-anchored Now (NOW-01/NOW-02)', () {
+  group('TodayScreen time-anchored Now (NOW-01/NOW-02)', () {
     testWidgets(
       'pre-start: 6am before 8am chunk → shows "Your day starts at"',
       (tester) async {
@@ -392,7 +405,7 @@ void main() {
             ],
           ),
         );
-        await _pumpHomeScreen(
+        await _pumpTodayScreen(
           tester,
           scheduleNotifier: sn,
           now: () => DateTime(2026, 6, 13, 6, 0), // 6:00 AM
@@ -403,14 +416,14 @@ void main() {
           reason: 'NOW-02: pre-start heading must appear before first chunk',
         );
         expect(
-          find.byType(ActiveChunkCard),
+          find.byType(LiveRowCard),
           findsNothing,
-          reason: 'NOW-02: no ActiveChunkCard in pre-start state',
+          reason: 'NOW-02: no LiveRowCard in pre-start state',
         );
       },
     );
 
-    testWidgets('active: 9am with chunk 8:30–9:30 → shows ActiveChunkCard', (
+    testWidgets('active: 9am with chunk 8:30–9:30 → shows LiveRowCard', (
       tester,
     ) async {
       final sn = _FakeScheduleNotifierWithSchedule(
@@ -420,15 +433,15 @@ void main() {
           chunks: [_workChunk(syntheticStartMinutes: 510, durationMinutes: 60)],
         ),
       );
-      await _pumpHomeScreen(
+      await _pumpTodayScreen(
         tester,
         scheduleNotifier: sn,
         now: () => DateTime(2026, 6, 13, 9, 0), // 9:00 AM
       );
       expect(
-        find.byType(ActiveChunkCard),
+        find.byType(LiveRowCard),
         findsOneWidget,
-        reason: 'NOW-01: ActiveChunkCard must appear for active chunk',
+        reason: 'NOW-01: LiveRowCard must appear for active chunk',
       );
       expect(
         find.textContaining('Your day starts at'),
@@ -443,7 +456,7 @@ void main() {
     });
 
     testWidgets(
-      'between-chunks (overdue): 10am, c1 8:30–9:30, c2 10:30–11:30 → ActiveChunkCard (c1) + Next (c2)',
+      'between-chunks (overdue): 10am, c1 8:30–9:30, c2 10:30–11:30 → LiveRowCard (c1) + Next (c2)',
       (tester) async {
         final sn = _FakeScheduleNotifierWithSchedule(
           DailySchedule(
@@ -463,34 +476,40 @@ void main() {
             ],
           ),
         );
-        await _pumpHomeScreen(
+        await _pumpTodayScreen(
           tester,
           scheduleNotifier: sn,
           now: () => DateTime(2026, 6, 13, 10, 0), // 10:00 AM
         );
         expect(
-          find.byType(ActiveChunkCard),
+          find.byType(LiveRowCard),
           findsOneWidget,
-          reason: 'NOW-01: overdue chunk shown as Now (ActiveChunkCard)',
+          reason: 'NOW-01: overdue chunk shown as Now (LiveRowCard)',
         );
-        // WR-02: pin the identity of the "Now" chunk. The ActiveChunkCard must
+        // WR-02: pin the identity of the "Now" chunk. The LiveRowCard must
         // show c1 (overdue, window 8:30–9:30), NOT c2 (upcoming, 10:30–11:30).
         // c1's time range "8:30 AM" must appear inside the card; if logic were
         // reversed and c2 were promoted, "10:30 AM" would appear instead.
         expect(
           find.descendant(
-            of: find.byType(ActiveChunkCard),
+            of: find.byType(LiveRowCard),
             matching: find.textContaining('8:30 AM'),
           ),
           findsOneWidget,
           reason:
-              'WR-02: ActiveChunkCard must display c1 (8:30 AM start), '
+              'WR-02: LiveRowCard must display c1 (8:30 AM start), '
               'not c2 (10:30 AM start)',
         );
         expect(
-          find.text('Next'),
+          find.descendant(
+            of: find.byType(LiveRowCard),
+            matching: find.textContaining('Next ·'),
+          ),
           findsOneWidget,
-          reason: 'NOW-01: Next section shows upcoming chunk',
+          reason:
+              'NOW-01: the live row\'s "Next · <title> at <time>" line '
+              'shows the upcoming chunk (no separate Next section since '
+              'the merge — UI-SPEC\'s live row carries this inline)',
         );
       },
     );
@@ -507,7 +526,7 @@ void main() {
             ], // 8:00–9:00
           ),
         );
-        await _pumpHomeScreen(
+        await _pumpTodayScreen(
           tester,
           scheduleNotifier: sn,
           now: () => DateTime(2026, 6, 13, 18, 0), // 6:00 PM
@@ -518,9 +537,9 @@ void main() {
           reason: 'NOW-02: day-complete heading at 6pm',
         );
         expect(
-          find.byType(ActiveChunkCard),
+          find.byType(LiveRowCard),
           findsNothing,
-          reason: 'NOW-02: no ActiveChunkCard in day-complete state',
+          reason: 'NOW-02: no LiveRowCard in day-complete state',
         );
       },
     );
@@ -543,7 +562,7 @@ void main() {
       final sn = _FakeScheduleNotifierWithSchedule(
         DailySchedule(dateYmd: _todayYmd(), moodIndex: 3, chunks: [c1, c2]),
       );
-      await _pumpHomeScreen(
+      await _pumpTodayScreen(
         tester,
         scheduleNotifier: sn,
         now: () => DateTime(2026, 6, 13, 9, 0), // mid-day, but all resolved
@@ -554,9 +573,9 @@ void main() {
         reason: 'NOW-02: day-complete when all chunks resolved',
       );
       expect(
-        find.byType(ActiveChunkCard),
+        find.byType(LiveRowCard),
         findsNothing,
-        reason: 'NOW-02: no ActiveChunkCard when all resolved',
+        reason: 'NOW-02: no LiveRowCard when all resolved',
       );
     });
 
@@ -582,7 +601,7 @@ void main() {
           ],
         ),
       );
-      await _pumpHomeScreen(
+      await _pumpTodayScreen(
         tester,
         scheduleNotifier: sn,
         now: () => DateTime(2026, 6, 13, 9, 30), // gap
@@ -601,9 +620,9 @@ void main() {
       );
       // Must not show a card — this is an inline state, not an active chunk.
       expect(
-        find.byType(ActiveChunkCard),
+        find.byType(LiveRowCard),
         findsNothing,
-        reason: 'CR-01: no ActiveChunkCard in gap state',
+        reason: 'CR-01: no LiveRowCard in gap state',
       );
       // Must show the upcoming time in the body.
       expect(
@@ -619,7 +638,7 @@ void main() {
       // Start at 7:59 — just before the 8:00 chunk window (480 min).
       DateTime injectedNow = DateTime(2026, 6, 13, 7, 59);
       // WR-03: count now() calls from the very first pump so the _nowFn
-      // installed in _HomeScreenState is the counting lambda (late final
+      // installed in TodayScreen's State is the counting lambda (late final
       // means it is assigned only once in initState and never replaced via
       // didUpdateWidget — so the counter must be embedded from the start).
       int nowCallCount = 0;
@@ -630,7 +649,7 @@ void main() {
           chunks: [_workChunk(syntheticStartMinutes: 480, durationMinutes: 60)],
         ),
       );
-      await _pumpHomeScreen(
+      await _pumpTodayScreen(
         tester,
         scheduleNotifier: sn,
         now: () {
@@ -654,10 +673,26 @@ void main() {
 
       // After timer tick → active
       expect(
-        find.byType(ActiveChunkCard),
+        find.byType(LiveRowCard),
         findsOneWidget,
         reason:
             'Timer tick at 8:01 must transition from pre-start to active (NOW-01)',
+      );
+
+      // Capture the per-tick call-count baseline for THIS screen. TodayScreen
+      // (unlike the old HomeScreen) reads _nowFn() from more than one call
+      // site per build (the date header, resolveNowState, and the live row's
+      // remaining-time calc), so a single legitimate timer tick is NOT
+      // guaranteed to be exactly 1 call — it must merely be STABLE across
+      // ticks. A double-timer bug doubles whatever this baseline is.
+      injectedNow = DateTime(2026, 6, 13, 8, 15); // still inside active window
+      nowCallCount = 0;
+      await tester.pump(const Duration(minutes: 1));
+      final perTickCallCount = nowCallCount;
+      expect(
+        perTickCallCount,
+        greaterThan(0),
+        reason: 'sanity: the single-timer baseline tick must call now() at all',
       );
 
       // Background (paused) then foreground (resumed) must not throw.
@@ -672,9 +707,11 @@ void main() {
       // Timer.periodic without cancelling the first), we'd have two active
       // timers after this second resume.
       //
-      // Detection: count now() calls across exactly one 1-minute pump().
-      // One timer = one setState = one resolveNowState call = one now() call.
-      // Two timers = two setState calls = two now() calls per tick.
+      // Detection: count now() calls across exactly one 1-minute pump() and
+      // compare against perTickCallCount (captured above from a single known-
+      // good timer, NOT hardcoded to 1 — TodayScreen legitimately calls
+      // _nowFn() more than once per build). A double-timer bug would double
+      // this count regardless of its baseline value.
       //
       // nowCallCount is captured in the original _nowFn closure (late final
       // _nowFn is set once in initState, so the counter is always live).
@@ -688,19 +725,20 @@ void main() {
       // Advance exactly one timer period.
       await tester.pump(const Duration(minutes: 1));
 
-      // If _startNowTimer is idempotent, exactly one timer fired → one
-      // setState → one resolveNowState call → nowCallCount == 1.
-      // If a double-timer leaked, nowCallCount would be 2 (or more).
+      // If _startNowTimer is idempotent, exactly one timer fired → the same
+      // per-build now() call count as the known-good baseline tick.
+      // If a double-timer leaked, nowCallCount would be double that (or more).
       expect(
         nowCallCount,
-        1,
+        perTickCallCount,
         reason:
             'WR-03: _startNowTimer must be idempotent — exactly one timer '
-            'after two paused→resumed cycles, so now() is called once per tick',
+            'after two paused→resumed cycles, so now() is called the same '
+            'number of times per tick as the known-good baseline',
       );
-      // Sanity: the Now zone shows one (not duplicated) ActiveChunkCard.
+      // Sanity: the Now zone shows one (not duplicated) LiveRowCard.
       expect(
-        find.byType(ActiveChunkCard),
+        find.byType(LiveRowCard),
         findsOneWidget,
         reason: 'WR-03: single rebuild per tick — no duplicate widget',
       );

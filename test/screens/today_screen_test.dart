@@ -14,7 +14,6 @@ import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/theme_notifier.dart';
 import 'package:canopy/screens/commitments/commitment_form_sheet.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_detail_sheet.dart';
-import 'package:canopy/screens/schedule/widgets/now_marker.dart';
 import 'package:canopy/screens/today/today_screen.dart';
 import 'package:canopy/screens/today/widgets/breathing_pulse_cta.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
@@ -359,12 +358,6 @@ void main() {
 
       expect(find.textContaining('8:00'), findsWidgets);
       expect(find.textContaining('1:00p'), findsOneWidget);
-    });
-
-    testWidgets('no NowMarker widget is in the tree', (tester) async {
-      await pumpDay(tester);
-
-      expect(find.byType(NowMarker), findsNothing);
     });
 
     testWidgets('"See full schedule" appears nowhere (D-08 / G4)', (
