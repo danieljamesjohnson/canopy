@@ -655,7 +655,26 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   // Colors.white` — a raw Colors.white violates the UI-SPEC colour rule,
   // and mood still reads through the seeded theme, the progress bar and the
   // header mood chip (recorded in plan 22-01's source audit).
-  AppBar _buildAppBar(BuildContext context, DailySchedule? schedule) {
+  AppBar _buildAppBar(
+    BuildContext context,
+    DailySchedule? schedule,
+    NowState? nowState,
+  ) {
+    // Focus target is derived from the SAME nowState the rest of the screen
+    // renders from (P1 / 22-PATTERNS.md section 5) — not a fresh
+    // first-unresolved-chunk scan. That old scan could disagree with what
+    // the live row visually presents as "now" whenever an earlier chunk was
+    // left unresolved (WR-01). DayComplete (and no schedule at all) has no
+    // meaningful focus target, so the button is disabled rather than
+    // guessing.
+    final ScheduledChunk? focusTarget = switch (nowState) {
+      Active(:final current) => current,
+      Overdue(:final overdue) => overdue,
+      GapBeforeNext(:final next) => next,
+      PreStart(:final firstChunk) => firstChunk,
+      DayComplete() => null,
+      null => null,
+    };
     return AppBar(
       title: const Text('Canopy'),
       actions: [
@@ -672,20 +691,9 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         IconButton(
           icon: const Icon(Icons.center_focus_strong_outlined),
           tooltip: 'Start focus',
-          onPressed: () {
-            if (schedule == null) return;
-            final firstChunk = schedule.chunks
-                .where(
-                  (c) =>
-                      c.chunkType == ChunkType.work &&
-                      !c.isCompleted &&
-                      !c.isSkipped,
-                )
-                .firstOrNull;
-            if (firstChunk != null) {
-              context.push('/focus', extra: firstChunk.id);
-            }
-          },
+          onPressed: focusTarget == null
+              ? null
+              : () => context.push('/focus', extra: focusTarget.id),
         ),
         if (schedule != null && _resolvedWorkChunkRatio(schedule) >= 0.5)
           PopupMenuButton<String>(
@@ -751,7 +759,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     }
 
     return Scaffold(
-      appBar: _buildAppBar(context, schedule),
+      appBar: _buildAppBar(context, schedule, nowState),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -807,7 +815,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     final theme = Theme.of(context);
     final isPreCheckin = context.watch<ThemeNotifier>().isPreCheckin;
     return Scaffold(
-      appBar: _buildAppBar(context, null),
+      appBar: _buildAppBar(context, null, null),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

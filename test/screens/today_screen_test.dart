@@ -20,6 +20,7 @@ import 'package:canopy/screens/today/widgets/breathing_pulse_cta.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../test_helpers/viewport.dart';
@@ -608,6 +609,140 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Jump to now'), findsNothing);
+      },
+    );
+  });
+
+  group('WR-01 — Start focus follows nowState, not a list-order scan', () {
+    // Regression fixture for the exact scenario WR-01 (22-REVIEW.md)
+    // describes: an EARLIER work chunk (8:00) is left unresolved — the user
+    // forgot to mark it complete/skipped — while a LATER chunk's window
+    // (10:45) is the one `resolveNowState` currently classifies as Active,
+    // which is what the live row visually presents as "now". The old
+    // AppBar behavior scanned `chunks.where(!completed && !skipped)
+    // .firstOrNull` in list order, which would pick the stale 8:00 chunk.
+    // The fix sources the target from `nowState` instead, so it must match
+    // the 10:45 chunk the rest of the screen treats as current.
+    List<ScheduledChunk> divergentFixture() => [
+      _workChunk(
+        id: 'stale',
+        syntheticStartMinutes: 480, // 8:00, window long closed, unresolved
+        durationMinutes: 25,
+        rationale: 'Forgotten morning chunk',
+      ),
+      _workChunk(
+        id: 'current',
+        syntheticStartMinutes: 645, // 10:45 — Active at 10:47
+        durationMinutes: 5,
+        rationale: 'Now',
+      ),
+    ];
+
+    /// Pumps TodayScreen inside a real GoRouter (needed because the AppBar's
+    /// focus action calls `context.push`, which requires an ancestor
+    /// GoRouter — the plain-MaterialApp `_pumpTodayScreen` helper above
+    /// cannot exercise it). The `/focus` route renders the pushed `extra`
+    /// as text so the test can assert on it without a NavigatorObserver.
+    Future<String?> pumpAndTapFocus(
+      WidgetTester tester,
+      ScheduleNotifier scheduleNotifier,
+      DateTime Function() now,
+    ) async {
+      final router = GoRouter(
+        initialLocation: '/',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => TodayScreen(now: now),
+          ),
+          GoRoute(
+            path: '/focus',
+            builder: (context, state) => Text('focus-target:${state.extra}'),
+          ),
+        ],
+      );
+      final theme = ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: ThemeNotifier.moodSeeds[3]!,
+        ),
+      );
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<ScheduleNotifier>.value(
+              value: scheduleNotifier,
+            ),
+            ChangeNotifierProvider<GoalsNotifier>.value(
+              value: _FakeGoalsNotifier(),
+            ),
+            ChangeNotifierProvider<ThemeNotifier>.value(
+              value: _FakeThemeNotifier(),
+            ),
+            ChangeNotifierProvider<RestorativesNotifier>.value(
+              value: _FakeRestorativesNotifier(),
+            ),
+          ],
+          child: MaterialApp.router(theme: theme, routerConfig: router),
+        ),
+      );
+
+      await tester.tap(
+        find.widgetWithIcon(IconButton, Icons.center_focus_strong_outlined),
+      );
+      await tester.pumpAndSettle();
+
+      final textFinder = find.textContaining('focus-target:');
+      if (textFinder.evaluate().isEmpty) return null;
+      return tester.widget<Text>(textFinder).data;
+    }
+
+    testWidgets(
+      'Start focus pushes the Active chunk from nowState, not the stale '
+      'earlier unresolved chunk',
+      (tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: divergentFixture(),
+        );
+        final result = await pumpAndTapFocus(
+          tester,
+          _FakeScheduleNotifierWithSchedule(schedule),
+          () => DateTime(2026, 8, 7, 10, 47), // inside the 10:45 window
+        );
+
+        expect(result, 'focus-target:current');
+      },
+    );
+
+    testWidgets(
+      'Start focus is disabled when nowState is DayComplete (no meaningful '
+      'target to guess at)',
+      (tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'done',
+              syntheticStartMinutes: 480,
+              durationMinutes: 60,
+              isCompleted: true,
+              rationale: 'Morning routine',
+            ),
+          ],
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => DateTime(2026, 8, 7, 18, 0), // day complete
+        );
+
+        final button = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.center_focus_strong_outlined),
+        );
+        expect(button.onPressed, isNull);
       },
     );
   });
