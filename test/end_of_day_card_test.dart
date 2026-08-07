@@ -117,46 +117,32 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('shouldShowEodCard trigger logic', () {
-    // NOTE: These tests exercise the shouldShowEodCard function at any time of
-    // day. The hour >= 18 branch is time-dependent and cannot be reliably unit-
-    // tested for the "false" branch. We test the ≥50% branch independently of
-    // the hour guard via the work-chunk ratio cases, which are deterministic.
+    // NOTE: shouldShowEodCard accepts an injectable `now` seam specifically
+    // so both branches (hour >= 18, and resolved/total >= 0.5) can be tested
+    // deterministically. Every test below calls the function through that
+    // seam rather than recomputing its internal arithmetic and asserting
+    // against the test's own fixture — a test that never calls the function
+    // under test would keep passing even if the function were broken.
 
-    test('returns true when work chunks empty and hour < 18 would be false — '
-        'confirmed via ≥50% branch: empty list → false', () {
-      // No work chunks — the 50% branch returns false (empty list guard).
-      // We pass an all-break list so the work-chunk filter yields empty.
+    test('returns false when work chunks empty and hour < 18', () {
+      // No work chunks — the 50% branch's empty-list guard returns false —
+      // and the hour is pinned below 18 so the time branch cannot fire.
       final chunks = [_makeBreak(), _makeBreak()];
-      // Hour-based branch may be true or false depending on wall clock, so we
-      // only assert the 50% branch is NOT contributing when chunks are empty.
-      // The function overall may return true if tests run after 6pm, which is
-      // fine — we check the scenario by examining the break-only list:
-      // if hour < 18, shouldShowEodCard should be false.
-      // Since we can't freeze time here we verify the helper directly:
-      final workChunks = chunks
-          .where((c) => c.chunkType == ChunkType.work)
-          .toList();
-      expect(workChunks.isEmpty, isTrue); // confirms empty-list guard fires
+      expect(
+        shouldShowEodCard(chunks, now: () => DateTime(2026, 1, 1, 10, 0)),
+        isFalse,
+      );
     });
 
-    test(
-      'returns false when <50% resolved and hour < 18 (time-independent branch)',
-      () {
-        // 1 of 3 resolved = 33% — below 50% threshold.
-        // This test is only about the ratio branch: we verify the function
-        // returns false from the 50% path.
-        final chunks = [_makeWork(completed: true), _makeWork(), _makeWork()];
-        // We cannot control DateTime.now().hour, so we test the math directly:
-        final workChunks = chunks
-            .where((c) => c.chunkType == ChunkType.work)
-            .toList();
-        final resolved = workChunks
-            .where((c) => c.isCompleted || c.isSkipped || c.isDeferred)
-            .length;
-        final ratio = resolved / workChunks.length;
-        expect(ratio, lessThan(0.5));
-      },
-    );
+    test('returns false when <50% resolved and hour < 18', () {
+      // 1 of 3 resolved = 33% — below the 50% threshold — with the hour
+      // pinned below 18 so the time branch cannot fire either.
+      final chunks = [_makeWork(completed: true), _makeWork(), _makeWork()];
+      expect(
+        shouldShowEodCard(chunks, now: () => DateTime(2026, 1, 1, 10, 0)),
+        isFalse,
+      );
+    });
 
     test(
       'returns true when ≥50% resolved (ratio branch fires regardless of hour)',
@@ -186,19 +172,18 @@ void main() {
       expect(shouldShowEodCard(chunks), isTrue);
     });
 
-    test('empty work-chunk list with hour < 18: 50% branch is false', () {
-      // Pass only break chunks — workChunks is empty → 50% branch returns false.
-      // Hour branch depends on wall clock but we verify the math path.
-      final chunks = [_makeBreak()];
-      final workChunks = chunks
-          .where((c) => c.chunkType == ChunkType.work)
-          .toList();
-      expect(workChunks.isEmpty, isTrue);
-      // When workChunks is empty, the function returns early with false for the
-      // 50% branch.  The only way shouldShowEodCard could be true is if the
-      // hour >= 18.  We cannot assert the overall result deterministically when
-      // running at any time, so we only verify the empty-list guard path here.
-    });
+    test(
+      'returns true when hour >= 18, even with a resolved ratio below 50%',
+      () {
+        // 1 of 3 resolved = 33% — below the 50% threshold — but the hour
+        // branch (previously untested for "true") should fire regardless.
+        final chunks = [_makeWork(completed: true), _makeWork(), _makeWork()];
+        expect(
+          shouldShowEodCard(chunks, now: () => DateTime(2026, 1, 1, 19, 0)),
+          isTrue,
+        );
+      },
+    );
 
     test('all chunks deferred counts as 100% resolved → trigger true', () {
       final chunks = [_makeWork(deferred: true), _makeWork(deferred: true)];
