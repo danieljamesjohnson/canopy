@@ -451,4 +451,170 @@ void main() {
       },
     );
   });
+
+  group('Task 3 — centre the live row on open + edge-state copy', () {
+    /// A long day: 10 work chunks 40 minutes apart (8:00 through 13:20),
+    /// the first 7 completed, chunk index 7 unresolved (the live one under
+    /// a frozen clock 5 minutes into its window), and 2 more unresolved
+    /// chunks after it — enough rows to push the live row below the fold
+    /// at the default 800x600 test viewport, so centring is observable.
+    List<ScheduledChunk> longDayFixture() => [
+      for (var i = 0; i < 10; i++)
+        _workChunk(
+          id: 'chunk-$i',
+          syntheticStartMinutes: 480 + i * 40,
+          durationMinutes: 25,
+          isCompleted: i < 7,
+          rationale: 'Chunk $i',
+        ),
+    ];
+
+    testWidgets('centres the live row on open (offset moves off zero)', (
+      tester,
+    ) async {
+      final schedule = DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: longDayFixture(),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+        now: () => DateTime(2026, 8, 7, 12, 45), // 5 min into chunk 7's window
+      );
+      await tester.pumpAndSettle();
+
+      final scrollable = tester.state<ScrollableState>(
+        find.byType(Scrollable).first,
+      );
+      expect(scrollable.position.pixels, greaterThan(0));
+    });
+
+    testWidgets(
+      'centres once — a later 1-minute tick does not move the offset again',
+      (tester) async {
+        DateTime injectedNow = DateTime(2026, 8, 7, 12, 45);
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: longDayFixture(),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => injectedNow,
+        );
+        await tester.pumpAndSettle();
+
+        final scrollable = tester.state<ScrollableState>(
+          find.byType(Scrollable).first,
+        );
+        final offsetAfterFirstSettle = scrollable.position.pixels;
+        expect(offsetAfterFirstSettle, greaterThan(0));
+
+        injectedNow = injectedNow.add(const Duration(minutes: 1));
+        await tester.pump(const Duration(minutes: 1));
+        await tester.pumpAndSettle();
+
+        expect(scrollable.position.pixels, offsetAfterFirstSettle);
+      },
+    );
+
+    testWidgets('pre-start: "Your day starts at" is present, no LiveRowCard', (
+      tester,
+    ) async {
+      final schedule = DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: [_workChunk(syntheticStartMinutes: 480, durationMinutes: 60)],
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+        now: () => DateTime(2026, 8, 7, 6, 0),
+      );
+
+      expect(find.textContaining('Your day starts at'), findsOneWidget);
+      expect(find.byType(LiveRowCard), findsNothing);
+      // The day list is still rendered below — never a bare message.
+      expect(find.textContaining('Free until'), findsOneWidget);
+    });
+
+    testWidgets('gap-before-next: "Up next" is present, no LiveRowCard', (
+      tester,
+    ) async {
+      final schedule = DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: [
+          _workChunk(
+            id: 'c1',
+            syntheticStartMinutes: 540, // 9:00
+            durationMinutes: 25,
+            isCompleted: true,
+            rationale: 'Morning routine',
+          ),
+          _workChunk(
+            id: 'c2',
+            syntheticStartMinutes: 600, // 10:00
+            durationMinutes: 25,
+            rationale: 'Reading',
+          ),
+        ],
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+        now: () => DateTime(2026, 8, 7, 9, 30),
+      );
+
+      expect(find.text('Up next'), findsOneWidget);
+      expect(find.byType(LiveRowCard), findsNothing);
+      expect(find.text('Morning routine'), findsOneWidget);
+    });
+
+    testWidgets('day-complete: "That\'s a wrap" is present, no LiveRowCard', (
+      tester,
+    ) async {
+      final schedule = DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: [
+          _workChunk(
+            syntheticStartMinutes: 480,
+            durationMinutes: 60,
+            rationale: 'Morning routine',
+          ),
+        ],
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+        now: () => DateTime(2026, 8, 7, 18, 0),
+      );
+
+      expect(find.text("That's a wrap"), findsOneWidget);
+      expect(find.byType(LiveRowCard), findsNothing);
+      expect(find.text('Morning routine'), findsOneWidget);
+    });
+
+    testWidgets(
+      'no floating recall pill — "Jump to now" appears nowhere (D-03)',
+      (tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: longDayFixture(),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => DateTime(2026, 8, 7, 12, 45),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Jump to now'), findsNothing);
+      },
+    );
+  });
 }
