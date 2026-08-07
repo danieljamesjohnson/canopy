@@ -169,3 +169,9 @@ None — no external service configuration required.
 ---
 *Phase: 22-unified-today-screen*
 *Completed: 2026-08-07*
+
+## Self-Check: PASSED
+
+All created/moved files confirmed present on disk, all deleted files confirmed absent,
+and all 6 commit hashes (9059689, 226b9d7, eda224e, ea97862, c84b51b, dd1d689) confirmed
+present in git log.
