@@ -1,7 +1,7 @@
 # Canopy — Roadmap
 
 **Created:** 2026-02-24
-**Last updated:** 2026-08-04 (v1.5 roadmap added)
+**Last updated:** 2026-08-07 (Phase 22 planned)
 
 ## Milestones
 
@@ -108,7 +108,12 @@ browser-verified; 289/289 tests green. See `v1.4-MILESTONE-AUDIT.md`.
   2. The shell's destination list reflects the merge — Home and Schedule no longer point at two separate screens for the same underlying content
   3. Tapping a Chunk reminder notification lands on the working unified screen, not a dead or blank route (currently `router.go('/schedule')`, `lib/main.dart:86`)
   4. The in-app "See full schedule" link (`lib/screens/home/home_screen.dart:495`) resolves to something coherent post-merge, not a stale destination
-**Plans**: TBD
+**Plans**: 4 plans, 3 waves. Merged destination is "Today" at `/today` (`lib/screens/today/`).
+Plans:
+- [ ] 22-01-now-state-and-timeline-model-PLAN.md — relocate `resolveNowState`/`NowState` out of home_screen.dart and add the pure `buildTimeline` row model, making `resolveNowState` the single "now" detector by construction (wave 1)
+- [ ] 22-02-timeline-row-vocabulary-PLAN.md — 46dp time gutter, named free-time rows, the swelled `LiveRowCard`, and the extended `chunk_card` row treatments (wave 1)
+- [ ] 22-03-today-screen-assembly-PLAN.md — build `TodayScreen`: one scrollable day, live row centred on open, reconciled empty state, edge-state copy preserved (wave 2)
+- [ ] 22-04-navigation-merge-and-cleanup-PLAN.md — router branches 4→3 with a `/schedule` redirect, shell 4→3, delete the two old screens, migrate their tests (wave 3)
 **UI hint**: yes
 
 ### Phase 23: Live Activity Tracking
@@ -116,13 +121,15 @@ browser-verified; 289/289 tests green. See `v1.4-MILESTONE-AUDIT.md`.
 **Depends on**: Phase 22 (the live readout is layered onto the merged screen's now-state; wiring it against a screen that's still split in two would mean redoing it once the merge lands)
 **Requirements**: LIVE-01, LIVE-02, LIVE-03
 **Success Criteria** (what must be TRUE):
-  1. When a break is running, the screen names it as a break with time remaining — never reads as empty or idle time (extends `resolveNowState`, `lib/screens/home/home_screen.dart:115`, past its current work-chunks-only filter)
+  1. When a break is running, the screen names it as a break with time remaining — never reads as empty or idle time (extends `resolveNowState`, which Phase 22 relocated to `lib/screens/today/now_state.dart`, past its current work-chunks-only filter)
   2. Time remaining in the current activity (chunk or break) visibly counts down while the screen stays open
   3. Before the day's first chunk starts, in a gap between activities, and after the day is complete, the screen shows a distinct, truthful state for each case
 **Plans**: TBD
 **UI hint**: yes
 
-**Open design decision for phase planning:** LIVE-02's tick granularity is not decided here. The existing `Timer.periodic` (`home_screen.dart:263`) fires once a minute; a countdown that visibly moves may need a faster tick for the active card while other regions stay on the coarser cadence. Phase planning must pick and justify a granularity rather than silently inherit the 1-minute timer.
+**Open design decision for phase planning:** LIVE-02's tick granularity is not decided here. The existing `Timer.periodic` (carried into `TodayScreen` by Phase 22) fires once a minute; a countdown that visibly moves may need a faster tick for the live row while other regions stay on the coarser cadence. Phase planning must pick and justify a granularity rather than silently inherit the 1-minute timer.
+
+**Seam left by Phase 22:** `LiveRowCard` takes `kicker` and `remainingLabel` as injected strings, so LIVE-01/LIVE-02 change what `TodayScreen` computes rather than the widget's layout. `showActions` is already wired from the chunk type for LIVE-01's break case. The pre-start / gap / day-complete copy was carried across verbatim, so LIVE-03 refines wording rather than rebuilding states.
 
 ## Progress
 
@@ -138,5 +145,5 @@ browser-verified; 289/289 tests green. See `v1.4-MILESTONE-AUDIT.md`.
 | 19. Energy Valence | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 0/? | Not started | - |
-| 22. Unified Today Screen | v1.5 | 0/? | Not started | - |
+| 22. Unified Today Screen | v1.5 | 0/4 | Planned | - |
 | 23. Live Activity Tracking | v1.5 | 0/? | Not started | - |
