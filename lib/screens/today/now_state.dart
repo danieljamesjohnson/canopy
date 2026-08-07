@@ -135,6 +135,26 @@ NowState resolveNowState({
   // Past the last chunk's window end.
   if (currentMinutes >=
       scheduled.last.displayStartMinutes! + scheduled.last.durationMinutes) {
+    // WR-02 defensive check: this DayComplete-via-trailing-boundary decision
+    // trusts that the chronologically-last scheduled chunk is always
+    // work-typed — a cross-file invariant enforced only by
+    // schedule_generator.dart's STEP E trim and
+    // ScheduleNotifier._reflowDiscretionaryWork (see the class-level doc
+    // comment above), neither of which is re-checked here at runtime.
+    // Scoped to ONLY this branch (rather than unconditionally on every
+    // call) so a legitimate day whose last item is a break that's still
+    // PreStart/Active/Overdue never trips it — the invariant is only load-
+    // bearing at the exact moment this boundary decides DayComplete.
+    // Debug-only: a future regression in either upstream mechanism should
+    // fail loudly here instead of silently misclassifying DayComplete
+    // against a trailing break's window — see the trailing-break
+    // regression test in today_screen_now_state_test.dart (WR-02).
+    assert(
+      scheduled.last.chunkType == ChunkType.work,
+      'DayComplete invariant violated: trailing scheduled chunk must be '
+      'work-typed (see resolveNowState doc comment) but was '
+      '${scheduled.last.chunkType}',
+    );
     return DayComplete();
   }
 
