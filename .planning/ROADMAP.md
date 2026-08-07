@@ -152,7 +152,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 23-02-PLAN.md — Live countdown: second-precision remaining-time label (whole minutes rounded up above 60s, seconds below) driven by a dual-cadence tick, with the 1-second timer alive only in the final minute (LIVE-02)
+- [x] 23-02-PLAN.md — Live countdown: second-precision remaining-time label (whole minutes rounded up above 60s, seconds below) driven by a dual-cadence tick, with the 1-second timer alive only in the final minute (LIVE-02)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -183,4 +183,4 @@ Plans:
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 2/2 | Complete   | 2026-08-07 |
 | 22. Unified Today Screen | v1.5 | 4/4 | Complete   | 2026-08-07 |
-| 23. Live Activity Tracking | v1.5 | 1/4 | In Progress|  |
+| 23. Live Activity Tracking | v1.5 | 2/4 | In Progress|  |

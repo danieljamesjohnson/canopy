@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: executing
-stopped_at: Completed 23-01-PLAN.md
-last_updated: "2026-08-07T22:09:46.806Z"
+stopped_at: Completed 23-02-PLAN.md
+last_updated: "2026-08-07T22:16:51.662Z"
 last_activity: 2026-08-07 -- Phase 23 execution started
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 10
-  completed_plans: 7
+  completed_plans: 8
   percent: 67
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-07T22:09:46.803Z
+**Last session:** 2026-08-07T22:16:51.659Z
 
 ---
 
 ## Current Position
 
 Phase: 23 (Live Activity Tracking) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-08-07 -- Phase 23 execution started
 
@@ -71,6 +71,9 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 22-04]: Generalized the WR-03 no-double-timer test from a hardcoded 1-call assumption to a captured per-tick baseline, since TodayScreen reads the clock from 3 call sites per build vs HomeScreen's 1 — The actual invariant (no leaked duplicate Timer.periodic) is preserved; only the call-count magnitude assumption was wrong for the new screen's structure
 - [Phase ?]: [Phase 23-01] Broadened resolveNowState by dropping the ChunkType.work filter clause (single-line fix); the KEY INVARIANT ordering and minute-only clock sampling are unchanged — Extends the single now-detector rather than adding a parallel path, per Phase 22's single-detector invariant
 - [Phase ?]: [Phase 23-01] _liveKicker checks the two break ChunkType values explicitly rather than != ChunkType.work, to keep the plan's ChunkType.work occurrence-count acceptance criterion exact — Task 2's _liveKicker legitimately added a fourth ChunkType.work site that Task 3's acceptance criteria (written against only 3 pre-existing sites) didn't anticipate
+- [Phase 23-02]: _liveSecondsRemaining reads nowState directly (nowState is Active, then nowState.current) rather than taking chunk/start/end as separate parameters — keeps the single-source contract explicit
+- [Phase 23-02]: Progress bar formula changed to 1 - secondsRemaining / (durationMinutes * 60), derived from the same secondsRemaining the label uses, so the two can never disagree (D-04)
+- [Phase 23-02]: Resume rebuilds via setState rather than re-deriving the <60s condition inline in didChangeAppLifecycleState — keeps _syncFastTimer's build() call site the only place the fast-timer decision is made, and fixes a pre-existing resume-staleness bug
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -154,7 +157,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-04
-Stopped at: Completed 23-01-PLAN.md
+Stopped at: Completed 23-02-PLAN.md
 Resume at: `/gsd-plan-phase 21`
 
 ## Performance Metrics
@@ -182,3 +185,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 22-unified-today-screen P03 | 16min | 3 tasks | 5 files |
 | Phase 22-unified-today-screen P04 | 9min | 3 tasks | 20 files |
 | Phase 23 P01 | 10min | 3 tasks | 5 files |
+| Phase 23-live-activity-tracking P02 | 15min | 2 tasks | 2 files |
