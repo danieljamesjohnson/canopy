@@ -1274,4 +1274,280 @@ void main() {
       expect(progressIndicator.value, closeTo(0.5, 0.001));
     });
   });
+
+  // ── LIVE-02: the dual-cadence tick (D-01, P-5a, T-23-04) ─────────────────
+
+  group('LIVE-02 fast tick', () {
+    testWidgets('the label advances every second inside the final minute', (
+      tester,
+    ) async {
+      DateTime injectedNow = DateTime(2026, 6, 13, 8, 29, 1);
+      int nowCallCount = 0;
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 30,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () {
+          nowCallCount = nowCallCount + 1;
+          return injectedNow;
+        },
+      );
+
+      expect(find.text('59s left · until 8:30 AM'), findsOneWidget);
+
+      injectedNow = DateTime(2026, 6, 13, 8, 29, 2);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('58s left · until 8:30 AM'), findsOneWidget);
+    });
+
+    testWidgets('no timer fires on a one-second pump outside the final '
+        'minute', (tester) async {
+      DateTime injectedNow = DateTime(2026, 6, 13, 8, 15, 0);
+      int nowCallCount = 0;
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 30,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () {
+          nowCallCount = nowCallCount + 1;
+          return injectedNow;
+        },
+      );
+
+      nowCallCount = 0;
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(
+        nowCallCount,
+        0,
+        reason: 'D-01: no 1-second timer runs outside the final minute',
+      );
+    });
+
+    testWidgets(
+      'a fast timer starts when the chunk crosses into its final minute '
+      'and stops when it leaves',
+      (tester) async {
+        DateTime injectedNow = DateTime(2026, 6, 13, 8, 28, 30);
+        int nowCallCount = 0;
+        final sn = _FakeScheduleNotifierWithSchedule(
+          DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'w1',
+                syntheticStartMinutes: 480,
+                durationMinutes: 30,
+              ),
+            ],
+          ),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: sn,
+          now: () {
+            nowCallCount = nowCallCount + 1;
+            return injectedNow;
+          },
+        );
+
+        nowCallCount = 0;
+        await tester.pump(const Duration(seconds: 1));
+        expect(
+          nowCallCount,
+          0,
+          reason: 'still outside the final minute, no fast timer yet',
+        );
+
+        // Cross into the final minute and let the 1-minute coarse tick
+        // re-evaluate _syncFastTimer against the fresh clock.
+        injectedNow = DateTime(2026, 6, 13, 8, 29, 10);
+        await tester.pump(const Duration(minutes: 1));
+        nowCallCount = 0;
+        await tester.pump(const Duration(seconds: 1));
+        expect(
+          nowCallCount,
+          greaterThan(0),
+          reason: 'the fast timer is now running inside the final minute',
+        );
+
+        // Move past the window entirely (re-resolves to DayComplete) and
+        // let the coarse tick re-evaluate again.
+        injectedNow = DateTime(2026, 6, 13, 8, 31, 0);
+        await tester.pump(const Duration(minutes: 1));
+        nowCallCount = 0;
+        await tester.pump(const Duration(seconds: 1));
+        expect(
+          nowCallCount,
+          0,
+          reason: 'the fast timer was cancelled once it was no longer needed',
+        );
+      },
+    );
+
+    testWidgets(
+      'the fast timer is not duplicated across a paused/resumed cycle',
+      (tester) async {
+        DateTime injectedNow = DateTime(2026, 6, 13, 8, 29, 10);
+        int nowCallCount = 0;
+        final sn = _FakeScheduleNotifierWithSchedule(
+          DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'w1',
+                syntheticStartMinutes: 480,
+                durationMinutes: 30,
+              ),
+            ],
+          ),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: sn,
+          now: () {
+            nowCallCount = nowCallCount + 1;
+            return injectedNow;
+          },
+        );
+
+        nowCallCount = 0;
+        await tester.pump(const Duration(seconds: 1));
+        final baseline = nowCallCount;
+        expect(
+          baseline,
+          greaterThan(0),
+          reason:
+              'sanity: the single-fast-timer baseline tick must call '
+              'now() at all',
+        );
+
+        for (var i = 0; i < 2; i++) {
+          tester.binding.handleAppLifecycleStateChanged(
+            AppLifecycleState.paused,
+          );
+          await tester.pump();
+          tester.binding.handleAppLifecycleStateChanged(
+            AppLifecycleState.resumed,
+          );
+          await tester.pump();
+        }
+
+        nowCallCount = 0;
+        await tester.pump(const Duration(seconds: 1));
+        expect(
+          nowCallCount,
+          baseline,
+          reason:
+              'a leaked duplicate fast timer would double the baseline tick '
+              'count, regardless of its magnitude',
+        );
+      },
+    );
+
+    testWidgets('no timer is pending after the widget tree is disposed', (
+      tester,
+    ) async {
+      final injectedNow = DateTime(2026, 6, 13, 8, 29, 10);
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 30,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => injectedNow,
+      );
+
+      expect(find.byType(LiveRowCard), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+
+      expect(find.byType(LiveRowCard), findsNothing);
+    });
+
+    testWidgets('the fast timer does not survive the schedule disappearing', (
+      tester,
+    ) async {
+      DateTime injectedNow = DateTime(2026, 6, 13, 8, 29, 10);
+      int nowCallCount = 0;
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 30,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () {
+          nowCallCount = nowCallCount + 1;
+          return injectedNow;
+        },
+      );
+
+      expect(find.byType(LiveRowCard), findsOneWidget);
+
+      final noSchedule = _FakeScheduleNotifier();
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: noSchedule,
+        now: () {
+          nowCallCount = nowCallCount + 1;
+          return injectedNow;
+        },
+      );
+
+      nowCallCount = 0;
+      await tester.pump(const Duration(seconds: 1));
+      expect(
+        nowCallCount,
+        0,
+        reason: 'the empty-state early return must call _syncFastTimer(false)',
+      );
+    });
+  });
 }

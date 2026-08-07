@@ -67,6 +67,14 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   /// setState after dispose via mounted guard + dispose() cancel).
   Timer? _nowTimer;
 
+  /// 1-second cadence timer. Exists ONLY while the live activity has under
+  /// 60 seconds left (T-23-04) — an addition to [_nowTimer], not a
+  /// replacement: D-01 forbids a blanket 1-second ticker on a screen the
+  /// user leaves open all day. Bounded at roughly 60 wakeups per activity
+  /// boundary rather than running continuously. Cancelled on pause and on
+  /// dispose for the same battery/CPU reason [_nowTimer] is.
+  Timer? _fastTimer;
+
   static const Map<int, String> _moodEmojis = {
     1: '\u{1F327}️',
     2: '\u{1F325}️',
@@ -122,18 +130,45 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     });
   }
 
+  /// Idempotent — safe to call on every `build()`. A plain field mutation
+  /// plus a timer start/cancel; it does NOT itself call `setState`, so
+  /// calling it synchronously from `build()` is legal. Starts [_fastTimer]
+  /// when [shouldBeRunning] is true and none is running yet; cancels it
+  /// (and nulls the field, which is what makes this idempotent) when
+  /// [shouldBeRunning] is false and one is running.
+  void _syncFastTimer(bool shouldBeRunning) {
+    if (shouldBeRunning && _fastTimer == null) {
+      _fastTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    } else if (!shouldBeRunning && _fastTimer != null) {
+      _fastTimer!.cancel();
+      _fastTimer = null;
+    }
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _startNowTimer();
+      // Rebuild so build() re-runs and re-decides _syncFastTimer against the
+      // fresh clock (P-5a), rather than blindly restarting the fast timer:
+      // the app may resume minutes later, past the live chunk entirely, so
+      // the <60s condition must be re-evaluated, not assumed. This also
+      // fixes a pre-existing staleness bug: resuming used to show stale
+      // content until the next minute boundary.
+      if (mounted) setState(() {});
     } else if (state == AppLifecycleState.paused) {
       _nowTimer?.cancel();
+      _fastTimer?.cancel();
+      _fastTimer = null;
     }
   }
 
   @override
   void dispose() {
     _nowTimer?.cancel();
+    _fastTimer?.cancel();
     _dayScrollController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -788,6 +823,8 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     final scheduleNotifier = context.watch<ScheduleNotifier>();
 
     if (!scheduleNotifier.hasScheduleToday) {
+      // A running fast timer cannot outlive the schedule that justified it.
+      _syncFastTimer(false);
       return _buildEmptyState(context);
     }
 
@@ -802,6 +839,8 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     // below this point re-derives which chunk is current.
     final nowState = resolveNowState(chunks: schedule.chunks, now: _nowFn);
     final liveSecondsLeft = _liveSecondsRemaining(nowState);
+    // The only place the fast-timer decision is made (P-5).
+    _syncFastTimer(liveSecondsLeft != null && liveSecondsLeft < 60);
     final timelineRows = buildTimeline(
       chunks: schedule.chunks,
       nowState: nowState,
