@@ -270,4 +270,20 @@ void main() {
       });
     },
   );
+
+  group('buildTimeline — live break (LIVE-01)', () {
+    test('a live break renders as a ChunkRow with isLive true', () {
+      final work = _workChunk(id: 'w1', syntheticStartMinutes: 480);
+      final brk = _breakChunk(id: 'b1', syntheticStartMinutes: 505);
+      final rows = buildTimeline(
+        chunks: [work, brk],
+        nowState: Active(brk, null),
+      );
+      final chunkRows = rows.whereType<ChunkRow>().toList();
+      final breakRow = chunkRows.firstWhere((r) => r.chunk.id == 'b1');
+      final workRow = chunkRows.firstWhere((r) => r.chunk.id == 'w1');
+      expect(breakRow.isLive, isTrue);
+      expect(workRow.isLive, isFalse);
+    });
+  });
 }

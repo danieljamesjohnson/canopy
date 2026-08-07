@@ -100,6 +100,36 @@ ScheduledChunk _workChunk({
   return c;
 }
 
+/// Creates a break chunk (short by default) with injectable time/resolution
+/// parameters. Modelled on `today_timeline_model_test.dart`'s `_breakChunk`,
+/// with `chunkTypeIndex`/`isCompleted`/`isSkipped` added so long breaks and
+/// break-resolution edge cases are buildable here too (LIVE-01, Task 1).
+/// `goalId` stays unset (null) and `rationale` stays `''` — that is what the
+/// generator emits for breaks (`schedule_generator.dart:634`).
+///
+/// [chunkTypeIndex] defaults to `ChunkType.shortBreak.index` at call time —
+/// it cannot be a literal default-parameter value because Dart does not
+/// treat enum `.index` access as a compile-time constant expression.
+ScheduledChunk _breakChunk({
+  String id = 'break-1',
+  int? chunkTypeIndex,
+  int? syntheticStartMinutes,
+  int durationMinutes = 5,
+  bool isCompleted = false,
+  bool isSkipped = false,
+}) {
+  final c = ScheduledChunk(
+    id: id,
+    chunkTypeIndex: chunkTypeIndex ?? ChunkType.shortBreak.index,
+    durationMinutes: durationMinutes,
+    rationale: '',
+    syntheticStartMinutes: syntheticStartMinutes,
+  );
+  if (isCompleted) c.isCompleted = true;
+  if (isSkipped) c.isSkipped = true;
+  return c;
+}
+
 // ─── Pump helper ─────────────────────────────────────────────────────────────
 
 /// Pumps TodayScreen with the necessary provider tree.
@@ -388,6 +418,105 @@ void main() {
         expect(state, isA<DayComplete>());
       },
     );
+
+    // ── LIVE-01: breaks now participate in resolveNowState ─────────────────
+
+    test('active: a running short break is the current activity', () {
+      final chunks = [
+        _breakChunk(id: 'b1', syntheticStartMinutes: 505, durationMinutes: 5),
+      ];
+      final state = resolveNowState(
+        chunks: chunks,
+        now: () => DateTime(2026, 6, 13, 8, 27),
+      );
+      expect(state, isA<Active>());
+      expect((state as Active).current.id, 'b1');
+    });
+
+    test('active: a running long break is the current activity', () {
+      final chunks = [
+        _breakChunk(
+          id: 'lb',
+          chunkTypeIndex: ChunkType.longBreak.index,
+          syntheticStartMinutes: 505,
+          durationMinutes: 25,
+        ),
+      ];
+      final state = resolveNowState(
+        chunks: chunks,
+        now: () => DateTime(2026, 6, 13, 8, 30),
+      );
+      expect(state, isA<Active>());
+      final active = state as Active;
+      expect(active.current.id, 'lb');
+      expect(active.current.chunkType, ChunkType.longBreak);
+    });
+
+    test('active work chunk\'s next is the contiguous break', () {
+      final chunks = [
+        _workChunk(id: 'w1', syntheticStartMinutes: 480, durationMinutes: 25),
+        _breakChunk(id: 'b1', syntheticStartMinutes: 505, durationMinutes: 5),
+      ];
+      final state = resolveNowState(
+        chunks: chunks,
+        now: () => DateTime(2026, 6, 13, 8, 10),
+      );
+      expect(state, isA<Active>());
+      final active = state as Active;
+      expect(active.current.id, 'w1');
+      expect(active.next?.id, 'b1');
+    });
+
+    test('gap-before-next can target a break (KEY INVARIANT: an unopened '
+        'break window is never promoted to Active)', () {
+      final chunks = [
+        _workChunk(
+          id: 'w1',
+          syntheticStartMinutes: 480,
+          durationMinutes: 25,
+          isCompleted: true,
+        ),
+        _breakChunk(id: 'b1', syntheticStartMinutes: 505, durationMinutes: 5),
+      ];
+      final state = resolveNowState(
+        chunks: chunks,
+        now: () => DateTime(2026, 6, 13, 8, 10),
+      );
+      expect(state, isA<GapBeforeNext>());
+      expect((state as GapBeforeNext).next.id, 'b1');
+    });
+
+    test(
+      'overdue: a break window has passed and the next window has not opened',
+      () {
+        final chunks = [
+          _breakChunk(id: 'b1', syntheticStartMinutes: 505, durationMinutes: 5),
+          _workChunk(id: 'w2', syntheticStartMinutes: 540, durationMinutes: 25),
+        ];
+        final state = resolveNowState(
+          chunks: chunks,
+          now: () => DateTime(2026, 6, 13, 8, 35),
+        );
+        expect(state, isA<Overdue>());
+        final overdue = state as Overdue;
+        expect(overdue.overdue.id, 'b1');
+        expect(overdue.next?.id, 'w2');
+      },
+    );
+
+    test('day-complete still fires past the last window on a work+break day '
+        '(STEP E keeps the last chunk work-typed)', () {
+      final chunks = [
+        _workChunk(id: 'w1', syntheticStartMinutes: 480, durationMinutes: 25),
+        _breakChunk(id: 'b1', syntheticStartMinutes: 505, durationMinutes: 5),
+        _workChunk(id: 'w2', syntheticStartMinutes: 510, durationMinutes: 25),
+      ];
+      final state = resolveNowState(
+        chunks: chunks,
+        now: () => DateTime(2026, 6, 13, 18, 0),
+      );
+      expect(state, isA<DayComplete>());
+    });
   });
 
   // ── Widget tests: TodayScreen time-anchored Now (NOW-01/NOW-02) ──────────

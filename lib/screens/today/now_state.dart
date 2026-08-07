@@ -9,10 +9,10 @@ import '../../data/models/scheduled_chunk.dart';
 
 /// Discriminated result of [resolveNowState]. Exactly one subtype is
 /// returned based on the current wall-clock time relative to the day's
-/// scheduled work-chunk windows.
+/// scheduled chunk windows.
 sealed class NowState {}
 
-/// Before the first work-chunk window. [firstChunk] is the upcoming chunk.
+/// Before the first chunk window. [firstChunk] is the upcoming chunk.
 class PreStart extends NowState {
   final ScheduledChunk firstChunk;
   PreStart(this.firstChunk);
@@ -45,7 +45,7 @@ class GapBeforeNext extends NowState {
 }
 
 /// All chunk windows have passed, or all chunks are resolved, or there are
-/// no work chunks with a clock time.
+/// no chunks with a clock time.
 ///
 /// Deliberate departure from 17-UI-SPEC.md §State Boundary Handling: when
 /// ALL work chunks have `displayStartMinutes == null` (degenerate edge case),
@@ -57,7 +57,7 @@ class DayComplete extends NowState {}
 
 // ─── resolveNowState ─────────────────────────────────────────────────────────
 
-/// Classifies the current moment in the day's work-chunk schedule.
+/// Classifies the current moment in the day's chunk schedule.
 ///
 /// Pure function — no side effects. Injectable [now] enables unit testing
 /// at arbitrary wall-clock times without sleeping or mocking DateTime.now.
@@ -66,8 +66,13 @@ class DayComplete extends NowState {}
 /// supplier (e.g., `() => DateTime.now()` or a test-frozen constant).
 ///
 /// Algorithm:
-/// 1. Filter to work chunks with a non-null [ScheduledChunk.displayStartMinutes],
-///    then sort ascending by that value.
+/// 1. Filter to chunks with a non-null [ScheduledChunk.displayStartMinutes],
+///    then sort ascending by that value. As of LIVE-01, breaks participate
+///    here too (the filter used to exclude them) — this is what lets a
+///    running break resolve to [Active] instead of a false [GapBeforeNext].
+///    `schedule_generator.dart` STEP E trims any trailing non-work chunk, so
+///    the last scheduled chunk is always work-typed and the [DayComplete]
+///    window check below is unaffected by breaks joining the input set.
 /// 2. Empty result → [DayComplete] (documented departure — see class doc).
 /// 3. currentMinutes < first chunk start → [PreStart].
 /// 4. currentMinutes ≥ last chunk end → [DayComplete].
@@ -105,34 +110,28 @@ NowState resolveNowState({
   final nowDt = now();
   final currentMinutes = nowDt.hour * 60 + nowDt.minute;
 
-  // Filter to work chunks that have a clock position, sort by window start.
-  final allWork =
-      chunks
-          .where(
-            (c) =>
-                c.chunkType == ChunkType.work && c.displayStartMinutes != null,
-          )
-          .toList()
-        ..sort(
-          (a, b) => a.displayStartMinutes!.compareTo(b.displayStartMinutes!),
-        );
+  // Filter to chunks (work AND breaks) that have a clock position, sort by
+  // window start. LIVE-01 dropped the work-only clause: the algorithm below
+  // has no work-chunk-specific logic, so breaks slot in for free.
+  final scheduled = chunks.where((c) => c.displayStartMinutes != null).toList()
+    ..sort((a, b) => a.displayStartMinutes!.compareTo(b.displayStartMinutes!));
 
-  // Degenerate: no work chunks with clock times → day-complete.
-  if (allWork.isEmpty) return DayComplete();
+  // Degenerate: no chunks with clock times → day-complete.
+  if (scheduled.isEmpty) return DayComplete();
 
   // Before the first chunk's window.
-  if (currentMinutes < allWork.first.displayStartMinutes!) {
-    return PreStart(allWork.first);
+  if (currentMinutes < scheduled.first.displayStartMinutes!) {
+    return PreStart(scheduled.first);
   }
 
   // Past the last chunk's window end.
   if (currentMinutes >=
-      allWork.last.displayStartMinutes! + allWork.last.durationMinutes) {
+      scheduled.last.displayStartMinutes! + scheduled.last.durationMinutes) {
     return DayComplete();
   }
 
   // Find the chunk whose window has started most recently.
-  final candidates = allWork
+  final candidates = scheduled
       .where((c) => c.displayStartMinutes! <= currentMinutes)
       .toList();
   var active = candidates.last;
@@ -147,15 +146,15 @@ NowState resolveNowState({
   // honest "up next" state, NOT day-complete), and DayComplete only when no
   // unresolved future chunk remains. Never show a future chunk as "Now".
   while (active.isCompleted || active.isSkipped) {
-    final idx = allWork.indexOf(active);
-    if (idx + 1 >= allWork.length) return DayComplete();
-    final candidate = allWork[idx + 1];
+    final idx = scheduled.indexOf(active);
+    if (idx + 1 >= scheduled.length) return DayComplete();
+    final candidate = scheduled[idx + 1];
     // Only promote if the next window has already opened.
     if (candidate.displayStartMinutes! > currentMinutes) {
       // Gap: current chunk resolved, next window not yet open.
       // Find the first unresolved chunk with a future window — if one exists
       // the day is NOT complete, just paused between windows.
-      final remaining = allWork
+      final remaining = scheduled
           .sublist(idx + 1)
           .where((c) => !c.isCompleted && !c.isSkipped)
           .firstOrNull;
@@ -167,8 +166,8 @@ NowState resolveNowState({
   }
 
   // Find the next unresolved chunk after the active one.
-  final activeIdx = allWork.indexOf(active);
-  final next = allWork
+  final activeIdx = scheduled.indexOf(active);
+  final next = scheduled
       .sublist(activeIdx + 1)
       .where((c) => !c.isCompleted && !c.isSkipped)
       .firstOrNull;
