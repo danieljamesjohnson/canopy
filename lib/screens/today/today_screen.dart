@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/daily_schedule.dart';
@@ -12,6 +13,7 @@ import '../../data/models/scheduled_chunk.dart';
 import '../../data/repositories/hive_completion_log_repository.dart';
 import '../../data/repositories/hive_quarterly_snapshot_repository.dart';
 import '../../providers/goals_notifier.dart';
+import '../../providers/restoratives_notifier.dart';
 import '../../providers/schedule_notifier.dart';
 import '../../providers/theme_notifier.dart';
 import '../../services/quarterly_aggregation_service.dart';
@@ -23,7 +25,13 @@ import '../home/widgets/end_of_day_card.dart';
 import '../home/widgets/review_banner.dart';
 import '../schedule/widgets/chunk_detail_sheet.dart';
 import '../schedule/widgets/schedule_progress_bar.dart';
+import '../schedule/widgets/swipeable_chunk_card.dart';
+import 'now_state.dart';
+import 'timeline.dart';
 import 'widgets/breathing_pulse_cta.dart';
+import 'widgets/free_time_row.dart';
+import 'widgets/live_row_card.dart';
+import 'widgets/timeline_row_tile.dart';
 
 /// TodayScreen — the merged destination that replaces HomeScreen and
 /// ScheduleScreen (UNIFY-01). One scrollable list shows what's happening
@@ -50,22 +58,31 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
 
   /// Injectable clock function. Defaults to [DateTime.now]; overridden in
   /// tests via [TodayScreen.now] to simulate specific wall-clock times.
-  // ignore: unused_field — wired into resolveNowState in Task 2's day list.
   late final DateTime Function() _nowFn = widget.now ?? DateTime.now;
 
-  /// 1-minute periodic timer that triggers setState() so resolveNowState is
-  /// re-evaluated as wall-clock time passes. Paused on background, resumed
-  /// on foreground (T-17-01 mitigation, carried from HomeScreen: no battery
-  /// drain; no setState after dispose via mounted guard + dispose() cancel).
+  /// 1-minute periodic timer that triggers setState() so the current-moment
+  /// classification below is re-evaluated as wall-clock time passes. Paused
+  /// on background, resumed on foreground (T-17-01 mitigation, carried from
+  /// HomeScreen: no battery drain; no setState after dispose via mounted
+  /// guard + dispose() cancel).
   Timer? _nowTimer;
 
-  // ignore: unused_field — wired into the mood chip in Task 2's header block.
   static const Map<int, String> _moodEmojis = {
     1: '\u{1F327}️',
     2: '\u{1F325}️',
     3: '⛅',
     4: '\u{1F324}️',
     5: '☀️',
+  };
+
+  /// Mood-chip labels (1, 3, 5 are the sketch's own strings; 2 and 4
+  /// interpolate the same voice).
+  static const Map<int, String> _moodLabels = {
+    1: 'Low day',
+    2: 'Cloudy day',
+    3: 'Steady day',
+    4: 'Bright day',
+    5: 'Sunny day',
   };
 
   bool _bannerDismissed = false;
@@ -154,30 +171,25 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         .firstOrNull;
   }
 
-  // ignore: unused_element — wired into the row dispatch in Task 2.
   Color? _lookupGoalColor(BuildContext context, ScheduledChunk chunk) {
     final goal = _resolveGoal(context, chunk);
     if (goal?.color != null) return hexToColor(goal!.color!);
     return null;
   }
 
-  // ignore: unused_element — wired into the row dispatch in Task 2.
   String? _lookupGoalName(BuildContext context, ScheduledChunk chunk) =>
       _resolveGoal(context, chunk)?.name;
 
-  // ignore: unused_element — wired into the row dispatch in Task 2.
   double? _lookupGoalPriorityWeight(
     BuildContext context,
     ScheduledChunk chunk,
   ) => _resolveGoal(context, chunk)?.priorityWeight;
 
-  // ignore: unused_element — wired into the row dispatch in Task 2.
   EnergyValence? _lookupGoalValence(
     BuildContext context,
     ScheduledChunk chunk,
   ) => _resolveGoal(context, chunk)?.energyValence;
 
-  // ignore: unused_element — wired into the row dispatch in Task 2.
   String? _lookupGoalEmojiTag(BuildContext context, ScheduledChunk chunk) =>
       _resolveGoal(context, chunk)?.emojiTag;
 
@@ -185,7 +197,6 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   /// string. Delegates to the shared [toDisplayRationale] helper so the
   /// merged screen, the detail sheet, and the focus screen render
   /// rationales identically.
-  // ignore: unused_element — wired into the row dispatch in Task 2.
   static String _toDisplayRationale(String rationale) =>
       toDisplayRationale(rationale);
 
@@ -202,9 +213,260 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     return resolved / workChunks.length;
   }
 
+  // ── Header + mood chip (UI-SPEC "Structure") ─────────────────────────────
+  //
+  // A body element, NOT a collapsing app bar — stays put per the UI-SPEC.
+
+  Widget _buildHeader(BuildContext context, DailySchedule schedule, int mood) {
+    final theme = Theme.of(context);
+    final moodEmoji = _moodEmojis[mood] ?? _moodEmojis[3]!;
+    final moodLabel = _moodLabels[mood] ?? _moodLabels[3]!;
+    final workChunkCount = schedule.chunks
+        .where((c) => c.chunkType == ChunkType.work)
+        .length;
+    final chunkWord = workChunkCount == 1 ? 'chunk' : 'chunks';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                'Today',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                DateFormat('EEE d MMM').format(_nowFn()),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$moodEmoji $moodLabel · $workChunkCount $chunkWord',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Low-energy-day surface for restoratives, ported from schedule_screen.
+  /// Rendered only when mood ≤ 2. These never affect the schedule — they
+  /// are the deliberate non-goal counterpart to the plan (P11).
+  Widget _buildRestorativeSuggestions(BuildContext context) {
+    final restoratives = context.watch<RestorativesNotifier>();
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    if (restoratives.isEmpty) {
+      return Card(
+        margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+        color: scheme.surfaceContainerHighest,
+        child: ListTile(
+          leading: Icon(Icons.spa_outlined, color: scheme.primary),
+          title: const Text('Low on energy today?'),
+          subtitle: const Text(
+            'Add a few things that restore you — they\'ll show up here on '
+            'days like this.',
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/restoratives'),
+        ),
+      );
+    }
+
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      color: scheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.spa_outlined, size: 20, color: scheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'A lighter day — here\'s what restores you',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final item in restoratives.items)
+                  Chip(
+                    avatar: (item.emojiTag != null && item.emojiTag!.isNotEmpty)
+                        ? Text(
+                            item.emojiTag!,
+                            style: const TextStyle(fontSize: 16),
+                          )
+                        : null,
+                    label: Text(item.name),
+                    backgroundColor: scheme.secondaryContainer,
+                    side: BorderSide.none,
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── The day — row dispatch over buildTimeline's exhaustive TimelineRow ──
+  //
+  // The now-classifier and buildTimeline are called exactly once, in
+  // build() (P1 / 22-PATTERNS.md section 5): this dispatch never reads the
+  // clock or re-derives which chunk is "now" — it only renders what it is
+  // handed.
+
+  Widget _buildTimelineRow(
+    BuildContext context,
+    TimelineRow row,
+    NowState nowState,
+  ) {
+    switch (row) {
+      case LeadingFreeRow(:final untilMinutes):
+        return TimelineRowTile(
+          startMinutes: null,
+          child: FreeTimeRow.until(untilMinutes: untilMinutes),
+        );
+      case GapFreeRow(:final startMinutes, :final durationMinutes):
+        return TimelineRowTile(
+          startMinutes: startMinutes,
+          child: FreeTimeRow.gap(durationMinutes: durationMinutes),
+        );
+      case ChunkRow(:final chunk, :final isLive):
+        if (isLive) {
+          return TimelineRowTile(
+            startMinutes: chunk.displayStartMinutes,
+            child: _buildLiveRow(context, chunk, nowState),
+          );
+        }
+        final goalColor = _lookupGoalColor(context, chunk);
+        final goalName = _lookupGoalName(context, chunk);
+        final displayRationale = _toDisplayRationale(chunk.rationale);
+        return TimelineRowTile(
+          startMinutes: chunk.displayStartMinutes,
+          child: SwipeableChunkCard(
+            chunk: chunk,
+            goalColor: goalColor,
+            goalName: goalName,
+            displayRationale: displayRationale,
+            goalPriorityWeight: _lookupGoalPriorityWeight(context, chunk),
+            goalEmojiTag: _lookupGoalEmojiTag(context, chunk),
+            goalValence: _lookupGoalValence(context, chunk),
+            showStartTime: false,
+            onTap: (chunk.isCompleted || chunk.isSkipped)
+                ? null
+                : () => _openDetailSheet(
+                    context,
+                    chunk,
+                    goalColor,
+                    goalName,
+                    displayRationale,
+                  ),
+          ),
+        );
+    }
+  }
+
+  /// Builds a single title string for a chunk: the goal name, or (for
+  /// commitment/unattached chunks) the rationale, or a plain fallback.
+  String _chunkTitle(BuildContext context, ScheduledChunk chunk) {
+    final goalName = _lookupGoalName(context, chunk);
+    if (goalName != null && goalName.isNotEmpty) return goalName;
+    return chunk.rationale.isNotEmpty ? chunk.rationale : 'Work block';
+  }
+
+  /// Builds the swelled in-place live row (D-01). kicker is always
+  /// "RIGHT NOW" here — the "RESTING" variant and any faster tick
+  /// granularity are Phase 23 / LIVE-01 / LIVE-02's decisions, not this
+  /// plan's (scope boundary).
+  Widget _buildLiveRow(
+    BuildContext context,
+    ScheduledChunk chunk,
+    NowState nowState,
+  ) {
+    final title = _chunkTitle(context, chunk);
+    final start = chunk.displayStartMinutes;
+    final end = start != null ? start + chunk.durationMinutes : null;
+
+    final ScheduledChunk? nextChunk = switch (nowState) {
+      Active(:final next) => next,
+      Overdue(:final next) => next,
+      _ => null,
+    };
+
+    String remainingLabel;
+    double progress;
+    if (nowState is Active && start != null && end != null) {
+      final nowDt = _nowFn();
+      final nowMinutes = nowDt.hour * 60 + nowDt.minute;
+      final rawMinLeft = end - nowMinutes;
+      final minLeft = rawMinLeft.clamp(0, chunk.durationMinutes).toInt();
+      remainingLabel = '$minLeft min left · until ${formatMinutes(end)}';
+      progress = chunk.durationMinutes == 0
+          ? 1.0
+          : (nowMinutes - start) / chunk.durationMinutes;
+    } else if (start != null && end != null) {
+      // Overdue — the ActiveChunkCard's existing plain time-range copy.
+      // Do NOT invent "behind" wording here (Copywriting Contract);
+      // the remaining-time granularity is Phase 23 / LIVE-02's decision.
+      remainingLabel = formatTimeRange(start, end);
+      progress = 1.0;
+    } else {
+      remainingLabel = '${chunk.durationMinutes} min';
+      progress = 0.0;
+    }
+
+    String? nextLine;
+    if (nextChunk != null && nextChunk.displayStartMinutes != null) {
+      final nextTitle = _chunkTitle(context, nextChunk);
+      nextLine =
+          'Next · $nextTitle at '
+          '${formatMinutes(nextChunk.displayStartMinutes!)}';
+    }
+
+    return LiveRowCard(
+      chunkId: chunk.id,
+      kicker: 'RIGHT NOW',
+      title: title,
+      remainingLabel: remainingLabel,
+      progress: progress,
+      nextLine: nextLine,
+      showActions: chunk.chunkType == ChunkType.work,
+    );
+  }
+
   /// Opens the ChunkDetailSheet for the given work chunk, ported from
   /// schedule_screen.dart.
-  // ignore: unused_element — wired into the row dispatch in Task 2.
   void _openDetailSheet(
     BuildContext context,
     ScheduledChunk chunk,
@@ -336,6 +598,16 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     final moodColor =
         ThemeNotifier.moodSeeds[mood] ?? ThemeNotifier.moodSeeds[3]!;
 
+    // The only two "what is happening now" calls on this screen (P1 /
+    // 22-PATTERNS.md section 5): this samples the clock exactly once,
+    // buildTimeline turns that classification into a row list, and nothing
+    // below this point re-derives which chunk is current.
+    final nowState = resolveNowState(chunks: schedule.chunks, now: _nowFn);
+    final timelineRows = buildTimeline(
+      chunks: schedule.chunks,
+      nowState: nowState,
+    );
+
     return Scaffold(
       appBar: _buildAppBar(context, schedule),
       body: Align(
@@ -357,8 +629,25 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                   onDismiss: () => setState(() => _eodCardDismissed = true),
                   onGoToSummary: () => context.push('/summary'),
                 ),
-              // Task 2 replaces this placeholder with the day-as-a-list body
-              // (header, mood chip, edge-state line, timeline rows).
+              _buildHeader(context, schedule, mood),
+              // SingleChildScrollView + Column, deliberately NOT a ListView:
+              // Task 3's centre-on-open needs the live row already laid out,
+              // and a lazy ListView may not have built a row far down the
+              // day. A day is bounded at a few dozen rows, so eager layout
+              // is the cheap correct answer and avoids a scroll-positioning
+              // package (P1 doc comment carried into the render layer).
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (mood <= 2) _buildRestorativeSuggestions(context),
+                      for (final row in timelineRows)
+                        _buildTimelineRow(context, row, nowState),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),

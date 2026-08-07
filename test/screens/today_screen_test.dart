@@ -346,7 +346,10 @@ void main() {
     ) async {
       await pumpDay(tester);
 
-      expect(find.textContaining('Free ·'), findsOneWidget);
+      // The fixture also has two shorter mid-morning gaps (8:25–9:00,
+      // 9:25–10:45) — all >= kMinGapMinutes, so all three surface as named
+      // rows (D-05); this assertion pins the specific 11:15–13:00 one.
+      expect(find.text('Free · 1h 45m'), findsOneWidget);
     });
 
     testWidgets('the gutter shows the compact start time for timed rows', (
@@ -436,7 +439,12 @@ void main() {
       (tester) async {
         await pumpDay(tester);
 
-        await tester.tap(find.textContaining('Reading'));
+        // Exact match: 'Reading' is also a substring of the live row's
+        // "Next · Reading at 10:50 AM" line, so a containing-text finder
+        // would be ambiguous. Scroll it into view first — the default test
+        // viewport is shorter than the whole day's row list.
+        await tester.ensureVisible(find.text('Reading'));
+        await tester.tap(find.text('Reading'));
         await tester.pump();
 
         expect(find.byType(ChunkDetailSheet), findsOneWidget);
