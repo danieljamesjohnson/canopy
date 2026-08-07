@@ -2,7 +2,7 @@
 sketch: 001
 name: unified-today
 question: "Within an inline timeline, how does 'now' stay findable while the day stays scannable?"
-winner: null
+winner: "A"
 tags: [layout, today, live-state, phase-22]
 ---
 
@@ -23,9 +23,21 @@ variants differ in how they answer that.
 
 Or served over the tailnet: `http://danserver:8101/001-unified-today/index.html`
 
+## Outcome — ★ Variant A wins (Dan, 2026-08-07)
+
+**A: Pure inline**, with one refinement carried in from review:
+
+> **Countdown rule (locked):** show whole minutes — "3 min left" — until under one minute
+> remains, then switch to a seconds countdown — "42s left". A per-second clock running all day
+> reads as pressure; in the final minute it reads as "about to change". Use the *Last minute*
+> state button to see the switch.
+
+This settles the LIVE-02 granularity question the roadmap deferred: the UI does not need a
+1-second repaint for most of a chunk. B and C are not carried forward.
+
 ## Variants
 
-- **A: Pure inline** — one list, nothing sticky. The current row swells into a live card in
+- **A: Pure inline** ★ — one list, nothing sticky. The current row swells into a live card in
   place, and the list auto-scrolls it to centre on open. Quietest; trusts the scroll position.
 - **B: Sticky recall** — identical list, plus a pill that slides down *only* when the live row
   scrolls out of view. Tap it to jump back. Costs a floating element that's usually absent.

@@ -21,4 +21,14 @@ and from the app's existing locked design tokens.
 
 | # | Name | Design Question | Winner | Tags |
 |---|------|----------------|--------|------|
-| 001 | unified-today | Within an inline timeline, how does "now" stay findable while the day stays scannable? | TBD | layout, today, live-state, phase-22 |
+| 001 | unified-today | Within an inline timeline, how does "now" stay findable while the day stays scannable? | **A · Pure inline** | layout, today, live-state, phase-22 |
+
+## Locked Decisions
+
+- **Inline timeline, no separate now-card** — the day is one list; the current row swells into a
+  live card in place and auto-centres on open. (Sketch 001, variant A.)
+- **Countdown granularity** — whole minutes until under one minute remains, then seconds.
+  Settles LIVE-02. (Sketch 001 review, 2026-08-07.)
+- **Free time is named** — "Free until 8:00am", "Free · 1h 40m" — never collapsed to whitespace.
+- **Breaks are a first-class current activity** — a running break names itself and offers no
+  Complete/Skip affordance, because there is nothing to complete.

@@ -142,7 +142,7 @@
 <div class="toolbar">
   <div class="group">
     <span class="label">Variant</span>
-    <button data-variant="a" aria-pressed="true">A · Pure inline</button>
+    <button data-variant="a" aria-pressed="true">★ A · Pure inline</button>
     <button data-variant="b" aria-pressed="false">B · Sticky recall</button>
     <button data-variant="c" aria-pressed="false">C · Time rail</button>
   </div>
@@ -150,6 +150,7 @@
     <span class="label">State</span>
     <button data-state="prestart" aria-pressed="false">Before 8am</button>
     <button data-state="break" aria-pressed="true">On a break</button>
+    <button data-state="lastmin" aria-pressed="false">Last minute</button>
     <button data-state="chunk" aria-pressed="false">Mid-chunk</button>
     <button data-state="done" aria-pressed="false">Day done</button>
   </div>
@@ -164,9 +165,9 @@
 </div>
 
 <p class="note">
-  <strong>The countdown is live</strong> — it ticks in real seconds from the chosen state, so you're
-  judging whether a second-by-second readout feels calm or anxious. That's the open decision
-  (LIVE-02) the roadmap left for phase planning.
+  <strong>Winner: A · Pure inline.</strong> Countdown rule locked — whole minutes ("3 min left")
+  until under one minute remains, then a seconds countdown ("42s left"). Hit
+  <em>Last minute</em> to watch the switch.
 </p>
 
 <div class="stage">
@@ -211,6 +212,7 @@ const PLAN = [
 const STATES = {
   prestart: M(7,12),
   break:    M(10,45) + 2,   // 2 min into the 5-min short break
+  lastmin:  M(10,50) - 0.7, // 42s left — the seconds-countdown threshold
   chunk:    M(10,50) + 8,   // 8 min into a 25-min chunk
   done:     M(19,40),
 };
@@ -237,6 +239,16 @@ const dur = (mins) => mins >= 60
   : `${mins}m`;
 const nowMin = () => baseMin + (Date.now() - t0) / 60000;
 
+// Remaining-time readout. LOCKED (Dan, sketch 001): stay on whole minutes
+// until under one minute remains, then switch to a seconds countdown. A
+// per-second clock running all day reads as pressure; in the last minute it
+// reads as "about to change".
+const remain = (leftMin) => {
+  const secs = leftMin * 60;
+  if (secs >= 60) return `${Math.ceil(leftMin)} min left`;
+  return `${Math.max(0, Math.floor(secs))}s left`;
+};
+
 // Build the render list: plan items plus named free-time gaps.
 function rows() {
   const out = [];
@@ -259,7 +271,6 @@ function nextRow(n)    { return rows().find(r => !r.free && r.s > n); }
 // ── the live "now" block, shared by variants A and B ──────────────
 function nowBlock(r, n) {
   const left = r.e - n;
-  const mm = Math.floor(left), ss = Math.floor((left - mm) * 60);
   const pct = Math.min(100, Math.max(0, ((n - r.s) / r.d) * 100));
   const isBreak = r.k === 'brk' || r.k === 'long';
   const nx = nextRow(n);
@@ -267,7 +278,7 @@ function nowBlock(r, n) {
     <div class="now">
       <div class="kicker">${isBreak ? 'Right now — resting' : 'Right now'}</div>
       <div class="what">${isBreak ? (r.k === 'long' ? 'Taking a long break' : 'Taking a break') : r.t}</div>
-      <div class="left">${mm}:${String(ss).padStart(2,'0')} left · until ${fmt(r.e)}</div>
+      <div class="left">${remain(left)} · until ${fmt(r.e)}</div>
       <div class="bar"><i style="width:${pct}%"></i></div>
       ${isBreak ? '' : `<div class="acts"><button>Complete</button><button class="ghost">Skip</button></div>`}
       ${nx ? `<div class="next">Next · ${nx.t} at ${fmt(nx.s)}</div>` : ''}
@@ -332,7 +343,7 @@ function renderRail(el, n) {
     const st = status(r, n);
     const isBreak = r.k === 'brk' || r.k === 'long';
     if (st === 'current') {
-      const left = r.e - n, mm = Math.floor(left), ss = Math.floor((left - mm) * 60);
+      const left = r.e - n;
       const pct = Math.min(100, Math.max(0, ((n - r.s) / r.d) * 100));
       html += `<div class="rail-item" data-current="1"><div class="rail-time">${fmtShort(r.s)}</div>
         <div class="rail filled"><span class="knob"></span><span class="progress" style="height:${pct}%"></span></div>
@@ -340,7 +351,7 @@ function renderRail(el, n) {
           <div class="now" style="margin-left:0">
             <div class="kicker">${isBreak ? 'Right now — resting' : 'Right now'}</div>
             <div class="what">${isBreak ? (r.k === 'long' ? 'Taking a long break' : 'Taking a break') : r.t}</div>
-            <div class="left">${mm}:${String(ss).padStart(2,'0')} left · until ${fmt(r.e)}</div>
+            <div class="left">${remain(left)} · until ${fmt(r.e)}</div>
             ${isBreak ? '' : `<div class="acts"><button>Complete</button><button class="ghost">Skip</button></div>`}
           </div>
         </div></div>`;
@@ -372,10 +383,10 @@ function paint() {
     const cur = currentRow(n);
     if (!cur) { recall.classList.remove('show'); }
     else {
-      const left = cur.e - n, mm = Math.floor(left), ss = Math.floor((left - mm) * 60);
+      const left = cur.e - n;
       const isBreak = cur.k === 'brk' || cur.k === 'long';
       document.getElementById('recallT').textContent = isBreak ? 'Taking a break' : cur.t;
-      document.getElementById('recallC').textContent = `${mm}:${String(ss).padStart(2,'0')}`;
+      document.getElementById('recallC').textContent = remain(left);
       const row = document.querySelector('#day-b [data-current]');
       if (row && recallObs) { recallObs.disconnect(); recallObs.observe(row); }
     }
