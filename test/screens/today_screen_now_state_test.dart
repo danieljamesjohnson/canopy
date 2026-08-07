@@ -522,35 +522,32 @@ void main() {
   // ── Widget tests: TodayScreen time-anchored Now (NOW-01/NOW-02) ──────────
 
   group('TodayScreen time-anchored Now (NOW-01/NOW-02)', () {
-    testWidgets(
-      'pre-start: 6am before 8am chunk → shows "Your day starts at"',
-      (tester) async {
-        final sn = _FakeScheduleNotifierWithSchedule(
-          DailySchedule(
-            dateYmd: _todayYmd(),
-            moodIndex: 3,
-            chunks: [
-              _workChunk(syntheticStartMinutes: 480, durationMinutes: 60),
-            ],
-          ),
-        );
-        await _pumpTodayScreen(
-          tester,
-          scheduleNotifier: sn,
-          now: () => DateTime(2026, 6, 13, 6, 0), // 6:00 AM
-        );
-        expect(
-          find.textContaining('Your day starts at'),
-          findsOneWidget,
-          reason: 'NOW-02: pre-start heading must appear before first chunk',
-        );
-        expect(
-          find.byType(LiveRowCard),
-          findsNothing,
-          reason: 'NOW-02: no LiveRowCard in pre-start state',
-        );
-      },
-    );
+    testWidgets('pre-start: 6am before 8am chunk → shows "Nothing until"', (
+      tester,
+    ) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [_workChunk(syntheticStartMinutes: 480, durationMinutes: 60)],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 6, 0), // 6:00 AM
+      );
+      expect(
+        find.text('Nothing until 8:00 AM'),
+        findsOneWidget,
+        reason: 'NOW-02: pre-start heading must appear before first chunk',
+      );
+      expect(
+        find.byType(LiveRowCard),
+        findsNothing,
+        reason: 'NOW-02: no LiveRowCard in pre-start state',
+      );
+    });
 
     testWidgets('active: 9am with chunk 8:30–9:30 → shows LiveRowCard', (
       tester,
@@ -573,12 +570,12 @@ void main() {
         reason: 'NOW-01: LiveRowCard must appear for active chunk',
       );
       expect(
-        find.textContaining('Your day starts at'),
+        find.textContaining('Nothing until'),
         findsNothing,
         reason: 'NOW-01: no pre-start heading when chunk is active',
       );
       expect(
-        find.text("That's a wrap"),
+        find.text("That's the day."),
         findsNothing,
         reason: 'NOW-01: no day-complete heading when chunk is active',
       );
@@ -644,7 +641,7 @@ void main() {
     );
 
     testWidgets(
-      'day-complete (6pm, all windows passed) → shows "That\'s a wrap"',
+      'day-complete (6pm, all windows passed) → shows "That\'s the day."',
       (tester) async {
         final sn = _FakeScheduleNotifierWithSchedule(
           DailySchedule(
@@ -661,7 +658,7 @@ void main() {
           now: () => DateTime(2026, 6, 13, 18, 0), // 6:00 PM
         );
         expect(
-          find.text("That's a wrap"),
+          find.text("That's the day."),
           findsOneWidget,
           reason: 'NOW-02: day-complete heading at 6pm',
         );
@@ -673,7 +670,7 @@ void main() {
       },
     );
 
-    testWidgets('all-resolved → shows "That\'s a wrap" regardless of time', (
+    testWidgets('all-resolved → shows "That\'s the day." regardless of time', (
       tester,
     ) async {
       final c1 = _workChunk(
@@ -697,7 +694,7 @@ void main() {
         now: () => DateTime(2026, 6, 13, 9, 0), // mid-day, but all resolved
       );
       expect(
-        find.text("That's a wrap"),
+        find.text("That's the day."),
         findsOneWidget,
         reason: 'NOW-02: day-complete when all chunks resolved',
       );
@@ -709,7 +706,7 @@ void main() {
     });
 
     testWidgets('gap state: c1 resolved 9:00–9:25, c2 at 10:00, now=9:30 → '
-        'shows "Up next" and NOT "That\'s a wrap"', (tester) async {
+        'shows "Up next" and NOT "That\'s the day."', (tester) async {
       // CR-01: GapBeforeNext renders honest "Up next" copy, not day-complete.
       final sn = _FakeScheduleNotifierWithSchedule(
         DailySchedule(
@@ -740,12 +737,13 @@ void main() {
         find.text('Up next'),
         findsOneWidget,
         reason:
-            'CR-01: GapBeforeNext must render "Up next", not "That\'s a wrap"',
+            'CR-01: GapBeforeNext must render "Up next", not "That\'s the '
+            'day."',
       );
       expect(
-        find.text("That's a wrap"),
+        find.text("That's the day."),
         findsNothing,
-        reason: 'CR-01: "That\'s a wrap" must not appear in gap state',
+        reason: 'CR-01: "That\'s the day." must not appear in gap state',
       );
       // Must not show a card — this is an inline state, not an active chunk.
       expect(
@@ -789,7 +787,7 @@ void main() {
 
       // At 7:59 → pre-start
       expect(
-        find.textContaining('Your day starts at'),
+        find.textContaining('Nothing until'),
         findsOneWidget,
         reason: 'Should be in pre-start state at 7:59 AM',
       );

@@ -321,12 +321,17 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   /// Quiet edge-state line directly beneath the mood chip. Renders a
   /// two-line status for PreStart, GapBeforeNext and DayComplete; renders
   /// nothing for Active/Overdue — the live row in the list speaks for
-  /// those (D-01). Copy is carried across WORD FOR WORD from
-  /// home_screen.dart's now-removed pre-start / gap / day-complete content
-  /// builders (LIVE-03 input) — Phase 23 / LIVE-03 owns any future wording
-  /// change here, not this plan. Styled quiet (bodyMedium/titleMedium on
-  /// onSurfaceVariant, no Card, no elevation, no accent fill): a header
-  /// line, NOT a hero card (D-01) and NOT sticky (D-03).
+  /// those (D-01). The PreStart and DayComplete strings are LOCKED by D-03
+  /// (23-CONTEXT.md decision 3 / 23-UI-SPEC.md "Edge states", from sketch
+  /// 001) and must not be reworded without a new design decision. The
+  /// Copywriting Contract (23-UI-SPEC.md) forbids deficit language
+  /// ("behind", "missed", "you still owe") anywhere in this line, and
+  /// forbids any score, total, or percentage in the DayComplete branch — a
+  /// finish line, not a scoreboard. The GapBeforeNext banner is unchanged
+  /// from Phase 22 (P-1, recorded in the doc comment on its case below).
+  /// Styled quiet (bodyMedium/titleMedium on onSurfaceVariant, no Card, no
+  /// elevation, no accent fill): a header line, NOT a hero card (D-01) and
+  /// NOT sticky (D-03).
   Widget _buildEdgeStateLine(BuildContext context, NowState nowState) {
     final theme = Theme.of(context);
     final onVariant = theme.colorScheme.onSurfaceVariant;
@@ -346,13 +351,13 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Your day starts at '
+                'Nothing until '
                 '${formatMinutes(firstChunk.displayStartMinutes!)}',
                 style: headingStyle,
               ),
               const SizedBox(height: 24),
               Text(
-                '$title · ${firstChunk.durationMinutes} min',
+                'The day starts with $title. Until then the time is yours.',
                 style: bodyStyle,
               ),
             ],
@@ -398,12 +403,9 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text("That's a wrap", style: headingStyle),
+              Text("That's the day.", style: headingStyle),
               const SizedBox(height: 24),
-              Text(
-                "You've reached the end of today's schedule.",
-                style: bodyStyle,
-              ),
+              Text('Everything scheduled is behind you.', style: bodyStyle),
             ],
           ),
         );

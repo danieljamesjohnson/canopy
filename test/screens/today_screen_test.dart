@@ -542,7 +542,7 @@ void main() {
       },
     );
 
-    testWidgets('pre-start: "Your day starts at" is present, no LiveRowCard', (
+    testWidgets('pre-start: "Nothing until" is present, no LiveRowCard', (
       tester,
     ) async {
       final schedule = DailySchedule(
@@ -556,7 +556,13 @@ void main() {
         now: () => DateTime(2026, 8, 7, 6, 0),
       );
 
-      expect(find.textContaining('Your day starts at'), findsOneWidget);
+      expect(find.text('Nothing until 8:00 AM'), findsOneWidget);
+      expect(
+        find.text(
+          'The day starts with Deep work. Until then the time is yours.',
+        ),
+        findsOneWidget,
+      );
       expect(find.byType(LiveRowCard), findsNothing);
       // The day list is still rendered below — never a bare message.
       expect(find.textContaining('Free until'), findsOneWidget);
@@ -595,7 +601,7 @@ void main() {
       expect(find.text('Morning routine'), findsOneWidget);
     });
 
-    testWidgets('day-complete: "That\'s a wrap" is present, no LiveRowCard', (
+    testWidgets('day-complete: "That\'s the day." is present, no LiveRowCard', (
       tester,
     ) async {
       final schedule = DailySchedule(
@@ -615,7 +621,9 @@ void main() {
         now: () => DateTime(2026, 8, 7, 18, 0),
       );
 
-      expect(find.text("That's a wrap"), findsOneWidget);
+      expect(find.text("That's the day."), findsOneWidget);
+      expect(find.text('Everything scheduled is behind you.'), findsOneWidget);
+      expect(find.textContaining('%'), findsNothing);
       expect(find.byType(LiveRowCard), findsNothing);
       expect(find.text('Morning routine'), findsOneWidget);
     });
