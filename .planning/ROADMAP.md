@@ -145,11 +145,21 @@ Plans:
   3. Before the day's first chunk starts, in a gap between activities, and after the day is complete, the screen shows a distinct, truthful state for each case
 
 **Plans**: 4 plans
-
 Plans:
+**Wave 1**
+
 - [ ] 23-01-PLAN.md — Break-aware now-state: drop resolveNowState's work-only filter, name a running break in the live row and in every "next" line, and exclude breaks from the "Start focus" target (LIVE-01)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 23-02-PLAN.md — Live countdown: second-precision remaining-time label (whole minutes rounded up above 60s, seconds below) driven by a dual-cadence tick, with the 1-second timer alive only in the final minute (LIVE-02)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 23-03-PLAN.md — Honest edge states: locked pre-start and day-complete copy, plus the recorded and tested decision to leave the gap banner unchanged (LIVE-03)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 23-04-PLAN.md — Phase gate: full suite + analyze, served debug build, and Dan's sign-off on the two manual-only verifications and the gap-banner decision
 
 **UI hint**: yes
