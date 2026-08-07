@@ -1,8 +1,8 @@
 ---
 phase: 22-unified-today-screen
-reviewed: 2026-08-07T20:43:54Z
+reviewed: 2026-08-07T21:15:00Z
 depth: standard
-files_reviewed: 23
+files_reviewed: 17
 files_reviewed_list:
   - lib/router.dart
   - lib/screens/today/today_screen.dart
@@ -19,194 +19,99 @@ files_reviewed_list:
   - lib/widgets/responsive_shell.dart
   - lib/utils/time_format.dart
   - test/screens/today_screen_test.dart
-  - test/screens/today_timeline_model_test.dart
-  - test/screens/today_screen_now_state_test.dart
-  - test/screens/today_row_widgets_test.dart
-  - test/screens/router_redirect_test.dart
-  - test/screens/content_width_constraint_test.dart
-  - test/screens/responsive_layout_test.dart
-  - test/screens/breathing_pulse_cta_test.dart
   - test/end_of_day_card_test.dart
-  - test/utils/time_format_test.dart
+  - test/screens/router_redirect_test.dart
+  - test/screens/today_timeline_model_test.dart
 findings:
   critical: 0
-  warning: 2
-  info: 1
-  total: 3
-status: issues_found
+  warning: 0
+  info: 0
+  total: 0
+status: clean
 ---
 
 # Phase 22: Code Review Report
 
-**Reviewed:** 2026-08-07T20:43:54Z
+**Reviewed:** 2026-08-07T21:15:00Z
 **Depth:** standard
-**Files Reviewed:** 23
-**Status:** issues_found
+**Files Reviewed:** 17
+**Status:** clean
 
 ## Summary
 
-Reviewed the Phase 22 Today-screen merge: the deletion of `home_screen.dart` /
-`schedule_screen.dart`, the new `lib/screens/today/` tree (`now_state.dart`,
-`timeline.dart`, `today_screen.dart`, five row widgets), the router collapse
-to three destinations, and the accompanying/relocated tests.
+Iteration 2 re-review. Iteration 1 found 0 critical / 2 warning / 1 info; three
+fix commits (`8bb253a`, `330d20e`, `1035339`) landed against those findings.
+This pass re-examined the fixed code directly rather than trusting the fix
+commits' own claims — including reverting `today_screen.dart` to its pre-fix
+state and re-running the new regression tests against it to confirm they
+actually discriminate. All three findings are resolved and none introduced a
+new defect.
 
-The core claims of this phase hold up under inspection:
+**WR-01 (Start focus ad-hoc scan) — verified resolved.**
+`_buildAppBar` (`lib/screens/today/today_screen.dart:658-677`) now derives
+`focusTarget` from a `switch` over the nullable, sealed `NowState`:
+`Active → current`, `Overdue → overdue`, `GapBeforeNext → next`,
+`PreStart → firstChunk`, `DayComplete → null`, `null → null`. This is a real
+Dart exhaustiveness-checked switch over a sealed class (no `default` arm is
+present or possible without the analyzer flagging missing cases), so there is
+no silent-fallthrough risk. Each arm's choice is defensible:
+- `Overdue → overdue` and `GapBeforeNext → next` both point at the chunk the
+  live row / edge-state line is already showing as the day's current focus —
+  consistent with the single-detector goal of this phase.
+- `PreStart → firstChunk` lets a user start early, which matches what the old
+  scan would also have picked (nothing is resolved yet before the day starts).
+- `DayComplete`/`null` correctly disable the button (`onPressed: null`) rather
+  than guessing at a target — confirmed via the DayComplete regression test.
+- Traced `resolveNowState`'s advance-past-resolved loop
+  (`now_state.dart:149-167`): `GapBeforeNext` can only be reached after
+  skipping past `isCompleted`/`isSkipped` chunks, so an earlier *unresolved*
+  chunk (the WR-01 bug scenario) can never hide behind a `GapBeforeNext`
+  result — it would already have been selected as `Active`/`Overdue` instead.
+  No arm reintroduces a first-unresolved-chunk scan.
+- **Verified the regression tests actually discriminate, not just trusted the
+  claim.** Checked out `today_screen.dart` at its pre-fix revision (`8bb253a^`)
+  with the new test file kept, and ran `flutter test --plain-name "WR-01"`:
+  both new tests fail against the old scan (the "stale" 8:00 unresolved chunk
+  is picked over the 10:45 Active chunk; the DayComplete case pushes a
+  non-null closure instead of disabling). Restored the fixed file afterward
+  (`git diff` on the file is clean). These are genuine regression tests, not
+  incidental passes.
 
-- **`resolveNowState` is a byte-for-byte identical relocation.** Diffed the
-  deleted `home_screen.dart`'s copy against the new `now_state.dart` — only
-  the surrounding doc-comment context changed (no longer "conceptually
-  internal to the Home Now zone"); the algorithm, including the
-  advance-past-resolved loop and the `GapBeforeNext`/`DayComplete`
-  disambiguation, is untouched.
-- **Single-detector discipline holds for rendering.** `timeline.dart`'s
-  `buildTimeline` derives `isLive` exclusively from the injected `NowState`
-  (`liveId` switch at `timeline.dart:60-64`); it never independently scans
-  for "first incomplete chunk." `today_screen.dart` calls
-  `resolveNowState`/`buildTimeline` exactly once per `build()` and threads
-  the result through — no ad-hoc "now" re-derivation was found in the
-  render path. The `_buildActiveChunkItems` anti-pattern is confirmed gone
-  (only lives in `schedule_screen.dart`'s git history now).
-- **Route reachability holds.** The `/schedule` → `/today` redirect is
-  exact-match, runs after the onboarding gate, and does not swallow
-  `/schedule/checkin`; `main.dart:86`'s `router.go('/schedule')` on
-  notification tap resolves correctly per `router_redirect_test.dart`'s
-  literal reproduction of that call. No route became unreachable in the
-  four-to-three destination collapse (`responsive_layout_test.dart` and
-  `router_redirect_test.dart` both assert the NavigationRail/Bar have
-  exactly three destinations, none labelled Home/Schedule).
-- **Lifecycle hygiene is intact** in the 893-line `today_screen.dart`: the
-  1-minute timer is cancelled in `dispose()`, the `WidgetsBindingObserver`
-  is removed, the `ScrollController` is disposed, and the only async gap
-  (`_checkReviewWindow`) is `mounted`-guarded before `setState`. The
-  one-shot centre-on-open flag is set synchronously before the
-  post-frame callback is scheduled, so a same-frame rebuild cannot
-  double-schedule it (verified against the "centres once" test).
-- **No `unused_import` residue** — grepped the whole tree; the
-  plan-mandated-but-unused import behind `// ignore: unused_import` that
-  executor 22-01 reported does not survive in the final state.
-- `flutter analyze` is clean across all reviewed `lib/` files.
+**WR-02 (shouldShowEodCard tests didn't call the function) — verified
+resolved.** All six tests in `test/end_of_day_card_test.dart`'s "trigger
+logic" group now call `shouldShowEodCard(...)` through its injectable `now`
+seam and assert on its return value, including a new true-branch case for
+`hour >= 18` that was previously untested. Two tests (ratio ≥ 50%, exactly
+50%) still compute the ratio inline as a documentation comment but *also*
+assert `shouldShowEodCard(...)` directly — the inline arithmetic no longer
+stands in for the real assertion. No hidden bug was uncovered by making the
+tests real, consistent with the fix commit's claim; the implementation in
+`end_of_day_card.dart:99-113` matches the tests' expectations exactly.
 
-Two warnings and one info item below are worth fixing, but none block
-shipping: one is a genuine (if pre-existing) reintroduction of
-"first-unresolved-chunk" logic outside the render path, the other is a
-set of pre-existing tests that don't actually exercise the function they
-claim to test.
+**IN-01 (`_openAddEvent` used `DateTime.now()` directly) — verified
+resolved.** `today_screen.dart:619` now reads `_nowFn()`, consistent with the
+rest of the screen's clock-injection discipline. Grepped the full reviewed
+file set for `DateTime.now()`: the only remaining occurrences are the doc
+comment in `now_state.dart:66` and the intentional default-parameter value
+`now = DateTime.now` in `end_of_day_card.dart:101` (a function reference, not
+a call, deliberately designed to be overridden in tests) — no stray direct
+calls remain in the render path.
 
-## Warnings
+**Nothing else regressed.** Full suite (`flutter test`) is 420/420 green;
+`flutter analyze` on the touched files reports no issues. Confirmed via diff
+that only `today_screen.dart` and `test/end_of_day_card_test.dart` /
+`test/screens/today_screen_test.dart` changed across the three fix commits —
+no other file in the reviewed set was touched, so the route-reachability,
+disposal/mounted-guard, and single-now-detector properties iteration 1
+already verified for the rest of the screen are untouched and still hold.
+Grepped for `DateTime.now()` and `firstOrNull`/`!c.isCompleted` scan patterns
+across `lib/screens/today/` and the schedule-card widgets: no new competing
+"now" detector was introduced anywhere.
 
-### WR-01: AppBar "Start focus" still uses an ad-hoc first-unresolved-chunk scan, independent of `resolveNowState`
-
-**File:** `lib/screens/today/today_screen.dart:672-689`
-**Issue:** The AppBar's focus-mode affordance computes its target chunk via:
-```dart
-final firstChunk = schedule.chunks
-    .where((c) =>
-        c.chunkType == ChunkType.work &&
-        !c.isCompleted &&
-        !c.isSkipped)
-    .firstOrNull;
-```
-This is precisely the "first unresolved chunk by list order" pattern the
-phase's own `timeline.dart:44-47` doc comment and the
-`today_timeline_model_test.dart` "Phase 17 regression guard" test warn
-against — it disagrees with `resolveNowState` in the exact scenario the
-regression guard describes: if an earlier work chunk is still unresolved
-(user forgot to mark it complete/skipped) while a later chunk's window is
-now the one `resolveNowState` calls `Active`/`Overdue` (and which the
-`LiveRowCard` visually presents as "now"), tapping "Start focus" jumps to
-the stale earlier chunk instead of the one the rest of the screen treats
-as current. This behavior is carried over verbatim from
-`schedule_screen.dart` (confirmed via `git show 9c57c9a`), so it is not a
-new regression — but the merge is exactly the point where the single
-now-detector invariant this phase establishes should have been extended to
-every "what should I act on right now" call site, and no test exercises
-which chunk id is actually passed to `/focus` (only that the icon exists:
-`today_screen_test.dart:221-240`).
-**Fix:** Derive the focus target from the already-computed `nowState`
-instead of a fresh scan:
-```dart
-final ScheduledChunk? focusTarget = switch (nowState) {
-  Active(:final current) => current,
-  Overdue(:final overdue) => overdue,
-  GapBeforeNext(:final next) => next,
-  PreStart(:final firstChunk) => firstChunk,
-  DayComplete() => null,
-};
-if (focusTarget != null) {
-  context.push('/focus', extra: focusTarget.id);
-}
-```
-Add a widget test asserting the `/focus` push receives `nowState`'s chunk
-id specifically in the case where it diverges from list-order-first.
-
-### WR-02: Three `shouldShowEodCard` "trigger logic" tests never call the function under test
-
-**File:** `test/end_of_day_card_test.dart:125-140`, `:142-159`, `:189-201`
-**Issue:** `shouldShowEodCard` accepts an injectable clock
-(`DateTime Function() now = DateTime.now`, `lib/screens/today/widgets/end_of_day_card.dart:101`)
-specifically so its time-dependent branch can be tested deterministically.
-Despite that seam existing, three of the six tests in the "trigger logic"
-group don't call `shouldShowEodCard` at all — they recompute the
-resolved/total ratio inline and assert against their own recomputed value,
-with comments claiming "we cannot control DateTime.now().hour" and "we
-verify the helper directly" as if the seam didn't exist:
-```dart
-test('returns false when <50% resolved and hour < 18 (time-independent branch)', () {
-  final chunks = [_makeWork(completed: true), _makeWork(), _makeWork()];
-  // We cannot control DateTime.now().hour, so we test the math directly:
-  final workChunks = chunks.where((c) => c.chunkType == ChunkType.work).toList();
-  final resolved = workChunks.where((c) => c.isCompleted || c.isSkipped || c.isDeferred).length;
-  final ratio = resolved / workChunks.length;
-  expect(ratio, lessThan(0.5));   // <- never calls shouldShowEodCard
-});
-```
-These three tests would keep passing unchanged even if `shouldShowEodCard`
-were rewritten with an inverted comparison, an off-by-one in the ratio, or
-a broken hour check — they assert facts about the test fixture, not about
-the function. This predates Phase 22 (introduced in Phase 10, only
-reformatted here), but it is in this review's file list and is exactly the
-"tests that pass regardless of the behavior they claim to verify" pattern
-flagged from Phase 21.
-**Fix:** Use the existing `now` seam to make all six tests actually call
-`shouldShowEodCard` deterministically, e.g.:
-```dart
-test('returns false when <50% resolved and hour < 18', () {
-  final chunks = [_makeWork(completed: true), _makeWork(), _makeWork()];
-  expect(
-    shouldShowEodCard(chunks, now: () => DateTime(2026, 1, 1, 10, 0)),
-    isFalse,
-  );
-});
-```
-and similarly inject an hour ≥ 18 clock to cover that branch directly
-instead of leaving it as an untested "may be true or false depending on
-wall clock" comment.
-
-## Info
-
-### IN-01: `_openAddEvent` bypasses the screen's injectable clock
-
-**File:** `lib/screens/today/today_screen.dart:616-641`
-**Issue:** `TodayScreen` accepts an injectable `now` specifically so tests
-can freeze wall-clock time (`_nowFn`, used by the header date, the 1-minute
-ticker, and the live-row remaining-time calc). `_openAddEvent`, however,
-calls `DateTime.now()` directly (line 619) rather than `_nowFn()` when
-computing "today" for the new commitment's `initialDate`. Carried over
-verbatim from `schedule_screen.dart` (confirmed via `git show 9c57c9a`), so
-not a new defect, and low-impact in practice (an "Add event" default date
-one calendar day off from an injected test clock is unlikely to be
-asserted on), but it is an inconsistency with the rest of the screen's
-clock-injection discipline and a latent source of test flakiness if a
-future test ever asserts on the pre-filled date near a real-clock day
-boundary.
-**Fix:** Use `_nowFn()` instead of `DateTime.now()` for consistency:
-```dart
-final now = _nowFn();
-final today = DateTime(now.year, now.month, now.day);
-```
+All reviewed files meet quality standards. No issues found.
 
 ---
 
-_Reviewed: 2026-08-07T20:43:54Z_
+_Reviewed: 2026-08-07T21:15:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
