@@ -57,6 +57,13 @@ class SwipeableChunkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Swipe-reveal backgrounds resolve from the ColorScheme, matching the
+    // Complete/Skip semantics ChunkCard already uses for its button row
+    // (primary for complete, error for skip). Raw Colors.* literals here
+    // would bypass the theme and not adapt to dark mode — the UI-SPEC's
+    // colour rule, and the tech-debt item Phase 22 closed in chunk_card.dart.
+    final colorScheme = Theme.of(context).colorScheme;
+
     // Break cards are not swipeable and do not receive goal name or tap.
     if (chunk.chunkType != ChunkType.work) {
       return ChunkCard(
@@ -86,16 +93,24 @@ class SwipeableChunkCard extends StatelessWidget {
         return false;
       },
       background: Container(
-        color: Colors.green.shade400,
+        color: colorScheme.primary,
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.only(left: 20),
-        child: const Icon(Icons.check_circle, color: Colors.white, size: 28),
+        child: Icon(
+          Icons.check_circle,
+          color: colorScheme.onPrimary,
+          size: 28,
+        ),
       ),
       secondaryBackground: Container(
-        color: Colors.orange.shade300,
+        color: colorScheme.error,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.arrow_forward, color: Colors.white, size: 28),
+        child: Icon(
+          Icons.arrow_forward,
+          color: colorScheme.onError,
+          size: 28,
+        ),
       ),
       child: ChunkCard(
         chunk: chunk,

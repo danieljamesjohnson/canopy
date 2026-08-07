@@ -122,7 +122,7 @@ Items acknowledged and deferred at milestone close on 2026-06-15 (v1.4) — carr
 | todo | Onboarding commitment-step day chips ambiguous (M/T/W/T/F/S/S) | Candidate for future polish phase — not in v1.5 scope |
 | tech-debt | FILL-02 high-priority monopoly edge | documented-accepted (3+ goals at weight ≥0.75 can starve lower-priority time-targets) |
 | tech-debt | Nyquist VALIDATION frontmatter drafts (15/16/17) | tests green; `nyquist_compliant: false` metadata only |
-| tech-debt | chunk_card.dart hardcoded `Colors.green.shade600` / `Colors.grey.shade400` | **RESOLVED Phase 22-02** — replaced with `colorScheme.primary`/`colorScheme.outlineVariant`; grep-gate confirms zero raw `Colors.*` literals remain in the file |
+| tech-debt | chunk_card.dart hardcoded `Colors.green.shade600` / `Colors.grey.shade400` | **RESOLVED Phase 22** — `chunk_card.dart` closed in 22-02 (`colorScheme.primary`/`outlineVariant`). The 22 UI review then caught that its wrapper `swipeable_chunk_card.dart` still held 4 raw literals for the swipe-reveal backgrounds; fixed post-review to `colorScheme.primary`/`onPrimary` (complete) and `error`/`onError` (skip), matching ChunkCard's own button semantics. Zero raw `Colors.*` now remain in either file. Remaining `Colors.white` uses in `checkin_screen.dart`/`acknowledgment_screen.dart` are deliberate contrast-on-mood-background computation, not debt. |
 | product | Start/stop focus timer per chunk (clock-in tracking) | deferred — see REQUIREMENTS.md Future Requirements |
 | product | Drag-to-reorder restoratives | deferred — see REQUIREMENTS.md Future Requirements |
 | product | Restoratives in onboarding (screen 4 invite) | deferred — see REQUIREMENTS.md Future Requirements |
