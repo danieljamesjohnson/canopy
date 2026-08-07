@@ -91,7 +91,7 @@ Future<GoRouter> _pumpRouter(
   required String initialPath,
 }) async {
   // Use a generous viewport so the destination screens (OnboardingScreen
-  // and the shell-wrapped GoalsScreen/ScheduleScreen) render without
+  // and the shell-wrapped GoalsScreen/TodayScreen) render without
   // overflowing the default 800×600 test view. We test the redirect
   // outcome, not the layout — but RenderFlex overflows during the build
   // surface as test failures even though they're cosmetic.

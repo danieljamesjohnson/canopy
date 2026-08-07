@@ -21,26 +21,26 @@ import '../../utils/rationale_mapper.dart';
 import '../../utils/time_format.dart';
 import '../../widgets/adaptive_form_modal.dart';
 import '../commitments/commitment_form_sheet.dart';
-import '../home/widgets/end_of_day_card.dart';
-import '../home/widgets/review_banner.dart';
 import '../schedule/widgets/chunk_detail_sheet.dart';
 import '../schedule/widgets/schedule_progress_bar.dart';
 import '../schedule/widgets/swipeable_chunk_card.dart';
 import 'now_state.dart';
 import 'timeline.dart';
 import 'widgets/breathing_pulse_cta.dart';
+import 'widgets/end_of_day_card.dart';
 import 'widgets/free_time_row.dart';
 import 'widgets/live_row_card.dart';
+import 'widgets/review_banner.dart';
 import 'widgets/timeline_row_tile.dart';
 
-/// TodayScreen — the merged destination that replaces HomeScreen and
-/// ScheduleScreen (UNIFY-01). One scrollable list shows what's happening
-/// now AND the rest of the day; there is no separate "now" tab to switch
-/// to (D-01).
+/// TodayScreen — the merged destination that replaces the old separate Home
+/// landing screen and Schedule plan-view screen (UNIFY-01). One scrollable
+/// list shows what's happening now AND the rest of the day; there is no
+/// separate "now" tab to switch to (D-01).
 ///
-/// This plan (22-03) builds the screen fully and independently testable,
-/// but it is NOT yet wired into the router — that switch is plan 22-04, so
-/// this file can land without breaking a single existing test.
+/// Built in plan 22-03 fully independently testable, then wired into the
+/// router as the shell's merged /today destination in plan 22-04, which also
+/// deleted the two screens this one replaces.
 class TodayScreen extends StatefulWidget {
   /// [now] is an optional clock-injection seam for testing. Defaults to
   /// [DateTime.now] at runtime. Forwarded to [_TodayScreenState._nowFn].
@@ -63,8 +63,8 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   /// 1-minute periodic timer that triggers setState() so the current-moment
   /// classification below is re-evaluated as wall-clock time passes. Paused
   /// on background, resumed on foreground (T-17-01 mitigation, carried from
-  /// HomeScreen: no battery drain; no setState after dispose via mounted
-  /// guard + dispose() cancel).
+  /// the original time-anchored Home implementation: no battery drain; no
+  /// setState after dispose via mounted guard + dispose() cancel).
   Timer? _nowTimer;
 
   static const Map<int, String> _moodEmojis = {
@@ -554,7 +554,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
           ? 1.0
           : (nowMinutes - start) / chunk.durationMinutes;
     } else if (start != null && end != null) {
-      // Overdue — the ActiveChunkCard's existing plain time-range copy.
+      // Overdue — the old "now" card's existing plain time-range copy.
       // Do NOT invent "behind" wording here (Copywriting Contract);
       // the remaining-time granularity is Phase 23 / LIVE-02's decision.
       remainingLabel = formatTimeRange(start, end);

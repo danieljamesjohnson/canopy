@@ -680,11 +680,12 @@ void main() {
       );
 
       // Capture the per-tick call-count baseline for THIS screen. TodayScreen
-      // (unlike the old HomeScreen) reads _nowFn() from more than one call
-      // site per build (the date header, resolveNowState, and the live row's
-      // remaining-time calc), so a single legitimate timer tick is NOT
-      // guaranteed to be exactly 1 call — it must merely be STABLE across
-      // ticks. A double-timer bug doubles whatever this baseline is.
+      // (unlike the old, pre-merge time-anchored Home screen) reads _nowFn()
+      // from more than one call site per build (the date header,
+      // resolveNowState, and the live row's remaining-time calc), so a single
+      // legitimate timer tick is NOT guaranteed to be exactly 1 call — it
+      // must merely be STABLE across ticks. A double-timer bug doubles
+      // whatever this baseline is.
       injectedNow = DateTime(2026, 6, 13, 8, 15); // still inside active window
       nowCallCount = 0;
       await tester.pump(const Duration(minutes: 1));

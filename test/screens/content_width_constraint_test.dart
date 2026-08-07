@@ -1,8 +1,9 @@
 // Widget tests for primary screen content-width constraint — Phase 18 Plan 01.
-// Phase 22 Plan 04 (UNIFY-02): repointed from HomeScreen to TodayScreen — the
-// merged destination that replaced Home + Schedule — and dropped the
-// permanently-skipped ScheduleScreen case (that screen no longer exists;
-// TodayScreen's own case is now the single POLISH-01 guard for this surface).
+// Phase 22 Plan 04 (UNIFY-02): repointed from the old Home landing screen to
+// TodayScreen — the merged destination that replaced the separate Home and
+// Schedule screens — and dropped the permanently-skipped case for the old
+// plan-view screen (it no longer exists; TodayScreen's own case is now the
+// single POLISH-01 guard for this surface).
 //
 // Covers POLISH-01:
 //   Primary screens (today, goals) must wrap their main content in a
@@ -167,8 +168,8 @@ void main() {
       (tester) async {
         // Phase 22 (UNIFY-02): TodayScreen is the merged Home+Schedule
         // destination — this is now the single POLISH-01 guard for that
-        // surface. The old HomeScreen case and the permanently-skipped
-        // ScheduleScreen case (schedule_screen.dart no longer exists) are
+        // surface. The old Home-screen case and the permanently-skipped
+        // Schedule-screen case (schedule_screen.dart no longer exists) are
         // both retired in favor of this one.
         await _pumpTodayScreenAt(tester, const Size(1024, 768));
 

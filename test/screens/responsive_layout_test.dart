@@ -4,11 +4,11 @@
 // 720dp inclusive boundary) and AC-5 (existing widget tests pass + new
 // breakpoint tests at 480/720/1200dp).
 //
-// To avoid pulling in the entire app provider tree (HomeScreen reads
-// ThemeNotifier + ScheduleNotifier; GoalsScreen reads GoalsNotifier), this
-// test wires its own minimal StatefulShellRoute with four trivial body
-// widgets. ResponsiveShell is the SUT — what it wraps doesn't matter for
-// the breakpoint assertion.
+// To avoid pulling in the entire app provider tree (the merged Today
+// destination reads ThemeNotifier + ScheduleNotifier; GoalsScreen reads
+// GoalsNotifier), this test wires its own minimal StatefulShellRoute with
+// four trivial body widgets. ResponsiveShell is the SUT — what it wraps
+// doesn't matter for the breakpoint assertion.
 
 import 'package:canopy/widgets/responsive_shell.dart';
 import 'package:flutter/material.dart';

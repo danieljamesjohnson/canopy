@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Dismissable banner shown on HomeScreen when the user is within the
+/// Dismissable banner shown on the Today screen when the user is within the
 /// quarterly review window (7 days before the 90-day mark, up to 30 days after).
 ///
 /// Dismiss state is in-memory only — reappears on app restart until the review

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../data/models/scheduled_chunk.dart';
 
-/// Dismissable card shown on HomeScreen when the end-of-day trigger is met
-/// (after 6pm OR ≥50% of work chunks resolved).
+/// Dismissable card shown on the Today screen when the end-of-day trigger is
+/// met (after 6pm OR ≥50% of work chunks resolved).
 ///
 /// Tapping "Close the day" routes to the existing EndOfDaySummaryScreen at
 /// `/summary`. Dismiss state is in-memory only (same pattern as ReviewBanner).

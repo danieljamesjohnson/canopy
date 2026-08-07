@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:canopy/screens/home/widgets/end_of_day_card.dart';
+import 'package:canopy/screens/today/widgets/end_of_day_card.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 
 // ---------------------------------------------------------------------------
@@ -23,9 +23,9 @@ ScheduledChunk _makeWork({
 }
 
 ScheduledChunk _makeBreak() => ScheduledChunk(
-      chunkTypeIndex: ChunkType.shortBreak.index,
-      durationMinutes: 5,
-    );
+  chunkTypeIndex: ChunkType.shortBreak.index,
+  durationMinutes: 5,
+);
 
 Widget _pumpCard({
   required List<ScheduledChunk> chunks,
@@ -49,7 +49,9 @@ Widget _pumpCard({
 
 void main() {
   group('EndOfDayCard widget', () {
-    testWidgets('renders title, computed subtitle, and CTA button', (tester) async {
+    testWidgets('renders title, computed subtitle, and CTA button', (
+      tester,
+    ) async {
       // 3 work chunks, 2 resolved
       final chunks = [
         _makeWork(completed: true),
@@ -58,11 +60,9 @@ void main() {
         _makeBreak(), // break chunks must not count
       ];
 
-      await tester.pumpWidget(_pumpCard(
-        chunks: chunks,
-        onDismiss: () {},
-        onGoToSummary: () {},
-      ));
+      await tester.pumpWidget(
+        _pumpCard(chunks: chunks, onDismiss: () {}, onGoToSummary: () {}),
+      );
 
       expect(find.text('How did today go?'), findsOneWidget);
       expect(find.text('2 of 3 chunks done'), findsOneWidget);
@@ -73,11 +73,13 @@ void main() {
       bool dismissed = false;
       final chunks = [_makeWork()];
 
-      await tester.pumpWidget(_pumpCard(
-        chunks: chunks,
-        onDismiss: () => dismissed = true,
-        onGoToSummary: () {},
-      ));
+      await tester.pumpWidget(
+        _pumpCard(
+          chunks: chunks,
+          onDismiss: () => dismissed = true,
+          onGoToSummary: () {},
+        ),
+      );
 
       await tester.tap(find.byTooltip('Dismiss'));
       expect(dismissed, isTrue);
@@ -87,27 +89,24 @@ void main() {
       bool navigated = false;
       final chunks = [_makeWork()];
 
-      await tester.pumpWidget(_pumpCard(
-        chunks: chunks,
-        onDismiss: () {},
-        onGoToSummary: () => navigated = true,
-      ));
+      await tester.pumpWidget(
+        _pumpCard(
+          chunks: chunks,
+          onDismiss: () {},
+          onGoToSummary: () => navigated = true,
+        ),
+      );
 
       await tester.tap(find.text('Close the day'));
       expect(navigated, isTrue);
     });
 
     testWidgets('deferred chunk counts as resolved', (tester) async {
-      final chunks = [
-        _makeWork(deferred: true),
-        _makeWork(),
-      ];
+      final chunks = [_makeWork(deferred: true), _makeWork()];
 
-      await tester.pumpWidget(_pumpCard(
-        chunks: chunks,
-        onDismiss: () {},
-        onGoToSummary: () {},
-      ));
+      await tester.pumpWidget(
+        _pumpCard(chunks: chunks, onDismiss: () {}, onGoToSummary: () {}),
+      );
 
       expect(find.text('1 of 2 chunks done'), findsOneWidget);
     });
@@ -134,47 +133,56 @@ void main() {
       // fine — we check the scenario by examining the break-only list:
       // if hour < 18, shouldShowEodCard should be false.
       // Since we can't freeze time here we verify the helper directly:
-      final workChunks = chunks.where((c) => c.chunkType == ChunkType.work).toList();
+      final workChunks = chunks
+          .where((c) => c.chunkType == ChunkType.work)
+          .toList();
       expect(workChunks.isEmpty, isTrue); // confirms empty-list guard fires
     });
 
-    test('returns false when <50% resolved and hour < 18 (time-independent branch)', () {
-      // 1 of 3 resolved = 33% — below 50% threshold.
-      // This test is only about the ratio branch: we verify the function
-      // returns false from the 50% path.
-      final chunks = [
-        _makeWork(completed: true),
-        _makeWork(),
-        _makeWork(),
-      ];
-      // We cannot control DateTime.now().hour, so we test the math directly:
-      final workChunks = chunks.where((c) => c.chunkType == ChunkType.work).toList();
-      final resolved = workChunks.where((c) => c.isCompleted || c.isSkipped || c.isDeferred).length;
-      final ratio = resolved / workChunks.length;
-      expect(ratio, lessThan(0.5));
-    });
+    test(
+      'returns false when <50% resolved and hour < 18 (time-independent branch)',
+      () {
+        // 1 of 3 resolved = 33% — below 50% threshold.
+        // This test is only about the ratio branch: we verify the function
+        // returns false from the 50% path.
+        final chunks = [_makeWork(completed: true), _makeWork(), _makeWork()];
+        // We cannot control DateTime.now().hour, so we test the math directly:
+        final workChunks = chunks
+            .where((c) => c.chunkType == ChunkType.work)
+            .toList();
+        final resolved = workChunks
+            .where((c) => c.isCompleted || c.isSkipped || c.isDeferred)
+            .length;
+        final ratio = resolved / workChunks.length;
+        expect(ratio, lessThan(0.5));
+      },
+    );
 
-    test('returns true when ≥50% resolved (ratio branch fires regardless of hour)', () {
-      // 2 of 3 resolved = 66.7% — above threshold.
-      final chunks = [
-        _makeWork(completed: true),
-        _makeWork(skipped: true),
-        _makeWork(),
-      ];
-      final workChunks = chunks.where((c) => c.chunkType == ChunkType.work).toList();
-      final resolved = workChunks.where((c) => c.isCompleted || c.isSkipped || c.isDeferred).length;
-      final ratio = resolved / workChunks.length;
-      expect(ratio, greaterThanOrEqualTo(0.5));
-      // Because ratio >= 0.5, shouldShowEodCard returns true independent of hour.
-      expect(shouldShowEodCard(chunks), isTrue);
-    });
+    test(
+      'returns true when ≥50% resolved (ratio branch fires regardless of hour)',
+      () {
+        // 2 of 3 resolved = 66.7% — above threshold.
+        final chunks = [
+          _makeWork(completed: true),
+          _makeWork(skipped: true),
+          _makeWork(),
+        ];
+        final workChunks = chunks
+            .where((c) => c.chunkType == ChunkType.work)
+            .toList();
+        final resolved = workChunks
+            .where((c) => c.isCompleted || c.isSkipped || c.isDeferred)
+            .length;
+        final ratio = resolved / workChunks.length;
+        expect(ratio, greaterThanOrEqualTo(0.5));
+        // Because ratio >= 0.5, shouldShowEodCard returns true independent of hour.
+        expect(shouldShowEodCard(chunks), isTrue);
+      },
+    );
 
     test('returns true when exactly 50% resolved', () {
       // 1 of 2 resolved = 50% — at the boundary (>= 0.5).
-      final chunks = [
-        _makeWork(completed: true),
-        _makeWork(),
-      ];
+      final chunks = [_makeWork(completed: true), _makeWork()];
       expect(shouldShowEodCard(chunks), isTrue);
     });
 
@@ -182,7 +190,9 @@ void main() {
       // Pass only break chunks — workChunks is empty → 50% branch returns false.
       // Hour branch depends on wall clock but we verify the math path.
       final chunks = [_makeBreak()];
-      final workChunks = chunks.where((c) => c.chunkType == ChunkType.work).toList();
+      final workChunks = chunks
+          .where((c) => c.chunkType == ChunkType.work)
+          .toList();
       expect(workChunks.isEmpty, isTrue);
       // When workChunks is empty, the function returns early with false for the
       // 50% branch.  The only way shouldShowEodCard could be true is if the
@@ -191,10 +201,7 @@ void main() {
     });
 
     test('all chunks deferred counts as 100% resolved → trigger true', () {
-      final chunks = [
-        _makeWork(deferred: true),
-        _makeWork(deferred: true),
-      ];
+      final chunks = [_makeWork(deferred: true), _makeWork(deferred: true)];
       expect(shouldShowEodCard(chunks), isTrue);
     });
   });

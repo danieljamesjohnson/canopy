@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 /// MediaQuery/PlatformDispatcher reduced-motion is NOT requested.
 ///
 /// Extracted as a public top-level widget so Plan 06 Task 3 can pump it in
-/// isolation without HomeScreen's full provider tree (W-3 resolution).
-/// Moved out of home_screen.dart into its own file in Phase 22 Plan 03 so it
-/// survives home_screen.dart's deletion (Phase 22 Plan 04) — the unified
-/// Today screen's empty state keeps using it.
+/// isolation without the old Home screen's full provider tree (W-3
+/// resolution). Moved out of home_screen.dart into its own file in Phase 22
+/// Plan 03 so it survives home_screen.dart's deletion (Phase 22 Plan 04) —
+/// the unified Today screen's empty state keeps using it.
 class BreathingPulseCta extends StatefulWidget {
   const BreathingPulseCta({
     super.key,

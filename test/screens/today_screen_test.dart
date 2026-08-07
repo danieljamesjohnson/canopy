@@ -1,7 +1,8 @@
 // Widget tests for the unified TodayScreen — Phase 22 Plan 03.
 //
 // Task 1: screen scaffold, reconciled AppBar, and the merged empty state
-// that keeps every affordance from both HomeScreen and ScheduleScreen.
+// that keeps every affordance from both the old Home landing screen and the
+// old Schedule plan-view screen.
 // Task 2 (added later in this file): the day as a single scrollable list,
 // live row placement, named free time.
 // Task 3 (added later in this file): centre-on-open + edge-state copy.
