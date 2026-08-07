@@ -873,5 +873,202 @@ void main() {
         reason: 'WR-03: single rebuild per tick — no duplicate widget',
       );
     });
+
+    // ── LIVE-01: a running break is a first-class current activity ─────────
+
+    testWidgets('live short break: kicker and title name the rest', (
+      tester,
+    ) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 25,
+            ),
+            _breakChunk(
+              id: 'b1',
+              syntheticStartMinutes: 505,
+              durationMinutes: 5,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 8, 27),
+      );
+      expect(find.text('RIGHT NOW — RESTING'), findsOneWidget);
+      expect(find.text('Taking a break'), findsOneWidget);
+    });
+
+    testWidgets('live long break: title says long', (tester) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 25,
+            ),
+            _breakChunk(
+              id: 'b1',
+              chunkTypeIndex: ChunkType.longBreak.index,
+              syntheticStartMinutes: 505,
+              durationMinutes: 25,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 8, 27),
+      );
+      expect(find.text('Taking a long break'), findsOneWidget);
+    });
+
+    testWidgets('live break shows no Complete/Skip (D-02)', (tester) async {
+      // w1 is marked completed here (unlike the sibling live-break cases
+      // above): otherwise w1's OWN non-live ChunkCard row legitimately shows
+      // its own unresolved-work Complete/Skip action row (chunk_card.dart
+      // "Always-visible action row for unresolved chunks"), which would
+      // make a screen-wide findsNothing assertion fail for a reason that has
+      // nothing to do with the live break's own showActions gate. Resolving
+      // w1 isolates the assertion to what this case actually tests: the
+      // LIVE row (b1, a break) renders no Complete/Skip.
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 25,
+              isCompleted: true,
+            ),
+            _breakChunk(
+              id: 'b1',
+              syntheticStartMinutes: 505,
+              durationMinutes: 5,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 8, 27),
+      );
+      expect(find.widgetWithText(FilledButton, 'Complete'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Skip'), findsNothing);
+    });
+
+    testWidgets('live break still shows a progress bar (D-04)', (tester) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 25,
+            ),
+            _breakChunk(
+              id: 'b1',
+              syntheticStartMinutes: 505,
+              durationMinutes: 5,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 8, 27),
+      );
+      expect(
+        find.descendant(
+          of: find.byType(LiveRowCard),
+          matching: find.byType(LinearProgressIndicator),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'next-is-a-break renders the reference name, not "Work block"',
+      (tester) async {
+        final sn = _FakeScheduleNotifierWithSchedule(
+          DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'w1',
+                syntheticStartMinutes: 480,
+                durationMinutes: 25,
+              ),
+              _breakChunk(
+                id: 'b1',
+                syntheticStartMinutes: 505,
+                durationMinutes: 5,
+              ),
+            ],
+          ),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: sn,
+          now: () => DateTime(2026, 6, 13, 8, 10),
+        );
+        expect(
+          find.textContaining('Next · Short break at 8:25 AM'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Next · Work block'), findsNothing);
+      },
+    );
+
+    testWidgets('live work chunk keeps the plain kicker', (tester) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [_workChunk(syntheticStartMinutes: 510, durationMinutes: 60)],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 9, 0),
+      );
+      expect(find.text('RIGHT NOW'), findsOneWidget);
+      expect(find.text('RIGHT NOW — RESTING'), findsNothing);
+    });
+
+    testWidgets('live work chunk still shows Complete/Skip', (tester) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [_workChunk(syntheticStartMinutes: 510, durationMinutes: 60)],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 9, 0),
+      );
+      expect(find.widgetWithText(FilledButton, 'Complete'), findsOneWidget);
+    });
   });
 }

@@ -515,24 +515,56 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// Builds a single title string for a chunk: the goal name, or (for
-  /// commitment/unattached chunks) the rationale, or a plain fallback.
+  /// Builds the *reference* title string for a chunk — used everywhere a
+  /// chunk is named EXCEPT the live row itself (the "Next · …" line, the
+  /// edge-state bodies). A break returns its fixed literal ('Short break' /
+  /// 'Long break'); every other chunk falls through to the existing
+  /// goal-name → rationale → 'Work block' chain, unchanged. The live row
+  /// uses [_liveTitle] instead, which is present-continuous for the current
+  /// activity and delegates back here for everything else.
+  ///
+  /// The two break literals deliberately match the non-live break row in
+  /// the schedule chunk card, so the same break reads identically whether
+  /// it is above or below the live row.
   String _chunkTitle(BuildContext context, ScheduledChunk chunk) {
+    if (chunk.chunkType == ChunkType.shortBreak) return 'Short break';
+    if (chunk.chunkType == ChunkType.longBreak) return 'Long break';
     final goalName = _lookupGoalName(context, chunk);
     if (goalName != null && goalName.isNotEmpty) return goalName;
     return chunk.rationale.isNotEmpty ? chunk.rationale : 'Work block';
   }
 
-  /// Builds the swelled in-place live row (D-01). kicker is always
-  /// "RIGHT NOW" here — the "RESTING" variant and any faster tick
-  /// granularity are Phase 23 / LIVE-01 / LIVE-02's decisions, not this
-  /// plan's (scope boundary).
+  /// Present-continuous title for the CURRENT activity only (D-02). These
+  /// two strings are LOCKED and must never be used for a future chunk —
+  /// present continuous reads wrong for an event that hasn't happened yet
+  /// (that's what [_chunkTitle]'s "Short break"/"Long break" are for).
+  String _liveTitle(BuildContext context, ScheduledChunk chunk) {
+    if (chunk.chunkType == ChunkType.shortBreak) return 'Taking a break';
+    if (chunk.chunkType == ChunkType.longBreak) return 'Taking a long break';
+    return _chunkTitle(context, chunk);
+  }
+
+  /// Kicker for the live row only. Screen-injected because [LiveRowCard] is
+  /// a dumb widget by contract (its own doc comment, lines 8-11) — it never
+  /// computes this itself. The em dash is U+2014 with a single space either
+  /// side, exactly as specified in 23-UI-SPEC.md's "Break as a current
+  /// activity" table.
+  String _liveKicker(ScheduledChunk chunk) {
+    return chunk.chunkType != ChunkType.work
+        ? 'RIGHT NOW — RESTING'
+        : 'RIGHT NOW';
+  }
+
+  /// Builds the swelled in-place live row (D-01). The kicker names a
+  /// running break as "RIGHT NOW — RESTING" (LIVE-01); any faster tick
+  /// granularity for the countdown is Phase 23 / LIVE-02's decision, not
+  /// this plan's (scope boundary).
   Widget _buildLiveRow(
     BuildContext context,
     ScheduledChunk chunk,
     NowState nowState,
   ) {
-    final title = _chunkTitle(context, chunk);
+    final title = _liveTitle(context, chunk);
     final start = chunk.displayStartMinutes;
     final end = start != null ? start + chunk.durationMinutes : null;
 
@@ -574,7 +606,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
 
     return LiveRowCard(
       chunkId: chunk.id,
-      kicker: 'RIGHT NOW',
+      kicker: _liveKicker(chunk),
       title: title,
       remainingLabel: remainingLabel,
       progress: progress,
