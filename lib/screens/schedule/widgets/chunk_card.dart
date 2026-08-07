@@ -18,6 +18,7 @@ class ChunkCard extends StatelessWidget {
     this.goalEmojiTag,
     this.goalValence,
     this.onTap,
+    this.showStartTime = true,
   });
 
   final ScheduledChunk chunk;
@@ -52,13 +53,20 @@ class ChunkCard extends StatelessWidget {
   /// work chunks from the screen; null for break cards and resolved chunks.
   final VoidCallback? onTap;
 
+  /// When false, the clock-time range is suppressed in favor of the
+  /// duration fallback ("N min") even when [chunk.displayStartMinutes] is
+  /// set — used inside the unified Today screen's time gutter (D-06), where
+  /// the start time is already shown in the row's gutter column so showing
+  /// it again here would be redundant. Defaults to true so every existing
+  /// call site (schedule_screen.dart's plain list) is unaffected.
+  final bool showStartTime;
+
   @override
   Widget build(BuildContext context) {
     switch (chunk.chunkType) {
       case ChunkType.shortBreak:
-        return _buildShortBreak(context);
       case ChunkType.longBreak:
-        return _buildLongBreak(context);
+        return _buildBreak(context);
       case ChunkType.work:
         return _WorkChunkContent(
           chunk: chunk,
@@ -69,59 +77,100 @@ class ChunkCard extends StatelessWidget {
           goalEmojiTag: goalEmojiTag,
           goalValence: goalValence,
           onTap: onTap,
+          showStartTime: showStartTime,
         );
     }
   }
 
-  Widget _buildShortBreak(BuildContext context) {
+  /// D-06: breaks read transparent with a dashed outline, never a filled
+  /// Card — they are not achievements, so no bold title and no emoji.
+  /// Replaces the old _buildShortBreak/_buildLongBreak pair, which used a
+  /// filled surfaceContainerHighest pill and a coffee-emoji Card
+  /// respectively; both are superseded by this single dashed treatment.
+  Widget _buildBreak(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      height: 48,
-      margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 12),
-          Icon(
-            Icons.pause,
-            size: 16,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '${chunk.durationMinutes} min break',
-            style: TextStyle(
-              fontSize: 12,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    final title = chunk.chunkType == ChunkType.shortBreak
+        ? 'Short break'
+        : 'Long break';
 
-  Widget _buildLongBreak(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            const Text('☕', style: TextStyle(fontSize: 24)),
-            const SizedBox(width: 12),
-            Text(
-              '${chunk.durationMinutes} min break',
-              style: theme.textTheme.bodyMedium,
-            ),
-          ],
+      child: CustomPaint(
+        painter: _DashedBorderPainter(color: theme.colorScheme.outlineVariant),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${chunk.durationMinutes} min',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (chunk.isCompleted) ...[
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.check_circle,
+                  color: theme.colorScheme.primary,
+                  size: 20,
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+/// File-private dashed-outline painter for the D-06 break-row treatment
+/// (~12dp corner radius, ~1dp stroke, ~4dp dash / ~4dp gap).
+class _DashedBorderPainter extends CustomPainter {
+  const _DashedBorderPainter({required this.color});
+
+  final Color color;
+
+  static const double _radius = 12;
+  static const double _dashWidth = 4;
+  static const double _dashGap = 4;
+  static const double _strokeWidth = 1;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _strokeWidth;
+
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      const Radius.circular(_radius),
+    );
+    final path = Path()..addRRect(rrect);
+    final metrics = path.computeMetrics();
+    for (final metric in metrics) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = distance + _dashWidth;
+        canvas.drawPath(
+          metric.extractPath(distance, next.clamp(0, metric.length)),
+          paint,
+        );
+        distance = next + _dashGap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 /// Internal widget for the work-variant chunk card.
@@ -130,7 +179,8 @@ class ChunkCard extends StatelessWidget {
 /// required. MouseRegion is retained only for cursor change on desktop.
 ///
 /// SCHED-01: Shows clock-time range "START – END" as secondary text when
-/// `chunk.displayStartMinutes` is set; falls back to duration ("N min").
+/// `chunk.displayStartMinutes` is set AND `showStartTime` is true; falls
+/// back to duration ("N min") otherwise.
 class _WorkChunkContent extends StatelessWidget {
   const _WorkChunkContent({
     required this.chunk,
@@ -141,6 +191,7 @@ class _WorkChunkContent extends StatelessWidget {
     this.goalEmojiTag,
     this.goalValence,
     this.onTap,
+    this.showStartTime = true,
   });
 
   final ScheduledChunk chunk;
@@ -151,15 +202,30 @@ class _WorkChunkContent extends StatelessWidget {
   final String? goalEmojiTag;
   final EnergyValence? goalValence;
   final VoidCallback? onTap;
+  final bool showStartTime;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final barColor = chunk.isCompleted || chunk.isSkipped
-        ? Colors.grey.shade400
-        : (goalColor ?? theme.colorScheme.primary);
-    final contentOpacity = chunk.isCompleted || chunk.isSkipped ? 0.5 : 1.0;
+    final isCommitment = chunk.commitmentId != null;
     final isResolved = chunk.isCompleted || chunk.isSkipped;
+    final contentOpacity = isResolved ? 0.5 : 1.0;
+    final barColor = isResolved
+        ? theme.colorScheme.outlineVariant
+        : (goalColor ?? theme.colorScheme.primary);
+
+    final cardColor = isCommitment
+        ? theme.colorScheme.tertiaryContainer
+        : theme.colorScheme.surfaceContainer;
+    final cardShape = isCommitment
+        ? const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            side: BorderSide.none,
+          )
+        : RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: theme.colorScheme.outlineVariant),
+          );
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -167,31 +233,32 @@ class _WorkChunkContent extends StatelessWidget {
         onTap: onTap,
         child: Card(
           margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          color: cardColor,
+          shape: cardShape,
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              // Colored left bar
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 4,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: barColor,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      bottomLeft: Radius.circular(12),
+              // Colored left bar — commitments read anchored (D-06), so no
+              // discretionary-goal-color bar is drawn for them.
+              if (!isCommitment)
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 4,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: barColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        bottomLeft: Radius.circular(12),
+                      ),
                     ),
                   ),
                 ),
-              ),
               // Content
               Padding(
-                padding: const EdgeInsets.only(left: 4),
+                padding: EdgeInsets.only(left: isCommitment ? 0 : 4),
                 child: Opacity(
                   opacity: contentOpacity,
                   child: Padding(
@@ -215,11 +282,19 @@ class _WorkChunkContent extends StatelessWidget {
                                     '${goalEmojiTag != null ? "$goalEmojiTag " : ""}'
                                     '${goalName ?? (chunk.rationale.isNotEmpty ? chunk.rationale : "Work block")}',
                                     style: theme.textTheme.titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          decoration: isResolved
+                                              ? TextDecoration.lineThrough
+                                              : null,
+                                        ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  // SCHED-01: Clock-time range or duration fallback.
-                                  if (chunk.displayStartMinutes != null) ...[
+                                  // SCHED-01: Clock-time range or duration
+                                  // fallback — gated on showStartTime so the
+                                  // 46dp gutter (D-06) doesn't duplicate it.
+                                  if (chunk.displayStartMinutes != null &&
+                                      showStartTime) ...[
                                     const SizedBox(height: 2),
                                     Text(
                                       formatTimeRange(
@@ -282,12 +357,14 @@ class _WorkChunkContent extends StatelessWidget {
                             chunk.isCompleted
                                 ? Icon(
                                     Icons.check_circle,
-                                    color: Colors.green.shade600,
+                                    color: theme.colorScheme.primary,
                                   )
                                 : chunk.isSkipped
-                                ? Icon(
-                                    Icons.arrow_forward,
-                                    color: theme.colorScheme.onSurfaceVariant,
+                                ? Text(
+                                    'skipped',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
                                   )
                                 : Icon(
                                     Icons.radio_button_unchecked,

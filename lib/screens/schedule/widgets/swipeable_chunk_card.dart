@@ -23,6 +23,7 @@ class SwipeableChunkCard extends StatelessWidget {
     this.goalEmojiTag,
     this.goalValence,
     this.onTap,
+    this.showStartTime = true,
   });
 
   final ScheduledChunk chunk;
@@ -49,11 +50,20 @@ class SwipeableChunkCard extends StatelessWidget {
   /// Tap callback. Null for break cards and resolved work chunks.
   final VoidCallback? onTap;
 
+  /// Forwarded to [ChunkCard] — see its doc comment. Also applied on the
+  /// break-card early-return path below so a gutter-driven screen never
+  /// sees a break card's own clock time doubled.
+  final bool showStartTime;
+
   @override
   Widget build(BuildContext context) {
     // Break cards are not swipeable and do not receive goal name or tap.
     if (chunk.chunkType != ChunkType.work) {
-      return ChunkCard(chunk: chunk, goalColor: goalColor);
+      return ChunkCard(
+        chunk: chunk,
+        goalColor: goalColor,
+        showStartTime: showStartTime,
+      );
     }
 
     return Dismissible(
@@ -95,6 +105,7 @@ class SwipeableChunkCard extends StatelessWidget {
         goalPriorityWeight: goalPriorityWeight,
         goalEmojiTag: goalEmojiTag,
         goalValence: goalValence,
+        showStartTime: showStartTime,
         // Resolved chunks are not tappable — null out the callback.
         onTap: (chunk.isCompleted || chunk.isSkipped) ? null : onTap,
       ),
