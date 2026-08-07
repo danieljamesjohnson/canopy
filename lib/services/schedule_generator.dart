@@ -198,7 +198,7 @@ class ScheduleGeneratorService {
       double.infinity,
     );
     if (remaining < 0.1) return 'On track this week';
-    return '${remaining.toStringAsFixed(1)}h behind this week';
+    return 'Working toward ${remaining.toStringAsFixed(1)}h this week';
   }
 
   // ---------------------------------------------------------------------------
