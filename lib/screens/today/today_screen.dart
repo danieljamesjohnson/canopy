@@ -363,6 +363,31 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
             ],
           ),
         );
+      // P-1 (23-03-PLAN.md, DECIDED): this banner does NOT change. The
+      // "Up next" heading, the title/subtitle derivation below, and the
+      // "Starts at …" / "Starting soon" body all stay exactly as written.
+      //
+      // (a) LIVE-03 deliberately left this banner unchanged.
+      // (b) 23-CONTEXT.md decision 3 supplied verbatim replacement copy for
+      //     PreStart and DayComplete but only a *description* for the gap
+      //     ("named as free time inline (Phase 22 decision 5)") — that
+      //     explains why no new gap copy was authored, not an instruction to
+      //     remove this banner.
+      // (c) GapFreeRow (the inline list row for free time) renders a
+      //     duration, never a name — deleting this banner would remove the
+      //     only place the screen says *what* is coming next during a gap,
+      //     which would make the gap state read LESS truthfully, not more.
+      // (d) As of LIVE-01 (plan 23-01), `next` can be a break chunk. It is
+      //     already named correctly below because `_chunkTitle` is
+      //     break-aware ("Short break"/"Long break") — do NOT add a
+      //     `chunkType` check in this case; the shared helper already
+      //     handles it.
+      //
+      // One consequence of (d): for a break, `_lookupGoalName(context, next)`
+      // returns null (breaks carry `goalId == null`), so `subtitle` below is
+      // null and the body renders as heading + 'Short break' + 'Starts at
+      // …' with no subtitle line. That is correct and intended, not a
+      // missing-subtitle bug.
       case GapBeforeNext(:final next):
         final goalName = _lookupGoalName(context, next);
         final title = _chunkTitle(context, next);

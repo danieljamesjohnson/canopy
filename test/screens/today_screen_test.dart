@@ -646,6 +646,155 @@ void main() {
         expect(find.text('Jump to now'), findsNothing);
       },
     );
+
+    testWidgets(
+      'gap-before-next targeting a break names the break, not "Work block"',
+      (tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 25,
+              isCompleted: true,
+            ),
+            _breakChunk(
+              id: 'b1',
+              syntheticStartMinutes: 505,
+              durationMinutes: 5,
+            ),
+          ],
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => DateTime(2026, 6, 13, 8, 10),
+        );
+
+        expect(find.text('Up next'), findsOneWidget);
+        // 'Short break' legitimately renders twice: once in the edge-state
+        // line under test, once in b1's own (unresolved, upcoming) row
+        // further down the day list — scope to the edge-state line itself.
+        final upNextHeader = find
+            .ancestor(of: find.text('Up next'), matching: find.byType(Padding))
+            .first;
+        expect(
+          find.descendant(of: upNextHeader, matching: find.text('Short break')),
+          findsOneWidget,
+        );
+        expect(find.text('Work block'), findsNothing);
+        expect(find.textContaining('Starts at 8:25 AM'), findsOneWidget);
+        expect(find.byType(LiveRowCard), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'edge states are distinct — no state satisfies another state\'s copy',
+      (tester) async {
+        // PreStart: must not contain the DayComplete string.
+        final preStartSchedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [_workChunk(syntheticStartMinutes: 480, durationMinutes: 60)],
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(preStartSchedule),
+          now: () => DateTime(2026, 8, 7, 6, 0),
+        );
+        expect(find.textContaining("That's the day"), findsNothing);
+
+        // Force a full remount — TodayScreenState's `_nowFn` is `late
+        // final`, captured once in initState, so re-pumping the same
+        // widget subtree in place would silently keep the OLD clock.
+        await tester.pumpWidget(const SizedBox.shrink());
+
+        // DayComplete: must not contain the PreStart string.
+        final dayCompleteSchedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [_workChunk(syntheticStartMinutes: 480, durationMinutes: 60)],
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(
+            dayCompleteSchedule,
+          ),
+          now: () => DateTime(2026, 8, 7, 18, 0),
+        );
+        expect(find.textContaining('Nothing until'), findsNothing);
+      },
+    );
+
+    testWidgets('copywriting guard: "behind" appears only in the DayComplete '
+        '"behind you" phrase, never in PreStart or GapBeforeNext', (
+      tester,
+    ) async {
+      // PreStart
+      final preStartSchedule = DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: [_workChunk(syntheticStartMinutes: 480, durationMinutes: 60)],
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(preStartSchedule),
+        now: () => DateTime(2026, 8, 7, 6, 0),
+      );
+      expect(find.textContaining('behind'), findsNothing);
+
+      // Force a full remount between states — see the distinctness-guard
+      // test's comment for why (`_nowFn` is `late final`).
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      // GapBeforeNext
+      final gapSchedule = DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: [
+          _workChunk(
+            id: 'c1',
+            syntheticStartMinutes: 540,
+            durationMinutes: 25,
+            isCompleted: true,
+            rationale: 'Morning routine',
+          ),
+          _workChunk(
+            id: 'c2',
+            syntheticStartMinutes: 600,
+            durationMinutes: 25,
+            rationale: 'Reading',
+          ),
+        ],
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(gapSchedule),
+        now: () => DateTime(2026, 8, 7, 9, 30),
+      );
+      expect(find.textContaining('behind'), findsNothing);
+
+      // Force a full remount between states — see the distinctness-guard
+      // test's comment for why (`_nowFn` is `late final`).
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      // DayComplete — "behind you" is the ONLY permitted occurrence.
+      final dayCompleteSchedule = DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: [_workChunk(syntheticStartMinutes: 480, durationMinutes: 60)],
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(
+          dayCompleteSchedule,
+        ),
+        now: () => DateTime(2026, 8, 7, 18, 0),
+      );
+      expect(find.textContaining('behind you'), findsOneWidget);
+    });
   });
 
   group('WR-01 — Start focus follows nowState, not a list-order scan', () {
