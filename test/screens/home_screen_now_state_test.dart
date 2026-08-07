@@ -12,6 +12,7 @@ import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/theme_notifier.dart';
 import 'package:canopy/screens/home/home_screen.dart';
 import 'package:canopy/screens/home/widgets/active_chunk_card.dart';
+import 'package:canopy/screens/today/now_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -101,16 +102,12 @@ Future<void> _pumpHomeScreen(
 }) async {
   final theme = ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: ThemeNotifier.moodSeeds[3]!,
-    ),
+    colorScheme: ColorScheme.fromSeed(seedColor: ThemeNotifier.moodSeeds[3]!),
   );
   await tester.pumpWidget(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider<ScheduleNotifier>.value(
-          value: scheduleNotifier,
-        ),
+        ChangeNotifierProvider<ScheduleNotifier>.value(value: scheduleNotifier),
         ChangeNotifierProvider<GoalsNotifier>.value(
           value: _FakeGoalsNotifier(),
         ),
@@ -139,18 +136,20 @@ void main() {
   // ── Pure unit tests: resolveNowState (no widget pump) ────────────────────
 
   group('resolveNowState unit tests (NOW-01/NOW-02)', () {
-    test('pre-start: now before first chunk window (6am, chunk starts 8am)',
-        () {
-      final chunks = [
-        _workChunk(syntheticStartMinutes: 480, durationMinutes: 60),
-      ]; // 8:00–9:00
-      final state = resolveNowState(
-        chunks: chunks,
-        now: () => DateTime(2026, 6, 13, 6, 0), // 6:00 AM
-      );
-      expect(state, isA<PreStart>());
-      expect((state as PreStart).firstChunk.displayStartMinutes, 480);
-    });
+    test(
+      'pre-start: now before first chunk window (6am, chunk starts 8am)',
+      () {
+        final chunks = [
+          _workChunk(syntheticStartMinutes: 480, durationMinutes: 60),
+        ]; // 8:00–9:00
+        final state = resolveNowState(
+          chunks: chunks,
+          now: () => DateTime(2026, 6, 13, 6, 0), // 6:00 AM
+        );
+        expect(state, isA<PreStart>());
+        expect((state as PreStart).firstChunk.displayStartMinutes, 480);
+      },
+    );
 
     test('active: now within chunk window (9am, chunk 8:30–9:30)', () {
       final chunks = [
@@ -165,21 +164,22 @@ void main() {
     });
 
     test(
-        'overdue (between-windows): c1 8:30–9:30, c2 10:30–11:30, now 10:00',
-        () {
-      final chunks = [
-        _workChunk(id: 'c1', syntheticStartMinutes: 510, durationMinutes: 60),
-        _workChunk(id: 'c2', syntheticStartMinutes: 630, durationMinutes: 60),
-      ];
-      final state = resolveNowState(
-        chunks: chunks,
-        now: () => DateTime(2026, 6, 13, 10, 0), // 10:00 AM
-      );
-      expect(state, isA<Overdue>());
-      final s = state as Overdue;
-      expect(s.overdue.id, 'c1');
-      expect(s.next?.id, 'c2');
-    });
+      'overdue (between-windows): c1 8:30–9:30, c2 10:30–11:30, now 10:00',
+      () {
+        final chunks = [
+          _workChunk(id: 'c1', syntheticStartMinutes: 510, durationMinutes: 60),
+          _workChunk(id: 'c2', syntheticStartMinutes: 630, durationMinutes: 60),
+        ];
+        final state = resolveNowState(
+          chunks: chunks,
+          now: () => DateTime(2026, 6, 13, 10, 0), // 10:00 AM
+        );
+        expect(state, isA<Overdue>());
+        final s = state as Overdue;
+        expect(s.overdue.id, 'c1');
+        expect(s.next?.id, 'c2');
+      },
+    );
 
     test('day-complete (time past last window): chunk 8am–9am, now 6pm', () {
       final chunks = [
@@ -193,33 +193,32 @@ void main() {
     });
 
     test(
-        'day-complete (all resolved within active window): both completed/skipped',
-        () {
-      final chunks = [
-        _workChunk(
-          id: 'c1',
-          syntheticStartMinutes: 510,
-          durationMinutes: 60,
-          isCompleted: true,
-        ),
-        _workChunk(
-          id: 'c2',
-          syntheticStartMinutes: 570,
-          durationMinutes: 60,
-          isSkipped: true,
-        ),
-      ];
-      final state = resolveNowState(
-        chunks: chunks,
-        now: () => DateTime(2026, 6, 13, 9, 0), // 9:00 AM — inside c1 window
-      );
-      expect(state, isA<DayComplete>());
-    });
+      'day-complete (all resolved within active window): both completed/skipped',
+      () {
+        final chunks = [
+          _workChunk(
+            id: 'c1',
+            syntheticStartMinutes: 510,
+            durationMinutes: 60,
+            isCompleted: true,
+          ),
+          _workChunk(
+            id: 'c2',
+            syntheticStartMinutes: 570,
+            durationMinutes: 60,
+            isSkipped: true,
+          ),
+        ];
+        final state = resolveNowState(
+          chunks: chunks,
+          now: () => DateTime(2026, 6, 13, 9, 0), // 9:00 AM — inside c1 window
+        );
+        expect(state, isA<DayComplete>());
+      },
+    );
 
-    test(
-        'active advances past resolved chunk: c1 completed, c2 unresolved, '
-        'both windows started → Active(c2)',
-        () {
+    test('active advances past resolved chunk: c1 completed, c2 unresolved, '
+        'both windows started → Active(c2)', () {
       // c1: 8:30–9:30 (completed), c2: 9:00–10:00 (unresolved).
       // At 9:15 both windows have started; c1 is resolved so c2 becomes active.
       final chunks = [
@@ -243,10 +242,8 @@ void main() {
       expect((state as Active).current.id, 'c2');
     });
 
-    test(
-        'gap: c1 resolved 9:00–9:25, c2 starts 10:00, now=9:30 → '
-        'GapBeforeNext(c2) — NOT DayComplete or Active',
-        () {
+    test('gap: c1 resolved 9:00–9:25, c2 starts 10:00, now=9:30 → '
+        'GapBeforeNext(c2) — NOT DayComplete or Active', () {
       // CR-01 fix: the advance-loop used to return DayComplete here, which is
       // wrong because c2 is an unresolved pending chunk opening at 10:00.
       // The day is not complete; the user is in a between-windows gap.
@@ -272,20 +269,23 @@ void main() {
       expect(
         state,
         isNot(isA<Active>()),
-        reason: 'WR-01: future chunk must not be promoted to Active before '
+        reason:
+            'WR-01: future chunk must not be promoted to Active before '
             'its window opens',
       );
       // Must NOT be DayComplete: c2 is an unresolved future chunk — day not done.
       expect(
         state,
         isNot(isA<DayComplete>()),
-        reason: 'CR-01: gap with pending future work must NOT return DayComplete',
+        reason:
+            'CR-01: gap with pending future work must NOT return DayComplete',
       );
       // Must be GapBeforeNext pointing at c2.
       expect(
         state,
         isA<GapBeforeNext>(),
-        reason: 'Gap after resolved chunk with future unresolved work must '
+        reason:
+            'Gap after resolved chunk with future unresolved work must '
             'surface the upcoming chunk, not DayComplete',
       );
       expect(
@@ -295,10 +295,8 @@ void main() {
       );
     });
 
-    test(
-        'near-gap: c1 resolved 9:00–9:25, c2 starts 9:25, now=9:10 → '
-        'GapBeforeNext(c2) — day not complete when next window imminent',
-        () {
+    test('near-gap: c1 resolved 9:00–9:25, c2 starts 9:25, now=9:10 → '
+        'GapBeforeNext(c2) — day not complete when next window imminent', () {
       // Companion test: even when the gap is tiny (next window opens in 15 min),
       // the state must be GapBeforeNext, not DayComplete.
       final chunks = [
@@ -321,7 +319,8 @@ void main() {
       expect(
         state,
         isA<GapBeforeNext>(),
-        reason: 'Near-gap (15 min before c2) must be GapBeforeNext, not DayComplete',
+        reason:
+            'Near-gap (15 min before c2) must be GapBeforeNext, not DayComplete',
       );
       expect(
         (state as GapBeforeNext).next.id,
@@ -330,10 +329,8 @@ void main() {
       );
     });
 
-    test(
-        'gap with all-resolved future: c1 done, c2 also done, now=9:30 → '
-        'DayComplete (no unresolved future work)',
-        () {
+    test('gap with all-resolved future: c1 done, c2 also done, now=9:30 → '
+        'DayComplete (no unresolved future work)', () {
       // DayComplete is correct when the gap candidate chain is fully resolved.
       final chunks = [
         _workChunk(
@@ -361,62 +358,66 @@ void main() {
     });
 
     test(
-        'degenerate all-null windows: all displayStartMinutes null → DayComplete (documented departure)',
-        () {
-      final chunks = [
-        _workChunk(id: 'c1'), // no syntheticStartMinutes → displayStartMinutes null
-        _workChunk(id: 'c2'),
-      ];
-      final state = resolveNowState(
-        chunks: chunks,
-        now: () => DateTime(2026, 6, 13, 9, 0),
-      );
-      // Documented departure from UI-SPEC §State Boundary Handling:
-      // allWork.isEmpty (after null filter) → DayComplete, not "first unresolved".
-      expect(state, isA<DayComplete>());
-    });
+      'degenerate all-null windows: all displayStartMinutes null → DayComplete (documented departure)',
+      () {
+        final chunks = [
+          _workChunk(
+            id: 'c1',
+          ), // no syntheticStartMinutes → displayStartMinutes null
+          _workChunk(id: 'c2'),
+        ];
+        final state = resolveNowState(
+          chunks: chunks,
+          now: () => DateTime(2026, 6, 13, 9, 0),
+        );
+        // Documented departure from UI-SPEC §State Boundary Handling:
+        // allWork.isEmpty (after null filter) → DayComplete, not "first unresolved".
+        expect(state, isA<DayComplete>());
+      },
+    );
   });
 
   // ── Widget tests: HomeScreen time-anchored Now (NOW-01/NOW-02) ───────────
 
   group('HomeScreen time-anchored Now (NOW-01/NOW-02)', () {
-    testWidgets('pre-start: 6am before 8am chunk → shows "Your day starts at"',
-        (tester) async {
-      final sn = _FakeScheduleNotifierWithSchedule(
-        DailySchedule(
-          dateYmd: _todayYmd(),
-          moodIndex: 3,
-          chunks: [
-            _workChunk(syntheticStartMinutes: 480, durationMinutes: 60),
-          ],
-        ),
-      );
-      await _pumpHomeScreen(
-        tester,
-        scheduleNotifier: sn,
-        now: () => DateTime(2026, 6, 13, 6, 0), // 6:00 AM
-      );
-      expect(
-        find.textContaining('Your day starts at'),
-        findsOneWidget,
-        reason: 'NOW-02: pre-start heading must appear before first chunk',
-      );
-      expect(
-        find.byType(ActiveChunkCard),
-        findsNothing,
-        reason: 'NOW-02: no ActiveChunkCard in pre-start state',
-      );
-    });
+    testWidgets(
+      'pre-start: 6am before 8am chunk → shows "Your day starts at"',
+      (tester) async {
+        final sn = _FakeScheduleNotifierWithSchedule(
+          DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(syntheticStartMinutes: 480, durationMinutes: 60),
+            ],
+          ),
+        );
+        await _pumpHomeScreen(
+          tester,
+          scheduleNotifier: sn,
+          now: () => DateTime(2026, 6, 13, 6, 0), // 6:00 AM
+        );
+        expect(
+          find.textContaining('Your day starts at'),
+          findsOneWidget,
+          reason: 'NOW-02: pre-start heading must appear before first chunk',
+        );
+        expect(
+          find.byType(ActiveChunkCard),
+          findsNothing,
+          reason: 'NOW-02: no ActiveChunkCard in pre-start state',
+        );
+      },
+    );
 
-    testWidgets('active: 9am with chunk 8:30–9:30 → shows ActiveChunkCard',
-        (tester) async {
+    testWidgets('active: 9am with chunk 8:30–9:30 → shows ActiveChunkCard', (
+      tester,
+    ) async {
       final sn = _FakeScheduleNotifierWithSchedule(
         DailySchedule(
           dateYmd: _todayYmd(),
           moodIndex: 3,
-          chunks: [
-            _workChunk(syntheticStartMinutes: 510, durationMinutes: 60),
-          ],
+          chunks: [_workChunk(syntheticStartMinutes: 510, durationMinutes: 60)],
         ),
       );
       await _pumpHomeScreen(
@@ -442,87 +443,91 @@ void main() {
     });
 
     testWidgets(
-        'between-chunks (overdue): 10am, c1 8:30–9:30, c2 10:30–11:30 → ActiveChunkCard (c1) + Next (c2)',
-        (tester) async {
-      final sn = _FakeScheduleNotifierWithSchedule(
-        DailySchedule(
-          dateYmd: _todayYmd(),
-          moodIndex: 3,
-          chunks: [
-            _workChunk(
-              id: 'c1',
-              syntheticStartMinutes: 510,
-              durationMinutes: 60,
-            ),
-            _workChunk(
-              id: 'c2',
-              syntheticStartMinutes: 630,
-              durationMinutes: 60,
-            ),
-          ],
-        ),
-      );
-      await _pumpHomeScreen(
-        tester,
-        scheduleNotifier: sn,
-        now: () => DateTime(2026, 6, 13, 10, 0), // 10:00 AM
-      );
-      expect(
-        find.byType(ActiveChunkCard),
-        findsOneWidget,
-        reason: 'NOW-01: overdue chunk shown as Now (ActiveChunkCard)',
-      );
-      // WR-02: pin the identity of the "Now" chunk. The ActiveChunkCard must
-      // show c1 (overdue, window 8:30–9:30), NOT c2 (upcoming, 10:30–11:30).
-      // c1's time range "8:30 AM" must appear inside the card; if logic were
-      // reversed and c2 were promoted, "10:30 AM" would appear instead.
-      expect(
-        find.descendant(
-          of: find.byType(ActiveChunkCard),
-          matching: find.textContaining('8:30 AM'),
-        ),
-        findsOneWidget,
-        reason: 'WR-02: ActiveChunkCard must display c1 (8:30 AM start), '
-            'not c2 (10:30 AM start)',
-      );
-      expect(
-        find.text('Next'),
-        findsOneWidget,
-        reason: 'NOW-01: Next section shows upcoming chunk',
-      );
-    });
-
-    testWidgets('day-complete (6pm, all windows passed) → shows "That\'s a wrap"',
-        (tester) async {
-      final sn = _FakeScheduleNotifierWithSchedule(
-        DailySchedule(
-          dateYmd: _todayYmd(),
-          moodIndex: 3,
-          chunks: [
-            _workChunk(syntheticStartMinutes: 480, durationMinutes: 60),
-          ], // 8:00–9:00
-        ),
-      );
-      await _pumpHomeScreen(
-        tester,
-        scheduleNotifier: sn,
-        now: () => DateTime(2026, 6, 13, 18, 0), // 6:00 PM
-      );
-      expect(
-        find.text("That's a wrap"),
-        findsOneWidget,
-        reason: 'NOW-02: day-complete heading at 6pm',
-      );
-      expect(
-        find.byType(ActiveChunkCard),
-        findsNothing,
-        reason: 'NOW-02: no ActiveChunkCard in day-complete state',
-      );
-    });
+      'between-chunks (overdue): 10am, c1 8:30–9:30, c2 10:30–11:30 → ActiveChunkCard (c1) + Next (c2)',
+      (tester) async {
+        final sn = _FakeScheduleNotifierWithSchedule(
+          DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'c1',
+                syntheticStartMinutes: 510,
+                durationMinutes: 60,
+              ),
+              _workChunk(
+                id: 'c2',
+                syntheticStartMinutes: 630,
+                durationMinutes: 60,
+              ),
+            ],
+          ),
+        );
+        await _pumpHomeScreen(
+          tester,
+          scheduleNotifier: sn,
+          now: () => DateTime(2026, 6, 13, 10, 0), // 10:00 AM
+        );
+        expect(
+          find.byType(ActiveChunkCard),
+          findsOneWidget,
+          reason: 'NOW-01: overdue chunk shown as Now (ActiveChunkCard)',
+        );
+        // WR-02: pin the identity of the "Now" chunk. The ActiveChunkCard must
+        // show c1 (overdue, window 8:30–9:30), NOT c2 (upcoming, 10:30–11:30).
+        // c1's time range "8:30 AM" must appear inside the card; if logic were
+        // reversed and c2 were promoted, "10:30 AM" would appear instead.
+        expect(
+          find.descendant(
+            of: find.byType(ActiveChunkCard),
+            matching: find.textContaining('8:30 AM'),
+          ),
+          findsOneWidget,
+          reason:
+              'WR-02: ActiveChunkCard must display c1 (8:30 AM start), '
+              'not c2 (10:30 AM start)',
+        );
+        expect(
+          find.text('Next'),
+          findsOneWidget,
+          reason: 'NOW-01: Next section shows upcoming chunk',
+        );
+      },
+    );
 
     testWidgets(
-        'all-resolved → shows "That\'s a wrap" regardless of time',
-        (tester) async {
+      'day-complete (6pm, all windows passed) → shows "That\'s a wrap"',
+      (tester) async {
+        final sn = _FakeScheduleNotifierWithSchedule(
+          DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(syntheticStartMinutes: 480, durationMinutes: 60),
+            ], // 8:00–9:00
+          ),
+        );
+        await _pumpHomeScreen(
+          tester,
+          scheduleNotifier: sn,
+          now: () => DateTime(2026, 6, 13, 18, 0), // 6:00 PM
+        );
+        expect(
+          find.text("That's a wrap"),
+          findsOneWidget,
+          reason: 'NOW-02: day-complete heading at 6pm',
+        );
+        expect(
+          find.byType(ActiveChunkCard),
+          findsNothing,
+          reason: 'NOW-02: no ActiveChunkCard in day-complete state',
+        );
+      },
+    );
+
+    testWidgets('all-resolved → shows "That\'s a wrap" regardless of time', (
+      tester,
+    ) async {
       final c1 = _workChunk(
         id: 'c1',
         syntheticStartMinutes: 510,
@@ -536,11 +541,7 @@ void main() {
         isSkipped: true,
       );
       final sn = _FakeScheduleNotifierWithSchedule(
-        DailySchedule(
-          dateYmd: _todayYmd(),
-          moodIndex: 3,
-          chunks: [c1, c2],
-        ),
+        DailySchedule(dateYmd: _todayYmd(), moodIndex: 3, chunks: [c1, c2]),
       );
       await _pumpHomeScreen(
         tester,
@@ -559,10 +560,8 @@ void main() {
       );
     });
 
-    testWidgets(
-        'gap state: c1 resolved 9:00–9:25, c2 at 10:00, now=9:30 → '
-        'shows "Up next" and NOT "That\'s a wrap"',
-        (tester) async {
+    testWidgets('gap state: c1 resolved 9:00–9:25, c2 at 10:00, now=9:30 → '
+        'shows "Up next" and NOT "That\'s a wrap"', (tester) async {
       // CR-01: GapBeforeNext renders honest "Up next" copy, not day-complete.
       final sn = _FakeScheduleNotifierWithSchedule(
         DailySchedule(
@@ -592,7 +591,8 @@ void main() {
       expect(
         find.text('Up next'),
         findsOneWidget,
-        reason: 'CR-01: GapBeforeNext must render "Up next", not "That\'s a wrap"',
+        reason:
+            'CR-01: GapBeforeNext must render "Up next", not "That\'s a wrap"',
       );
       expect(
         find.text("That's a wrap"),
@@ -613,9 +613,9 @@ void main() {
       );
     });
 
-    testWidgets(
-        'timer/lifecycle: 1-min tick transitions pre-start → active',
-        (tester) async {
+    testWidgets('timer/lifecycle: 1-min tick transitions pre-start → active', (
+      tester,
+    ) async {
       // Start at 7:59 — just before the 8:00 chunk window (480 min).
       DateTime injectedNow = DateTime(2026, 6, 13, 7, 59);
       // WR-03: count now() calls from the very first pump so the _nowFn
@@ -627,9 +627,7 @@ void main() {
         DailySchedule(
           dateYmd: _todayYmd(),
           moodIndex: 3,
-          chunks: [
-            _workChunk(syntheticStartMinutes: 480, durationMinutes: 60),
-          ],
+          chunks: [_workChunk(syntheticStartMinutes: 480, durationMinutes: 60)],
         ),
       );
       await _pumpHomeScreen(
@@ -696,7 +694,8 @@ void main() {
       expect(
         nowCallCount,
         1,
-        reason: 'WR-03: _startNowTimer must be idempotent — exactly one timer '
+        reason:
+            'WR-03: _startNowTimer must be idempotent — exactly one timer '
             'after two paused→resumed cycles, so now() is called once per tick',
       );
       // Sanity: the Now zone shows one (not duplicated) ActiveChunkCard.

@@ -14,6 +14,14 @@ import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/theme_notifier.dart';
 import 'package:canopy/screens/home/home_screen.dart';
 import 'package:canopy/screens/home/widgets/active_chunk_card.dart';
+// Repointed per the Task 1 relocation (P2): NowState/resolveNowState moved
+// out of home_screen.dart. This file only references them in doc comments
+// today (no bare NowState/PreStart/Active symbol in executable code), so the
+// import is otherwise unused — kept per plan for symmetry with
+// home_screen_now_state_test.dart and to keep the import path repointed
+// ahead of any future direct reference here.
+// ignore: unused_import
+import 'package:canopy/screens/today/now_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -113,16 +121,12 @@ Future<void> _pumpHomeScreen(
 }) async {
   final theme = ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: ThemeNotifier.moodSeeds[3]!,
-    ),
+    colorScheme: ColorScheme.fromSeed(seedColor: ThemeNotifier.moodSeeds[3]!),
   );
   await tester.pumpWidget(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider<ScheduleNotifier>.value(
-          value: scheduleNotifier,
-        ),
+        ChangeNotifierProvider<ScheduleNotifier>.value(value: scheduleNotifier),
         ChangeNotifierProvider<GoalsNotifier>.value(
           value: _FakeGoalsNotifier(),
         ),
@@ -169,8 +173,9 @@ void main() {
       );
     });
 
-    testWidgets('renders clock-time range when displayStartMinutes is set',
-        (tester) async {
+    testWidgets('renders clock-time range when displayStartMinutes is set', (
+      tester,
+    ) async {
       // 540 min = 9:00 AM, +25 min = 9:25 AM
       await _pumpActiveChunkCard(
         tester,
@@ -183,8 +188,9 @@ void main() {
       );
     });
 
-    testWidgets('renders duration fallback when displayStartMinutes is null',
-        (tester) async {
+    testWidgets('renders duration fallback when displayStartMinutes is null', (
+      tester,
+    ) async {
       await _pumpActiveChunkCard(tester, chunk: _workChunk());
       expect(
         find.text('25 min'),
@@ -193,8 +199,9 @@ void main() {
       );
     });
 
-    testWidgets('tapping Complete calls ScheduleNotifier.markComplete',
-        (tester) async {
+    testWidgets('tapping Complete calls ScheduleNotifier.markComplete', (
+      tester,
+    ) async {
       final sn = _FakeScheduleNotifier();
       await _pumpActiveChunkCard(
         tester,
@@ -206,8 +213,9 @@ void main() {
       expect(sn.lastCompletedId, 'chunk-abc');
     });
 
-    testWidgets('tapping Skip calls ScheduleNotifier.markSkipped',
-        (tester) async {
+    testWidgets('tapping Skip calls ScheduleNotifier.markSkipped', (
+      tester,
+    ) async {
       final sn = _FakeScheduleNotifier();
       await _pumpActiveChunkCard(
         tester,
@@ -291,11 +299,7 @@ void main() {
         rationale: 'Second chunk',
         syntheticStartMinutes: 600, // 10:00 AM
       )..isSkipped = true;
-      return DailySchedule(
-        dateYmd: ymd,
-        moodIndex: 3,
-        chunks: [c1, c2],
-      );
+      return DailySchedule(dateYmd: ymd, moodIndex: 3, chunks: [c1, c2]);
     }
 
     // now for all-resolved tests: 10:05 AM places us inside c2's window
@@ -331,8 +335,9 @@ void main() {
       );
     });
 
-    testWidgets('shows "Next" section label when second chunk exists',
-        (tester) async {
+    testWidgets('shows "Next" section label when second chunk exists', (
+      tester,
+    ) async {
       final sn = _FakeScheduleNotifierWithSchedule(scheduleWithTwoChunks());
       await _pumpHomeScreen(tester, scheduleNotifier: sn, now: navNow);
       expect(
@@ -352,18 +357,15 @@ void main() {
       );
     });
 
-    testWidgets('shows "That\'s a wrap" when all chunks resolved',
-        (tester) async {
+    testWidgets('shows "That\'s a wrap" when all chunks resolved', (
+      tester,
+    ) async {
       final sn = _FakeScheduleNotifierWithSchedule(scheduleAllResolved());
       // Inject now inside c2's window so resolveNowState traverses the
       // resolution-checking branch and reaches DayComplete for the correct
       // reason — not via the null-syntheticStartMinutes degenerate shortcut
       // (CR-03).
-      await _pumpHomeScreen(
-        tester,
-        scheduleNotifier: sn,
-        now: allResolvedNow,
-      );
+      await _pumpHomeScreen(tester, scheduleNotifier: sn, now: allResolvedNow);
       expect(
         find.text("That's a wrap"),
         findsOneWidget,
@@ -372,15 +374,12 @@ void main() {
       );
     });
 
-    testWidgets('shows no ActiveChunkCard when all chunks resolved',
-        (tester) async {
+    testWidgets('shows no ActiveChunkCard when all chunks resolved', (
+      tester,
+    ) async {
       final sn = _FakeScheduleNotifierWithSchedule(scheduleAllResolved());
       // Same now injection as the companion test above (CR-03).
-      await _pumpHomeScreen(
-        tester,
-        scheduleNotifier: sn,
-        now: allResolvedNow,
-      );
+      await _pumpHomeScreen(tester, scheduleNotifier: sn, now: allResolvedNow);
       expect(
         find.byType(ActiveChunkCard),
         findsNothing,
