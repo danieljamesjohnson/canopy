@@ -65,8 +65,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 
 - Rule-based only — no LLM
 - Hive migrations are additive-only (new fields with defaults, never remove/rename)
-- Long-break cadence is currently a single constant: `final int longBreakEvery = isLowMood ? 3 : 4;` (`lib/services/schedule_generator.dart:220`) — BREAK-01 replaces this with a mood-scaled value (~2 low, ~5 sunny)
-- Three existing tests in `test/services/schedule_generator_test.dart` (~lines 492–543) assert the every-4 cadence and must change with it
+- Long-break cadence is currently a single constant: `final int longBreakEvery = isLowMood ? 3 : 4;` (`lib/services/schedule_generator.dart:220`) — BREAK-01 replaces this with a `_moodBreakCadence` lookup keyed on `moodIndex`; mapping locked during Phase 21 planning at `{1:2, 2:3, 3:4, 4:4, 5:5}`
+- **CORRECTED 2026-08-07:** the earlier note that "three existing tests (~lines 492–543) assert the every-4 cadence and must change" is **stale and wrong**. 21-RESEARCH.md verified empirically (patched the constant, ran the suite) that all 54 tests in `test/services/schedule_generator_test.dart` pass unchanged under the new mapping. There is currently **zero** test coverage that discriminates cadence behavior — so the new tests are the substance of Phase 21, not a formality. Lines 492–543 today are the WR-01 test (mood=3), which is cadence-insensitive.
 - The "behind" string lives at `lib/services/schedule_generator.dart:190`; its sibling branch already reads "On track this week" — use that framing as the model
 - Schedule generator lives in `lib/services/schedule_generator.dart` — deterministic, covered by unit tests
 
