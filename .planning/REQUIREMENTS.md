@@ -9,7 +9,7 @@
 ### Unified Today Screen
 
 - [x] **UNIFY-01**: User sees what's happening now and the rest of the day on one screen, without switching tabs
-- [ ] **UNIFY-02**: Shell navigation reflects the merge, and every existing entry point (notification tap, in-app links to `/schedule`) lands on the unified screen rather than a dead route
+- [x] **UNIFY-02**: Shell navigation reflects the merge, and every existing entry point (notification tap, in-app links to `/schedule`) lands on the unified screen rather than a dead route
 
 ### Live Activity Tracking
 
@@ -59,7 +59,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | UNIFY-01 | Phase 22 | Complete |
-| UNIFY-02 | Phase 22 | Pending |
+| UNIFY-02 | Phase 22 | Complete |
 | LIVE-01 | Phase 23 | Pending |
 | LIVE-02 | Phase 23 | Pending |
 | LIVE-03 | Phase 23 | Pending |

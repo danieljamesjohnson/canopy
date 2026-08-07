@@ -2,23 +2,23 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
-status: executing
-stopped_at: Completed 22-03-today-screen-assembly-PLAN.md
-last_updated: "2026-08-07T20:20:15.527Z"
+status: verifying
+stopped_at: Completed 22-04-navigation-merge-and-cleanup-PLAN.md
+last_updated: "2026-08-07T20:38:10.562Z"
 last_activity: 2026-08-07 -- Phase 22 execution started
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
-  percent: 33
+  completed_plans: 6
+  percent: 67
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-07T20:20:15.524Z
+**Last session:** 2026-08-07T20:38:10.559Z
 
 ---
 
@@ -26,7 +26,7 @@ progress:
 
 Phase: 22 (Unified Today Screen) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-08-07 -- Phase 22 execution started
 
 ```
@@ -67,6 +67,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 22-02]: Collapsed chunk_card's _buildShortBreak/_buildLongBreak into one _buildBreak on a single dashed CustomPainter — resolves both D-06's break treatment and the Phase 21 UI review's pill-vs-elevated-Card mismatch, no collapse affordance added
 - [Phase 22-03]: Single reconciled AppBar helper shared by TodayScreen's empty and active states makes 'exactly one refresh action' true by construction; Add-an-event stays reachable pre-check-in
 - [Phase 22-03]: Task 2's fixture uses a work-typed 5-minute 'live' chunk rather than a real break — resolveNowState's work-only filter is untouched per scope boundary; Phase 23 (LIVE-01) widens it, not this plan
+- [Phase 22-04]: Kept /schedule declared (building TodayScreen) instead of deleting it, so /schedule/checkin keeps a parent and the notification-tap path has a defensive fallback if the redirect regresses — T-22-14: belt-and-braces dead-route prevention
+- [Phase 22-04]: Generalized the WR-03 no-double-timer test from a hardcoded 1-call assumption to a captured per-tick baseline, since TodayScreen reads the clock from 3 call sites per build vs HomeScreen's 1 — The actual invariant (no leaked duplicate Timer.periodic) is preserved; only the call-count magnitude assumption was wrong for the new screen's structure
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -124,7 +126,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-04
-Stopped at: Completed 22-03-today-screen-assembly-PLAN.md
+Stopped at: Completed 22-04-navigation-merge-and-cleanup-PLAN.md
 Resume at: `/gsd-plan-phase 21`
 
 ## Performance Metrics
@@ -150,3 +152,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 22-unified-today-screen P01 | 7min | 2 tasks | 6 files |
 | Phase 22 P02 | 8min | 3 tasks | 8 files |
 | Phase 22-unified-today-screen P03 | 16min | 3 tasks | 5 files |
+| Phase 22-unified-today-screen P04 | 9min | 3 tasks | 20 files |
