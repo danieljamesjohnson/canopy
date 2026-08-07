@@ -1830,4 +1830,263 @@ void main() {
       expect(names, containsAll(<String>['Work', 'Dentist']));
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Mood-indexed break cadence (requirement BREAK-01). Each test below pins
+  // the full chunk sequence (not just the long-break index) for one mood, so
+  // the cadence is a verified behavior instead of an unconstrained constant.
+  // Goal counts and the capacity arithmetic that justifies them are recorded
+  // per test — see Test 6's comment for the convention this follows.
+  // ---------------------------------------------------------------------------
+
+  test('BREAK-01: mood=1 places a long break after every 2 work chunks', () {
+    // lighterDay: false -> cap=4, habitCeiling=ceil(4/2)=2 (CAP-01).
+    // 2 habits fill the habitCeiling exactly (2 chunks). mood=1 is low-mood,
+    // so FILL-01 clamps each time-target to 1 chunk: 2 time-targets -> 2
+    // chunks. Total discretionary = 2 + 2 = 4 work chunks (== cap).
+    final goals = [
+      ...List.generate(2, (i) => makeHabit(name: 'Habit $i')),
+      ...List.generate(
+        2,
+        (i) => makeTimeTarget(name: 'Regular $i', weeklyHourBudget: 5),
+      ),
+    ];
+    final result = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 1,
+      date: monday,
+      completionLogs: [],
+      lighterDay: false,
+    );
+    expect(result.length, 7);
+    expect(result[0].chunkType, ChunkType.work);
+    expect(result[1].chunkType, ChunkType.shortBreak);
+    expect(result[2].chunkType, ChunkType.work);
+    expect(result[3].chunkType, ChunkType.longBreak);
+    expect(result[4].chunkType, ChunkType.work);
+    expect(result[5].chunkType, ChunkType.shortBreak);
+    expect(result[6].chunkType, ChunkType.work);
+    expect(
+      result[3].durationMinutes,
+      25,
+      reason: 'mood=1 must reach a long break after 2 work chunks (BREAK-01)',
+    );
+    expect(result[1].durationMinutes, 5);
+  });
+
+  test('BREAK-01: mood=2 places a long break after every 3 work chunks', () {
+    // lighterDay: false -> cap=6, habitCeiling=ceil(6/2)=3 (CAP-01).
+    // 3 habits fill the habitCeiling exactly (3 chunks). mood=2 is still
+    // low-mood, so FILL-01 clamps each time-target to 1 chunk: 2
+    // time-targets -> 2 chunks. Total discretionary = 3 + 2 = 5 work chunks
+    // (cap=6 is not reached — that's expected, not a bug).
+    final goals = [
+      ...List.generate(3, (i) => makeHabit(name: 'Habit $i')),
+      ...List.generate(
+        2,
+        (i) => makeTimeTarget(name: 'Regular $i', weeklyHourBudget: 5),
+      ),
+    ];
+    final result = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 2,
+      date: monday,
+      completionLogs: [],
+      lighterDay: false,
+    );
+    expect(result.length, 9);
+    expect(result[0].chunkType, ChunkType.work);
+    expect(result[1].chunkType, ChunkType.shortBreak);
+    expect(result[2].chunkType, ChunkType.work);
+    expect(result[3].chunkType, ChunkType.shortBreak);
+    expect(result[4].chunkType, ChunkType.work);
+    expect(result[5].chunkType, ChunkType.longBreak);
+    expect(result[6].chunkType, ChunkType.work);
+    expect(result[7].chunkType, ChunkType.shortBreak);
+    expect(result[8].chunkType, ChunkType.work);
+    expect(
+      result[5].durationMinutes,
+      25,
+      reason: 'mood=2 must reach a long break after 3 work chunks (BREAK-01)',
+    );
+    expect(result[1].durationMinutes, 5);
+  });
+
+  test(
+    'BREAK-01: mood=3 places a long break after every 4 work chunks (baseline unchanged)',
+    () {
+      // lighterDay: false -> cap=8, habitCeiling=ceil(8/2)=4 (CAP-01).
+      // 4 habits fill the habitCeiling exactly (4 chunks). mood=3 is not
+      // low-mood, so a weeklyHourBudget: 5 time-target has demand 2 (not
+      // clamped to 1): 1 time-target -> 2 chunks. Total discretionary =
+      // 4 + 2 = 6 work chunks (cap=8 is not reached).
+      final goals = [
+        ...List.generate(4, (i) => makeHabit(name: 'Habit $i')),
+        makeTimeTarget(name: 'Regular', weeklyHourBudget: 5),
+      ];
+      final result = sut.generate(
+        goals: goals,
+        blocks: [],
+        moodIndex: 3,
+        date: monday,
+        completionLogs: [],
+        lighterDay: false,
+      );
+      expect(result.length, 11);
+      expect(result[0].chunkType, ChunkType.work);
+      expect(result[1].chunkType, ChunkType.shortBreak);
+      expect(result[2].chunkType, ChunkType.work);
+      expect(result[3].chunkType, ChunkType.shortBreak);
+      expect(result[4].chunkType, ChunkType.work);
+      expect(result[5].chunkType, ChunkType.shortBreak);
+      expect(result[6].chunkType, ChunkType.work);
+      expect(result[7].chunkType, ChunkType.longBreak);
+      expect(result[8].chunkType, ChunkType.work);
+      expect(result[9].chunkType, ChunkType.shortBreak);
+      expect(result[10].chunkType, ChunkType.work);
+      expect(
+        result[7].durationMinutes,
+        25,
+        reason:
+            'mood=3 must reach a long break after 4 work chunks (BREAK-01 baseline)',
+      );
+      expect(result[1].durationMinutes, 5);
+    },
+  );
+
+  test('BREAK-01: mood=4 places a long break after every 4 work chunks', () {
+    // lighterDay: false -> cap=9, habitCeiling=ceil(9/2)=5 (CAP-01).
+    // 5 habits fill the habitCeiling exactly (5 chunks, no time-targets
+    // needed). Total discretionary = 5 work chunks (cap=9 is not reached).
+    final goals = List.generate(5, (i) => makeHabit(name: 'Habit $i'));
+    final result = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 4,
+      date: monday,
+      completionLogs: [],
+      lighterDay: false,
+    );
+    expect(result.length, 9);
+    expect(result[0].chunkType, ChunkType.work);
+    expect(result[1].chunkType, ChunkType.shortBreak);
+    expect(result[2].chunkType, ChunkType.work);
+    expect(result[3].chunkType, ChunkType.shortBreak);
+    expect(result[4].chunkType, ChunkType.work);
+    expect(result[5].chunkType, ChunkType.shortBreak);
+    expect(result[6].chunkType, ChunkType.work);
+    expect(result[7].chunkType, ChunkType.longBreak);
+    expect(result[8].chunkType, ChunkType.work);
+    expect(
+      result[7].durationMinutes,
+      25,
+      reason: 'mood=4 must reach a long break after 4 work chunks (BREAK-01)',
+    );
+    expect(result[1].durationMinutes, 5);
+  });
+
+  test('BREAK-01: mood=5 places a long break after every 5 work chunks', () {
+    // lighterDay: false -> cap=11, habitCeiling=ceil(11/2)=6 (CAP-01).
+    // 6 habits fill the habitCeiling exactly (6 chunks, no time-targets
+    // needed). Total discretionary = 6 work chunks (cap=11 is not reached).
+    final goals = List.generate(6, (i) => makeHabit(name: 'Habit $i'));
+    final result = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 5,
+      date: monday,
+      completionLogs: [],
+      lighterDay: false,
+    );
+    expect(result.length, 11);
+    expect(result[0].chunkType, ChunkType.work);
+    expect(result[1].chunkType, ChunkType.shortBreak);
+    expect(result[2].chunkType, ChunkType.work);
+    expect(result[3].chunkType, ChunkType.shortBreak);
+    expect(result[4].chunkType, ChunkType.work);
+    expect(result[5].chunkType, ChunkType.shortBreak);
+    expect(result[6].chunkType, ChunkType.work);
+    expect(result[7].chunkType, ChunkType.shortBreak);
+    expect(result[8].chunkType, ChunkType.work);
+    expect(result[9].chunkType, ChunkType.longBreak);
+    expect(result[10].chunkType, ChunkType.work);
+    expect(
+      result[9].durationMinutes,
+      25,
+      reason: 'mood=5 must reach a long break after 5 work chunks (BREAK-01)',
+    );
+    expect(result[1].durationMinutes, 5);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Break-structure preservation (requirement BREAK-02): the 25-min work /
+  // 5-min short-break / 25-min long-break structure must survive the cadence
+  // change at every mood. Cadence-independent — does not assert lengths or
+  // long-break positions.
+  // ---------------------------------------------------------------------------
+
+  test(
+    'BREAK-02: only 5-min short breaks and 25-min long breaks are ever emitted, at every mood',
+    () {
+      final goals = [
+        ...List.generate(6, (i) => makeHabit(name: 'Habit $i')),
+        ...List.generate(
+          2,
+          (i) => makeTimeTarget(name: 'Regular $i', weeklyHourBudget: 5),
+        ),
+      ];
+      for (int mood = 1; mood <= 5; mood++) {
+        final result = sut.generate(
+          goals: goals,
+          blocks: [],
+          moodIndex: mood,
+          date: monday,
+          completionLogs: [],
+          lighterDay: false,
+        );
+
+        for (final chunk in result) {
+          expect(
+            [ChunkType.work, ChunkType.shortBreak, ChunkType.longBreak],
+            contains(chunk.chunkType),
+            reason: 'mood=$mood: unexpected chunkType ${chunk.chunkType}',
+          );
+          if (chunk.chunkType == ChunkType.shortBreak) {
+            expect(
+              chunk.durationMinutes,
+              5,
+              reason: 'mood=$mood: short break must always be 5 minutes',
+            );
+          }
+          if (chunk.chunkType == ChunkType.longBreak) {
+            expect(
+              chunk.durationMinutes,
+              25,
+              reason: 'mood=$mood: long break must always be 25 minutes',
+            );
+          }
+        }
+
+        for (int i = 0; i + 1 < result.length; i++) {
+          final aIsBreak = result[i].chunkType != ChunkType.work;
+          final bIsBreak = result[i + 1].chunkType != ChunkType.work;
+          expect(
+            aIsBreak && bIsBreak,
+            isFalse,
+            reason:
+                'mood=$mood: two adjacent non-work chunks at index $i/${i + 1} '
+                '— every break must be preceded by a work chunk',
+          );
+        }
+
+        expect(
+          result.last.chunkType,
+          ChunkType.work,
+          reason: 'mood=$mood: schedule must never end on a break chunk',
+        );
+      }
+    },
+  );
 }
