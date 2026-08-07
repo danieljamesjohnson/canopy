@@ -550,9 +550,10 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   /// side, exactly as specified in 23-UI-SPEC.md's "Break as a current
   /// activity" table.
   String _liveKicker(ScheduledChunk chunk) {
-    return chunk.chunkType != ChunkType.work
-        ? 'RIGHT NOW — RESTING'
-        : 'RIGHT NOW';
+    final isBreak =
+        chunk.chunkType == ChunkType.shortBreak ||
+        chunk.chunkType == ChunkType.longBreak;
+    return isBreak ? 'RIGHT NOW — RESTING' : 'RIGHT NOW';
   }
 
   /// Builds the swelled in-place live row (D-01). The kicker names a
@@ -699,7 +700,16 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     // left unresolved (WR-01). DayComplete (and no schedule at all) has no
     // meaningful focus target, so the button is disabled rather than
     // guessing.
-    final ScheduledChunk? focusTarget = switch (nowState) {
+    //
+    // Before LIVE-01, the now-classifier filtered to work chunks, so this
+    // switch could only ever produce a work chunk by construction. LIVE-01
+    // broadened that filter, so all four non-null arms below can now
+    // resolve to a break. FocusScreen is a 25-minute Pomodoro that calls
+    // ScheduleNotifier.markComplete on its target — and per D-02 and
+    // 23-UI-SPEC.md, there is nothing to complete about a break. A break
+    // therefore produces the same disabled button the DayComplete() arm
+    // already produces (T-23-01).
+    final ScheduledChunk? resolvedTarget = switch (nowState) {
       Active(:final current) => current,
       Overdue(:final overdue) => overdue,
       GapBeforeNext(:final next) => next,
@@ -707,6 +717,8 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       DayComplete() => null,
       null => null,
     };
+    final ScheduledChunk? focusTarget =
+        resolvedTarget?.chunkType == ChunkType.work ? resolvedTarget : null;
     return AppBar(
       title: const Text('Canopy'),
       actions: [

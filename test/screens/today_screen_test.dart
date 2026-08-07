@@ -125,6 +125,33 @@ ScheduledChunk _commitmentChunk({
   );
 }
 
+/// Creates a break chunk (short by default) with injectable time/resolution
+/// parameters. Same signature/shape as the `_breakChunk` factory in
+/// today_screen_now_state_test.dart (LIVE-01, Task 1/3).
+///
+/// [chunkTypeIndex] defaults to `ChunkType.shortBreak.index` at call time —
+/// it cannot be a literal default-parameter value because Dart does not
+/// treat enum `.index` access as a compile-time constant expression.
+ScheduledChunk _breakChunk({
+  String id = 'break-1',
+  int? chunkTypeIndex,
+  int? syntheticStartMinutes,
+  int durationMinutes = 5,
+  bool isCompleted = false,
+  bool isSkipped = false,
+}) {
+  final c = ScheduledChunk(
+    id: id,
+    chunkTypeIndex: chunkTypeIndex ?? ChunkType.shortBreak.index,
+    durationMinutes: durationMinutes,
+    rationale: '',
+    syntheticStartMinutes: syntheticStartMinutes,
+  );
+  if (isCompleted) c.isCompleted = true;
+  if (isSkipped) c.isSkipped = true;
+  return c;
+}
+
 String _todayYmd() {
   final today = DateTime.now();
   return '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
@@ -743,6 +770,114 @@ void main() {
           find.widgetWithIcon(IconButton, Icons.center_focus_strong_outlined),
         );
         expect(button.onPressed, isNull);
+      },
+    );
+
+    // ── T-23-01: a break must never become the "Start focus" target ────────
+
+    testWidgets('Start focus is disabled while a break is the Active chunk', (
+      tester,
+    ) async {
+      final schedule = DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: [
+          _workChunk(id: 'w1', syntheticStartMinutes: 480, durationMinutes: 25),
+          _breakChunk(id: 'b1', syntheticStartMinutes: 505, durationMinutes: 5),
+        ],
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+        now: () => DateTime(2026, 6, 13, 8, 27),
+      );
+      final button = tester.widget<IconButton>(
+        find.widgetWithIcon(IconButton, Icons.center_focus_strong_outlined),
+      );
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets(
+      'Start focus is disabled while a break is the GapBeforeNext target',
+      (tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 25,
+              isCompleted: true,
+            ),
+            _breakChunk(
+              id: 'b1',
+              syntheticStartMinutes: 505,
+              durationMinutes: 5,
+            ),
+          ],
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => DateTime(2026, 6, 13, 8, 10),
+        );
+        final button = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.center_focus_strong_outlined),
+        );
+        expect(button.onPressed, isNull);
+      },
+    );
+
+    testWidgets('Start focus is disabled while a break is Overdue', (
+      tester,
+    ) async {
+      final schedule = DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: [
+          _breakChunk(id: 'b1', syntheticStartMinutes: 505, durationMinutes: 5),
+          _workChunk(id: 'w2', syntheticStartMinutes: 540, durationMinutes: 25),
+        ],
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+        now: () => DateTime(2026, 6, 13, 8, 35),
+      );
+      final button = tester.widget<IconButton>(
+        find.widgetWithIcon(IconButton, Icons.center_focus_strong_outlined),
+      );
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets(
+      'Start focus still targets the Active work chunk when a break follows '
+      'it',
+      (tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'current',
+              syntheticStartMinutes: 480,
+              durationMinutes: 25,
+            ),
+            _breakChunk(
+              id: 'b1',
+              syntheticStartMinutes: 505,
+              durationMinutes: 5,
+            ),
+          ],
+        );
+        final result = await pumpAndTapFocus(
+          tester,
+          _FakeScheduleNotifierWithSchedule(schedule),
+          () => DateTime(2026, 6, 13, 8, 10),
+        );
+
+        expect(result, 'focus-target:current');
       },
     );
   });
