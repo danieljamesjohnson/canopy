@@ -11,6 +11,7 @@ import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_card.dart';
 import 'package:canopy/screens/schedule/widgets/swipeable_chunk_card.dart';
 import 'package:canopy/screens/today/widgets/free_time_row.dart';
+import 'package:canopy/screens/today/widgets/live_row_card.dart';
 import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -278,6 +279,145 @@ void main() {
       // after the ColorScheme migration.
       await _pumpChunkCard(tester, _workChunk(completed: true));
       expect(find.byType(ChunkCard), findsOneWidget);
+    });
+  });
+
+  group('LiveRowCard (D-01, Phase 23 seam)', () {
+    Future<void> pumpLiveRowCard(
+      WidgetTester tester, {
+      String chunkId = 'chunk-1',
+      String kicker = 'RIGHT NOW',
+      String title = 'Deep work',
+      String remainingLabel = '12 min left · until 10:50',
+      double progress = 0.4,
+      String? nextLine = 'Next · Reading at 10:50am',
+      bool showActions = true,
+      _FakeScheduleNotifier? scheduleNotifier,
+    }) async {
+      await pumpWithMood(
+        tester,
+        LiveRowCard(
+          chunkId: chunkId,
+          kicker: kicker,
+          title: title,
+          remainingLabel: remainingLabel,
+          progress: progress,
+          nextLine: nextLine,
+          showActions: showActions,
+        ),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(
+            value: scheduleNotifier ?? _FakeScheduleNotifier(),
+          ),
+        ],
+      );
+    }
+
+    testWidgets('renders the kicker "RIGHT NOW" when passed it', (
+      tester,
+    ) async {
+      await pumpLiveRowCard(tester, kicker: 'RIGHT NOW');
+      expect(find.text('RIGHT NOW'), findsOneWidget);
+    });
+
+    testWidgets('renders title, remainingLabel and nextLine verbatim', (
+      tester,
+    ) async {
+      await pumpLiveRowCard(
+        tester,
+        title: 'Deep work',
+        remainingLabel: '12 min left · until 10:50',
+        nextLine: 'Next · Reading at 10:50am',
+      );
+      expect(find.text('Deep work'), findsOneWidget);
+      expect(find.text('12 min left · until 10:50'), findsOneWidget);
+      expect(find.text('Next · Reading at 10:50am'), findsOneWidget);
+    });
+
+    testWidgets('renders no next-line text when nextLine is null', (
+      tester,
+    ) async {
+      await pumpLiveRowCard(tester, nextLine: null);
+      expect(find.textContaining('Next ·'), findsNothing);
+    });
+
+    testWidgets("card background colour equals colorScheme.primaryContainer", (
+      tester,
+    ) async {
+      await pumpLiveRowCard(tester);
+      final context = tester.element(find.byType(LiveRowCard));
+      final card = tester.widget<Card>(find.byType(Card));
+      expect(card.color, Theme.of(context).colorScheme.primaryContainer);
+    });
+
+    testWidgets('shows Complete/Skip buttons when showActions is true', (
+      tester,
+    ) async {
+      await pumpLiveRowCard(tester, showActions: true);
+      expect(find.byType(FilledButton), findsOneWidget);
+      expect(find.byType(OutlinedButton), findsOneWidget);
+    });
+
+    testWidgets('hides Complete/Skip buttons when showActions is false', (
+      tester,
+    ) async {
+      await pumpLiveRowCard(tester, showActions: false);
+      expect(find.byType(FilledButton), findsNothing);
+      expect(find.byType(OutlinedButton), findsNothing);
+    });
+
+    testWidgets('tapping Complete calls ScheduleNotifier.markComplete', (
+      tester,
+    ) async {
+      final sn = _FakeScheduleNotifier();
+      await pumpLiveRowCard(tester, chunkId: 'chunk-abc', scheduleNotifier: sn);
+      await tester.tap(find.widgetWithText(FilledButton, 'Complete'));
+      await tester.pump();
+      expect(sn.lastCompletedId, 'chunk-abc');
+    });
+
+    testWidgets('tapping Skip calls ScheduleNotifier.markSkipped', (
+      tester,
+    ) async {
+      final sn = _FakeScheduleNotifier();
+      await pumpLiveRowCard(tester, chunkId: 'chunk-xyz', scheduleNotifier: sn);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Skip'));
+      await tester.pump();
+      expect(sn.lastSkippedId, 'chunk-xyz');
+    });
+
+    testWidgets('LinearProgressIndicator value equals the passed progress', (
+      tester,
+    ) async {
+      await pumpLiveRowCard(tester, progress: 0.4);
+      final indicator = tester.widget<LinearProgressIndicator>(
+        find.byType(LinearProgressIndicator),
+      );
+      expect(indicator.value, 0.4);
+    });
+
+    testWidgets('progress 1.5 is clamped to 1.0', (tester) async {
+      await pumpLiveRowCard(tester, progress: 1.5);
+      final indicator = tester.widget<LinearProgressIndicator>(
+        find.byType(LinearProgressIndicator),
+      );
+      expect(indicator.value, 1.0);
+    });
+
+    testWidgets('progress -0.2 is clamped to 0.0', (tester) async {
+      await pumpLiveRowCard(tester, progress: -0.2);
+      final indicator = tester.widget<LinearProgressIndicator>(
+        find.byType(LinearProgressIndicator),
+      );
+      expect(indicator.value, 0.0);
+    });
+
+    testWidgets('no arrow_forward icon and no "Now" pill badge', (
+      tester,
+    ) async {
+      await pumpLiveRowCard(tester);
+      expect(find.byIcon(Icons.arrow_forward), findsNothing);
+      expect(find.text('Now'), findsNothing);
     });
   });
 }
