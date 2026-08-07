@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: executing
-stopped_at: Completed 22-01-now-state-and-timeline-model-PLAN.md
-last_updated: "2026-08-07T19:44:24.118Z"
+stopped_at: Completed 22-02-timeline-row-vocabulary-PLAN.md
+last_updated: "2026-08-07T19:54:29.652Z"
 last_activity: 2026-08-07 -- Phase 22 execution started
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 6
-  completed_plans: 3
+  completed_plans: 4
   percent: 33
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-07T19:44:24.114Z
+**Last session:** 2026-08-07T19:54:29.649Z
 
 ---
 
 ## Current Position
 
 Phase: 22 (Unified Today Screen) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-08-07 -- Phase 22 execution started
 
@@ -64,6 +64,7 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 21-01]: Cadence table locked to {1:2, 2:3, 3:4, 4:4, 5:5}; isLowMood preserved unmodified, cadence lookup keyed on moodIndex directly (BREAK-01/02)
 - [Phase 21-02]: Reworded the TONE-01 guard assertion's reason string to keep grep -c "TONE-01:" at exactly 2, matching the plan's acceptance criteria; no behavior/coverage change
 - [Phase 22-01]: active_chunk_card_test.dart's now_state.dart import kept per plan though unused in executable code today; suppressed with ignore comment to satisfy both the plan's verify grep and a clean flutter analyze — Both the plan's automated verify (grep for the import) and its analyze-clean done criterion are explicit gates in the same task; dropping the import fails the former, leaving it unmarked fails the latter
+- [Phase 22-02]: Collapsed chunk_card's _buildShortBreak/_buildLongBreak into one _buildBreak on a single dashed CustomPainter — resolves both D-06's break treatment and the Phase 21 UI review's pill-vs-elevated-Card mismatch, no collapse affordance added
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -81,7 +82,7 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - `lib/widgets/responsive_shell.dart` hardcodes four destinations (Home/Goals/Schedule/Settings) citing a UI-SPEC "icon library lock" — UNIFY-02 revisits this contract
 - Notification taps route via `router.go('/schedule')` (`lib/main.dart:86`); `home_screen.dart:495` also navigates there — both must land on the unified screen after Phase 22, not a dead route
 - Screens to merge: `lib/screens/home/home_screen.dart` (848 lines) and `lib/screens/schedule/schedule_screen.dart` (495 lines), plus their `widgets/` folders
-- **From Phase 21 UI review (2026-08-07) — check during Phase 22:** mood-1 days now insert a long break every 2 chunks (was every 3), so a Stormy day renders a 48px short-break pill immediately followed by an elevated long-break `Card` roughly every 4th row — a rhythm the app has never rendered before. `chunk_card.dart` `_buildShortBreak`/`_buildLongBreak` are unchanged and were judged "degree not kind", correctly not solved in Phase 21. Phase 22 already owns `chunk_card.dart`, so look at a real mood-1 list there: if it reads noisy, tighten the two break variants when adjacent — **not** a new collapse affordance.
+- **RESOLVED Phase 22-02:** Phase 21 UI review flagged that mood-1 days insert a long break every 2 chunks, rendering a 48px short-break pill immediately followed by an elevated long-break `Card` roughly every 4th row. `chunk_card.dart`'s `_buildShortBreak`/`_buildLongBreak` are now collapsed into a single `_buildBreak` on one dashed `CustomPainter` treatment (D-06), so both break variants read the same visual weight when adjacent. No collapse/accordion affordance was added, per the explicit prohibition.
 
 ### Blockers / Concerns
 
@@ -97,7 +98,7 @@ Items acknowledged and deferred at milestone close on 2026-06-15 (v1.4) — carr
 | todo | Onboarding commitment-step day chips ambiguous (M/T/W/T/F/S/S) | Candidate for future polish phase — not in v1.5 scope |
 | tech-debt | FILL-02 high-priority monopoly edge | documented-accepted (3+ goals at weight ≥0.75 can starve lower-priority time-targets) |
 | tech-debt | Nyquist VALIDATION frontmatter drafts (15/16/17) | tests green; `nyquist_compliant: false` metadata only |
-| tech-debt | chunk_card.dart hardcoded `Colors.green.shade600` / `Colors.grey.shade400` | pre-existing, bypasses ColorScheme (no dark-mode/dynamic adapt) — worth revisiting if Phase 22/23 touch chunk_card.dart anyway |
+| tech-debt | chunk_card.dart hardcoded `Colors.green.shade600` / `Colors.grey.shade400` | **RESOLVED Phase 22-02** — replaced with `colorScheme.primary`/`colorScheme.outlineVariant`; grep-gate confirms zero raw `Colors.*` literals remain in the file |
 | product | Start/stop focus timer per chunk (clock-in tracking) | deferred — see REQUIREMENTS.md Future Requirements |
 | product | Drag-to-reorder restoratives | deferred — see REQUIREMENTS.md Future Requirements |
 | product | Restoratives in onboarding (screen 4 invite) | deferred — see REQUIREMENTS.md Future Requirements |
@@ -121,7 +122,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-04
-Stopped at: Completed 22-01-now-state-and-timeline-model-PLAN.md
+Stopped at: Completed 22-02-timeline-row-vocabulary-PLAN.md
 Resume at: `/gsd-plan-phase 21`
 
 ## Performance Metrics
@@ -145,3 +146,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 21 P01 | 5min | 2 tasks | 2 files |
 | Phase 21-mood-scaled-breaks-honest-rationale P02 | 4min | 2 tasks | 2 files |
 | Phase 22-unified-today-screen P01 | 7min | 2 tasks | 6 files |
+| Phase 22 P02 | 8min | 3 tasks | 8 files |
