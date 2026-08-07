@@ -79,14 +79,34 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - The "behind" string lives at `lib/services/schedule_generator.dart:190`; its sibling branch already reads "On track this week" — use that framing as the model
 - Schedule generator lives in `lib/services/schedule_generator.dart` — deterministic, covered by unit tests
 
-### UI Constraints (carry-forward for Phase 22/23)
+### UI Constraints (carry-forward for Phase 23)
 
-- `resolveNowState` (`lib/screens/home/home_screen.dart:115`) filters to work chunks only — extension point for LIVE-01, currently makes a running break invisible to "now"
-- Now-tick is a 1-minute `Timer.periodic` (`home_screen.dart:263`) — LIVE-02 open design decision, see above
-- `lib/widgets/responsive_shell.dart` hardcodes four destinations (Home/Goals/Schedule/Settings) citing a UI-SPEC "icon library lock" — UNIFY-02 revisits this contract
-- Notification taps route via `router.go('/schedule')` (`lib/main.dart:86`); `home_screen.dart:495` also navigates there — both must land on the unified screen after Phase 22, not a dead route
-- Screens to merge: `lib/screens/home/home_screen.dart` (848 lines) and `lib/screens/schedule/schedule_screen.dart` (495 lines), plus their `widgets/` folders
-- **RESOLVED Phase 22-02:** Phase 21 UI review flagged that mood-1 days insert a long break every 2 chunks, rendering a 48px short-break pill immediately followed by an elevated long-break `Card` roughly every 4th row. `chunk_card.dart`'s `_buildShortBreak`/`_buildLongBreak` are now collapsed into a single `_buildBreak` on one dashed `CustomPainter` treatment (D-06), so both break variants read the same visual weight when adjacent. No collapse/accordion affordance was added, per the explicit prohibition.
+**REWRITTEN 2026-08-07 after Phase 22 landed.** The previous notes pointed at `home_screen.dart` and
+`schedule_screen.dart`, both of which are now **deleted**. Every path below is verified against the
+post-Phase-22 tree — do not chase the old ones.
+
+- `resolveNowState` now lives at **`lib/screens/today/now_state.dart:97`** (relocated verbatim from
+  `home_screen.dart`; algorithm unchanged). It still filters to **work chunks only** — this remains
+  LIVE-01's extension point, and is exactly why a running break is currently invisible to "now".
+- It is the **single** now-detector in the codebase. Phase 22 deleted `_buildActiveChunkItems` (the old
+  first-unresolved-chunk scan) with `schedule_screen.dart`, and a code review caught and fixed a third
+  one (the AppBar "Start focus" button, commit `8bb253a`). `grep -rn "resolveNowState" lib/` shows one
+  definition and one call site. **Phase 23 must extend this one function, not add a parallel path** —
+  reintroducing a second detector is the specific regression this milestone spent effort eliminating.
+- `lib/screens/today/timeline.dart` holds the pure `buildTimeline` + `TimelineRow` sealed hierarchy.
+  `isLive` is derived **only** from the injected `NowState`, never re-scanned. LIVE-01's "a running
+  break reads as a break" almost certainly lands here plus `now_state.dart`, not in the widget layer.
+- Now-tick is a 1-minute `Timer.periodic` inside `lib/screens/today/today_screen.dart` — **LIVE-02's
+  granularity (per-minute vs per-second) is still an open design decision**, deliberately left for
+  Phase 23 to decide and justify rather than inherit silently.
+- `today_screen.dart` is ~900 lines and uses an injectable clock (`_nowFn`) throughout — Phase 23 should
+  use that seam for any countdown, not `DateTime.now()` directly. A code review already corrected one
+  drift from this discipline (`1035339`).
+- Routing settled: shell has **three** destinations (Today/Goals/Settings); `/today` is canonical;
+  a bare `/schedule` **exact-match** redirects to `/today` (a `startsWith` would break
+  `/schedule/checkin`); `/schedule` also builds `TodayScreen` as a defensive fallback. Notification taps
+  (`lib/main.dart:86`) still call `router.go('/schedule')` and resolve correctly through that redirect.
+- **RESOLVED Phase 22-02:** Phase 21 UI review flagged that mood-1 days insert a long break every 2 chunks, rendering a 48px short-break pill immediately followed by an elevated long-break `Card` roughly every 4th row. `chunk_card.dart`'s `_buildShortBreak`/`_buildLongBreak` are now collapsed into a single `_buildBreak` on one dashed `CustomPainter` treatment (D-06), so both break variants read the same visual weight when adjacent. Confirmed live in the running app: at a cadence boundary the long break *replaces* the short break rather than stacking after it, so the feared adjacency never occurs. No collapse/accordion affordance was added, per the explicit prohibition.
 
 ### Blockers / Concerns
 

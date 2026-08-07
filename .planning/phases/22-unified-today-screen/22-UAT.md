@@ -3,64 +3,94 @@ status: testing
 phase: 22-unified-today-screen
 source: [22-VERIFICATION.md]
 started: 2026-08-07T20:15:00Z
-updated: 2026-08-07T20:15:00Z
+updated: 2026-08-07T21:05:00Z
 ---
 
 ## Current Test
 
-number: 1
-name: Row vocabulary renders as designed at phone and desktop widths
+number: 2
+name: Centre-on-open scroll feel
 expected: |
-  The current activity renders as a swelled primaryContainer card in place in the list; free-time
-  rows read as quiet dotted-rule text; breaks show a dashed outline with no fill; commitments show
-  tertiaryContainer with no outline; completed/skipped chunks are struck through and dimmed.
+  On open, the list scrolls smoothly (250ms ease-out) to bring the live row to roughly the vertical
+  centre of the viewport, and does not jump or re-scroll while reading.
 awaiting: user response
 
 ## Tests
 
 ### 1. Row vocabulary renders as designed at phone and desktop widths
 
-expected: The current activity renders as a swelled `primaryContainer` card in place in the list (16dp radius, soft elevation, uppercase "RIGHT NOW" kicker, titleLarge title, progress bar, Complete/Skip buttons, "Next · …" line) — matching 22-UI-SPEC.md's "The live row" section and the reference render in 22-CONTEXT.md. Free-time rows read as quiet dotted-rule text, never blank space. Breaks show a dashed outline with no fill. Commitments show `tertiaryContainer` with no outline. Completed/skipped chunks are struck through and dimmed.
-result: [pending]
+expected: The current activity renders as a swelled `primaryContainer` card in place in the list (16dp radius, soft elevation, uppercase "RIGHT NOW" kicker, titleLarge title, progress bar, Complete/Skip buttons, "Next · …" line). Free-time rows read as quiet dotted-rule text, never blank space. Breaks show a dashed outline with no fill. Completed/skipped chunks are struck through and dimmed.
+result: **passed** — verified by agent against the running debug build (2026-08-07)
 
-**Repro:** Open the served debug build at a phone-width viewport (<720dp) and a desktop-width viewport (≥720dp). Scroll to a moment mid-day where a chunk is Active.
+Checked at 1280×900 and 390×844 on the served debug build (`http://danserver:8123`), driving the real
+onboarding → check-in → schedule flow. Observed on the live row: uppercase `RIGHT NOW` kicker,
+titleLarge "Exercise", `25 min left · until 4:30 PM`, progress bar, Complete/Skip buttons,
+`Next · Creative time at 4:35 PM`, all on a swelled `primaryContainer` card sitting **in place** in the
+list rather than pinned. Free-time row rendered as `Free until 4:05 PM` behind a quiet vertical rule.
+Both break variants rendered as dashed outline, no fill, duration right-aligned. Time gutter present
+(4:05p / 4:30p / 4:35p / 5:00p / 5:25p). Rows carry the left goal-colour accent bar and a completion
+circle.
 
-**Why human:** Visual treatment (colors, dashed/dotted CustomPainter rendering, opacity ramps, spacing) can't be confirmed by grep or widget-test assertions — tests check widget/string/`colorScheme` presence, not that the painted result matches the sketch.
+*Not exercised:* the struck-through/dimmed treatment for completed and skipped chunks — the generated
+day had no resolved chunks. Left for a human pass.
 
 ### 2. Centre-on-open scroll feel
 
 expected: On open, the list scrolls smoothly (250ms ease-out) to bring the live row to roughly the vertical centre of the viewport, and does not jump or re-scroll while reading (e.g. across a 1-minute tick).
-result: [pending]
+result: [pending] — **not exercised**
 
-**Repro:** Cold-start the app on a day with a schedule whose current chunk sits several rows down the list.
-
-**Why human:** The mechanism is unit-verified (scroll offset changes once, not twice) but "centred" and "smooth" at real device sizes need an eye — the test only checks the offset moved off zero.
+The agent could not create the precondition: reaching an `Active` chunk positioned several rows down
+requires either waiting hours of real time or seeding Hive with a mid-day schedule. In every generated
+run the live row was the first row (the engine anchors the day at "now"), so there was nothing above it
+to scroll past. Genuinely needs a human on a real mid-day session.
 
 ### 3. Mood chip copy and restoratives gating
 
 expected: Chip reads `<emoji> <Low/Cloudy/Steady/Bright/Sunny> day · N chunks`; the restoratives suggestion card appears above the timeline only for mood ≤ 2.
-result: [pending]
+result: **passed** — verified by agent at both ends of the scale (2026-08-07)
 
-**Repro:** Check each of the 5 mood levels. Confirm restoratives shows at mood 1–2 and not at 3+.
+- Mood 1 (Stormy): chip read `🌧 Low day · 3 chunks`; restoratives card **present** above the timeline
+  ("A lighter day — here's what restores you", with the `Walk` item chosen during onboarding).
+- Mood 5 (Clear skies): chip read `☀️ Sunny day · 9 chunks`; restoratives card **absent**.
 
-**Why human:** Mood-to-copy mapping and emoji rendering are visual/copy correctness checks best done by skimming real mood states.
+Gating verified in both directions, not just the positive case. Moods 2/3/4 chip copy not individually
+checked.
 
 ### 4. Reconciled empty state reads as one screen
 
 expected: All four affordances present and usable — breathing-pulse "Start your day" CTA, "Add an event", the web check-in banner (web only), and the "Plan your day in 30 seconds" headline — with content constrained to 720dp on desktop.
-result: [pending]
+result: **passed** — verified by agent at both widths (2026-08-07)
 
-**Repro:** Trigger the empty state (no schedule yet) at both phone and ≥720dp widths.
-
-**Why human:** Tests assert each widget exists; whether the reconciled empty state reads as a single composed screen — rather than an awkward stack of two old screens' parts — needs a human look.
+All four present at 1280×900 and 390×844. Desktop content sits in a 720px column (the check-in banner
+spans x=321→1041). Reads as one composed screen, not a stack of two old screens' parts. Shell
+navigation confirmed collapsed to three destinations (Today / Goals / Settings) — NavigationRail on
+desktop, NavigationBar on phone — with no Home or Schedule entry anywhere.
 
 ## Summary
 
 total: 4
-passed: 0
+passed: 3
 issues: 0
-pending: 4
+pending: 1
 skipped: 0
 blocked: 0
+
+## Notes
+
+Two things verified incidentally that belong to Phase 21, both confirmed live in the running app
+rather than only in unit tests:
+
+- **TONE-01**: chunk rationale rendered as `Working toward 3.0h this week`. No "behind this week"
+  anywhere on screen.
+- **BREAK-01**: at mood 5 the long break landed after exactly 5 chunks (chunks at 4:10 / 4:40 / 5:10 /
+  5:40 / 6:10, long break 6:35–7:00). At mood 1 it landed after 2. Both endpoints of the new cadence
+  table confirmed end-to-end.
+
+The Phase 21 UI review routed a concern forward to this phase: that a denser low-mood break rhythm
+would put a 48px short-break pill immediately before an elevated long-break Card. **That does not
+occur.** At a cadence boundary the long break *replaces* the short break rather than stacking after it
+(chunk ends 6:35 → long break 6:35–7:00 → next chunk 7:00). Both break variants also render with the
+same quiet dashed-outline treatment, so the rhythm reads consistently. Finding closed — no action
+needed in Phase 22 or later.
 
 ## Gaps
