@@ -253,6 +253,23 @@ it untouched. A verify gate asserts main.dart still contains the original call.
 
     If any row of that map is not actually covered, STOP and report rather than deleting.
 
+    **Check the map against the file, not the map against itself** (plan-checker finding,
+    2026-08-07). Before `git rm`, enumerate every case in the file:
+
+        grep -n 'testWidgets(' test/screens/active_chunk_card_test.dart
+
+    The file holds **14** `testWidgets` cases; the map above lists 13 rows and omits two:
+    - `'renders duration fallback when displayStartMinutes is null'` (~line 186) — likely moot
+      under the new architecture, since a live row implies `Active`/`Overdue` and therefore a
+      resolved start time. Confirm that reasoning holds against the built `TodayScreen` before
+      dropping it; if the null-start path is still reachable for any row type, re-home it.
+    - `'uses no hardcoded Colors'` (~line 222) — superseded by 22-02's grep gate against
+      `Colors.` in `live_row_card.dart`. Confirm that gate exists and passes; it is the
+      replacement, so it must be green before this deletion.
+
+    Any case present in the grep output but absent from both the map and these two notes is an
+    unreviewed assertion — STOP and report it rather than deleting the file.
+
     `git mv test/screens/home_screen_now_state_test.dart test/screens/today_screen_now_state_test.dart`.
     In the moved file: drop the `screens/home/home_screen.dart` and
     `screens/home/widgets/active_chunk_card.dart` imports, add `screens/today/today_screen.dart`
