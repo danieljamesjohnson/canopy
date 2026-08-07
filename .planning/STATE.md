@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: executing
-stopped_at: Completed 23-02-PLAN.md
-last_updated: "2026-08-07T22:16:51.662Z"
+stopped_at: Completed 23-03-PLAN.md
+last_updated: "2026-08-07T22:29:07.017Z"
 last_activity: 2026-08-07 -- Phase 23 execution started
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 9
   percent: 67
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-07T22:16:51.659Z
+**Last session:** 2026-08-07T22:29:07.014Z
 
 ---
 
 ## Current Position
 
 Phase: 23 (Live Activity Tracking) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-08-07 -- Phase 23 execution started
 
@@ -74,6 +74,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 23-02]: _liveSecondsRemaining reads nowState directly (nowState is Active, then nowState.current) rather than taking chunk/start/end as separate parameters — keeps the single-source contract explicit
 - [Phase 23-02]: Progress bar formula changed to 1 - secondsRemaining / (durationMinutes * 60), derived from the same secondsRemaining the label uses, so the two can never disagree (D-04)
 - [Phase 23-02]: Resume rebuilds via setState rather than re-deriving the <60s condition inline in didChangeAppLifecycleState — keeps _syncFastTimer's build() call site the only place the fast-timer decision is made, and fixes a pre-existing resume-staleness bug
+- [Phase ?]: [Phase 23-03]: GapBeforeNext banner unchanged from Phase 22 (P-1) — 23-CONTEXT.md decision 3 supplied verbatim copy for PreStart/DayComplete but only a description for the gap; recorded as a comment-only doc-comment diff above the case
+- [Phase ?]: [Phase 23-03]: TodayScreenState._nowFn is late final (set once in initState); multi-state widget tests must force a full unmount (pumpWidget(SizedBox.shrink())) between pumps of different clocks, or the second state's now closure is silently ignored
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -157,7 +159,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-04
-Stopped at: Completed 23-02-PLAN.md
+Stopped at: Completed 23-03-PLAN.md
 Resume at: `/gsd-plan-phase 21`
 
 ## Performance Metrics
@@ -186,3 +188,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 22-unified-today-screen P04 | 9min | 3 tasks | 20 files |
 | Phase 23 P01 | 10min | 3 tasks | 5 files |
 | Phase 23-live-activity-tracking P02 | 15min | 2 tasks | 2 files |
+| Phase 23-live-activity-tracking P03 | 25min | 2 tasks | 3 files |

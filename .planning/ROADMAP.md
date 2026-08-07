@@ -156,7 +156,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 23-03-PLAN.md — Honest edge states: locked pre-start and day-complete copy, plus the recorded and tested decision to leave the gap banner unchanged (LIVE-03)
+- [x] 23-03-PLAN.md — Honest edge states: locked pre-start and day-complete copy, plus the recorded and tested decision to leave the gap banner unchanged (LIVE-03)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -183,4 +183,4 @@ Plans:
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 2/2 | Complete   | 2026-08-07 |
 | 22. Unified Today Screen | v1.5 | 4/4 | Complete   | 2026-08-07 |
-| 23. Live Activity Tracking | v1.5 | 2/4 | In Progress|  |
+| 23. Live Activity Tracking | v1.5 | 3/4 | In Progress|  |
