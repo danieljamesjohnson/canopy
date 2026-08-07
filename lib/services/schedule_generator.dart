@@ -226,6 +226,12 @@ class ScheduleGeneratorService {
     // chunks; when the day is generated mid-day, packing starts near "now"
     // instead of 8:00 AM. Null → use the default 8:00 AM day start.
   }) {
+    // WR-02: moodIndex is expected to be 1-5 (see DailySchedule.moodIndex);
+    // this is a debug-only guard against a corrupt/legacy Hive value, matching
+    // the existing assert(freq >= 1 && freq <= 7) pattern in
+    // computeDueWeekdays. Release builds keep the ?? fallback below as the
+    // actual runtime safety net.
+    assert(moodIndex >= 1 && moodIndex <= 5);
     final int cap = _effectiveCap(moodIndex, lighterDay);
     final bool isLowMood = moodIndex <= 2;
     final int longBreakEvery = _moodBreakCadence[moodIndex] ?? 4;
