@@ -19,13 +19,24 @@ import 'package:intl/intl.dart';
 ///   4. Time-target goals (mood 3-5 only; multi-chunk demand, most-behind first)
 ///
 /// After allocation, a break insertion pass interleaves shortBreak / longBreak
-/// chunks between every work chunk. longBreakEvery = 3 for mood 1-2, 4 for 3-5.
+/// chunks between every work chunk. longBreakEvery is mood-scaled: 2 / 3 / 4 /
+/// 4 / 5 for moods 1 through 5 — see the break-cadence table below.
 class ScheduleGeneratorService {
   /// Capacity table: maps moodIndex → max discretionary work chunks at 80%.
   ///
   /// Raw max:  mood 1=6, 2=8, 3=10, 4=12, 5=14
   /// 80% cap:  mood 1=4, 2=6, 3=8,  4=9,  5=11
   static const Map<int, int> _moodCap = {1: 4, 2: 6, 3: 8, 4: 9, 5: 11};
+
+  /// Break-cadence table: maps moodIndex → work chunks between long breaks.
+  ///
+  /// mood 1 Stormy = 2 (BREAK-01 low endpoint), mood 2 Overcast = 3,
+  /// mood 3 Partly cloudy = 4 (unchanged from the pre-BREAK-01 baseline),
+  /// mood 4 Clearing up = 4, mood 5 Clear skies = 5 (BREAK-01 sunny
+  /// endpoint). Moods 3 and 4 deliberately plateau at 4 rather than
+  /// inventing a strictly increasing curve the success criteria never
+  /// asked for.
+  static const Map<int, int> _moodBreakCadence = {1: 2, 2: 3, 3: 4, 4: 4, 5: 5};
 
   /// Effective cap after applying lighter-day reduction.
   ///
@@ -217,7 +228,7 @@ class ScheduleGeneratorService {
   }) {
     final int cap = _effectiveCap(moodIndex, lighterDay);
     final bool isLowMood = moodIndex <= 2;
-    final int longBreakEvery = isLowMood ? 3 : 4;
+    final int longBreakEvery = _moodBreakCadence[moodIndex] ?? 4;
 
     // Collect work chunks in allocation order.
     final List<ScheduledChunk> workChunks = [];
