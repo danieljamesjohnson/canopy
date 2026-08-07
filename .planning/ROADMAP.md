@@ -90,44 +90,60 @@ browser-verified; 289/289 tests green. See `v1.4-MILESTONE-AUDIT.md`.
 ## Phase Details
 
 ### Phase 21: Mood-Scaled Breaks & Honest Rationale
+
 **Goal**: The schedule's break cadence adapts to the morning mood, and a time-target goal's rationale never frames the user as behind
 **Depends on**: Nothing (parallel-safe with Phase 22 — self-contained engine + copy change, no shared surface with the screen merge)
 **Requirements**: BREAK-01, BREAK-02, TONE-01
 **Success Criteria** (what must be TRUE):
+
   1. On a low-mood day, the generated schedule inserts a long break after roughly every 2 chunks; on a sunny-mood day, after roughly every 5 chunks — deterministic and unit-tested
   2. Every chunk is still followed by its 5-min short break, and every long break is still 25 minutes — only the cadence count changed, not the break structure
   3. No schedule or rationale text anywhere reads "behind this week"; a time-target goal's rationale reads as what the schedule is doing for the user, not as a deficit report
-**Plans**: 2 plans, 2 waves. Mood cadence mapping locked at `{1:2, 2:3, 3:4, 4:4, 5:5}` (moods 3/4 plateau; endpoints per success criterion 1).
-Plans:
+
+**Plans**: 2 plans, 2 waves. Mood cadence mapping locked at `{1:2, 2:3, 3:4, 4:4, 5:5}` (moods 3/4 plateau; endpoints per success criterion 1).Plans:
+**Wave 1**
+
 - [ ] 21-01-mood-scaled-break-cadence-PLAN.md — five-point `_moodBreakCadence` table replaces the `isLowMood ? 3 : 4` ternary, plus the six cadence/structure tests that make the cadence verifiable for the first time (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 21-02-honest-time-target-rationale-PLAN.md — `_timeTargetRationale` deficit branch becomes "Working toward N.Nh this week", pinned by tests on both branches and a repo-wide grep gate (wave 2)
+
 **Note**: the long-standing carry-forward claim that "three tests at ~lines 492-543 assert the every-4 cadence and must change" is stale — 21-RESEARCH.md verified empirically that all 54 existing tests pass unchanged under the new mapping. There was zero discriminating cadence coverage before this phase, which is why the new tests are the substance of plan 21-01 rather than an afterthought.
 
 ### Phase 22: Unified Today Screen
+
 **Goal**: Home and Schedule merge into a single destination — users see what's happening now and the rest of the day without switching tabs, and every existing entry point still lands somewhere real
 **Depends on**: Nothing (parallel-safe with Phase 21; structural/navigation work only — live-tracking behavior is layered on afterward in Phase 23)
 **Requirements**: UNIFY-01, UNIFY-02
 **Success Criteria** (what must be TRUE):
+
   1. Opening the app lands the user on one screen that shows both what's happening now and the rest of the day's chunks — no tab switch required
   2. The shell's destination list reflects the merge — Home and Schedule no longer point at two separate screens for the same underlying content
   3. Tapping a Chunk reminder notification lands on the working unified screen, not a dead or blank route (currently `router.go('/schedule')`, `lib/main.dart:86`)
   4. The in-app "See full schedule" link (`lib/screens/home/home_screen.dart:495`) resolves to something coherent post-merge, not a stale destination
+
 **Plans**: 4 plans, 3 waves. Merged destination is "Today" at `/today` (`lib/screens/today/`).
 Plans:
+
 - [ ] 22-01-now-state-and-timeline-model-PLAN.md — relocate `resolveNowState`/`NowState` out of home_screen.dart and add the pure `buildTimeline` row model, making `resolveNowState` the single "now" detector by construction (wave 1)
 - [ ] 22-02-timeline-row-vocabulary-PLAN.md — 46dp time gutter, named free-time rows, the swelled `LiveRowCard`, and the extended `chunk_card` row treatments (wave 1)
 - [ ] 22-03-today-screen-assembly-PLAN.md — build `TodayScreen`: one scrollable day, live row centred on open, reconciled empty state, edge-state copy preserved (wave 2)
 - [ ] 22-04-navigation-merge-and-cleanup-PLAN.md — router branches 4→3 with a `/schedule` redirect, shell 4→3, delete the two old screens, migrate their tests (wave 3)
+
 **UI hint**: yes
 
 ### Phase 23: Live Activity Tracking
+
 **Goal**: The unified screen always tells the truth about what's happening right now, including breaks, with a live countdown
 **Depends on**: Phase 22 (the live readout is layered onto the merged screen's now-state; wiring it against a screen that's still split in two would mean redoing it once the merge lands)
 **Requirements**: LIVE-01, LIVE-02, LIVE-03
 **Success Criteria** (what must be TRUE):
+
   1. When a break is running, the screen names it as a break with time remaining — never reads as empty or idle time (extends `resolveNowState`, which Phase 22 relocated to `lib/screens/today/now_state.dart`, past its current work-chunks-only filter)
   2. Time remaining in the current activity (chunk or break) visibly counts down while the screen stays open
   3. Before the day's first chunk starts, in a gap between activities, and after the day is complete, the screen shows a distinct, truthful state for each case
+
 **Plans**: TBD
 **UI hint**: yes
 

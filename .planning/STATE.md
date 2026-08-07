@@ -3,8 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: planning
-last_updated: "2026-08-04T00:00:00.000Z"
-last_activity: 2026-08-04
+stopped_at: v1.5 roadmap created
+last_updated: "2026-08-07T19:05:57.413Z"
+last_activity: "2026-08-04 — v1.5 roadmap created (3 phases: 21-23)"
 progress:
   total_phases: 3
   completed_phases: 0
