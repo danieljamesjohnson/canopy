@@ -144,10 +144,17 @@ Plans:
   2. Time remaining in the current activity (chunk or break) visibly counts down while the screen stays open
   3. Before the day's first chunk starts, in a gap between activities, and after the day is complete, the screen shows a distinct, truthful state for each case
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 23-01-PLAN.md — Break-aware now-state: drop resolveNowState's work-only filter, name a running break in the live row and in every "next" line, and exclude breaks from the "Start focus" target (LIVE-01)
+- [ ] 23-02-PLAN.md — Live countdown: second-precision remaining-time label (whole minutes rounded up above 60s, seconds below) driven by a dual-cadence tick, with the 1-second timer alive only in the final minute (LIVE-02)
+- [ ] 23-03-PLAN.md — Honest edge states: locked pre-start and day-complete copy, plus the recorded and tested decision to leave the gap banner unchanged (LIVE-03)
+- [ ] 23-04-PLAN.md — Phase gate: full suite + analyze, served debug build, and Dan's sign-off on the two manual-only verifications and the gap-banner decision
+
 **UI hint**: yes
 
-**Open design decision for phase planning:** LIVE-02's tick granularity is not decided here. The existing `Timer.periodic` (carried into `TodayScreen` by Phase 22) fires once a minute; a countdown that visibly moves may need a faster tick for the live row while other regions stay on the coarser cadence. Phase planning must pick and justify a granularity rather than silently inherit the 1-minute timer.
+**Open design decision — RESOLVED during Phase 23 planning:** LIVE-02's tick granularity was left open here and is now decided (`23-CONTEXT.md` decision 1, implemented in plan 23-02): whole minutes rounded up while at least 60s remain, seconds below that, with a second 1-second timer that exists only inside the final minute so the all-day 1-minute ticker is not replaced. The original wording follows. LIVE-02's tick granularity is not decided here. The existing `Timer.periodic` (carried into `TodayScreen` by Phase 22) fires once a minute; a countdown that visibly moves may need a faster tick for the live row while other regions stay on the coarser cadence. Phase planning must pick and justify a granularity rather than silently inherit the 1-minute timer.
 
 **Seam left by Phase 22:** `LiveRowCard` takes `kicker` and `remainingLabel` as injected strings, so LIVE-01/LIVE-02 change what `TodayScreen` computes rather than the widget's layout. `showActions` is already wired from the chunk type for LIVE-01's break case. The pre-start / gap / day-complete copy was carried across verbatim, so LIVE-03 refines wording rather than rebuilding states.
 
@@ -166,4 +173,4 @@ Plans:
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 2/2 | Complete   | 2026-08-07 |
 | 22. Unified Today Screen | v1.5 | 4/4 | Complete   | 2026-08-07 |
-| 23. Live Activity Tracking | v1.5 | 0/? | Not started | - |
+| 23. Live Activity Tracking | v1.5 | 0/4 | Planned | - |
