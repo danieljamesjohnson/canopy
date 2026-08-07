@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
-status: planning
+status: executing
 stopped_at: v1.5 roadmap created
-last_updated: "2026-08-07T19:05:57.413Z"
-last_activity: "2026-08-04 — v1.5 roadmap created (3 phases: 21-23)"
+last_updated: "2026-08-07T19:12:32.088Z"
+last_activity: 2026-08-07 -- Phase 21 execution started
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 6
+  completed_plans: 1
   percent: 0
 ---
 
@@ -18,16 +18,16 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-04
+**Last session:** 2026-08-07T19:12:07.878Z
 
 ---
 
 ## Current Position
 
-Phase: 21 — Mood-Scaled Breaks & Honest Rationale (Not started)
-Plan: —
-Status: Roadmap defined; ready to plan Phase 21
-Last activity: 2026-08-04 — v1.5 roadmap created (3 phases: 21-23)
+Phase: 21 (Mood-Scaled Breaks & Honest Rationale) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-08-07 -- Phase 21 execution started
 
 ```
 Progress: [░░░░░░░░░░] 0% — Phase 21/23
@@ -38,7 +38,7 @@ Progress: [░░░░░░░░░░] 0% — Phase 21/23
 See: `.planning/PROJECT.md` (updated 2026-08-04)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** v1.5 "Right Now" — merge Home/Schedule, live activity tracking, mood-scaled breaks, drop "behind" framing
+**Current focus:** Phase 21 — Mood-Scaled Breaks & Honest Rationale
 
 ## v1.5 Phase Summary
 
@@ -61,6 +61,7 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 19-energy-valence]: EnergyValence is a plain Dart enum with no @HiveType — stored as int index in Goal.energyValenceIndex (HiveField 12) — Follows existing GoalType/ChunkType pattern; no new typeId needed; neutral=0 ensures old records read correctly via getter default.
 - [Phase ?]: Align(topCenter)+ConstrainedBox(maxWidth: 720) applied to Home, Goals, Schedule body content for POLISH-01 — relevant precedent for whatever layout Phase 22's merged screen uses.
 - [Phase ?]: Valence colors: tertiaryContainer for gives, secondaryContainer for costs — colorScheme.error excluded per UI-SPEC.
+- [Phase 21-01]: Cadence table locked to {1:2, 2:3, 3:4, 4:4, 5:5}; isLowMood preserved unmodified, cadence lookup keyed on moodIndex directly (BREAK-01/02)
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -138,3 +139,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 19-energy-valence P05 | 15min | 2 tasks | 2 files |
 | Phase 20-valence-aware-engine P01 | 2min | 2 tasks | 1 files |
 | Phase 20-valence-aware-engine P02 | 3min | 3 tasks | 1 files |
+| Phase 21 P01 | 5min | 2 tasks | 2 files |

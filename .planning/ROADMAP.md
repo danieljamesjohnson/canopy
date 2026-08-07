@@ -103,7 +103,7 @@ browser-verified; 289/289 tests green. See `v1.4-MILESTONE-AUDIT.md`.
 **Plans**: 2 plans, 2 waves. Mood cadence mapping locked at `{1:2, 2:3, 3:4, 4:4, 5:5}` (moods 3/4 plateau; endpoints per success criterion 1).Plans:
 **Wave 1**
 
-- [ ] 21-01-mood-scaled-break-cadence-PLAN.md — five-point `_moodBreakCadence` table replaces the `isLowMood ? 3 : 4` ternary, plus the six cadence/structure tests that make the cadence verifiable for the first time (wave 1)
+- [x] 21-01-mood-scaled-break-cadence-PLAN.md — five-point `_moodBreakCadence` table replaces the `isLowMood ? 3 : 4` ternary, plus the six cadence/structure tests that make the cadence verifiable for the first time (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -164,6 +164,6 @@ Plans:
 | 18. Responsive Modals and Desktop Polish | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 19. Energy Valence | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
-| 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 0/? | Not started | - |
+| 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 1/2 | In Progress|  |
 | 22. Unified Today Screen | v1.5 | 0/4 | Planned | - |
 | 23. Live Activity Tracking | v1.5 | 0/? | Not started | - |

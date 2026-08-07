@@ -19,8 +19,8 @@
 
 ### Mood-Scaled Breaks
 
-- [ ] **BREAK-01**: Chunks-before-a-long-break scales with the morning mood — roughly 2 on a low day, 5 on a sunny one — deterministically and unit-tested
-- [ ] **BREAK-02**: The 25-min chunk / 5-min short break interleave and the 25-min long break are preserved through the change
+- [x] **BREAK-01**: Chunks-before-a-long-break scales with the morning mood — roughly 2 on a low day, 5 on a sunny one — deterministically and unit-tested
+- [x] **BREAK-02**: The 25-min chunk / 5-min short break interleave and the 25-min long break are preserved through the change
 
 ### Tone
 
@@ -63,8 +63,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | LIVE-01 | Phase 23 | Pending |
 | LIVE-02 | Phase 23 | Pending |
 | LIVE-03 | Phase 23 | Pending |
-| BREAK-01 | Phase 21 | Pending |
-| BREAK-02 | Phase 21 | Pending |
+| BREAK-01 | Phase 21 | Complete |
+| BREAK-02 | Phase 21 | Complete |
 | TONE-01 | Phase 21 | Pending |
 
 **Coverage:**
