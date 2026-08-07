@@ -463,6 +463,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     BuildContext context,
     TimelineRow row,
     NowState nowState,
+    int? secondsRemaining,
   ) {
     switch (row) {
       case LeadingFreeRow(:final untilMinutes):
@@ -483,7 +484,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
             key: _liveRowKey,
             child: TimelineRowTile(
               startMinutes: chunk.displayStartMinutes,
-              child: _buildLiveRow(context, chunk, nowState),
+              child: _buildLiveRow(context, chunk, nowState, secondsRemaining),
             ),
           );
         }
@@ -556,14 +557,35 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     return isBreak ? 'RIGHT NOW — RESTING' : 'RIGHT NOW';
   }
 
+  /// The single source of "how much of the current activity is left," in
+  /// whole seconds. Feeds the live row's remaining-time label, its progress
+  /// bar, AND the fast-timer decision ([_syncFastTimer]) — because all three
+  /// read this one value, they can never disagree (P-5). Returns `null`
+  /// unless [nowState] is [Active] and its current chunk has a clock
+  /// position (`displayStartMinutes`). Reads the clock only through
+  /// [_nowFn].
+  int? _liveSecondsRemaining(NowState nowState) {
+    if (nowState is! Active) return null;
+    final current = nowState.current;
+    final start = current.displayStartMinutes;
+    if (start == null) return null;
+    final end = start + current.durationMinutes;
+    final nowDt = _nowFn();
+    final endSeconds = end * 60;
+    final nowSeconds = nowDt.hour * 3600 + nowDt.minute * 60 + nowDt.second;
+    final rawSecondsLeft = endSeconds - nowSeconds;
+    return rawSecondsLeft.clamp(0, current.durationMinutes * 60);
+  }
+
   /// Builds the swelled in-place live row (D-01). The kicker names a
-  /// running break as "RIGHT NOW — RESTING" (LIVE-01); any faster tick
-  /// granularity for the countdown is Phase 23 / LIVE-02's decision, not
-  /// this plan's (scope boundary).
+  /// running break as "RIGHT NOW — RESTING" (LIVE-01). [secondsRemaining] is
+  /// [_liveSecondsRemaining]'s output, threaded down from build() so the
+  /// countdown is computed exactly once (P-5).
   Widget _buildLiveRow(
     BuildContext context,
     ScheduledChunk chunk,
     NowState nowState,
+    int? secondsRemaining,
   ) {
     final title = _liveTitle(context, chunk);
     final start = chunk.displayStartMinutes;
@@ -577,19 +599,25 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
 
     String remainingLabel;
     double progress;
-    if (nowState is Active && start != null && end != null) {
-      final nowDt = _nowFn();
-      final nowMinutes = nowDt.hour * 60 + nowDt.minute;
-      final rawMinLeft = end - nowMinutes;
-      final minLeft = rawMinLeft.clamp(0, chunk.durationMinutes).toInt();
-      remainingLabel = '$minLeft min left · until ${formatMinutes(end)}';
+    if (nowState is Active &&
+        start != null &&
+        end != null &&
+        secondsRemaining != null) {
+      if (secondsRemaining >= 60) {
+        final minLeft = (secondsRemaining + 59) ~/ 60;
+        remainingLabel = '$minLeft min left · until ${formatMinutes(end)}';
+      } else {
+        remainingLabel =
+            '${secondsRemaining}s left · until ${formatMinutes(end)}';
+      }
       progress = chunk.durationMinutes == 0
           ? 1.0
-          : (nowMinutes - start) / chunk.durationMinutes;
+          : 1 - secondsRemaining / (chunk.durationMinutes * 60);
     } else if (start != null && end != null) {
       // Overdue — the old "now" card's existing plain time-range copy.
-      // Do NOT invent "behind" wording here (Copywriting Contract);
-      // the remaining-time granularity is Phase 23 / LIVE-02's decision.
+      // The Overdue branch deliberately shows the plain window range and no
+      // countdown (LIVE-02 does not ask it to); do NOT invent "behind"
+      // wording here (Copywriting Contract).
       remainingLabel = formatTimeRange(start, end);
       progress = 1.0;
     } else {
@@ -773,6 +801,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     // buildTimeline turns that classification into a row list, and nothing
     // below this point re-derives which chunk is current.
     final nowState = resolveNowState(chunks: schedule.chunks, now: _nowFn);
+    final liveSecondsLeft = _liveSecondsRemaining(nowState);
     final timelineRows = buildTimeline(
       chunks: schedule.chunks,
       nowState: nowState,
@@ -839,7 +868,12 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                     children: [
                       if (mood <= 2) _buildRestorativeSuggestions(context),
                       for (final row in timelineRows)
-                        _buildTimelineRow(context, row, nowState),
+                        _buildTimelineRow(
+                          context,
+                          row,
+                          nowState,
+                          liveSecondsLeft,
+                        ),
                     ],
                   ),
                 ),

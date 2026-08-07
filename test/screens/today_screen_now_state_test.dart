@@ -1070,5 +1070,208 @@ void main() {
       );
       expect(find.widgetWithText(FilledButton, 'Complete'), findsOneWidget);
     });
+
+    // ── LIVE-02: second-precision countdown label (D-01, D-04, P-5) ────────
+
+    testWidgets('15 minutes remaining reads whole minutes', (tester) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 30,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 8, 15, 0),
+      );
+      expect(find.text('15 min left · until 8:30 AM'), findsOneWidget);
+    });
+
+    testWidgets('sub-minute remainders round UP, never down (D-01)', (
+      tester,
+    ) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 30,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 8, 15, 30),
+      );
+      expect(find.text('15 min left · until 8:30 AM'), findsOneWidget);
+      expect(find.textContaining('14 min left'), findsNothing);
+    });
+
+    testWidgets('61 seconds remaining is still the minutes branch', (
+      tester,
+    ) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 30,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 8, 28, 59),
+      );
+      expect(find.text('2 min left · until 8:30 AM'), findsOneWidget);
+    });
+
+    testWidgets('exactly 60 seconds remaining is the minutes branch boundary', (
+      tester,
+    ) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 30,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 8, 29, 0),
+      );
+      expect(find.text('1 min left · until 8:30 AM'), findsOneWidget);
+    });
+
+    testWidgets('59 seconds remaining switches to seconds', (tester) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 30,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 8, 29, 1),
+      );
+      expect(find.text('59s left · until 8:30 AM'), findsOneWidget);
+    });
+
+    testWidgets('1 second remaining still reads seconds, never 0 min', (
+      tester,
+    ) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 30,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 8, 29, 59),
+      );
+      expect(find.text('1s left · until 8:30 AM'), findsOneWidget);
+      expect(find.textContaining('0 min left'), findsNothing);
+    });
+
+    testWidgets('a running break gets the same countdown treatment', (
+      tester,
+    ) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 25,
+            ),
+            _breakChunk(
+              id: 'b1',
+              syntheticStartMinutes: 505,
+              durationMinutes: 5,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 8, 29, 30),
+      );
+      expect(find.text('30s left · until 8:30 AM'), findsOneWidget);
+    });
+
+    testWidgets('the progress bar tracks the same value as the label', (
+      tester,
+    ) async {
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 30,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 8, 15, 0),
+      );
+      final progressIndicator = tester.widget<LinearProgressIndicator>(
+        find.descendant(
+          of: find.byType(LiveRowCard),
+          matching: find.byType(LinearProgressIndicator),
+        ),
+      );
+      expect(progressIndicator.value, closeTo(0.5, 0.001));
+    });
   });
 }
