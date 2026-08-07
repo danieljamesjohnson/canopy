@@ -2113,31 +2113,34 @@ void main() {
   // toStringAsFixed(1) = '5.0'. Demand = ceil(5.0*60/25/7) = 2 chunks (Monday
   // -> daysLeft = 7), so generate() emits exactly 3 chunks: work, shortBreak,
   // work; both work chunks carry the time-target rationale.
-  test('TONE-01: under-pace time-target rationale reads as working toward, not behind', () {
-    final goals = [makeTimeTarget(name: 'Reading', weeklyHourBudget: 5)];
-    final result = sut.generate(
-      goals: goals,
-      blocks: [],
-      moodIndex: 3,
-      date: monday,
-      completionLogs: [],
-      lighterDay: false,
-    );
-
-    expect(result.length, 3);
-    expect(result[0].rationale, 'Working toward 5.0h this week');
-    expect(result[2].rationale, 'Working toward 5.0h this week');
-
-    for (final chunk in result) {
-      expect(
-        chunk.rationale.toLowerCase(),
-        isNot(contains('behind')),
-        reason:
-            'TONE-01 requires that no rationale text ever read "behind" — chunk '
-            '${chunk.chunkType} had rationale "${chunk.rationale}"',
+  test(
+    'TONE-01: under-pace time-target rationale reads as working toward, not behind',
+    () {
+      final goals = [makeTimeTarget(name: 'Reading', weeklyHourBudget: 5)];
+      final result = sut.generate(
+        goals: goals,
+        blocks: [],
+        moodIndex: 3,
+        date: monday,
+        completionLogs: [],
+        lighterDay: false,
       );
-    }
-  });
+
+      expect(result.length, 3);
+      expect(result[0].rationale, 'Working toward 5.0h this week');
+      expect(result[2].rationale, 'Working toward 5.0h this week');
+
+      for (final chunk in result) {
+        expect(
+          chunk.rationale.toLowerCase(),
+          isNot(contains('behind')),
+          reason:
+              'TONE-01 requires that no rationale text ever read "behind" — '
+              'chunk ${chunk.chunkType} had rationale "${chunk.rationale}"',
+        );
+      }
+    },
+  );
 
   // Test B arithmetic: budget 0.45h, one completed 25-minute chunk ->
   // completedHrs = 25/60 = 0.4167, remaining = (0.45 - 0.4167).clamp(0.0,
