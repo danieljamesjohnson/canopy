@@ -56,12 +56,30 @@ change is behavioural: it now names a break correctly when the next activity is 
 
 **Why human:** This is a design call the spec left open, not a defect. It needs your yes or no.
 
+### 4. Should rest look different from work? (raised by the 23 UI audit)
+
+expected: A verdict from Dan — keep the shared treatment, or give rest its own container role.
+result: [pending]
+
+**Context:** A break live row and a work live row currently share the same `primaryContainer` swell.
+The only differences are the kicker suffix (`RIGHT NOW — RESTING` vs `RIGHT NOW`) and the absence of
+the Complete/Skip row. The UI audit's view: that contrast is legible if you *read* it, but not at a
+glance — and for an app whose pitch is quick-glance control over your time, two semantically opposite
+states looking near-identical undercuts the copy that works hard to distinguish them. Suggested
+alternative: give rest a distinct container role (e.g. `secondaryContainer`).
+
+Compare `warp-plus70.png` (break) against `sec-plus82p6.png` (work) — sent to you above.
+
+**Why human:** This is spec-locked (`23-UI-SPEC.md` chose the shared treatment) and it is a taste call,
+not a defect. Changing it unilaterally would override a locked design decision. Scored 2/4 on Visuals
+for this reason; everything else in the audit passed.
+
 ## Summary
 
-total: 3
+total: 4
 passed: 0
 issues: 0
-pending: 3
+pending: 4
 skipped: 0
 blocked: 0
 
