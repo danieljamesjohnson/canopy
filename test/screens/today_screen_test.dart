@@ -13,8 +13,11 @@ import 'package:canopy/providers/restoratives_notifier.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/theme_notifier.dart';
 import 'package:canopy/screens/commitments/commitment_form_sheet.dart';
+import 'package:canopy/screens/schedule/widgets/chunk_detail_sheet.dart';
+import 'package:canopy/screens/schedule/widgets/now_marker.dart';
 import 'package:canopy/screens/today/today_screen.dart';
 import 'package:canopy/screens/today/widgets/breathing_pulse_cta.dart';
+import 'package:canopy/screens/today/widgets/live_row_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -101,6 +104,24 @@ ScheduledChunk _workChunk({
   if (isCompleted) c.isCompleted = true;
   if (isSkipped) c.isSkipped = true;
   return c;
+}
+
+/// Creates a commitment-anchored work chunk (goalId == null, commitmentId
+/// set) with an anchored (not synthetic) start time.
+ScheduledChunk _commitmentChunk({
+  String id = 'commit-1',
+  required int anchoredStartMinutes,
+  int durationMinutes = 60,
+  String rationale = 'Job',
+}) {
+  return ScheduledChunk(
+    id: id,
+    chunkTypeIndex: ChunkType.work.index,
+    commitmentId: 'block-1',
+    durationMinutes: durationMinutes,
+    rationale: rationale,
+    anchoredStartMinutes: anchoredStartMinutes,
+  );
 }
 
 String _todayYmd() {
@@ -232,5 +253,194 @@ void main() {
       );
       expect(tester.takeException(), isNull);
     });
+  });
+
+  group('Task 2 — the day as one list, live row in place, named free time', () {
+    // Fixture: 8:00 completed (25m), 9:00 skipped (25m), 10:45 live work
+    // chunk (5m — short like a break, but a WORK chunk so resolveNowState
+    // can classify it as Active without widening the work-only filter;
+    // widening that filter to real breaks is Phase 23 / LIVE-01), 10:50
+    // unresolved work chunk (25m, ends 11:15), and a 13:00 commitment chunk
+    // (60m) — leaving a >10min gap from 11:15 to 13:00.
+    List<ScheduledChunk> buildDayFixture() => [
+      _workChunk(
+        id: 'c1',
+        syntheticStartMinutes: 480, // 8:00
+        durationMinutes: 25,
+        isCompleted: true,
+        rationale: 'Morning routine',
+      ),
+      _workChunk(
+        id: 'c2',
+        syntheticStartMinutes: 540, // 9:00
+        durationMinutes: 25,
+        isSkipped: true,
+        rationale: 'Side project',
+      ),
+      _workChunk(
+        id: 'c3',
+        syntheticStartMinutes: 645, // 10:45
+        durationMinutes: 5,
+        rationale: 'Taking a break',
+      ),
+      _workChunk(
+        id: 'c4',
+        syntheticStartMinutes: 650, // 10:50
+        durationMinutes: 25,
+        rationale: 'Reading',
+      ),
+      _commitmentChunk(
+        id: 'c5',
+        anchoredStartMinutes: 780, // 13:00
+        durationMinutes: 60,
+        rationale: 'Job',
+      ),
+    ];
+
+    Future<void> pumpDay(
+      WidgetTester tester, {
+      RestorativesNotifier? restorativesNotifier,
+      int moodIndex = 3,
+    }) async {
+      final schedule = DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: moodIndex,
+        chunks: buildDayFixture(),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+        now: () => DateTime(2026, 8, 7, 10, 47), // inside the 10:45 window
+        restorativesNotifier: restorativesNotifier,
+      );
+    }
+
+    testWidgets('exactly one LiveRowCard, for the 10:45 chunk', (tester) async {
+      await pumpDay(tester);
+
+      expect(find.byType(LiveRowCard), findsOneWidget);
+      final liveCard = tester.widget<LiveRowCard>(find.byType(LiveRowCard));
+      expect(liveCard.chunkId, 'c3');
+    });
+
+    testWidgets('completed and skipped chunks still render as rows, inline, no '
+        '"Skipped today" text', (tester) async {
+      await pumpDay(tester);
+
+      expect(find.textContaining('Morning routine'), findsOneWidget);
+      expect(find.textContaining('Side project'), findsOneWidget);
+      expect(find.textContaining('Skipped today'), findsNothing);
+      expect(find.byType(ExpansionTile), findsNothing);
+    });
+
+    testWidgets('"Free until 8:00 AM" precedes the first activity', (
+      tester,
+    ) async {
+      await pumpDay(tester);
+
+      expect(find.textContaining('Free until 8:00 AM'), findsOneWidget);
+    });
+
+    testWidgets('a named "Free ·" row appears for the 11:15–13:00 gap', (
+      tester,
+    ) async {
+      await pumpDay(tester);
+
+      expect(find.textContaining('Free ·'), findsOneWidget);
+    });
+
+    testWidgets('the gutter shows the compact start time for timed rows', (
+      tester,
+    ) async {
+      await pumpDay(tester);
+
+      expect(find.textContaining('8:00'), findsWidgets);
+      expect(find.textContaining('1:00p'), findsOneWidget);
+    });
+
+    testWidgets('no NowMarker widget is in the tree', (tester) async {
+      await pumpDay(tester);
+
+      expect(find.byType(NowMarker), findsNothing);
+    });
+
+    testWidgets('"See full schedule" appears nowhere (D-08 / G4)', (
+      tester,
+    ) async {
+      await pumpDay(tester);
+
+      expect(find.text('See full schedule'), findsNothing);
+    });
+
+    testWidgets('a mood-2 schedule renders the restoratives card', (
+      tester,
+    ) async {
+      await pumpDay(tester, moodIndex: 2);
+
+      expect(find.text('Low on energy today?'), findsOneWidget);
+    });
+
+    testWidgets('a mood-4 schedule does not render the restoratives card', (
+      tester,
+    ) async {
+      await pumpDay(tester, moodIndex: 4);
+
+      expect(find.text('Low on energy today?'), findsNothing);
+    });
+
+    testWidgets('work chunks more than half resolved expose "View your day"', (
+      tester,
+    ) async {
+      final schedule = DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: [
+          _workChunk(id: 'a', syntheticStartMinutes: 480, isCompleted: true),
+          _workChunk(id: 'b', syntheticStartMinutes: 540),
+        ],
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+        now: () => DateTime(2026, 8, 7, 10, 0),
+      );
+
+      expect(find.byType(PopupMenuButton<String>), findsOneWidget);
+    });
+
+    testWidgets(
+      'work chunks below half resolved do NOT expose "View your day"',
+      (tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(id: 'a', syntheticStartMinutes: 480, isCompleted: true),
+            _workChunk(id: 'b', syntheticStartMinutes: 540),
+            _workChunk(id: 'c', syntheticStartMinutes: 600),
+            _workChunk(id: 'd', syntheticStartMinutes: 660),
+          ],
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => DateTime(2026, 8, 7, 9, 0),
+        );
+
+        expect(find.byType(PopupMenuButton<String>), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping an unresolved non-live work row opens ChunkDetailSheet',
+      (tester) async {
+        await pumpDay(tester);
+
+        await tester.tap(find.textContaining('Reading'));
+        await tester.pump();
+
+        expect(find.byType(ChunkDetailSheet), findsOneWidget);
+      },
+    );
   });
 }
