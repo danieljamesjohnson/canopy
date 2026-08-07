@@ -80,6 +80,7 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - `lib/widgets/responsive_shell.dart` hardcodes four destinations (Home/Goals/Schedule/Settings) citing a UI-SPEC "icon library lock" — UNIFY-02 revisits this contract
 - Notification taps route via `router.go('/schedule')` (`lib/main.dart:86`); `home_screen.dart:495` also navigates there — both must land on the unified screen after Phase 22, not a dead route
 - Screens to merge: `lib/screens/home/home_screen.dart` (848 lines) and `lib/screens/schedule/schedule_screen.dart` (495 lines), plus their `widgets/` folders
+- **From Phase 21 UI review (2026-08-07) — check during Phase 22:** mood-1 days now insert a long break every 2 chunks (was every 3), so a Stormy day renders a 48px short-break pill immediately followed by an elevated long-break `Card` roughly every 4th row — a rhythm the app has never rendered before. `chunk_card.dart` `_buildShortBreak`/`_buildLongBreak` are unchanged and were judged "degree not kind", correctly not solved in Phase 21. Phase 22 already owns `chunk_card.dart`, so look at a real mood-1 list there: if it reads noisy, tighten the two break variants when adjacent — **not** a new collapse affordance.
 
 ### Blockers / Concerns
 
