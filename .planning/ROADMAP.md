@@ -196,7 +196,7 @@ only cross-plan constraint is `today_screen.dart`, which 23-05 and 23-07 both to
 
 **UI hint**: yes
 
-**Plans**: 3 plans
+**Plans**: 4 plans
 Plans:
 **Wave 1**
 
@@ -209,6 +209,10 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [x] 24-03-PLAN.md — Serve the debug web build and get Dan's at-a-glance verdict (wave 3, has checkpoint)
+
+**Wave 4** *(gap closure, blocked on Wave 3 completion)*
+
+- [ ] 24-04-PLAN.md — Gap closure: key the now-marker and add its centre-on-open fallback for `DayComplete`/`PreStart`/`GapBeforeNext` (no live row to centre on otherwise), plus a two-flag regression test (wave 4)
 
 **Open design decision — RESOLVED during Phase 23 planning:** LIVE-02's tick granularity was left open here and is now decided (`23-CONTEXT.md` decision 1, implemented in plan 23-02): whole minutes rounded up while at least 60s remain, seconds below that, with a second 1-second timer that exists only inside the final minute so the all-day 1-minute ticker is not replaced. The original wording follows. LIVE-02's tick granularity is not decided here. The existing `Timer.periodic` (carried into `TodayScreen` by Phase 22) fires once a minute; a countdown that visibly moves may need a faster tick for the live row while other regions stay on the coarser cadence. Phase planning must pick and justify a granularity rather than silently inherit the 1-minute timer.
 
