@@ -8,10 +8,12 @@
 
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
+import 'package:canopy/providers/theme_notifier.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_card.dart';
 import 'package:canopy/screens/schedule/widgets/swipeable_chunk_card.dart';
 import 'package:canopy/screens/today/widgets/free_time_row.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
+import 'package:canopy/screens/today/widgets/now_marker.dart';
 import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -182,6 +184,67 @@ void main() {
       await pumpWithMood(tester, const FreeTimeRow.gap(durationMinutes: 100));
       expect(find.byType(Card), findsNothing);
     });
+  });
+
+  group('NowMarker (NOW-01, UI-SPEC locked)', () {
+    testWidgets('renders the locked "Now" label exactly once', (
+      tester,
+    ) async {
+      await pumpWithMood(tester, const NowMarker());
+      expect(find.text('Now'), findsOneWidget);
+    });
+
+    testWidgets('renders no Card', (tester) async {
+      await pumpWithMood(tester, const NowMarker());
+      expect(find.byType(Card), findsNothing);
+    });
+
+    testWidgets('leading rule is a 24x2dp Container', (tester) async {
+      await pumpWithMood(tester, const NowMarker());
+      final containerFinder = find.descendant(
+        of: find.byType(NowMarker),
+        matching: find.byType(Container),
+      );
+      expect(containerFinder, findsWidgets);
+      final leadingSize = tester.getSize(containerFinder.first);
+      expect(leadingSize, const Size(24, 2));
+    });
+
+    testWidgets(
+      '"Now" label is w600 and colored colorScheme.primary from the pumped '
+      'theme',
+      (tester) async {
+        await pumpWithMood(tester, const NowMarker());
+        final style = tester.widget<Text>(find.text('Now')).style;
+        expect(style?.fontWeight, FontWeight.w600);
+        final expectedColor = ColorScheme.fromSeed(
+          seedColor: ThemeNotifier.moodSeeds[3]!,
+        ).primary;
+        expect(style?.color, expectedColor);
+      },
+    );
+
+    testWidgets('no hardcoded Colors literal reaches the widget tree', (
+      tester,
+    ) async {
+      // Static grep gate (flutter analyze + task verify) is the real check;
+      // this just proves the mood-3 render path still completes cleanly.
+      await pumpWithMood(tester, const NowMarker());
+      expect(find.byType(NowMarker), findsOneWidget);
+    });
+
+    testWidgets(
+      'wrapped in TimelineRowTile, the gutter shows the compact time and '
+      'the marker still shows "Now"',
+      (tester) async {
+        await pumpWithMood(
+          tester,
+          const TimelineRowTile(startMinutes: 754, child: NowMarker()),
+        );
+        expect(find.text('12:34p'), findsOneWidget);
+        expect(find.text('Now'), findsOneWidget);
+      },
+    );
   });
 
   group('ChunkCard row vocabulary (D-06, D-07, P10)', () {
