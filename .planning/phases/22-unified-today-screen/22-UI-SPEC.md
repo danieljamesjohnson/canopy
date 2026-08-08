@@ -27,10 +27,17 @@ source: sketch 001 (variant A), reviewed and chosen by Dan
 
 One scrollable list. Top to bottom:
 
-1. **Header** — "Today" + the date, then the mood chip (e.g. "Steady day · 9 chunks").
+1. **Header** — "Today" + the date, then the mood chip (e.g. "Steady day").
    Stays put; not a collapsing app bar.
 2. **The day** — a single vertically scrolling list of rows, in clock order, covering the
    whole day: activities, breaks, commitments, and named free time.
+
+**Amended 2026-08-08 (UAT G-06):** the mood-chip example above originally appended a
+"· N chunks" suffix with the day's work-chunk total. Dropped that suffix — it was
+rendering twice on screen, once here and once in the progress row (`ScheduleProgressBar`,
+shown above this header) as "X of Y Chunks". The day's chunk count is owned by that
+progress row, which is strictly richer (completed, total, and a bar) than a bare total;
+the mood chip states mood only.
 
 There is **no** separate "now" panel, hero card, or sticky band. The current row lives in
 the list at its own clock position.

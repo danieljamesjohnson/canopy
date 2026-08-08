@@ -299,10 +299,6 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     final theme = Theme.of(context);
     final moodEmoji = _moodEmojis[mood] ?? _moodEmojis[3]!;
     final moodLabel = _moodLabels[mood] ?? _moodLabels[3]!;
-    final workChunkCount = schedule.chunks
-        .where((c) => c.chunkType == ChunkType.work)
-        .length;
-    final chunkWord = workChunkCount == 1 ? 'chunk' : 'chunks';
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
@@ -333,8 +329,11 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
               color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(10),
             ),
+            // UAT G-06: the chunk count deliberately does NOT live here — it
+            // lives once, in the ScheduleProgressBar above (completed-of-total
+            // rather than a bare total), so don't re-add it here.
             child: Text(
-              '$moodEmoji $moodLabel · $workChunkCount $chunkWord',
+              '$moodEmoji $moodLabel',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),

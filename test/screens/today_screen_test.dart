@@ -487,6 +487,21 @@ void main() {
         expect(gutterDx, headingDx);
       },
     );
+
+    testWidgets(
+      'the chunk count appears once, in the progress row, not in the mood chip (G-06)',
+      (tester) async {
+        await pumpDay(tester);
+
+        // buildDayFixture(): 5 work chunks total (c1-c5, the commitment
+        // chunk c5 is also ChunkType.work), c1 completed — so the progress
+        // row reads "1 of 5 Chunks".
+        expect(find.text('1 of 5 Chunks'), findsOneWidget);
+        // moodIndex 3 → '⛅' / 'Steady day' — the chip carries no count.
+        expect(find.text('⛅ Steady day'), findsOneWidget);
+        expect(find.textContaining('5 chunks'), findsNothing);
+      },
+    );
   });
 
   group('Task 3 — centre the live row on open + edge-state copy', () {
