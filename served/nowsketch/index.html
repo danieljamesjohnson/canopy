@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Canopy — making "now" jump off the page</title>
+<style>
+  :root{
+    --page:#f7f8fb;
+    --card:#eef0f4;
+    --card-line:#e2e5ea;
+    --ink:#1a1c1e;
+    --ink-dim:#43474e;
+    --ink-faint:#73777f;
+    --live:#cfe4f8;
+    --live-ink:#0d3b56;
+    --btn:#1d4b63;
+    --btn-ink:#ffffff;
+    --skip:#b3261e;
+    --dash:#c3c7cf;
+    --accent-a:#3d8a51;
+    --accent-b:#2f6ea5;
+    --accent-c:#d98324;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#eceef2;font:400 15px/1.45 Roboto,-apple-system,'Segoe UI',sans-serif;color:var(--ink)}
+  header{padding:22px 24px 6px;max-width:1180px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  header p{margin:0 0 14px;color:var(--ink-dim);font-size:14px;max-width:78ch}
+  .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;padding:8px 24px 40px;max-width:1400px;margin:0 auto;align-items:start}
+  .col{min-width:0}
+  @media (max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .lbl{font:600 13px/1.3 inherit;margin:0 0 2px}
+  .sub{font-size:12px;color:var(--ink-faint);margin:0 0 10px;min-height:46px}
+  .screen{background:var(--page);border:1px solid #dcdfe4;border-radius:10px;padding:14px 12px 16px;overflow:hidden}
+
+  .row{display:flex;gap:8px;margin-bottom:8px}
+  .gut{width:44px;flex:none;text-align:left;color:var(--ink-faint);font-size:11px;padding-top:9px}
+  .card{flex:1;background:var(--card);border:1px solid var(--card-line);border-radius:10px;padding:9px 11px;position:relative;overflow:hidden}
+  .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+  .t{font-weight:600;font-size:13px;margin:0 0 1px}
+  .m{font-size:11px;color:var(--ink-faint);margin:0}
+  .acts{display:flex;gap:6px;margin-top:7px}
+  .b{font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--btn);color:var(--btn-ink)}
+  .b.o{background:transparent;color:var(--skip);border:1px solid var(--skip)}
+  .brk{flex:1;border:1px dashed var(--dash);border-radius:9px;padding:8px 11px;display:flex;justify-content:space-between;font-size:12px;color:var(--ink-dim)}
+  .brk.long{padding:15px 11px}
+  .circ{position:absolute;right:10px;top:9px;width:13px;height:13px;border:1.5px solid #9aa0a6;border-radius:99px}
+
+  /* live row */
+  .live{flex:1;background:var(--live);border-radius:12px;padding:11px 13px;color:var(--live-ink)}
+  .kick{font-size:10px;font-weight:700;letter-spacing:.09em;opacity:.75;margin:0 0 2px}
+  .lt{font-size:19px;font-weight:600;margin:0 0 2px;line-height:1.2}
+  .lm{font-size:12px;opacity:.85;margin:0 0 7px}
+  .prog{height:4px;border-radius:9px;background:rgba(13,59,86,.18);overflow:hidden;margin-bottom:8px}
+  .prog i{display:block;height:100%;width:42%;background:var(--live-ink);opacity:.75}
+  .nxt{font-size:11px;opacity:.72;margin:7px 0 0}
+
+  /* ---- variant B: quiet the rest ---- */
+  .b-quiet .card{background:transparent;border-color:transparent;padding-left:11px}
+  .b-quiet .card .acts{display:none}
+  .b-quiet .bar{width:0}
+  .b-quiet .t{font-weight:500;color:var(--ink-dim)}
+  .b-quiet .circ{border-color:#b9bec4}
+
+  /* ---- variant C: swell now ---- */
+  .c-swell .liverow{margin:14px 0 14px -12px;width:calc(100% + 24px)}
+  .c-swell .liverow .gut{display:none}
+  .c-swell .live{border-radius:0;padding:18px 18px 16px;box-shadow:0 6px 18px rgba(13,59,86,.20)}
+  .c-swell .lt{font-size:25px}
+  .c-swell .lm{font-size:13px}
+  .c-swell .kick{font-size:11px}
+
+  /* ---- variant D: both ---- */
+  .d-both .card{background:transparent;border-color:transparent}
+  .d-both .card .acts{display:none}
+  .d-both .bar{width:0}
+  .d-both .t{font-weight:500;color:var(--ink-dim)}
+  .d-both .circ{border-color:#b9bec4}
+  .d-both .liverow{margin:15px 0 15px -12px;width:calc(100% + 24px)}
+  .d-both .liverow .gut{display:none}
+  .d-both .live{border-radius:0;padding:18px 18px 16px;box-shadow:0 8px 22px rgba(13,59,86,.24)}
+  .d-both .lt{font-size:26px}
+  .d-both .lm{font-size:13px}
+  .d-both .kick{font-size:11px}
+  .d-both .brk{border-color:#d3d7dd;color:var(--ink-faint)}
+  .note{font-size:11px;color:var(--ink-faint);margin:8px 2px 0;line-height:1.4}
+</style>
+</head>
+<body>
+<header>
+  <h1>Making “now” jump off the page</h1>
+  <p>Same day, same data, four treatments. The problem in A: every work row already carries Complete/Skip and a saturated goal bar, so the loudest cues repeat down the whole list and the live row is left signalling itself with a pale tint. B and C attack that from opposite ends; D does both.</p>
+</header>
+
+<div class="grid">
+
+  <!-- A -->
+  <div class="col">
+    <p class="lbl">A — Today (what ships now)</p>
+    <p class="sub">Baseline. Live row = pale tint + ~48px height. Every other row has the same buttons and silhouette.</p>
+    <div class="screen">
+      <div class="row"><div class="gut">10:55</div><div class="card"><i class="bar" style="background:var(--accent-c)"></i><div class="circ"></div><p class="t">Creative time</p><p class="m">25 min</p><p class="m">Working toward 3.0h this week</p><div class="acts"><span class="b">Complete</span><span class="b o">Skip</span></div></div></div>
+      <div class="row"><div class="gut">11:20</div><div class="brk"><span>Short break</span><span>5 min</span></div></div>
+      <div class="row liverow"><div class="gut">11:25</div><div class="live"><p class="kick">RIGHT NOW</p><p class="lt">Exercise</p><p class="lm">18 min left · until 11:50 AM</p><div class="prog"><i></i></div><div class="acts"><span class="b">Complete</span><span class="b o">Skip</span></div><p class="nxt">Next · Long break at 11:50 AM</p></div></div>
+      <div class="row"><div class="gut">11:50</div><div class="brk long"><span>🧘 Long break</span><span>25 min</span></div></div>
+      <div class="row"><div class="gut">12:15p</div><div class="card"><i class="bar" style="background:var(--accent-b)"></i><div class="circ"></div><p class="t">Reading</p><p class="m">25 min</p><div class="acts"><span class="b">Complete</span><span class="b o">Skip</span></div></div></div>
+    </div>
+  </div>
+
+  <!-- B -->
+  <div class="col b-quiet">
+    <p class="lbl">B — Quiet everything else</p>
+    <p class="sub">Live row untouched. Other rows lose their buttons, card fill and goal bar — they become a plain agenda. Now is the only thing you can act on.</p>
+    <div class="screen">
+      <div class="row"><div class="gut">10:55</div><div class="card"><i class="bar"></i><div class="circ"></div><p class="t">Creative time</p><p class="m">25 min</p><div class="acts"><span class="b">Complete</span><span class="b o">Skip</span></div></div></div>
+      <div class="row"><div class="gut">11:20</div><div class="brk"><span>Short break</span><span>5 min</span></div></div>
+      <div class="row liverow"><div class="gut">11:25</div><div class="live"><p class="kick">RIGHT NOW</p><p class="lt">Exercise</p><p class="lm">18 min left · until 11:50 AM</p><div class="prog"><i></i></div><div class="acts"><span class="b">Complete</span><span class="b o">Skip</span></div><p class="nxt">Next · Long break at 11:50 AM</p></div></div>
+      <div class="row"><div class="gut">11:50</div><div class="brk long"><span>🧘 Long break</span><span>25 min</span></div></div>
+      <div class="row"><div class="gut">12:15p</div><div class="card"><i class="bar"></i><div class="circ"></div><p class="t">Reading</p><p class="m">25 min</p><div class="acts"><span class="b">Complete</span><span class="b o">Skip</span></div></div></div>
+    </div>
+    <p class="note">Trade-off: acting on a non-current chunk needs a tap-through or the existing swipe.</p>
+  </div>
+
+  <!-- C -->
+  <div class="col c-swell">
+    <p class="lbl">C — Let now break the grid</p>
+    <p class="sub">Others untouched. The live row goes full-bleed past the gutter, drops its corners, gains a real shadow and a much bigger title — it stops being “a card in the list”.</p>
+    <div class="screen">
+      <div class="row"><div class="gut">10:55</div><div class="card"><i class="bar" style="background:var(--accent-c)"></i><div class="circ"></div><p class="t">Creative time</p><p class="m">25 min</p><div class="acts"><span class="b">Complete</span><span class="b o">Skip</span></div></div></div>
+      <div class="row"><div class="gut">11:20</div><div class="brk"><span>Short break</span><span>5 min</span></div></div>
+      <div class="row liverow"><div class="gut">11:25</div><div class="live"><p class="kick">RIGHT NOW · 11:25</p><p class="lt">Exercise</p><p class="lm">18 min left · until 11:50 AM</p><div class="prog"><i></i></div><div class="acts"><span class="b">Complete</span><span class="b o">Skip</span></div><p class="nxt">Next · Long break at 11:50 AM</p></div></div>
+      <div class="row"><div class="gut">11:50</div><div class="brk long"><span>🧘 Long break</span><span>25 min</span></div></div>
+      <div class="row"><div class="gut">12:15p</div><div class="card"><i class="bar" style="background:var(--accent-b)"></i><div class="circ"></div><p class="t">Reading</p><p class="m">25 min</p><div class="acts"><span class="b">Complete</span><span class="b o">Skip</span></div></div></div>
+    </div>
+    <p class="note">Start time moves into the kicker, since the row no longer sits in the gutter.</p>
+  </div>
+
+  <!-- D -->
+  <div class="col d-both">
+    <p class="lbl">D — Both</p>
+    <p class="sub">Quiet list + full-bleed swell. The page has exactly one loud thing on it.</p>
+    <div class="screen">
+      <div class="row"><div class="gut">10:55</div><div class="card"><i class="bar"></i><div class="circ"></div><p class="t">Creative time</p><p class="m">25 min</p><div class="acts"><span class="b">Complete</span><span class="b o">Skip</span></div></div></div>
+      <div class="row"><div class="gut">11:20</div><div class="brk"><span>Short break</span><span>5 min</span></div></div>
+      <div class="row liverow"><div class="gut">11:25</div><div class="live"><p class="kick">RIGHT NOW · 11:25</p><p class="lt">Exercise</p><p class="lm">18 min left · until 11:50 AM</p><div class="prog"><i></i></div><div class="acts"><span class="b">Complete</span><span class="b o">Skip</span></div><p class="nxt">Next · Long break at 11:50 AM</p></div></div>
+      <div class="row"><div class="gut">11:50</div><div class="brk long"><span>🧘 Long break</span><span>25 min</span></div></div>
+      <div class="row"><div class="gut">12:15p</div><div class="card"><i class="bar"></i><div class="circ"></div><p class="t">Reading</p><p class="m">25 min</p><div class="acts"><span class="b">Complete</span><span class="b o">Skip</span></div></div></div>
+    </div>
+    <p class="note">My pick. Nothing new is invented — it removes competition and spends the weight on one row.</p>
+  </div>
+
+</div>
+</body>
+</html>
