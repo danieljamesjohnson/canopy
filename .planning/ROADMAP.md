@@ -200,7 +200,7 @@ only cross-plan constraint is `today_screen.dart`, which 23-05 and 23-07 both to
 Plans:
 **Wave 1**
 
-- [ ] 24-01-PLAN.md — Row model + widget: `NowMarkerRow`, `nowMinutes` threading, NOW-02 leading-row guard, `NowMarker` widget, unit + row-widget tests (wave 1)
+- [x] 24-01-PLAN.md — Row model + widget: `NowMarkerRow`, `nowMinutes` threading, NOW-02 leading-row guard, `NowMarker` widget, unit + row-widget tests (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -230,4 +230,4 @@ Plans:
 | 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 2/2 | Complete   | 2026-08-07 |
 | 22. Unified Today Screen | v1.5 | 4/4 | Complete   | 2026-08-07 |
 | 23. Live Activity Tracking | v1.5 | 7/8 | In Progress|  |
-| 24. Where Am I | v1.5 | 0/3 | Planned    |  |
+| 24. Where Am I | v1.5 | 1/3 | In Progress|  |

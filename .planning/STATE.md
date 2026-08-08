@@ -4,13 +4,13 @@ milestone: v1.5
 milestone_name: Right Now
 status: executing
 stopped_at: Phase 24 UI-SPEC approved
-last_updated: "2026-08-08T19:06:23.052Z"
-last_activity: 2026-08-07 -- Phase 23 execution started
+last_updated: "2026-08-08T19:36:15.800Z"
+last_activity: 2026-08-08 -- Phase 24 execution started
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 14
-  completed_plans: 13
+  total_plans: 17
+  completed_plans: 14
   percent: 50
 ---
 
@@ -18,16 +18,16 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-08T18:49:23.305Z
+**Last session:** 2026-08-08T19:35:27.449Z
 
 ---
 
 ## Current Position
 
-Phase: 23 (Live Activity Tracking) — EXECUTING
-Plan: 4 of 4
+Phase: 24 (where-am-i) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-08-07 -- Phase 23 execution started
+Last activity: 2026-08-08 -- Phase 24 execution started
 
 ```
 Progress: [░░░░░░░░░░] 0% — Phase 21/23
@@ -38,7 +38,7 @@ Progress: [░░░░░░░░░░] 0% — Phase 21/23
 See: `.planning/PROJECT.md` (updated 2026-08-04)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Phase 23 — Live Activity Tracking
+**Current focus:** Phase 24 — where-am-i
 
 ## v1.5 Phase Summary
 
@@ -83,6 +83,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 23-08]: G-07 placed the mood consequence line in checkin_screen.dart's _buildCheckinBody (pre-commit, above Let's go), not in the acknowledgment text as 23-GAP-ANALYSIS.md suggested — Check-in is a two-step flow; the acknowledgment only renders after generation, so the explanation needs to be visible before commit so Dan can compare moods
 - [Phase 23]: kGutterWidth bumped 46.0 -> 75.0 (G-04) — flutter test's placeholder font (no real Roboto metrics loaded) inflates measured glyph width to a fixed fontSize-wide box per character; the widest-label fit test forced a bump documented as a test-harness bound, not a real-device requirement -- flagged for a real-browser recheck.
 - [Phase 23]: Chunk count owned solely by ScheduleProgressBar; mood chip states mood only (G-06) — ScheduleProgressBar (completed-of-total + bar) is strictly richer than the chip's bare total, so the chip dropped its duplicate count; 22-UI-SPEC.md amended with a dated note rather than left contradicting the shipped chip.
+- [Phase ?]: [Phase 24-01]: buildTimeline's nowMinutes kept optional (int?, default null) rather than required, preserving all 16 pre-existing call sites unchanged (24-RESEARCH.md Pitfall 2)
+- [Phase ?]: [Phase 24-01]: Added a minimal NowMarkerRow case to today_screen.dart's exhaustive TimelineRow switch outside this plan's declared file scope -- Dart's sealed-class switch-statement exhaustiveness is a compile error, not a lint, so the app failed to build the moment the fourth subtype existed; the case is unreachable until 24-02 threads a real nowMinutes value into build()
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -200,3 +202,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 23 P06 | ~20min | 2 tasks | 2 files |
 | Phase 23-live-activity-tracking P08 | ~10min | 2 tasks | 6 files |
 | Phase 23 P07 | 35min | 3 tasks | 8 files |
+| Phase 24 P01 | 30min | 3 tasks | 7 files |

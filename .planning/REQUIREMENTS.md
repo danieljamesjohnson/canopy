@@ -28,8 +28,8 @@
 
 ### Where Am I (added 2026-08-08 from UAT)
 
-- [ ] **NOW-01**: The timeline carries a visible now-marker at the current clock position, so the user can locate themselves by looking at the list rather than reading a header line rows away. Its position derives from the same clock sample `resolveNowState` uses — a position, never a second opinion about which activity is current.
-- [ ] **NOW-02**: A leading "Free until <time>" row never describes a window that has already closed.
+- [x] **NOW-01**: The timeline carries a visible now-marker at the current clock position, so the user can locate themselves by looking at the list rather than reading a header line rows away. Its position derives from the same clock sample `resolveNowState` uses — a position, never a second opinion about which activity is current.
+- [x] **NOW-02**: A leading "Free until <time>" row never describes a window that has already closed.
 
 ## Implementation Notes
 
@@ -68,8 +68,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | LIVE-01 | Phase 23 | Complete |
 | LIVE-02 | Phase 23 | Complete |
 | LIVE-03 | Phase 23 | Complete |
-| NOW-01 | Phase 24 | Pending |
-| NOW-02 | Phase 24 | Pending |
+| NOW-01 | Phase 24 | Complete |
+| NOW-02 | Phase 24 | Complete |
 | BREAK-01 | Phase 21 | Complete |
 | BREAK-02 | Phase 21 | Complete |
 | TONE-01 | Phase 21 | Complete |
