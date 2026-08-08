@@ -170,7 +170,7 @@ only cross-plan constraint is `today_screen.dart`, which 23-05 and 23-07 both to
 **Wave 1**
 
 - [x] 23-05-PLAN.md — G-03 (bug): the minute tick survives a `paused` with no matching `resumed`, the fast tick is guarded from running while backgrounded, a dead timer self-heals in `build()` — pinned by a regression test proven to fail without the fix
-- [ ] 23-06-PLAN.md — G-05 (behaviour): completing a work chunk early moves the following break to start now and keep its original end ("extend the break to fill"), nothing downstream shifts, Phase 17's unopened-window invariant untouched
+- [x] 23-06-PLAN.md — G-05 (behaviour): completing a work chunk early moves the following break to start now and keep its original end ("extend the break to fill"), nothing downstream shifts, Phase 17's unopened-window invariant untouched
 - [ ] 23-08-PLAN.md — G-01 + G-07: both energy-valence controls reorder to Drains → Neutral → Lifts; picking a day type states its consequence in the generator's real `_moodCap`/`_moodBreakCadence` numbers; the dead acknowledgment-screen duplicate is deleted
 
 **Wave 2** *(blocked on 23-05 — shares `today_screen.dart`)*
@@ -198,4 +198,4 @@ only cross-plan constraint is `today_screen.dart`, which 23-05 and 23-07 both to
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 2/2 | Complete   | 2026-08-07 |
 | 22. Unified Today Screen | v1.5 | 4/4 | Complete   | 2026-08-07 |
-| 23. Live Activity Tracking | v1.5 | 4/8 | In Progress|  |
+| 23. Live Activity Tracking | v1.5 | 5/8 | In Progress|  |
