@@ -87,26 +87,48 @@ class ChunkCard extends StatelessWidget {
   /// Replaces the old _buildShortBreak/_buildLongBreak pair, which used a
   /// filled surfaceContainerHighest pill and a coffee-emoji Card
   /// respectively; both are superseded by this single dashed treatment.
+  ///
+  /// UAT G-02: a long break scales up in weight within that same dashed
+  /// vocabulary — taller padding, a heavier title style, a leading icon and
+  /// a thicker outline — so a 25-minute break visibly outweighs a 5-minute
+  /// one. No new interaction is added; the standing collapse/accordion
+  /// prohibition (carried from 22-02) stays in force.
   Widget _buildBreak(BuildContext context) {
     final theme = Theme.of(context);
-    final title = chunk.chunkType == ChunkType.shortBreak
-        ? 'Short break'
-        : 'Long break';
+    final isLong = chunk.chunkType == ChunkType.longBreak;
+    final title = isLong ? 'Long break' : 'Short break';
+    final titleStyle = isLong
+        ? theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurfaceVariant,
+          )
+        : theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          );
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: CustomPaint(
-        painter: _DashedBorderPainter(color: theme.colorScheme.outlineVariant),
+        painter: _DashedBorderPainter(
+          color: theme.colorScheme.outlineVariant,
+          strokeWidth: isLong ? 1.5 : 1,
+        ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: isLong ? 24 : 12,
+          ),
           child: Row(
             children: [
-              Text(
-                title,
-                style: theme.textTheme.bodyMedium?.copyWith(
+              if (isLong) ...[
+                Icon(
+                  Icons.self_improvement,
+                  size: 20,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
-              ),
+                const SizedBox(width: 8),
+              ],
+              Text(title, style: titleStyle),
               const Spacer(),
               Text(
                 '${chunk.durationMinutes} min',
@@ -132,22 +154,25 @@ class ChunkCard extends StatelessWidget {
 
 /// File-private dashed-outline painter for the D-06 break-row treatment
 /// (~12dp corner radius, ~1dp stroke, ~4dp dash / ~4dp gap).
+///
+/// [strokeWidth] defaults to the original 1dp; a long break (G-02) passes
+/// 1.5 for a slightly heavier outline within the same dashed vocabulary.
 class _DashedBorderPainter extends CustomPainter {
-  const _DashedBorderPainter({required this.color});
+  const _DashedBorderPainter({required this.color, this.strokeWidth = 1});
 
   final Color color;
+  final double strokeWidth;
 
   static const double _radius = 12;
   static const double _dashWidth = 4;
   static const double _dashGap = 4;
-  static const double _strokeWidth = 1;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = _strokeWidth;
+      ..strokeWidth = strokeWidth;
 
     final rrect = RRect.fromRectAndRadius(
       Offset.zero & size,
@@ -170,7 +195,7 @@ class _DashedBorderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
-      oldDelegate.color != color;
+      oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
 }
 
 /// Internal widget for the work-variant chunk card.

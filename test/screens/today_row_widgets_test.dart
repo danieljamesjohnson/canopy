@@ -270,14 +270,52 @@ void main() {
       expect(find.byType(CustomPaint), findsWidgets);
     });
 
-    testWidgets('long break: "Long break" label, same dashed treatment', (
-      tester,
-    ) async {
-      await _pumpChunkCard(tester, _breakChunk(type: ChunkType.longBreak));
-      expect(find.text('Long break'), findsOneWidget);
-      expect(find.byType(Card), findsNothing);
-      expect(find.byType(CustomPaint), findsWidgets);
-    });
+    testWidgets(
+      'long break: "Long break" label, same dashed vocabulary at greater weight (G-02)',
+      (tester) async {
+        await _pumpChunkCard(tester, _breakChunk(type: ChunkType.longBreak));
+        expect(find.text('Long break'), findsOneWidget);
+        expect(find.byType(Card), findsNothing);
+        expect(find.byType(CustomPaint), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'a long break reads substantially heavier than a short break (G-02)',
+      (tester) async {
+        // Height: long break's taller padding + titleMedium/w500 title +
+        // leading icon should measure at least 16dp taller than a short
+        // break's ChunkCard.
+        await _pumpChunkCard(tester, _breakChunk(type: ChunkType.shortBreak));
+        final shortHeight = tester.getSize(find.byType(ChunkCard)).height;
+
+        await _pumpChunkCard(tester, _breakChunk(type: ChunkType.longBreak));
+        final longHeight = tester.getSize(find.byType(ChunkCard)).height;
+
+        expect(longHeight, greaterThanOrEqualTo(shortHeight + 16));
+
+        // Icon: self_improvement present ONLY on the long break.
+        expect(find.byIcon(Icons.self_improvement), findsOneWidget);
+
+        await _pumpChunkCard(tester, _breakChunk(type: ChunkType.shortBreak));
+        expect(find.byIcon(Icons.self_improvement), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'no new interaction is added to the break row (G-02 prohibition)',
+      (tester) async {
+        await _pumpChunkCard(tester, _breakChunk(type: ChunkType.longBreak));
+        expect(find.byType(GestureDetector), findsNothing);
+        expect(find.byType(ExpansionTile), findsNothing);
+        final customPaints = tester.widgetList<CustomPaint>(
+          find.byType(CustomPaint),
+        );
+        // None of the break row's CustomPaint ancestors carry a GestureDetector
+        // — the row remains a plain, non-interactive Container + CustomPaint.
+        expect(customPaints, isNotEmpty);
+      },
+    );
 
     testWidgets('completed break also renders the check icon', (tester) async {
       await _pumpChunkCard(
