@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: verifying
-stopped_at: Completed 23-06-PLAN.md (G-05 gap closure)
-last_updated: "2026-08-08T15:25:39.397Z"
+stopped_at: Completed 23-08-PLAN.md (G-01, G-07 gap closure)
+last_updated: "2026-08-08T15:31:24.418Z"
 last_activity: 2026-08-07 -- Phase 23 execution started
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 14
-  completed_plans: 11
+  completed_plans: 12
   percent: 67
 ---
 
@@ -18,7 +18,7 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-08T15:25:39.394Z
+**Last session:** 2026-08-08T15:31:24.414Z
 
 ---
 
@@ -79,6 +79,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 23-live-activity-tracking]: [Phase 23-05]: G-03 fix stops cancelling _nowTimer on paused (resumed was the only revival path); added _isBackgrounded guard on the fast-timer call site and a build()-time self-heal — resolves the UAT-reported live row stranding without touching the fast-timer battery contract
 - [Phase 23-live-activity-tracking]: [Phase 23-05]: Widget tests for AppLifecycleState.paused must deliver AppLifecycleState.inactive before observing rendered state, since SchedulerBinding disables ALL frame scheduling on hidden/paused/detached (packages/flutter/lib/src/scheduler/binding.dart:414-428) and only re-enables it on resumed/inactive — inactive re-enables frame drawing without invoking this app's own resumed handler, isolating what a fix actually contributes
 - [Phase 23]: [Phase 23-06]: G-05 implemented as a write-side-only mutation in ScheduleNotifier.markComplete (_absorbReclaimedTimeIntoNextBreak) — moves the following break's start to now and extends its duration to preserve the original end, so resolveNowState reaches Active(break) through its existing unmodified path and the Phase 17 KEY INVARIANT test needs zero changes — Dan's decision (23-UAT.md): 'extend the break to fill' dissolves the conflict the gap analysis flagged between G-05 and the named Phase 17 invariant, since the break's window genuinely opens at now because we moved it
+- [Phase 23-08]: G-01 flipped both onboarding_screen.dart and goal_form_sheet.dart energy-valence segmented controls to Drains -> Neutral -> Lifts, per Dan's explicit sign-off decision to keep the two surfaces agreeing on order — Flipping only onboarding would leave the two surfaces disagreeing about which end means drains, the exact failure Dan's decision exists to avoid
+- [Phase 23-08]: G-07 placed the mood consequence line in checkin_screen.dart's _buildCheckinBody (pre-commit, above Let's go), not in the acknowledgment text as 23-GAP-ANALYSIS.md suggested — Check-in is a two-step flow; the acknowledgment only renders after generation, so the explanation needs to be visible before commit so Dan can compare moods
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -162,7 +164,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-04
-Stopped at: Completed 23-06-PLAN.md (G-05 gap closure)
+Stopped at: Completed 23-08-PLAN.md (G-01, G-07 gap closure)
 Resume at: `/gsd-plan-phase 21`
 
 ## Performance Metrics
@@ -194,3 +196,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 23-live-activity-tracking P03 | 25min | 2 tasks | 3 files |
 | Phase 23-live-activity-tracking P05 | 32min | 3 tasks | 3 files |
 | Phase 23 P06 | ~20min | 2 tasks | 2 files |
+| Phase 23-live-activity-tracking P08 | ~10min | 2 tasks | 6 files |
