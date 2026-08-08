@@ -179,6 +179,25 @@ only cross-plan constraint is `today_screen.dart`, which 23-05 and 23-07 both to
 
 **UI hint**: yes
 
+---
+
+### Phase 24: Where Am I
+
+**Goal**: The timeline itself shows where "now" falls, so the user can locate themselves in the day even when no activity is currently running
+**Depends on**: Phase 23 (layers onto the merged screen's row model and its single now-detector)
+**Requirements**: NOW-01, NOW-02
+**Success Criteria** (what must be TRUE):
+
+  1. The list carries a visible now-marker at the current clock position, so "where am I" is answerable by looking at the timeline rather than by reading a header line several rows away
+  2. The marker's position derives from the same clock sample `resolveNowState` already uses — it is a *position*, never a second opinion about which activity is current (the Phase 17 / 22-PATTERNS §5 single-detector rule stands)
+  3. A leading "Free until <time>" row never describes a window that has already closed
+
+**Origin**: Dan, UAT 2026-08-08 — *"i clicked the link and right now i can't tell what we're 'on'"*, then *"just can't tell where now is"*, with a screenshot (`~/feedback-drop/canopy/inbox/2026-08-08_17-34-09/`). Root cause traced: Phase 22-04 deleted `now_marker.dart` with the screens it replaced and nothing took over the job. 22-PATTERNS.md §2 had explicitly flagged the widget as worth keeping — that note was not acted on.
+
+**UI hint**: yes
+
+**Plans**: TBD
+
 **Open design decision — RESOLVED during Phase 23 planning:** LIVE-02's tick granularity was left open here and is now decided (`23-CONTEXT.md` decision 1, implemented in plan 23-02): whole minutes rounded up while at least 60s remain, seconds below that, with a second 1-second timer that exists only inside the final minute so the all-day 1-minute ticker is not replaced. The original wording follows. LIVE-02's tick granularity is not decided here. The existing `Timer.periodic` (carried into `TodayScreen` by Phase 22) fires once a minute; a countdown that visibly moves may need a faster tick for the live row while other regions stay on the coarser cadence. Phase planning must pick and justify a granularity rather than silently inherit the 1-minute timer.
 
 **Seam left by Phase 22:** `LiveRowCard` takes `kicker` and `remainingLabel` as injected strings, so LIVE-01/LIVE-02 change what `TodayScreen` computes rather than the widget's layout. `showActions` is already wired from the chunk type for LIVE-01's break case. The pre-start / gap / day-complete copy was carried across verbatim, so LIVE-03 refines wording rather than rebuilding states.
@@ -199,3 +218,4 @@ only cross-plan constraint is `today_screen.dart`, which 23-05 and 23-07 both to
 | 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 2/2 | Complete   | 2026-08-07 |
 | 22. Unified Today Screen | v1.5 | 4/4 | Complete   | 2026-08-07 |
 | 23. Live Activity Tracking | v1.5 | 7/8 | In Progress|  |
+| 24. Where Am I | v1.5 | 0/0 | Not Started|  |

@@ -26,6 +26,11 @@
 
 - [x] **TONE-01**: No "behind this week" framing anywhere; a time-target goal's rationale reads as what the schedule is doing for the user, not as a deficit report
 
+### Where Am I (added 2026-08-08 from UAT)
+
+- [ ] **NOW-01**: The timeline carries a visible now-marker at the current clock position, so the user can locate themselves by looking at the list rather than reading a header line rows away. Its position derives from the same clock sample `resolveNowState` uses — a position, never a second opinion about which activity is current.
+- [ ] **NOW-02**: A leading "Free until <time>" row never describes a window that has already closed.
+
 ## Implementation Notes
 
 Known starting points, captured at definition time so planning doesn't re-derive them:
