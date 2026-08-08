@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: executing
-stopped_at: Phase 24 UI-SPEC approved
-last_updated: "2026-08-08T19:36:15.800Z"
+stopped_at: Completed 24-02-PLAN.md
+last_updated: "2026-08-08T19:47:51.261Z"
 last_activity: 2026-08-08 -- Phase 24 execution started
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 17
-  completed_plans: 14
+  completed_plans: 15
   percent: 50
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-08T19:35:27.449Z
+**Last session:** 2026-08-08T19:47:51.257Z
 
 ---
 
 ## Current Position
 
 Phase: 24 (where-am-i) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-08-08 -- Phase 24 execution started
 
@@ -85,6 +85,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 23]: Chunk count owned solely by ScheduleProgressBar; mood chip states mood only (G-06) — ScheduleProgressBar (completed-of-total + bar) is strictly richer than the chip's bare total, so the chip dropped its duplicate count; 22-UI-SPEC.md amended with a dated note rather than left contradicting the shipped chip.
 - [Phase ?]: [Phase 24-01]: buildTimeline's nowMinutes kept optional (int?, default null) rather than required, preserving all 16 pre-existing call sites unchanged (24-RESEARCH.md Pitfall 2)
 - [Phase ?]: [Phase 24-01]: Added a minimal NowMarkerRow case to today_screen.dart's exhaustive TimelineRow switch outside this plan's declared file scope -- Dart's sealed-class switch-statement exhaustiveness is a compile error, not a lint, so the app failed to build the moment the fourth subtype existed; the case is unreachable until 24-02 threads a real nowMinutes value into build()
+- [Phase 24-02]: nowMinutes = minutesOfDay(nowDt) threaded from build()'s single clock sample into buildTimeline, making the 24-01-added NowMarkerRow switch case reachable; the corrected NOW-02 test proves the leading free row disappears once its window closes
+- [Phase 24-02]: New Phase 24 now-marker test group nested inside Task 2's group (not immediately after the day-complete test in Task 3) to reuse Task 2's pumpDay/buildDayFixture helpers directly, avoiding a duplicated clock literal or a diff-inflating hoist to module scope
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -168,7 +170,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-04
-Stopped at: Phase 24 UI-SPEC approved
+Stopped at: Completed 24-02-PLAN.md
 Resume at: `/gsd-plan-phase 21`
 
 ## Performance Metrics
@@ -203,3 +205,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 23-live-activity-tracking P08 | ~10min | 2 tasks | 6 files |
 | Phase 23 P07 | 35min | 3 tasks | 8 files |
 | Phase 24 P01 | 30min | 3 tasks | 7 files |
+| Phase 24-where-am-i P02 | 12min | 3 tasks | 3 files |

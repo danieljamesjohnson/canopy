@@ -204,7 +204,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 24-02-PLAN.md — Screen wiring: `nowMinutes` from the single `nowDt` sample, the fourth exhaustive-switch case, screen-level tests, correction of the stale NOW-02 assertion, phase gate (wave 2)
+- [x] 24-02-PLAN.md — Screen wiring: `nowMinutes` from the single `nowDt` sample, the fourth exhaustive-switch case, screen-level tests, correction of the stale NOW-02 assertion, phase gate (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -230,4 +230,4 @@ Plans:
 | 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 2/2 | Complete   | 2026-08-07 |
 | 22. Unified Today Screen | v1.5 | 4/4 | Complete   | 2026-08-07 |
 | 23. Live Activity Tracking | v1.5 | 7/8 | In Progress|  |
-| 24. Where Am I | v1.5 | 1/3 | In Progress|  |
+| 24. Where Am I | v1.5 | 2/3 | In Progress|  |
