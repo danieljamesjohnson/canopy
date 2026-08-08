@@ -259,11 +259,14 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
               ],
             ),
             SegmentedButton<EnergyValence>(
+              // Order is deliberate: drains on the left, lifts on the right (UAT G-01).
+              // Do not "restore" positive-first — this was flipped intentionally and
+              // must stay in sync with onboarding_screen.dart's analogous control.
               segments: const [
                 ButtonSegment(
-                  value: EnergyValence.gives,
-                  label: Text('Gives energy'),
-                  icon: Icon(Icons.bolt),
+                  value: EnergyValence.costs,
+                  label: Text('Costs energy'),
+                  icon: Icon(Icons.hourglass_empty),
                 ),
                 ButtonSegment(
                   value: EnergyValence.neutral,
@@ -271,9 +274,9 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
                   icon: Icon(Icons.remove),
                 ),
                 ButtonSegment(
-                  value: EnergyValence.costs,
-                  label: Text('Costs energy'),
-                  icon: Icon(Icons.hourglass_empty),
+                  value: EnergyValence.gives,
+                  label: Text('Gives energy'),
+                  icon: Icon(Icons.bolt),
                 ),
               ],
               selected: {_energyValence},

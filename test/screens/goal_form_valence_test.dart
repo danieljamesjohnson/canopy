@@ -150,6 +150,12 @@ void main() {
         expect(find.text('Gives energy'), findsOneWidget);
         expect(find.text('Neutral'), findsOneWidget);
         expect(find.text('Costs energy'), findsOneWidget);
+        expect(
+          tester.getTopLeft(find.text('Costs energy')).dx,
+          lessThan(tester.getTopLeft(find.text('Gives energy')).dx),
+          reason:
+              'G-01: valence control must read Costs energy (left) -> Neutral -> Gives energy (right)',
+        );
       },
     );
 

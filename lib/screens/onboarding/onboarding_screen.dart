@@ -377,11 +377,14 @@ class _EnergyRow extends StatelessWidget {
           const SizedBox(height: 8),
           SegmentedButton<EnergyValence>(
             showSelectedIcon: false,
+            // Order is deliberate: drains on the left, lifts on the right (UAT G-01).
+            // Do not "restore" positive-first — this was flipped intentionally and
+            // must stay in sync with goal_form_sheet.dart's analogous control.
             segments: const [
               ButtonSegment(
-                value: EnergyValence.gives,
-                label: Text('Lifts'),
-                icon: Icon(Icons.bolt, size: 18),
+                value: EnergyValence.costs,
+                label: Text('Drains'),
+                icon: Icon(Icons.battery_2_bar, size: 18),
               ),
               ButtonSegment(
                 value: EnergyValence.neutral,
@@ -389,9 +392,9 @@ class _EnergyRow extends StatelessWidget {
                 icon: Icon(Icons.remove, size: 18),
               ),
               ButtonSegment(
-                value: EnergyValence.costs,
-                label: Text('Drains'),
-                icon: Icon(Icons.battery_2_bar, size: 18),
+                value: EnergyValence.gives,
+                label: Text('Lifts'),
+                icon: Icon(Icons.bolt, size: 18),
               ),
             ],
             selected: {goal.energyValence},

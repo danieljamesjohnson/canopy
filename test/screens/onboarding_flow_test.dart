@@ -197,6 +197,12 @@ void main() {
     // Beat 3 — energy. The goal is shown and can be marked as draining.
     expect(find.text('Which of these lift you up?'), findsOneWidget);
     expect(find.text('Exercise'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Drains')).dx,
+      lessThan(tester.getTopLeft(find.text('Lifts')).dx),
+      reason:
+          'G-01: valence control must read Drains (left) -> Neutral -> Lifts (right)',
+    );
     await tester.tap(find.text('Drains'));
     await tester.pumpAndSettle();
     expect(goals.goals.single.energyValence, EnergyValence.costs);
