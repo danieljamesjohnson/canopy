@@ -744,10 +744,55 @@ void main() {
         // DayComplete, so ensureVisible clamps at the bottom — the literal
         // encoding of Dan's "things in the past should have to be scrolled
         // to" (24-03-SUMMARY.md).
-        expect(
-          scrollable.position.pixels,
-          scrollable.position.maxScrollExtent,
+        expect(scrollable.position.pixels, scrollable.position.maxScrollExtent);
+      },
+    );
+
+    testWidgets(
+      'opening in PreStart then transitioning to Active still centres the '
+      'live row (two-flag regression, 24-04)',
+      (tester) async {
+        DateTime injectedNow = DateTime(2026, 8, 7, 7, 0); // before 8:00
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: longDayFixture(),
         );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => injectedNow,
+        );
+        await tester.pumpAndSettle();
+        // PreStart: no live row, so the marker-fallback fires and sets
+        // _didCentreMarker — not _didCentreLiveRow.
+
+        // Deliberately no unmount here (unlike 24-02-PLAN.md's general
+        // "prefer one clock, unmount otherwise" guidance): unmounting would
+        // destroy and recreate TodayScreenState, resetting both flags to
+        // false again, which would make it impossible to observe whether
+        // the first flag firing suppresses the second. Keeping the same
+        // mounted instance across the clock change is the entire point of
+        // this test.
+        injectedNow = DateTime(2026, 8, 7, 12, 45); // 5 min into chunk 7
+        await tester.pump(const Duration(minutes: 345));
+        await tester.pumpAndSettle();
+
+        // Confirms Active was actually reached for chunk index 7 — the
+        // state transition genuinely happened, this isn't a no-op.
+        expect(find.byType(LiveRowCard), findsOneWidget);
+
+        // Load-bearing assertion: under a design that reused ONE shared
+        // flag for both centrings, the marker's earlier fire in the
+        // PreStart phase would have consumed that single flag, and the
+        // `if (!_didCentreLiveRow && hasLiveRow)` check on the Active
+        // transition would then be permanently false for the rest of this
+        // schedule's day — the live row would never get centred. This test
+        // fails under that design and passes under the two-flag design.
+        final scrollable = tester.state<ScrollableState>(
+          find.byType(Scrollable).first,
+        );
+        expect(scrollable.position.pixels, greaterThan(0));
       },
     );
 
