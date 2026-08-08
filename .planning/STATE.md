@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
-status: executing
-stopped_at: Completed 23-03-PLAN.md
-last_updated: "2026-08-07T22:29:07.017Z"
+status: verifying
+stopped_at: Completed 23-05-PLAN.md (G-03 gap closure)
+last_updated: "2026-08-08T15:18:50.948Z"
 last_activity: 2026-08-07 -- Phase 23 execution started
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 9
+  total_plans: 14
+  completed_plans: 10
   percent: 67
 ---
 
@@ -18,7 +18,7 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-07T22:29:07.014Z
+**Last session:** 2026-08-08T15:18:50.944Z
 
 ---
 
@@ -26,7 +26,7 @@ progress:
 
 Phase: 23 (Live Activity Tracking) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-08-07 -- Phase 23 execution started
 
 ```
@@ -76,6 +76,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 23-02]: Resume rebuilds via setState rather than re-deriving the <60s condition inline in didChangeAppLifecycleState — keeps _syncFastTimer's build() call site the only place the fast-timer decision is made, and fixes a pre-existing resume-staleness bug
 - [Phase ?]: [Phase 23-03]: GapBeforeNext banner unchanged from Phase 22 (P-1) — 23-CONTEXT.md decision 3 supplied verbatim copy for PreStart/DayComplete but only a description for the gap; recorded as a comment-only doc-comment diff above the case
 - [Phase ?]: [Phase 23-03]: TodayScreenState._nowFn is late final (set once in initState); multi-state widget tests must force a full unmount (pumpWidget(SizedBox.shrink())) between pumps of different clocks, or the second state's now closure is silently ignored
+- [Phase 23-live-activity-tracking]: [Phase 23-05]: G-03 fix stops cancelling _nowTimer on paused (resumed was the only revival path); added _isBackgrounded guard on the fast-timer call site and a build()-time self-heal — resolves the UAT-reported live row stranding without touching the fast-timer battery contract
+- [Phase 23-live-activity-tracking]: [Phase 23-05]: Widget tests for AppLifecycleState.paused must deliver AppLifecycleState.inactive before observing rendered state, since SchedulerBinding disables ALL frame scheduling on hidden/paused/detached (packages/flutter/lib/src/scheduler/binding.dart:414-428) and only re-enables it on resumed/inactive — inactive re-enables frame drawing without invoking this app's own resumed handler, isolating what a fix actually contributes
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -159,7 +161,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-04
-Stopped at: Completed 23-03-PLAN.md
+Stopped at: Completed 23-05-PLAN.md (G-03 gap closure)
 Resume at: `/gsd-plan-phase 21`
 
 ## Performance Metrics
@@ -189,3 +191,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 23 P01 | 10min | 3 tasks | 5 files |
 | Phase 23-live-activity-tracking P02 | 15min | 2 tasks | 2 files |
 | Phase 23-live-activity-tracking P03 | 25min | 2 tasks | 3 files |
+| Phase 23-live-activity-tracking P05 | 32min | 3 tasks | 3 files |
