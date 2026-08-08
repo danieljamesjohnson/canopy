@@ -88,6 +88,37 @@ void main() {
       expect((rows[1] as ChunkRow).chunk.id, 'b');
       expect((rows[2] as ChunkRow).chunk.id, 'c');
     });
+
+    test('NOW-02: nowMinutes before the first chunk start — LeadingFreeRow '
+        'is present', () {
+      final chunk = _workChunk(syntheticStartMinutes: 480);
+      final rows = buildTimeline(
+        chunks: [chunk],
+        nowState: PreStart(chunk),
+        nowMinutes: 400,
+      );
+      final leading = rows.whereType<LeadingFreeRow>();
+      expect(leading, hasLength(1));
+      expect(leading.single.untilMinutes, 480);
+    });
+
+    test('NOW-02: nowMinutes past the first chunk start — LeadingFreeRow is '
+        'suppressed', () {
+      final chunk = _workChunk(syntheticStartMinutes: 480);
+      final rows = buildTimeline(
+        chunks: [chunk],
+        nowState: GapBeforeNext(chunk),
+        nowMinutes: 600,
+      );
+      expect(rows.whereType<LeadingFreeRow>(), isEmpty);
+    });
+
+    test('NOW-02: nowMinutes omitted entirely — LeadingFreeRow is present '
+        '(back-compat, null is a no-op)', () {
+      final chunk = _workChunk(syntheticStartMinutes: 480);
+      final rows = buildTimeline(chunks: [chunk], nowState: PreStart(chunk));
+      expect(rows.whereType<LeadingFreeRow>(), hasLength(1));
+    });
   });
 
   group('buildTimeline — gap arithmetic (D-05)', () {
@@ -240,6 +271,104 @@ void main() {
             'The old _buildActiveChunkItems scan would have marked the '
             '8am chunk instead — this is the bug Phase 17 fixed.',
       );
+    });
+  });
+
+  group('buildTimeline — now-marker (NOW-01)', () {
+    test('shows exactly one NowMarkerRow for PreStart, GapBeforeNext, '
+        'Overdue, and DayComplete', () {
+      final c1 = _workChunk(id: 'c1', syntheticStartMinutes: 480);
+      final c2 = _workChunk(id: 'c2', syntheticStartMinutes: 600);
+      for (final nowState in [
+        PreStart(c1),
+        GapBeforeNext(c2),
+        Overdue(c1, c2),
+        DayComplete(),
+      ]) {
+        final rows = buildTimeline(
+          chunks: [c1, c2],
+          nowState: nowState,
+          nowMinutes: 540,
+        );
+        expect(
+          rows.whereType<NowMarkerRow>(),
+          hasLength(1),
+          reason: '$nowState must show exactly one NowMarkerRow',
+        );
+      }
+    });
+
+    test('Active suppresses the marker entirely', () {
+      final c1 = _workChunk(id: 'c1', syntheticStartMinutes: 480);
+      final c2 = _workChunk(id: 'c2', syntheticStartMinutes: 600);
+      final rows = buildTimeline(
+        chunks: [c1, c2],
+        nowState: Active(c1, c2),
+        nowMinutes: 490,
+      );
+      expect(rows.whereType<NowMarkerRow>(), isEmpty);
+    });
+
+    test('marker carries the injected position and lands immediately '
+        'before the next chunk', () {
+      final c1 = _workChunk(id: 'c1', syntheticStartMinutes: 480);
+      final c2 = _workChunk(id: 'c2', syntheticStartMinutes: 600);
+      final rows = buildTimeline(
+        chunks: [c1, c2],
+        nowState: GapBeforeNext(c2),
+        nowMinutes: 540,
+      );
+      expect(rows.whereType<NowMarkerRow>().single.minutes, 540);
+      final markerIndex = rows.indexWhere((r) => r is NowMarkerRow);
+      final c2Index = rows.indexWhere(
+        (r) => r is ChunkRow && r.chunk.id == 'c2',
+      );
+      expect(markerIndex, c2Index - 1);
+    });
+
+    test('UI-SPEC insertion order: LeadingFreeRow, then NowMarkerRow, then '
+        'ChunkRow', () {
+      final c1 = _workChunk(id: 'c1', syntheticStartMinutes: 480);
+      final rows = buildTimeline(
+        chunks: [c1],
+        nowState: PreStart(c1),
+        nowMinutes: 400,
+      );
+      expect(rows[0], isA<LeadingFreeRow>());
+      expect(rows[1], isA<NowMarkerRow>());
+      expect(rows[2], isA<ChunkRow>());
+    });
+
+    test('DayComplete: the marker appends as the very last row', () {
+      final c1 = _workChunk(
+        id: 'c1',
+        syntheticStartMinutes: 480,
+        durationMinutes: 25,
+        isCompleted: true,
+      );
+      final rows = buildTimeline(
+        chunks: [c1],
+        nowState: DayComplete(),
+        nowMinutes: 600,
+      );
+      expect(rows.last, isA<NowMarkerRow>());
+    });
+
+    test('marker renders independently of GapFreeRow (sub-threshold gap '
+        'still gets a marker)', () {
+      final a = _workChunk(
+        id: 'a',
+        syntheticStartMinutes: 480,
+        durationMinutes: 25,
+      );
+      final b = _workChunk(id: 'b', syntheticStartMinutes: 514); // 9min gap
+      final rows = buildTimeline(
+        chunks: [a, b],
+        nowState: GapBeforeNext(b),
+        nowMinutes: 510,
+      );
+      expect(rows.whereType<GapFreeRow>(), isEmpty);
+      expect(rows.whereType<NowMarkerRow>(), hasLength(1));
     });
   });
 

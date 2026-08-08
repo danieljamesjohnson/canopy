@@ -8,7 +8,7 @@ const int kMinGapMinutes = 10;
 
 /// A single row in the unified Today timeline.
 ///
-/// Exactly three subtypes, so the render layer can use an exhaustive switch
+/// Exactly four subtypes, so the render layer can use an exhaustive switch
 /// with no default branch.
 sealed class TimelineRow {}
 
@@ -36,6 +36,14 @@ class GapFreeRow extends TimelineRow {
   GapFreeRow(this.startMinutes, this.durationMinutes);
 }
 
+/// The current-moment position marker, injected as a value — never derived
+/// from a clock read inside this file (INVARIANT 1). It is a *position
+/// only*, never a second opinion about which chunk is current (D-01).
+class NowMarkerRow extends TimelineRow {
+  final int minutes;
+  NowMarkerRow(this.minutes);
+}
+
 /// Builds the unified Today timeline's row list from the day's [chunks] and
 /// a [NowState].
 ///
@@ -44,7 +52,10 @@ class GapFreeRow extends TimelineRow {
 /// "now" is the injected [nowState], which is the single now-detector
 /// (22-PATTERNS.md section 5 / threat T-22-01): there is no code path by
 /// which this row list can disagree with [resolveNowState] about which
-/// chunk is current.
+/// chunk is current. [nowMinutes] is likewise an injected clock position in
+/// minutes-from-midnight, computed by the caller from the same single
+/// [nowState]-classifying `nowDt` sample — it is never obtained from a
+/// clock read inside this file.
 ///
 /// INVARIANT 2: the incoming [chunks] order is preserved and never
 /// re-sorted — the schedule generator already emits clock order
@@ -53,6 +64,7 @@ class GapFreeRow extends TimelineRow {
 List<TimelineRow> buildTimeline({
   required List<ScheduledChunk> chunks,
   required NowState nowState,
+  int? nowMinutes,
   int minGapMinutes = kMinGapMinutes,
 }) {
   if (chunks.isEmpty) return [];
@@ -62,6 +74,15 @@ List<TimelineRow> buildTimeline({
     Overdue(:final overdue) => overdue.id,
     _ => null,
   };
+
+  // NOW-01: show the marker unless nowMinutes was omitted (back-compat,
+  // Pitfall 2) or the current state is Active — LiveRowCard already answers
+  // "where am I" during Active, and the marker's chunk-boundary position
+  // would be slightly false mid-chunk. Guarded on the sealed variant
+  // specifically (not on "does the row list contain an isLive row"),
+  // because Overdue also sets isLive and Overdue MUST show the marker.
+  final bool showMarker = nowMinutes != null && nowState is! Active;
+  bool markerInserted = false;
 
   final rows = <TimelineRow>[];
   int? prevEnd;
@@ -73,7 +94,13 @@ List<TimelineRow> buildTimeline({
       if (prevEnd == null) {
         // First chunk with a clock position — leading free row if the day
         // doesn't start at minute 0.
-        if (start > 0) {
+        //
+        // NOW-02: suppress once the window has closed (nowMinutes has
+        // reached or passed start) — there is no truthful alternate copy to
+        // show once "Free until <time>" describes a window that's already
+        // passed; the NowMarkerRow below is what tells the user where they
+        // are instead.
+        if (start > 0 && (nowMinutes == null || nowMinutes < start)) {
           rows.add(LeadingFreeRow(start));
         }
       } else if (start - prevEnd >= minGapMinutes) {
@@ -85,7 +112,22 @@ List<TimelineRow> buildTimeline({
       prevEnd = start + chunk.durationMinutes;
     }
 
+    // NOW-01 insertion rule (24-UI-SPEC.md): free row (if any, above) then
+    // the marker, then the chunk — the marker is a point inside the span
+    // the free/gap row just named. Inserted immediately before the first
+    // ChunkRow whose start is after nowMinutes.
+    if (showMarker && !markerInserted && start != null && nowMinutes < start) {
+      rows.add(NowMarkerRow(nowMinutes));
+      markerInserted = true;
+    }
+
     rows.add(ChunkRow(chunk, isLive: chunk.id == liveId));
+  }
+
+  // DayComplete / no-future-chunk case — the marker lands as the very last
+  // row.
+  if (showMarker && !markerInserted) {
+    rows.add(NowMarkerRow(nowMinutes));
   }
 
   return rows;
