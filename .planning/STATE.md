@@ -2,23 +2,23 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
-status: executing
-stopped_at: Completed 24-03-PLAN.md -- partial pass, DayComplete gap routed to 24-04
-last_updated: "2026-08-08T22:41:20.128Z"
+status: completed
+stopped_at: Completed 24-04-PLAN.md
+last_updated: "2026-08-08T23:01:12.062Z"
 last_activity: 2026-08-08 -- Phase 24 plan 3 closed with a gap (24-04 pending)
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 17
-  completed_plans: 16
-  percent: 50
+  completed_phases: 3
+  total_plans: 18
+  completed_plans: 17
+  percent: 75
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-08T22:40:16.377Z
+**Last session:** 2026-08-08T23:01:12.057Z
 
 ---
 
@@ -89,6 +89,7 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 24-02]: New Phase 24 now-marker test group nested inside Task 2's group (not immediately after the day-complete test in Task 3) to reuse Task 2's pumpDay/buildDayFixture helpers directly, avoiding a duplicated clock literal or a diff-inflating hoist to module scope
 - [Phase 24-where-am-i]: 24-03 UAT verdict: PARTIAL PASS -- mid-day/between-activities now-marker confirmed by Dan; DayComplete state fails to scroll marker into view (root cause: today_screen.dart:971-972 gates centre-on-open behind hasLiveRow, never true for DayComplete/PreStart/GapBeforeNext); fix routed to gap-closure plan 24-04, not re-opened here
 - [Phase 24-where-am-i]: Dan routed two forward ideas (auto-scroll past items, time-proportional calendar view with a moving red now-line) to a new future phase, explicitly out of phase 24 scope
+- [Phase 24]: 24-04: separate _didCentreMarker flag (not reused _didCentreLiveRow) fallback-centres the now-marker for PreStart/GapBeforeNext/DayComplete, closing Dan's DayComplete UAT gap; verified via a dedicated two-flag regression test
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -172,7 +173,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-04
-Stopped at: Completed 24-02-PLAN.md
+Stopped at: Completed 24-04-PLAN.md
 Resume at: `/gsd-plan-phase 21`
 
 ## Performance Metrics
@@ -209,3 +210,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 24 P01 | 30min | 3 tasks | 7 files |
 | Phase 24-where-am-i P02 | 12min | 3 tasks | 3 files |
 | Phase 24-where-am-i P03 | ~15min | 2 tasks | 1 files |
+| Phase 24 P04 | 35min | 2 tasks | 2 files |
