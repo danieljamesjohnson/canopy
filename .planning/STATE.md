@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: verifying
-stopped_at: Completed 23-08-PLAN.md (G-01, G-07 gap closure)
-last_updated: "2026-08-08T15:31:24.418Z"
+stopped_at: Completed 23-07-PLAN.md (G-02, G-04, G-06 gap closure)
+last_updated: "2026-08-08T15:45:27.868Z"
 last_activity: 2026-08-07 -- Phase 23 execution started
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 14
-  completed_plans: 12
+  completed_plans: 13
   percent: 67
 ---
 
@@ -18,7 +18,7 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-08T15:31:24.414Z
+**Last session:** 2026-08-08T15:45:27.864Z
 
 ---
 
@@ -81,6 +81,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 23]: [Phase 23-06]: G-05 implemented as a write-side-only mutation in ScheduleNotifier.markComplete (_absorbReclaimedTimeIntoNextBreak) — moves the following break's start to now and extends its duration to preserve the original end, so resolveNowState reaches Active(break) through its existing unmodified path and the Phase 17 KEY INVARIANT test needs zero changes — Dan's decision (23-UAT.md): 'extend the break to fill' dissolves the conflict the gap analysis flagged between G-05 and the named Phase 17 invariant, since the break's window genuinely opens at now because we moved it
 - [Phase 23-08]: G-01 flipped both onboarding_screen.dart and goal_form_sheet.dart energy-valence segmented controls to Drains -> Neutral -> Lifts, per Dan's explicit sign-off decision to keep the two surfaces agreeing on order — Flipping only onboarding would leave the two surfaces disagreeing about which end means drains, the exact failure Dan's decision exists to avoid
 - [Phase 23-08]: G-07 placed the mood consequence line in checkin_screen.dart's _buildCheckinBody (pre-commit, above Let's go), not in the acknowledgment text as 23-GAP-ANALYSIS.md suggested — Check-in is a two-step flow; the acknowledgment only renders after generation, so the explanation needs to be visible before commit so Dan can compare moods
+- [Phase 23]: kGutterWidth bumped 46.0 -> 75.0 (G-04) — flutter test's placeholder font (no real Roboto metrics loaded) inflates measured glyph width to a fixed fontSize-wide box per character; the widest-label fit test forced a bump documented as a test-harness bound, not a real-device requirement -- flagged for a real-browser recheck.
+- [Phase 23]: Chunk count owned solely by ScheduleProgressBar; mood chip states mood only (G-06) — ScheduleProgressBar (completed-of-total + bar) is strictly richer than the chip's bare total, so the chip dropped its duplicate count; 22-UI-SPEC.md amended with a dated note rather than left contradicting the shipped chip.
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -164,7 +166,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-04
-Stopped at: Completed 23-08-PLAN.md (G-01, G-07 gap closure)
+Stopped at: Completed 23-07-PLAN.md (G-02, G-04, G-06 gap closure)
 Resume at: `/gsd-plan-phase 21`
 
 ## Performance Metrics
@@ -197,3 +199,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 23-live-activity-tracking P05 | 32min | 3 tasks | 3 files |
 | Phase 23 P06 | ~20min | 2 tasks | 2 files |
 | Phase 23-live-activity-tracking P08 | ~10min | 2 tasks | 6 files |
+| Phase 23 P07 | 35min | 3 tasks | 8 files |

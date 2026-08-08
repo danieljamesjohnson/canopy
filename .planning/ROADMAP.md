@@ -175,7 +175,7 @@ only cross-plan constraint is `today_screen.dart`, which 23-05 and 23-07 both to
 
 **Wave 2** *(blocked on 23-05 — shares `today_screen.dart`)*
 
-- [ ] 23-07-PLAN.md — G-04 + G-02 + G-06: time gutter gains the 16dp inset every other element has (cards do not move), a long break reads substantially heavier within the dashed vocabulary, and the chunk count stops rendering twice
+- [x] 23-07-PLAN.md — G-04 + G-02 + G-06: time gutter gains the 16dp inset every other element has (cards do not move), a long break reads substantially heavier within the dashed vocabulary, and the chunk count stops rendering twice
 
 **UI hint**: yes
 
@@ -198,4 +198,4 @@ only cross-plan constraint is `today_screen.dart`, which 23-05 and 23-07 both to
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 2/2 | Complete   | 2026-08-07 |
 | 22. Unified Today Screen | v1.5 | 4/4 | Complete   | 2026-08-07 |
-| 23. Live Activity Tracking | v1.5 | 6/8 | In Progress|  |
+| 23. Live Activity Tracking | v1.5 | 7/8 | In Progress|  |
