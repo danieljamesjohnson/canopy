@@ -218,6 +218,32 @@ Plans:
 
 **Seam left by Phase 22:** `LiveRowCard` takes `kicker` and `remainingLabel` as injected strings, so LIVE-01/LIVE-02 change what `TodayScreen` computes rather than the widget's layout. `showActions` is already wired from the chunk type for LIVE-01's break case. The pre-start / gap / day-complete copy was carried across verbatim, so LIVE-03 refines wording rather than rebuilding states.
 
+---
+
+### Phase 25: The Day Has a Shape
+
+**Goal**: The day renders as a time-proportional surface with a continuously-moving now-line, so "where am I" is answered by position rather than by a marker slotted between rows
+**Depends on**: Phase 24 (owns the row model, the single clock sample, and the marker this phase generalises)
+**Requirements**: CAL-01, CAL-02, CAL-03
+**Success Criteria** (what must be TRUE):
+
+  1. A row's height corresponds to its duration, so the shape of the day is legible without reading any times
+  2. The now-line sits at the true current moment *including inside an activity's span*, not only at chunk boundaries
+  3. Elapsed time recedes — the past is a deliberate scroll away rather than the default view
+  4. The single-clock-sample rule still holds: the line is a position derived from build()'s one `nowDt`, never a second opinion about which activity is current
+
+**Origin**: Dan, Phase 24 UAT 2026-08-08 — *"could maek it like a calendar view as well where as time goes on theres a red line that scrolls downt he page to tell you where you are relatively to the time"*, alongside *"i think things int het past should have to be scrolle dto"*. Phase 24 delivered the marker and confirmed it reads well mid-day; this phase is the structural version of the same question.
+
+**Why this is not just a skin**: Phase 24's `24-UI-SPEC.md` suppresses the marker during `Active` on the explicit grounds that a chunk-boundary position "would visually assert a boundary position that isn't the true one" mid-chunk. A time-proportional layout removes that constraint rather than working around it, so CAL-02 supersedes the `Active`-suppression rule instead of coexisting with it. Expect `NowMarkerRow`'s between-rows insertion contract in `timeline.dart` to be reworked, not extended.
+
+**Open questions for discuss-phase**: whether this replaces the list view or sits alongside it as a second mode; what happens to a day with large empty stretches (a proportional 6-hour gap is mostly whitespace); whether "red" is right given the app's mood-seeded `ColorScheme` and the current marker's `colorScheme.primary`.
+
+**Scope boundary inherited from Phase 24**: D-03's prohibition on a sticky bar, floating pill, or jump button was about the *marker*. Whether it binds a proportional layout is an open question for this phase, not a settled constraint.
+
+**UI hint**: yes
+
+**Plans**: not yet planned
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -235,3 +261,4 @@ Plans:
 | 22. Unified Today Screen | v1.5 | 4/4 | Complete   | 2026-08-07 |
 | 23. Live Activity Tracking | v1.5 | 7/8 | In Progress|  |
 | 24. Where Am I | v1.5 | 4/4 | Complete   | 2026-08-08 |
+| 25. The Day Has a Shape | v1.5 | 0/? | Not started |  |

@@ -31,6 +31,12 @@
 - [x] **NOW-01**: The timeline carries a visible now-marker at the current clock position, so the user can locate themselves by looking at the list rather than reading a header line rows away. Its position derives from the same clock sample `resolveNowState` uses — a position, never a second opinion about which activity is current.
 - [x] **NOW-02**: A leading "Free until <time>" row never describes a window that has already closed.
 
+### Time-Proportional Day (added 2026-08-08 from Phase 24 UAT)
+
+- [ ] **CAL-01**: The day reads as a time-proportional surface — a row's height corresponds to its duration — so the shape of the day (a long stretch of work, a thin gap) is legible without reading any times.
+- [ ] **CAL-02**: A continuously-positioned now-line sits at the true current moment, including *inside* an activity's span rather than only at chunk boundaries. This supersedes Phase 24's `Active`-state marker suppression, which exists only because a boundary-positioned marker would be mildly false mid-chunk.
+- [ ] **CAL-03**: Elapsed time recedes: the past does not compete for the viewport with what is upcoming, and reaching it is a deliberate scroll rather than the default view.
+
 ## Implementation Notes
 
 Known starting points, captured at definition time so planning doesn't re-derive them:
@@ -73,13 +79,16 @@ Which phases cover which requirements. Populated during roadmap creation.
 | BREAK-01 | Phase 21 | Complete |
 | BREAK-02 | Phase 21 | Complete |
 | TONE-01 | Phase 21 | Complete |
+| CAL-01 | Phase 25 | Not started |
+| CAL-02 | Phase 25 | Not started |
+| CAL-03 | Phase 25 | Not started |
 
 **Coverage:**
 
-- v1.5 requirements: 8 total
-- Mapped to phases: 8 (100%)
+- v1.5 requirements: 11 total
+- Mapped to phases: 11 (100%)
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-08-04*
-*Last updated: 2026-08-04 after roadmap creation*
+*Last updated: 2026-08-08 — CAL-01..03 added from Phase 24's UAT verdict*
