@@ -1721,9 +1721,7 @@ void main() {
 
         // Background the app — and deliberately never deliver `resumed`.
         // That missing callback is the whole bug.
-        tester.binding.handleAppLifecycleStateChanged(
-          AppLifecycleState.paused,
-        );
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
         await tester.pump();
 
         // The chunk's window opens at 9:15.
@@ -1796,9 +1794,7 @@ void main() {
               'backgrounding',
         );
 
-        tester.binding.handleAppLifecycleStateChanged(
-          AppLifecycleState.paused,
-        );
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
         await tester.pump();
 
         // Re-enable frame drawing (see the group-level comment) so the

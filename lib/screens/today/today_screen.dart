@@ -922,7 +922,9 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     // !_isBackgrounded (G-03) so the 1/second ticker can never start while
     // the app is backgrounded, even though _nowTimer's now-surviving minute
     // tick can still reach this line via a background rebuild.
-    _syncFastTimer(!_isBackgrounded && liveSecondsLeft != null && liveSecondsLeft < 60);
+    _syncFastTimer(
+      !_isBackgrounded && liveSecondsLeft != null && liveSecondsLeft < 60,
+    );
     final timelineRows = buildTimeline(
       chunks: schedule.chunks,
       nowState: nowState,

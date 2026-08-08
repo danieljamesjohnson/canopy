@@ -32,8 +32,13 @@ Rounding up means a running activity never reads "0 min left".
 **Tick cost is part of this decision.** Do not replace the existing 1-minute
 `Timer.periodic` (`home_screen.dart:263`) with a blanket 1-second timer — this screen is open
 all day. Run the coarse tick normally and only escalate to a fast tick while the current
-activity has under a minute left, then drop back. The existing timer is already
-lifecycle-managed (cancelled on pause, restarted on resume); any faster tick must be too.
+activity has under a minute left, then drop back. **Amended 2026-08-08 (UAT G-03):** the
+coarse tick is deliberately NOT cancelled on pause — making `resumed` the only revival path
+was a single point of failure that stranded the live row in UAT (a paused event with no
+matching resumed left the screen frozen until a manual page refresh). One wakeup a minute is
+not the battery concern; the fast tick is — it stays lifecycle-managed exactly as before
+(cancelled on pause) and is additionally guarded so it cannot restart while the app is
+backgrounded.
 
 Verified in the sketch: toolbar state **"Last minute"** demonstrates the switch
 (`3 min left` → `41s left`).
