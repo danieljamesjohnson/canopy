@@ -144,7 +144,7 @@ Plans:
   2. Time remaining in the current activity (chunk or break) visibly counts down while the screen stays open
   3. Before the day's first chunk starts, in a gap between activities, and after the day is complete, the screen shows a distinct, truthful state for each case
 
-**Plans**: 4 plans
+**Plans**: 8 plans (4 original + 4 UAT gap-closure). Plans 23-05..23-08 close the seven gaps Dan reported at the 23-04 sign-off gate (`23-UAT.md` Gaps, diagnosed in `23-GAP-ANALYSIS.md`).
 Plans:
 **Wave 1**
 
@@ -161,6 +161,21 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [ ] 23-04-PLAN.md — Phase gate: full suite + analyze, served debug build, and Dan's sign-off on the two manual-only verifications and the gap-banner decision
+
+### Phase 23 gap closure (UAT, 2026-08-08)
+
+Four plans closing G-01..G-07 from `23-UAT.md`. Waves are re-numbered from 1 within this set; the
+only cross-plan constraint is `today_screen.dart`, which 23-05 and 23-07 both touch.
+
+**Wave 1**
+
+- [ ] 23-05-PLAN.md — G-03 (bug): the minute tick survives a `paused` with no matching `resumed`, the fast tick is guarded from running while backgrounded, a dead timer self-heals in `build()` — pinned by a regression test proven to fail without the fix
+- [ ] 23-06-PLAN.md — G-05 (behaviour): completing a work chunk early moves the following break to start now and keep its original end ("extend the break to fill"), nothing downstream shifts, Phase 17's unopened-window invariant untouched
+- [ ] 23-08-PLAN.md — G-01 + G-07: both energy-valence controls reorder to Drains → Neutral → Lifts; picking a day type states its consequence in the generator's real `_moodCap`/`_moodBreakCadence` numbers; the dead acknowledgment-screen duplicate is deleted
+
+**Wave 2** *(blocked on 23-05 — shares `today_screen.dart`)*
+
+- [ ] 23-07-PLAN.md — G-04 + G-02 + G-06: time gutter gains the 16dp inset every other element has (cards do not move), a long break reads substantially heavier within the dashed vocabulary, and the chunk count stops rendering twice
 
 **UI hint**: yes
 
