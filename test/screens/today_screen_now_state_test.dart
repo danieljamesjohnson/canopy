@@ -1666,6 +1666,27 @@ void main() {
   // `didChangeAppLifecycleState`'s `paused` branch cancelled BOTH timers and
   // `resumed` was the ONLY revival path anywhere in the file, so a paused
   // event with no matching resumed stranded the screen permanently.
+  //
+  // A note on why these tests route through AppLifecycleState.inactive
+  // rather than only paused: `SchedulerBinding.handleAppLifecycleStateChanged`
+  // (package:flutter/src/scheduler/binding.dart) disables ALL frame
+  // scheduling while the app is `hidden`/`paused`/`detached`, and only
+  // re-enables it on `resumed`/`inactive` — this is engine-level behaviour,
+  // true in production exactly as in tests, and independent of anything this
+  // plan changes. A `Timer.periodic` still fires while frames are disabled
+  // (timers are a Zone/event-loop concern, not a rendering concern) and
+  // still calls `setState`, but `WidgetTester.pump()` cannot observe that via
+  // a rendered widget until frame scheduling is re-enabled — with genuine
+  // `paused` + zero further events, `find.byType(...)` can never resolve
+  // either way, which would prove nothing about this fix. `inactive` is the
+  // engine-level "frames may draw again" signal that is NOT `resumed`: this
+  // file's `didChangeAppLifecycleState` has no special case for `inactive`
+  // (it only branches on `resumed`/`paused`), so delivering it exercises
+  // "a frame is drawable, but the app's own resumed handler never ran" —
+  // precisely the scenario this fix targets — without smuggling in the
+  // resumed branch's own explicit `_startNowTimer()` + `setState()`, which
+  // would trivially pass regardless of whether `paused` had cancelled
+  // `_nowTimer`.
   group('G-03 timer resilience', () {
     testWidgets(
       'G-03: the minute tick still fires after a paused with no matching '
@@ -1705,8 +1726,21 @@ void main() {
         );
         await tester.pump();
 
-        // The chunk's window opens at 9:15; let the minute tick carry it.
+        // The chunk's window opens at 9:15.
         injectedNow = DateTime(2026, 6, 13, 9, 15);
+
+        // Re-enable frame drawing at the engine level WITHOUT ever calling
+        // this file's `resumed` branch (see the group-level comment above).
+        // `_isBackgrounded` (and the cancelled `_fastTimer`) stay exactly as
+        // `paused` left them — only Flutter's own frame gate changes.
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        await tester.pump();
+
+        // The still-running minute tick (never cancelled by the fix) fires
+        // here and, with frames now drawable, finally paints the caught-up
+        // state — with no resumed callback ever having been delivered.
         await tester.pump(const Duration(minutes: 1));
 
         expect(
@@ -1750,7 +1784,8 @@ void main() {
           },
         );
 
-        // Baseline: fast timer alive in the foreground.
+        // Baseline: fast timer alive in the foreground (frames are already
+        // enabled here — paused has not been delivered yet).
         nowCallCount = 0;
         await tester.pump(const Duration(seconds: 1));
         expect(
@@ -1766,8 +1801,19 @@ void main() {
         );
         await tester.pump();
 
+        // Re-enable frame drawing (see the group-level comment) so the
+        // counts below are actually observable, WITHOUT calling this file's
+        // `resumed` branch — `_isBackgrounded` stays true throughout this
+        // block, exactly as a genuinely un-resumed pause would leave it.
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        await tester.pump();
+
         // The 1/second ticker must be dead while backgrounded — the
-        // battery contract this whole fix must not regress.
+        // battery contract this whole fix must not regress. (Both the
+        // pre-fix and post-fix code cancel _fastTimer on `paused`; this
+        // assertion is a no-regression check, not the discriminator below.)
         nowCallCount = 0;
         await tester.pump(const Duration(seconds: 1));
         expect(
@@ -1776,8 +1822,9 @@ void main() {
           reason: 'G-03: the fast timer must not tick while backgrounded',
         );
 
-        // The 1/minute tick is still alive while backgrounded — this is
-        // the fix itself.
+        // The 1/minute tick is still alive while backgrounded, with no
+        // resumed callback ever delivered — this is the fix itself, and the
+        // one assertion that only passes post-fix.
         nowCallCount = 0;
         await tester.pump(const Duration(minutes: 1));
         expect(
@@ -1788,8 +1835,8 @@ void main() {
               'matching resume',
         );
 
-        // Resume: the fast timer comes back because the clock is still
-        // inside the final minute.
+        // Now deliver the real `resumed` callback: the fast timer must come
+        // back because the clock is still inside the final minute.
         tester.binding.handleAppLifecycleStateChanged(
           AppLifecycleState.resumed,
         );
