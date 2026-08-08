@@ -15,6 +15,12 @@ String formatMinutes(int minutes) {
   return '$hour:${m.toString().padLeft(2, '0')} $suffix';
 }
 
+/// Converts a [DateTime] to minutes-from-midnight in its own local
+/// wall-clock time (never `.toUtc()`) — the same frame of reference
+/// [formatMinutes] and [resolveNowState] already use, so a caller using
+/// this helper can never silently disagree with either.
+int minutesOfDay(DateTime dt) => dt.hour * 60 + dt.minute;
+
 /// Formats a start–end time range as "START – END" (en-dash per UI-SPEC).
 /// Example: formatTimeRange(565, 590) → "9:25 AM – 9:50 AM"
 String formatTimeRange(int startMin, int endMin) {

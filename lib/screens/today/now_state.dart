@@ -1,4 +1,5 @@
 import '../../data/models/scheduled_chunk.dart';
+import '../../utils/time_format.dart';
 
 // ─── NowState sealed hierarchy ───────────────────────────────────────────────
 //
@@ -122,7 +123,7 @@ NowState resolveNowState({
   // a rollover at 8:59→9:00 could yield hour=8 from the first call and
   // minute=0 from the second, producing 480 instead of 540.
   final nowDt = now();
-  final currentMinutes = nowDt.hour * 60 + nowDt.minute;
+  final currentMinutes = minutesOfDay(nowDt);
 
   // Filter to chunks (work AND breaks) that have a clock position, sort by
   // window start. LIVE-01 dropped the work-only clause: the algorithm below
