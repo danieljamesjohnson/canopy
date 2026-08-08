@@ -713,6 +713,44 @@ void main() {
       },
     );
 
+    testWidgets(
+      'centres the now-marker on open when there is no live row to centre '
+      'on instead (DayComplete overflow, 24-04)',
+      (tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: longDayFixture(),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          // 18:00 — well past longDayFixture's last chunk (ends 14:25), so
+          // resolveNowState returns DayComplete and hasLiveRow is false.
+          now: () => DateTime(2026, 8, 7, 18, 0),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(NowMarker), findsOneWidget);
+
+        final scrollable = tester.state<ScrollableState>(
+          find.byType(Scrollable).first,
+        );
+        // This assertion would have FAILED before the 24-04 fix: hasLiveRow
+        // is false for DayComplete, so the old code never scheduled any
+        // ensureVisible call at all and the list stayed at pixels == 0.
+        expect(scrollable.position.pixels, greaterThan(0));
+        // The marker is the very last row buildTimeline emits for
+        // DayComplete, so ensureVisible clamps at the bottom — the literal
+        // encoding of Dan's "things in the past should have to be scrolled
+        // to" (24-03-SUMMARY.md).
+        expect(
+          scrollable.position.pixels,
+          scrollable.position.maxScrollExtent,
+        );
+      },
+    );
+
     testWidgets('pre-start: "Nothing until" is present, no LiveRowCard', (
       tester,
     ) async {
