@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: executing
-stopped_at: Completed 24-02-PLAN.md
-last_updated: "2026-08-08T19:47:51.261Z"
-last_activity: 2026-08-08 -- Phase 24 execution started
+stopped_at: Completed 24-03-PLAN.md -- partial pass, DayComplete gap routed to 24-04
+last_updated: "2026-08-08T22:41:20.128Z"
+last_activity: 2026-08-08 -- Phase 24 plan 3 closed with a gap (24-04 pending)
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 17
-  completed_plans: 15
+  completed_plans: 16
   percent: 50
 ---
 
@@ -18,16 +18,16 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-08T19:47:51.257Z
+**Last session:** 2026-08-08T22:40:16.377Z
 
 ---
 
 ## Current Position
 
 Phase: 24 (where-am-i) — EXECUTING
-Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-08-08 -- Phase 24 execution started
+Plan: 3 of 3 closed (24-03 partial pass)
+Status: Gap found — DayComplete now-marker not scrolled into view. Routed to gap-closure plan 24-04 (not yet created). Phase NOT complete; two forward ideas (auto-scroll past items, calendar red-line view) routed to a future phase.
+Last activity: 2026-08-08 -- Phase 24 plan 3 closed with a gap (24-04 pending)
 
 ```
 Progress: [░░░░░░░░░░] 0% — Phase 21/23
@@ -87,6 +87,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase ?]: [Phase 24-01]: Added a minimal NowMarkerRow case to today_screen.dart's exhaustive TimelineRow switch outside this plan's declared file scope -- Dart's sealed-class switch-statement exhaustiveness is a compile error, not a lint, so the app failed to build the moment the fourth subtype existed; the case is unreachable until 24-02 threads a real nowMinutes value into build()
 - [Phase 24-02]: nowMinutes = minutesOfDay(nowDt) threaded from build()'s single clock sample into buildTimeline, making the 24-01-added NowMarkerRow switch case reachable; the corrected NOW-02 test proves the leading free row disappears once its window closes
 - [Phase 24-02]: New Phase 24 now-marker test group nested inside Task 2's group (not immediately after the day-complete test in Task 3) to reuse Task 2's pumpDay/buildDayFixture helpers directly, avoiding a duplicated clock literal or a diff-inflating hoist to module scope
+- [Phase 24-where-am-i]: 24-03 UAT verdict: PARTIAL PASS -- mid-day/between-activities now-marker confirmed by Dan; DayComplete state fails to scroll marker into view (root cause: today_screen.dart:971-972 gates centre-on-open behind hasLiveRow, never true for DayComplete/PreStart/GapBeforeNext); fix routed to gap-closure plan 24-04, not re-opened here
+- [Phase 24-where-am-i]: Dan routed two forward ideas (auto-scroll past items, time-proportional calendar view with a moving red now-line) to a new future phase, explicitly out of phase 24 scope
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -206,3 +208,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 23 P07 | 35min | 3 tasks | 8 files |
 | Phase 24 P01 | 30min | 3 tasks | 7 files |
 | Phase 24-where-am-i P02 | 12min | 3 tasks | 3 files |
+| Phase 24-where-am-i P03 | ~15min | 2 tasks | 1 files |

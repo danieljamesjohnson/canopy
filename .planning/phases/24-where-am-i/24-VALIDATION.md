@@ -81,9 +81,9 @@ factories, `pumpWithMood`, `_pumpTodayScreen`, injectable `now:` closures).
 
 ## Manual-Only Verifications
 
-| Behavior | Requirement | Why Manual | Test Instructions |
-|----------|-------------|------------|-------------------|
-| The marker actually answers "where am I" at a glance | NOW-01 | Legibility is a perceptual judgement no widget test can make — this phase exists *because* an implementation that passed its tests still left Dan unable to locate himself | Build the debug web bundle per CLAUDE.md (`flutter build web --debug --source-maps --pwa-strategy=none`), serve on a fresh port, open on a real GPU-backed browser mid-day, and confirm "now" is findable without reading the header |
+| Behavior | Requirement | Why Manual | Test Instructions | Verified | Port | Verdict |
+|----------|-------------|------------|-------------------|----------|------|---------|
+| The marker actually answers "where am I" at a glance | NOW-01 | Legibility is a perceptual judgement no widget test can make — this phase exists *because* an implementation that passed its tests still left Dan unable to locate himself | Build the debug web bundle per CLAUDE.md (`flutter build web --debug --source-maps --pwa-strategy=none`), serve on a fresh port, open on a real GPU-backed browser mid-day, and confirm "now" is findable without reading the header | 2026-08-08 | 8123 (originally built on 8840; moved to the established debug-UAT origin so Dan's real data was present) | **PARTIAL PASS.** Mid-day/between-activities case confirmed by Dan ("it did look a lot better"). `DayComplete` state FAILED — the now-marker exists but the list never scrolls it into view, so it's not findable at a glance when the day is done. Root cause diagnosed (`today_screen.dart:971-972`) and routed to gap-closure plan 24-04. Two forward ideas (auto-scroll past items, calendar red-line view) routed to a future phase, out of this phase's scope. See `24-03-SUMMARY.md` for Dan's verbatim verdict and the `Gaps` section. |
 
 ---
 
@@ -96,5 +96,7 @@ factories, `pumpWithMood`, `_pumpTodayScreen`, injectable `now:` closures).
 - [x] Feedback latency < 20s
 - [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** automated tasks green; the perceptual "where am I" check further up this
-document remains open for plan 24-03.
+**Approval:** automated tasks green. The perceptual "where am I" check is CLOSED as a **partial
+pass** — see the Manual-Only Verifications row above. Phase 24's success criterion 1 is not yet
+fully true for the `DayComplete` state; that gap is tracked and routed to plan 24-04, not silently
+accepted here.
