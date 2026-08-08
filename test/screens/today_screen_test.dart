@@ -18,6 +18,7 @@ import 'package:canopy/screens/schedule/widgets/chunk_detail_sheet.dart';
 import 'package:canopy/screens/today/today_screen.dart';
 import 'package:canopy/screens/today/widgets/breathing_pulse_cta.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
+import 'package:canopy/screens/today/widgets/now_marker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -361,13 +362,38 @@ void main() {
       expect(find.byType(ExpansionTile), findsNothing);
     });
 
-    testWidgets('"Free until 8:00 AM" precedes the first activity', (
-      tester,
-    ) async {
-      await pumpDay(tester);
+    testWidgets(
+      'the leading "Free until" row precedes the first activity while that '
+      'window is still open',
+      (tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: buildDayFixture(),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => DateTime(2026, 8, 7, 6, 0),
+        );
 
-      expect(find.textContaining('Free until 8:00 AM'), findsOneWidget);
-    });
+        expect(find.textContaining('Free until 8:00 AM'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the leading "Free until" row is gone once its window has closed '
+      '(NOW-02)',
+      (tester) async {
+        await pumpDay(tester);
+
+        // At 10:47 with this fixture, c3's 10:45–10:50 window is open, so
+        // resolveNowState is Active — the correct marker assertion here is
+        // absence, not presence (D-02's Active suppression).
+        expect(find.textContaining('Free until 8:00 AM'), findsNothing);
+        expect(find.byType(NowMarker), findsNothing);
+      },
+    );
 
     testWidgets('a named "Free ·" row appears for the 11:15–13:00 gap', (
       tester,
@@ -502,6 +528,121 @@ void main() {
         expect(find.textContaining('5 chunks'), findsNothing);
       },
     );
+
+    group('Phase 24 — now-marker (NOW-01)', () {
+      testWidgets('PreStart shows the marker', (tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [_workChunk(syntheticStartMinutes: 480, durationMinutes: 60)],
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => DateTime(2026, 8, 7, 6, 0),
+        );
+
+        expect(find.byType(NowMarker), findsOneWidget);
+        expect(find.text('Now'), findsOneWidget);
+        expect(find.text('6:00'), findsOneWidget);
+      });
+
+      testWidgets('GapBeforeNext shows the marker', (tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'c1',
+              syntheticStartMinutes: 540, // 9:00
+              durationMinutes: 25,
+              isCompleted: true,
+              rationale: 'Morning routine',
+            ),
+            _workChunk(
+              id: 'c2',
+              syntheticStartMinutes: 600, // 10:00
+              durationMinutes: 25,
+              rationale: 'Reading',
+            ),
+          ],
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => DateTime(2026, 8, 7, 9, 30),
+        );
+
+        expect(find.byType(NowMarker), findsOneWidget);
+        expect(find.text('9:30'), findsOneWidget);
+      });
+
+      testWidgets('DayComplete shows the marker, last', (tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              syntheticStartMinutes: 480,
+              durationMinutes: 60,
+              rationale: 'Morning routine',
+            ),
+          ],
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => DateTime(2026, 8, 7, 18, 0),
+        );
+
+        expect(find.byType(NowMarker), findsOneWidget);
+        expect(find.text('6:00p'), findsOneWidget);
+      });
+
+      testWidgets('Active suppresses the marker', (tester) async {
+        // c3's 10:45-10:50 window is open at pumpDay's 10:47, so
+        // resolveNowState is Active — "the loud card answers it, so the
+        // quiet marker stands down" (D-02).
+        await pumpDay(tester);
+
+        expect(find.byType(NowMarker), findsNothing);
+        expect(find.byType(LiveRowCard), findsOneWidget);
+      });
+
+      testWidgets(
+        'Single-sample agreement (D-01): the header and the marker read the '
+        'same clock sample',
+        (tester) async {
+          final schedule = DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'c1',
+                syntheticStartMinutes: 540, // 9:00
+                durationMinutes: 25,
+                isCompleted: true,
+                rationale: 'Morning routine',
+              ),
+              _workChunk(
+                id: 'c2',
+                syntheticStartMinutes: 600, // 10:00
+                durationMinutes: 25,
+                rationale: 'Reading',
+              ),
+            ],
+          );
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+            now: () => DateTime(2026, 8, 7, 9, 30),
+          );
+
+          expect(find.text('Up next'), findsOneWidget);
+          expect(find.text('9:30'), findsOneWidget);
+        },
+      );
+    });
   });
 
   group('Task 3 — centre the live row on open + edge-state copy', () {
