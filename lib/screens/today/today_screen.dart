@@ -75,6 +75,17 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   /// dispose for the same battery/CPU reason [_nowTimer] is.
   Timer? _fastTimer;
 
+  /// True while the app is backgrounded (between a `paused` lifecycle event
+  /// and the matching `resumed`). Exists solely so the 1-second [_fastTimer]
+  /// cannot be restarted by [_nowTimer]'s now-surviving minute tick while
+  /// backgrounded (G-03) — [_nowTimer] itself is deliberately NOT cancelled
+  /// on pause any more (see `didChangeAppLifecycleState` below), so without
+  /// this guard a background minute tick would call `build()`, which would
+  /// call `_syncFastTimer`, which would happily restart the 1/second ticker
+  /// in a backgrounded tab. Read at the single `_syncFastTimer` call site in
+  /// `build()`.
+  bool _isBackgrounded = false;
+
   static const Map<int, String> _moodEmojis = {
     1: '\u{1F327}️',
     2: '\u{1F325}️',
@@ -150,6 +161,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      _isBackgrounded = false;
       _startNowTimer();
       // Rebuild so build() re-runs and re-decides _syncFastTimer against the
       // fresh clock (P-5a), rather than blindly restarting the fast timer:
@@ -159,7 +171,22 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       // content until the next minute boundary.
       if (mounted) setState(() {});
     } else if (state == AppLifecycleState.paused) {
-      _nowTimer?.cancel();
+      // G-03: _nowTimer is deliberately NOT cancelled here any more. It used
+      // to be, and `resumed` above was the ONLY code path anywhere in this
+      // file that revived either timer — so a `paused` with no matching
+      // `resumed` (a missed/delayed browser callback, plausible during the
+      // debug build's own ~20s single-bundle first paint, a devtools focus
+      // steal, or background-tab throttling) stranded the live row
+      // permanently, and only a full page reload could recover it. That is
+      // exactly what Dan hit in UAT: opened the app at 9:13 with a chunk at
+      // 9:15, and the live row never appeared until a manual refresh.
+      //
+      // One wakeup a minute is negligible — this file already argued that
+      // cost for [_nowTimer] before G-03 existed. The real battery concern
+      // is [_fastTimer] (1/second), which IS still cancelled below, AND is
+      // now additionally guarded from restarting while backgrounded via
+      // [_isBackgrounded] (see the `_syncFastTimer` call site in `build()`).
+      _isBackgrounded = true;
       _fastTimer?.cancel();
       _fastTimer = null;
     }
@@ -852,6 +879,20 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    // G-03 belt-and-braces: revive a dead _nowTimer. Legal synchronously
+    // from build() for the same reason _syncFastTimer already is (see its
+    // doc comment) — a plain field mutation plus a timer start, no setState
+    // call of its own. A live Timer.periodic always reports isActive, so
+    // this is a no-op on the normal path; it only fires if a lifecycle
+    // callback was somehow dropped despite `paused` no longer cancelling
+    // this timer, giving a second, independent recovery path on top of
+    // that primary fix. CLAUDE.md already flags that browsers throttle
+    // timers in background tabs as a known risk class for this app — this
+    // is the secondary layer against that class, not the primary one.
+    if (_nowTimer == null || !_nowTimer!.isActive) {
+      _startNowTimer();
+    }
+
     final scheduleNotifier = context.watch<ScheduleNotifier>();
 
     if (!scheduleNotifier.hasScheduleToday) {
@@ -877,8 +918,11 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     final nowDt = _nowFn();
     final nowState = resolveNowState(chunks: schedule.chunks, now: () => nowDt);
     final liveSecondsLeft = _liveSecondsRemaining(nowState, nowDt);
-    // The only place the fast-timer decision is made (P-5).
-    _syncFastTimer(liveSecondsLeft != null && liveSecondsLeft < 60);
+    // The only place the fast-timer decision is made (P-5). Guarded by
+    // !_isBackgrounded (G-03) so the 1/second ticker can never start while
+    // the app is backgrounded, even though _nowTimer's now-surviving minute
+    // tick can still reach this line via a background rebuild.
+    _syncFastTimer(!_isBackgrounded && liveSecondsLeft != null && liveSecondsLeft < 60);
     final timelineRows = buildTimeline(
       chunks: schedule.chunks,
       nowState: nowState,
