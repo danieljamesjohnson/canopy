@@ -14,7 +14,6 @@ import 'package:canopy/screens/today/widgets/free_time_row.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
 import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -127,39 +126,38 @@ void main() {
       expect(
         sizedBoxes.any((box) => box.width == kGutterWidth),
         isTrue,
-        reason: 'Expected a SizedBox of width kGutterWidth (75.0)',
+        reason: 'Expected a SizedBox of width kGutterWidth',
       );
-      // Bumped from 46.0 (UAT G-04) — see kGutterWidth's doc comment for the
-      // widest-label fit test that forced this and the test-harness caveat.
-      expect(kGutterWidth, 75.0);
+      // G-04: the clip was caused by a MISSING 16dp inset, not by an
+      // insufficient width. See kGutterWidth's doc comment before changing.
+      expect(kGutterWidth, 52.0);
     });
 
     testWidgets(
-      'widest gutter label ("12:45p") fits within kGutterWidth (G-04)',
+      'widest gutter label ("12:45p") renders and the gutter reserves room for it (G-04)',
       (tester) async {
-        // 765 minutes-from-midnight = 12:45 PM → formatMinutesCompact
-        // renders "12:45p", the 6-character worst case the formatter
-        // produces (see time_format.dart's own doc comment).
-        //
-        // Caveat (see kGutterWidth's doc comment): `flutter test` does not
-        // load real Roboto metrics, so this measures against a placeholder
-        // font where every glyph is a fixed fontSize-wide box — a
-        // conservative, environment-driven bound, not a real-device one.
+        // 765 minutes-from-midnight = 12:45 PM → formatMinutesCompact renders
+        // "12:45p", the 6-character worst case the formatter produces (see
+        // time_format.dart's own doc comment).
         await pumpWithMood(
           tester,
           const TimelineRowTile(startMinutes: 765, child: Text('Reading')),
         );
         expect(find.text('12:45p'), findsOneWidget);
 
-        final renderParagraph = tester.renderObject<RenderParagraph>(
-          find.text('12:45p'),
-        );
-        final painter = TextPainter(
-          text: TextSpan(text: '12:45p', style: renderParagraph.text.style),
-          textDirection: TextDirection.ltr,
-        )..layout();
-
-        expect(painter.width, lessThanOrEqualTo(kGutterWidth));
+        // Deliberately NOT a TextPainter width assertion. `flutter test`
+        // renders with a placeholder font whose glyphs are all a fixed
+        // fontSize wide, so measuring "12:45p" here reports 72px — a fact
+        // about the harness, not the app. Sizing the gutter from that number
+        // is exactly the mistake this test used to encode: it forced
+        // kGutterWidth to 75, which visibly over-indented every card in a
+        // real browser.
+        //
+        // The real worst case, measured in the served debug build with actual
+        // Roboto metrics, is ~40px. This gate pins the documented floor plus
+        // slack; the "does it actually clip" question is answered visually
+        // (per CLAUDE.md) and by the gutter/heading alignment test below.
+        expect(kGutterWidth, greaterThanOrEqualTo(44.0));
       },
     );
   });

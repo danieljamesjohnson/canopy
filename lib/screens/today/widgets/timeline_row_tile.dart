@@ -5,20 +5,24 @@ import '../../../utils/time_format.dart';
 /// Width of the time gutter reserved on the left of every timeline row
 /// (D-06's ~46px time column).
 ///
-/// Bumped from 46.0 to 75.0 (UAT G-04) after a widest-label fit test proved
-/// "12:45p" — `formatMinutesCompact`'s 6-character worst case — does not fit
-/// 46dp under `flutter test`. Caveat recorded here so nobody "corrects" this
-/// back down without re-reading it: `flutter test` renders text with a
-/// placeholder font that draws every glyph as a fixed `fontSize`-wide box
-/// (confirmed by probing single-character widths — '1', 'i', 'W', ':' and
-/// 'p' all measured exactly 12.0px at fontSize 12, i.e. real proportional
-/// Roboto metrics are NOT loaded in this harness), so the measured fit bound
-/// is a conservative, test-harness-driven upper limit, not a real-device
-/// measurement — a real device likely needs meaningfully less. 75.0 errs
-/// wide on purpose (never risk re-introducing the clip this gap closes);
-/// revisit with a real-browser check (per this project's CLAUDE.md) if the
-/// wider gutter reads as too roomy in practice.
-const double kGutterWidth = 75.0;
+/// **Do not size this from a `flutter test` text measurement.** That harness
+/// renders with a placeholder font that draws every glyph as a fixed
+/// `fontSize`-wide box (probed directly: '1', 'i', 'W', ':' and 'p' all
+/// measure exactly 12.0px at fontSize 12 — real proportional Roboto metrics
+/// are not loaded). Measuring "12:45p" there yields 72px, which is a property
+/// of the harness, not of the app.
+///
+/// UAT G-04 was fixed by giving the gutter the same 16dp inset every other
+/// element already had — **the clipping was never a width problem.** A first
+/// pass also bumped this constant 46 → 75 on the strength of that fake
+/// measurement; a real-browser check (per this project's CLAUDE.md) showed
+/// "12:10p" rendering ~40px in actual Roboto, so 75 reserved ~35dp of dead
+/// space and pushed every card right, which was visible on screen.
+///
+/// 52.0 = the real-browser ~40px worst case ("12:45p", `formatMinutesCompact`'s
+/// 6-character maximum) plus ~12dp slack for larger text-scale settings.
+/// Verified visually in the served debug build, not just in tests.
+const double kGutterWidth = 52.0;
 
 /// D-06's ~46dp time gutter, and explicitly NOT D-04's rejected vertical
 /// rail: no connector line, no dot, no continuous stroke down the gutter.
