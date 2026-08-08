@@ -56,15 +56,19 @@ class LiveRowCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final clampedProgress = progress.clamp(0.0, 1.0);
 
+    // "Let now break the grid" (22-UI-SPEC.md "The live row", amended
+    // 2026-08-08 after UAT). Zero horizontal margin + square corners means
+    // this row spans the full content column while every other row is inset
+    // by the time gutter — a different silhouette, not just a different fill.
+    // The generous vertical margin gives it air the list rows don't get.
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      margin: const EdgeInsets.symmetric(vertical: 12),
       color: colorScheme.primaryContainer,
-      elevation: 2,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-      ),
+      elevation: 6,
+      shadowColor: colorScheme.shadow,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -80,7 +84,7 @@ class LiveRowCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               title,
-              style: theme.textTheme.titleLarge?.copyWith(
+              style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: colorScheme.onPrimaryContainer,
               ),

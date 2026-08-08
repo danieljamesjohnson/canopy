@@ -664,15 +664,32 @@ void main() {
         // show c1 (overdue, window 8:30–9:30), NOT c2 (upcoming, 10:30–11:30).
         // c1's time range "8:30 AM" must appear inside the card; if logic were
         // reversed and c2 were promoted, "10:30 AM" would appear instead.
+        //
+        // findsWidgets, not findsOneWidget: since the live row left the time
+        // gutter its kicker also carries the start time ("RIGHT NOW · 8:30 AM"),
+        // so c1's start legitimately appears twice. The identity check below is
+        // the load-bearing half — c2's start must be absent entirely.
         expect(
           find.descendant(
             of: find.byType(LiveRowCard),
             matching: find.textContaining('8:30 AM'),
           ),
-          findsOneWidget,
+          findsWidgets,
           reason:
               'WR-02: LiveRowCard must display c1 (8:30 AM start), '
               'not c2 (10:30 AM start)',
+        );
+        // The kicker names which chunk is Now, so it is the precise identity
+        // check. (A blanket "10:30 AM must not appear" would be wrong — the
+        // "Next · … at 10:30 AM" line legitimately names c2 as what follows.)
+        expect(
+          find.descendant(
+            of: find.byType(LiveRowCard),
+            matching: find.textContaining('RIGHT NOW · 8:30 AM'),
+          ),
+          findsOneWidget,
+          reason:
+              'WR-02: the live row kicker must identify c1 (8:30 AM) as Now',
         );
         expect(
           find.descendant(
@@ -948,7 +965,15 @@ void main() {
         scheduleNotifier: sn,
         now: () => DateTime(2026, 6, 13, 8, 27),
       );
-      expect(find.text('RIGHT NOW — RESTING'), findsOneWidget);
+      // The kicker carries the start time since the live row left the gutter
+      // (22-UI-SPEC.md "The live row", amended 2026-08-08). Asserted as a
+      // prefix so the time format is free to change without breaking the
+      // rest-vs-work contract this test actually cares about.
+      expect(
+        find.textContaining('RIGHT NOW — RESTING'),
+        findsOneWidget,
+        reason: 'a running break must announce itself as rest',
+      );
       expect(find.text('Taking a break'), findsOneWidget);
     });
 
@@ -1097,8 +1122,11 @@ void main() {
         scheduleNotifier: sn,
         now: () => DateTime(2026, 6, 13, 9, 0),
       );
-      expect(find.text('RIGHT NOW'), findsOneWidget);
-      expect(find.text('RIGHT NOW — RESTING'), findsNothing);
+      // Prefix match: the kicker now also carries the start time (see the
+      // amended live-row spec). The load-bearing assertion is the negative
+      // one — a work chunk must NOT be announced as rest.
+      expect(find.textContaining('RIGHT NOW'), findsOneWidget);
+      expect(find.textContaining('RESTING'), findsNothing);
     });
 
     testWidgets('live work chunk still shows Complete/Skip', (tester) async {

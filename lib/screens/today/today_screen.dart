@@ -568,12 +568,16 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         if (isLive) {
           // Keyed so build()'s centre-on-open can find this row's context
           // via Scrollable.ensureVisible without a second "now" scan.
+          //
+          // Deliberately NOT wrapped in TimelineRowTile. Every other row
+          // reserves the fixed time gutter, so they all share one silhouette;
+          // the live row spans the full content column instead, which is what
+          // makes "where I am" read at a glance rather than only on reading.
+          // Its start time moves into the kicker (see _liveKicker).
+          // 22-UI-SPEC.md "The live row", amended 2026-08-08 after UAT.
           return KeyedSubtree(
             key: _liveRowKey,
-            child: TimelineRowTile(
-              startMinutes: chunk.displayStartMinutes,
-              child: _buildLiveRow(context, chunk, nowState, secondsRemaining),
-            ),
+            child: _buildLiveRow(context, chunk, nowState, secondsRemaining),
           );
         }
         final goalColor = _lookupGoalColor(context, chunk);
@@ -642,7 +646,17 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     final isBreak =
         chunk.chunkType == ChunkType.shortBreak ||
         chunk.chunkType == ChunkType.longBreak;
-    return isBreak ? 'RIGHT NOW — RESTING' : 'RIGHT NOW';
+    final base = isBreak ? 'RIGHT NOW — RESTING' : 'RIGHT NOW';
+    // The live row is rendered OUTSIDE TimelineRowTile (see _buildTimelineRow)
+    // so it can span the full content width, which means it has no time
+    // gutter to sit in. The start time therefore moves into the kicker —
+    // 22-UI-SPEC.md "The live row", amended 2026-08-08 after UAT.
+    final start = chunk.displayStartMinutes;
+    if (start == null) return base;
+    // formatMinutes ("12:30 PM"), not formatMinutesCompact ("12:30p"):
+    // LiveRowCard uppercases the whole kicker, which would render the
+    // compact form's lowercase meridiem as a stray "12:30P".
+    return '$base · ${formatMinutes(start)}';
   }
 
   /// The single source of "how much of the current activity is left," in

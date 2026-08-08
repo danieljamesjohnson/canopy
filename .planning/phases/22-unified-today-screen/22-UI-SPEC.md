@@ -73,12 +73,34 @@ of the product's promise. Dan called this out specifically as something he liked
 
 ## The live row
 
+> **AMENDED 2026-08-08 (UAT).** Dan, at the v1.5 sign-off gate: *"there's still something about the
+> design that makes it to where I am doesn't just jump off the page."* The original treatment below
+> was too weak in practice, and the reason was competition rather than the row itself: every work row
+> already carries Complete/Skip and a saturated per-goal accent bar, so the heaviest cues repeated
+> down the whole list while the live row signalled itself with only a pale tint and ~48dp of extra
+> height — identical width, left edge and corner radius meant identical silhouettes.
+>
+> Four treatments were sketched (`served/nowsketch/`); Dan chose **"let now break the grid"** — a
+> live-row-only restyle, deliberately leaving every other row and every existing interaction alone.
+> Superseding rules:
+>
+> - The live row **is not wrapped in the time gutter tile**. It spans the full content column,
+>   edge to edge, so its silhouette differs from every other row.
+> - Square corners (radius 0) and a pronounced shadow, not a rounded card with soft elevation.
+> - Title steps up from `titleLarge` to `headlineSmall`-ish.
+> - Because the row no longer sits in the gutter, **the start time moves into the kicker**:
+>   "RIGHT NOW · 11:25", or "RIGHT NOW — RESTING · 11:34" during a break.
+>
+> Still explicitly rejected, unchanged: no sticky bar, no floating pill, no jump button. The list
+> position is still the row's real chronological position — it swells where it sits.
+
 The current activity **swells in place** — same list position, larger card:
 
-- `primaryContainer` / `onPrimaryContainer`, ~16dp radius, soft elevation.
+- `primaryContainer` / `onPrimaryContainer`, ~~~16dp radius, soft elevation~~ **square corners,
+  pronounced shadow, full content width (see amendment)**.
 - Kicker line, `labelSmall`, uppercase, ~72% opacity: "RIGHT NOW" — or
-  "RIGHT NOW — RESTING" during a break.
-- Title, `titleLarge`-ish, semibold.
+  "RIGHT NOW — RESTING" during a break — **now suffixed with the start time**.
+- Title, ~~`titleLarge`-ish~~ **`headlineSmall`-ish**, semibold.
 - Remaining-time line, monospace, ~82% opacity (granularity is Phase 23 / LIVE-02).
 - A progress bar filling across the activity's window.
 - Actions row — Complete / Skip — **for work chunks only**.
