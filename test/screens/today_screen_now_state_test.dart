@@ -1655,4 +1655,153 @@ void main() {
       );
     });
   });
+
+  // ── G-03: paused-without-resume must not strand the live row ────────────
+  //
+  // UAT gap: Dan opened the app at 9:13 with a chunk starting 9:15; the live
+  // row never appeared until a manual browser refresh. The happy-path minute
+  // tick across PreStart→Active was already proven correct by NOW-01 above
+  // (and by a deleted scratch test in 23-GAP-ANALYSIS.md) — these two tests
+  // do NOT re-test that. They pin the falsified-then-confirmed root cause:
+  // `didChangeAppLifecycleState`'s `paused` branch cancelled BOTH timers and
+  // `resumed` was the ONLY revival path anywhere in the file, so a paused
+  // event with no matching resumed stranded the screen permanently.
+  group('G-03 timer resilience', () {
+    testWidgets(
+      'G-03: the minute tick still fires after a paused with no matching '
+      'resumed',
+      (tester) async {
+        // 9:15 AM = 555 minutes. Clock starts at 9:13, inside PreStart.
+        DateTime injectedNow = DateTime(2026, 6, 13, 9, 13);
+        final sn = _FakeScheduleNotifierWithSchedule(
+          DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'w1',
+                syntheticStartMinutes: 555,
+                durationMinutes: 60,
+              ),
+            ],
+          ),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: sn,
+          now: () => injectedNow,
+        );
+
+        expect(
+          find.textContaining('Nothing until'),
+          findsOneWidget,
+          reason: 'G-03: should be in pre-start state at 9:13 AM',
+        );
+
+        // Background the app — and deliberately never deliver `resumed`.
+        // That missing callback is the whole bug.
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.paused,
+        );
+        await tester.pump();
+
+        // The chunk's window opens at 9:15; let the minute tick carry it.
+        injectedNow = DateTime(2026, 6, 13, 9, 15);
+        await tester.pump(const Duration(minutes: 1));
+
+        expect(
+          find.byType(LiveRowCard),
+          findsOneWidget,
+          reason:
+              'G-03: a paused-without-resume must not permanently strand '
+              'the screen — the minute tick must still carry pre-start '
+              'into active on its own, with no manual refresh required',
+        );
+      },
+    );
+
+    testWidgets(
+      'G-03: the fast timer stays off while backgrounded but the minute '
+      'tick survives',
+      (tester) async {
+        // 8:29:10 — inside the final minute of an 8:00-8:30 chunk, so the
+        // fast timer is running from the very first build.
+        final injectedNow = DateTime(2026, 6, 13, 8, 29, 10);
+        int nowCallCount = 0;
+        final sn = _FakeScheduleNotifierWithSchedule(
+          DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'w1',
+                syntheticStartMinutes: 480,
+                durationMinutes: 30,
+              ),
+            ],
+          ),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: sn,
+          now: () {
+            nowCallCount = nowCallCount + 1;
+            return injectedNow;
+          },
+        );
+
+        // Baseline: fast timer alive in the foreground.
+        nowCallCount = 0;
+        await tester.pump(const Duration(seconds: 1));
+        expect(
+          nowCallCount,
+          greaterThan(0),
+          reason:
+              'G-03: sanity — the fast timer must be running before '
+              'backgrounding',
+        );
+
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.paused,
+        );
+        await tester.pump();
+
+        // The 1/second ticker must be dead while backgrounded — the
+        // battery contract this whole fix must not regress.
+        nowCallCount = 0;
+        await tester.pump(const Duration(seconds: 1));
+        expect(
+          nowCallCount,
+          0,
+          reason: 'G-03: the fast timer must not tick while backgrounded',
+        );
+
+        // The 1/minute tick is still alive while backgrounded — this is
+        // the fix itself.
+        nowCallCount = 0;
+        await tester.pump(const Duration(minutes: 1));
+        expect(
+          nowCallCount,
+          greaterThan(0),
+          reason:
+              'G-03: the coarse minute tick must survive a pause with no '
+              'matching resume',
+        );
+
+        // Resume: the fast timer comes back because the clock is still
+        // inside the final minute.
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump();
+        nowCallCount = 0;
+        await tester.pump(const Duration(seconds: 1));
+        expect(
+          nowCallCount,
+          greaterThan(0),
+          reason: 'G-03: the fast timer resumes once foregrounded again',
+        );
+      },
+    );
+  });
 }
