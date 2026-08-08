@@ -197,10 +197,17 @@ only cross-plan constraint is `today_screen.dart`, which 23-05 and 23-07 both to
 **UI hint**: yes
 
 **Plans**: 3 plans
-
 Plans:
+**Wave 1**
+
 - [ ] 24-01-PLAN.md — Row model + widget: `NowMarkerRow`, `nowMinutes` threading, NOW-02 leading-row guard, `NowMarker` widget, unit + row-widget tests (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 24-02-PLAN.md — Screen wiring: `nowMinutes` from the single `nowDt` sample, the fourth exhaustive-switch case, screen-level tests, correction of the stale NOW-02 assertion, phase gate (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 24-03-PLAN.md — Serve the debug web build and get Dan's at-a-glance verdict (wave 3, has checkpoint)
 
 **Open design decision — RESOLVED during Phase 23 planning:** LIVE-02's tick granularity was left open here and is now decided (`23-CONTEXT.md` decision 1, implemented in plan 23-02): whole minutes rounded up while at least 60s remain, seconds below that, with a second 1-second timer that exists only inside the final minute so the all-day 1-minute ticker is not replaced. The original wording follows. LIVE-02's tick granularity is not decided here. The existing `Timer.periodic` (carried into `TodayScreen` by Phase 22) fires once a minute; a countdown that visibly moves may need a faster tick for the live row while other regions stay on the coarser cadence. Phase planning must pick and justify a granularity rather than silently inherit the 1-minute timer.
