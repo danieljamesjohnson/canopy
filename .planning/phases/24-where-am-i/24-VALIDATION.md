@@ -2,7 +2,7 @@
 phase: 24
 slug: where-am-i
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: true
 created: 2026-08-08
 ---
@@ -43,11 +43,11 @@ tasks land.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD | TBD | 1 | NOW-01 | — | N/A | unit | `flutter test test/screens/today_timeline_model_test.dart` | ✅ extend | ⬜ pending |
-| TBD | TBD | 1 | NOW-02 | — | N/A | unit | `flutter test test/screens/today_timeline_model_test.dart` | ✅ extend | ⬜ pending |
-| TBD | TBD | 1 | NOW-01 | — | N/A | widget | `flutter test test/screens/today_row_widgets_test.dart` | ✅ extend | ⬜ pending |
-| TBD | TBD | 2 | NOW-01 | — | N/A | widget | `flutter test test/screens/today_screen_test.dart` | ✅ extend | ⬜ pending |
-| TBD | TBD | 2 | NOW-02 | — | N/A | widget | `flutter test test/screens/today_screen_test.dart` | ✅ **edit** (stale assertion, see below) | ⬜ pending |
+| 24-01 / Task 2 | 24-01 | 1 | NOW-01 | — | N/A | unit | `flutter test test/screens/today_timeline_model_test.dart` | ✅ extend | ✅ green |
+| 24-01 / Task 2 | 24-01 | 1 | NOW-02 | — | N/A | unit | `flutter test test/screens/today_timeline_model_test.dart` | ✅ extend | ✅ green |
+| 24-01 / Task 3 | 24-01 | 1 | NOW-01 | — | N/A | widget | `flutter test test/screens/today_row_widgets_test.dart` | ✅ extend | ✅ green |
+| 24-02 / Task 1 | 24-02 | 2 | NOW-01 | — | N/A | widget | `flutter test test/screens/today_screen_test.dart` | ✅ extend | ✅ green |
+| 24-02 / Task 2 | 24-02 | 2 | NOW-02 | — | N/A | widget | `flutter test test/screens/today_screen_test.dart` | ✅ **edit** (stale assertion, see below) | ✅ green |
 
 ### Behavior contract (what the rows above must prove)
 
@@ -89,11 +89,12 @@ factories, `pumpWithMood`, `_pumpTodayScreen`, injectable `now:` closures).
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references *(N/A — no gaps)*
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 20s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references *(N/A — no gaps)*
+- [x] No watch-mode flags
+- [x] Feedback latency < 20s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** automated tasks green; the perceptual "where am I" check further up this
+document remains open for plan 24-03.
