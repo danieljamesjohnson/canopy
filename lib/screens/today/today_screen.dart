@@ -848,8 +848,18 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   /// Returns true when the end-of-day card trigger is met (active-schedule
   /// branch only). Delegates to the top-level [shouldShowEodCard] so the
   /// trigger logic is unit-testable without a widget pump.
-  bool _shouldShowEodCard(List<ScheduledChunk> chunks) =>
-      shouldShowEodCard(chunks);
+  ///
+  /// [nowDt] is build()'s single clock sample, forwarded through
+  /// [shouldShowEodCard]'s `now` seam. It is REQUIRED, not defaulted: the
+  /// top-level function falls back to `DateTime.now` when the seam is
+  /// omitted, and omitting it here is exactly the D-01 violation this
+  /// signature now makes impossible to reintroduce. Before this parameter
+  /// existed the card read its own independent clock, so its `hour >= 18`
+  /// branch ignored the screen's injected `_nowFn` entirely — every widget
+  /// test that pumped this screen silently changed behaviour at 6pm local
+  /// time, which is how the suite came to fail only in the evenings.
+  bool _shouldShowEodCard(List<ScheduledChunk> chunks, DateTime nowDt) =>
+      shouldShowEodCard(chunks, now: () => nowDt);
 
   // ── AppBar — the union of the two old ones, de-duplicated ───────────────
   //
@@ -961,11 +971,15 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     // buildTimeline turns that classification into a row list, and nothing
     // below this point re-derives which chunk is current.
     //
-    // nowDt is sampled here and threaded into THREE consumers —
+    // nowDt is sampled here and threaded into FOUR consumers —
     // resolveNowState (via a closure that always returns this same value),
-    // _liveSecondsRemaining directly, and nowMinutes below — a single clock
-    // read per build, so the consumers can never straddle a second/minute
-    // boundary and disagree (WR-01). nowMinutes feeds the now-marker
+    // _liveSecondsRemaining directly, nowMinutes below, and
+    // _shouldShowEodCard's `now` seam — a single clock read per build, so the
+    // consumers can never straddle a second/minute boundary and disagree
+    // (WR-01). The end-of-day card was the fourth consumer all along but
+    // used to read its own `DateTime.now`; that made it the one element on
+    // this screen that could disagree with every other one about what time
+    // it was. nowMinutes feeds the now-marker
     // (NOW-01): it is a *position* derived from that same sample, never a
     // second opinion about which chunk is current (D-01).
     final nowDt = _nowFn();
@@ -1054,7 +1068,8 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                   onStart: () => context.push('/review'),
                   onDismiss: () => setState(() => _bannerDismissed = true),
                 ),
-              if (!_eodCardDismissed && _shouldShowEodCard(schedule.chunks))
+              if (!_eodCardDismissed &&
+                  _shouldShowEodCard(schedule.chunks, nowDt))
                 EndOfDayCard(
                   chunks: schedule.chunks,
                   onDismiss: () => setState(() => _eodCardDismissed = true),

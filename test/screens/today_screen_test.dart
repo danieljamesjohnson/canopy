@@ -17,6 +17,7 @@ import 'package:canopy/screens/commitments/commitment_form_sheet.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_detail_sheet.dart';
 import 'package:canopy/screens/today/today_screen.dart';
 import 'package:canopy/screens/today/widgets/breathing_pulse_cta.dart';
+import 'package:canopy/screens/today/widgets/end_of_day_card.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
 import 'package:canopy/screens/today/widgets/now_marker.dart';
 import 'package:flutter/material.dart';
@@ -526,6 +527,45 @@ void main() {
         // moodIndex 3 → '⛅' / 'Steady day' — the chip carries no count.
         expect(find.text('⛅ Steady day'), findsOneWidget);
         expect(find.textContaining('5 chunks'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'the end-of-day card follows the INJECTED clock, not the wall clock '
+      '(D-01 regression)',
+      (tester) async {
+        // Regression guard for a latent D-01 violation found by phase 24's
+        // own gate: _shouldShowEodCard used to call shouldShowEodCard WITHOUT
+        // forwarding the screen's injected _nowFn, so the card's `hour >= 18`
+        // branch read its own DateTime.now. Every widget test that pumped
+        // this screen therefore changed behaviour at 6pm local time — the
+        // suite was green all morning and red all evening, with no code
+        // change in between.
+        //
+        // This test pins an evening wall-clock scenario the ONLY honest way:
+        // by injecting a MORNING time and asserting the card stays hidden.
+        // Run before 18:00 it would pass even with the bug present, so it is
+        // deliberately paired with the fixture below (<50% resolved) to keep
+        // the ratio branch from firing and masking the clock branch.
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(id: 'c1', syntheticStartMinutes: 540),
+            _workChunk(id: 'c2', syntheticStartMinutes: 600),
+            _workChunk(id: 'c3', syntheticStartMinutes: 660),
+          ],
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          // 10:00 — well below the hour >= 18 trigger. 0 of 3 resolved keeps
+          // the 50%-ratio branch from firing independently.
+          now: () => DateTime(2026, 8, 7, 10, 0),
+        );
+
+        expect(find.byType(EndOfDayCard), findsNothing);
+        expect(find.textContaining('chunks done'), findsNothing);
       },
     );
 
