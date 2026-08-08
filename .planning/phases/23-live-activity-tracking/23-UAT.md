@@ -1,5 +1,5 @@
 ---
-status: testing
+status: gaps_found
 phase: 23-live-activity-tracking
 source: [23-VERIFICATION.md, 23-04-PLAN.md]
 started: 2026-08-07T23:10:00Z
@@ -20,7 +20,7 @@ awaiting: user response
 ### 1. Countdown smoothness across the 60-second handover
 
 expected: The countdown moves without stutter, and the minutes→seconds handover at 60s is clean — no flicker, no double-update, no visible jank on the ~900-line screen.
-result: [pending]
+result: **passed** — Dan, 2026-08-08
 
 **Repro:** Open `http://danserver:8123` in a real browser during a chunk or break with ~90 seconds
 left. Watch the live row across the 60-second boundary.
@@ -35,9 +35,7 @@ failures across 459 tests.
 ### 2. A running break genuinely reads as rest
 
 expected: When a break is the current activity, the live row reads as intentional rest, not as dead or idle time, and not as an instruction.
-result: [pending]
-
-**Repro:** Open the app during a scheduled break (or shift the clock) and read the live row.
+result: **passed** — Dan, 2026-08-08
 
 **Why human:** Tone judgment. Verified mechanically: kicker `RIGHT NOW — RESTING`, title "Taking a
 long break", time remaining shown, Complete/Skip correctly suppressed, and "Next · <work chunk>"
@@ -46,7 +44,7 @@ naming what follows.
 ### 3. Decision P-1 — the gap banner
 
 expected: An explicit keep-or-remove verdict from Dan.
-result: [pending]
+result: **passed — KEEP** (Dan, 2026-08-08). The gap banner stays as-is; decision P-1 confirmed.
 
 **Context:** `23-UI-SPEC.md` specified new copy for PreStart and DayComplete but said nothing about
 the `GapBeforeNext` state. Planning decided **no change**, reasoning that `GapFreeRow` renders a
@@ -59,7 +57,7 @@ change is behavioural: it now names a break correctly when the next activity is 
 ### 4. Should rest look different from work? (raised by the 23 UI audit)
 
 expected: A verdict from Dan — keep the shared treatment, or give rest its own container role.
-result: [pending]
+result: **passed — KEEP the shared treatment** (Dan, 2026-08-08). The UI audit's Visuals 2/4 recommendation is noted and deliberately declined; no change.
 
 **Context:** A break live row and a work live row currently share the same `primaryContainer` swell.
 The only differences are the kicker suffix (`RIGHT NOW — RESTING` vs `RIGHT NOW`) and the absence of
@@ -77,9 +75,9 @@ for this reason; everything else in the audit passed.
 ## Summary
 
 total: 4
-passed: 0
+passed: 4
 issues: 0
-pending: 4
+pending: 0
 skipped: 0
 blocked: 0
 
@@ -125,3 +123,29 @@ Reported by Dan at the 23-04 sign-off gate, 2026-08-08. Verbatim, then interpret
 G-03 is the only one that is straightforwardly a defect and it is the highest priority: the app
 silently failed to start tracking, which is the core promise of Phase 23. G-05 and G-07 are
 behaviour/design changes beyond what v1.5 specified. G-01 touches a Phase 19 surface, not v1.5's.
+
+### Decisions from Dan, 2026-08-08
+
+**G-05 — "extend the break to fill."** Dan's words: *"say I am cleaning from 10-10:25? If I finish at
+10:10, I'm on break til 10:25 (or I guess 10:30 to consider break)"*.
+
+So: a work chunk scheduled 10:00–10:25 with a 5-min break 10:25–10:30. Complete it at 10:10 and the
+**following break absorbs the reclaimed time** — it starts now (10:10) and still ends at its original
+end (10:30), becoming a 20-minute break. **Nothing downstream shifts**; the rest of the day keeps its
+clock positions.
+
+This is a better answer than either option offered, and it dissolves the conflict the gap analysis
+flagged. The concern was that showing a break as "now" before its window opened would reopen the
+Phase 17 invariant (`today_screen_now_state_test.dart:470-487`, "KEY INVARIANT: an unopened break
+window is never promoted to Active"). Under Dan's model the break's window **genuinely does** open at
+10:10, because we move it — so `resolveNowState` returns `Active(break)` through the existing,
+unmodified path. The invariant stands untouched, and `_liveSecondsRemaining`'s "window is already
+open" assumption stays true.
+
+Implementation shape: on `markComplete` of a work chunk before its scheduled end, if the immediately
+following chunk is a break, set that break's start to now and its duration to `originalEnd - now`.
+No-op when completing at/after the scheduled end, when there is no following break, or when the
+reclaimed span is non-positive.
+
+**G-01 — flip both surfaces.** Onboarding *and* the goal form, so the two never disagree about which
+end means "drains".
