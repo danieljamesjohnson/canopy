@@ -566,14 +566,11 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
           child: FreeTimeRow.gap(durationMinutes: durationMinutes),
         );
       case NowMarkerRow(:final minutes):
-        // NOW-01: buildTimeline's nowMinutes parameter is still unthreaded
-        // from build() at this point in the phase (that's plan 24-02's
-        // job) — this case exists only to keep the exhaustive switch over
-        // TimelineRow compiling now that NowMarkerRow is a fourth subtype
-        // (sealed-class exhaustiveness is a compile-time error, not a
-        // lint). buildTimeline currently never emits a NowMarkerRow (its
-        // nowMinutes default is null), so this case is unreachable until
-        // 24-02 wires the call site.
+        // NOW-01: the fourth and final arm of this exhaustive switch.
+        // startMinutes: minutes (not null) is what makes TimelineRowTile
+        // render the current compact time in the 52dp gutter — NowMarker's
+        // own visible label carries no time (24-UI-SPEC.md). The Semantics
+        // node lives here at the call site, not inside NowMarker.
         return TimelineRowTile(
           startMinutes: minutes,
           child: Semantics(
@@ -937,16 +934,20 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     final moodColor =
         ThemeNotifier.moodSeeds[mood] ?? ThemeNotifier.moodSeeds[3]!;
 
-    // The only two "what is happening now" calls on this screen (P1 /
+    // The only three "what is happening now" calls on this screen (P1 /
     // 22-PATTERNS.md section 5): this samples the clock exactly once,
     // buildTimeline turns that classification into a row list, and nothing
     // below this point re-derives which chunk is current.
     //
-    // nowDt is sampled here and threaded into BOTH resolveNowState (via a
-    // closure that always returns this same value) and _liveSecondsRemaining
-    // directly — a single clock read per build, so the two consumers can
-    // never straddle a second/minute boundary and disagree (WR-01).
+    // nowDt is sampled here and threaded into THREE consumers —
+    // resolveNowState (via a closure that always returns this same value),
+    // _liveSecondsRemaining directly, and nowMinutes below — a single clock
+    // read per build, so the consumers can never straddle a second/minute
+    // boundary and disagree (WR-01). nowMinutes feeds the now-marker
+    // (NOW-01): it is a *position* derived from that same sample, never a
+    // second opinion about which chunk is current (D-01).
     final nowDt = _nowFn();
+    final nowMinutes = minutesOfDay(nowDt);
     final nowState = resolveNowState(chunks: schedule.chunks, now: () => nowDt);
     final liveSecondsLeft = _liveSecondsRemaining(nowState, nowDt);
     // The only place the fast-timer decision is made (P-5). Guarded by
@@ -959,6 +960,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     final timelineRows = buildTimeline(
       chunks: schedule.chunks,
       nowState: nowState,
+      nowMinutes: nowMinutes,
     );
 
     // Centre-on-open (D-02): schedule the scroll exactly once. The flag is
