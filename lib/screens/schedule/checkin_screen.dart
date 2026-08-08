@@ -38,6 +38,25 @@ class _CheckinScreenState extends State<CheckinScreen> {
     5: 'Clear skies — let\'s go.',
   };
 
+  /// UAT G-07: states, before the user commits to a mood, what that mood
+  /// actually does to today's plan — in the generator's own numbers.
+  ///
+  /// These are hand-copied from `ScheduleGeneratorService._moodCap` (the chunk
+  /// count) and `_moodBreakCadence` (the "every N" long-break spacing) in
+  /// `lib/services/schedule_generator.dart` and MUST be updated together with
+  /// those tables if they ever change. The cap counts discretionary goal
+  /// chunks only — commitments are anchored separately and are never counted
+  /// against it, which is why the copy says "from your goals". Check-in always
+  /// calls `generateToday` with `lighterDay: false` (see `_generate` below), so
+  /// the raw (non-reduced) cap is the number the user actually gets.
+  static const Map<int, String> _moodConsequence = {
+    1: 'Room for 4 chunks from your goals, with a long break after every 2.',
+    2: 'Room for 6 chunks from your goals, with a long break after every 3.',
+    3: 'Room for 8 chunks from your goals, with a long break after every 4.',
+    4: 'Room for 9 chunks from your goals, with a long break after every 4.',
+    5: 'Room for 11 chunks from your goals, with a long break after every 5.',
+  };
+
   int? _selectedMood;
   bool _scheduleGenerated = false;
   bool _isGenerating = false;
@@ -283,6 +302,20 @@ class _CheckinScreenState extends State<CheckinScreen> {
               // Confirm button — visible once mood is selected.
               // Inline "Want a lighter day?" Switch removed (CHECKIN-02).
               if (_selectedMood != null) ...[
+                // UAT G-07: state the consequence of this mood BEFORE the user
+                // commits, so they can tap between moods and compare.
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    _moodConsequence[_selectedMood!] ?? '',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      // CHECKIN-01: _onBgColor replaces hardcoded Colors.white.
+                      color: _onBgColor.withAlpha(179), // ~70% opacity
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
                 SizedBox(
                   width: 200,
                   child: ElevatedButton(

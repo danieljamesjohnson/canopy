@@ -204,5 +204,46 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'Test 2: selecting a mood states its consequence before committing (G-07)',
+      (tester) async {
+        await _pumpCheckin(tester);
+
+        // Tap mood 3 (⛅) — reveals the pre-commit consequence line.
+        await tester.tap(find.text('⛅'));
+        await tester.pump();
+
+        expect(
+          find.text(
+            'Room for 8 chunks from your goals, with a long break after every 4.',
+          ),
+          findsOneWidget,
+          reason:
+              'G-07: choosing mood 3 must state its real consequence before '
+              'the "Let\'s go" button is pressed',
+        );
+
+        // Switch to mood 1 (🌧️) — the line must change to match, proving it
+        // is per-mood rather than a static string left over from mood 3.
+        await tester.tap(find.text('🌧️'));
+        await tester.pump();
+
+        expect(
+          find.text(
+            'Room for 4 chunks from your goals, with a long break after every 2.',
+          ),
+          findsOneWidget,
+          reason: 'G-07: switching moods must update the consequence line',
+        );
+        expect(
+          find.text(
+            'Room for 8 chunks from your goals, with a long break after every 4.',
+          ),
+          findsNothing,
+          reason: 'The previous mood\'s consequence line must not linger',
+        );
+      },
+    );
   });
 }
