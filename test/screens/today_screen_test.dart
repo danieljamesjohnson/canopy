@@ -570,6 +570,49 @@ void main() {
     );
 
     group('Phase 24 — now-marker (NOW-01)', () {
+      testWidgets(
+        'the marker announces once, not twice — the gutter time is inside '
+        'the excluded subtree (24-REVIEW.md WR-01)',
+        (tester) async {
+          // WR-01 shipped against a fully green 503-test suite because
+          // nothing anywhere asserted the marker's Semantics wiring. The
+          // Semantics node was passed as TimelineRowTile's `child`, but the
+          // tile lays its gutter Text out as a SIBLING of `child`, so
+          // excludeSemantics never covered it — a screen reader read the row
+          // twice, in two different time formats. 24-UI-SPEC.md introduced
+          // this node specifically to give "one clean announcement".
+          final handle = tester.ensureSemantics();
+          final schedule = DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(syntheticStartMinutes: 480, durationMinutes: 60),
+            ],
+          );
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+            now: () => DateTime(2026, 8, 7, 6, 0),
+          );
+
+          // The merged node the spec asks for.
+          expect(find.bySemanticsLabel('Now — 6:00 AM'), findsOneWidget);
+          // The gutter's compact rendering must NOT survive as its own
+          // semantics node. formatMinutesCompact(360) is exactly '6:00'
+          // (no suffix before noon), and the only row with that gutter value
+          // is the marker itself — the 8:00 chunk renders '8:00'. With the
+          // Semantics wrapper in the wrong place this resolved to a second,
+          // separate node and the row was announced twice.
+          //
+          // Note the visible Text still exists and is still asserted by the
+          // 'PreStart shows the marker' test below via find.text('6:00');
+          // what must not exist is a SEPARATE semantics node for it.
+          expect(find.bySemanticsLabel('6:00'), findsNothing);
+
+          handle.dispose();
+        },
+      );
+
       testWidgets('PreStart shows the marker', (tester) async {
         final schedule = DailySchedule(
           dateYmd: _todayYmd(),

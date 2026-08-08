@@ -312,7 +312,19 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   //
   // A body element, NOT a collapsing app bar — stays put per the UI-SPEC.
 
-  Widget _buildHeader(BuildContext context, DailySchedule schedule, int mood) {
+  /// [nowDt] is build()'s single clock sample (D-01). It is threaded in
+  /// rather than re-read here: this header previously called `_nowFn()`
+  /// directly for its date text, which made it a second, independent clock
+  /// read in the render path (24-REVIEW.md WR-02) — the same defect class as
+  /// the end-of-day card's (fixed in a8966b4). Low blast radius since the
+  /// text is a date rather than a time, but a build straddling midnight
+  /// could render a header date that disagrees with the timeline beneath it.
+  Widget _buildHeader(
+    BuildContext context,
+    DailySchedule schedule,
+    int mood,
+    DateTime nowDt,
+  ) {
     final theme = Theme.of(context);
     final moodEmoji = _moodEmojis[mood] ?? _moodEmojis[3]!;
     final moodLabel = _moodLabels[mood] ?? _moodLabels[3]!;
@@ -332,7 +344,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
               ),
               const Spacer(),
               Text(
-                DateFormat('EEE d MMM').format(_nowFn()),
+                DateFormat('EEE d MMM').format(nowDt),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -590,13 +602,24 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         // build()'s marker-fallback centre-on-open (24-04 gap closure) can
         // find this row's context via Scrollable.ensureVisible, exactly as
         // _liveRowKey already does for the live row.
+        //
+        // The Semantics wrapper MUST enclose TimelineRowTile rather than be
+        // passed as its `child` (24-REVIEW.md WR-01). TimelineRowTile lays
+        // the gutter's compact-time Text out as a SIBLING of `child`, so an
+        // excludeSemantics node handed in as `child` never covers the
+        // gutter: a screen reader announced this one row twice, in two
+        // different time formats ("12:34p" from the gutter and
+        // "Now — 12:34 PM" from the label). That is exactly the double
+        // announcement 24-UI-SPEC.md introduced this node to prevent.
+        // Enclosing the whole tile puts the gutter inside the excluded
+        // subtree, giving the single clean announcement the spec asks for.
         return KeyedSubtree(
           key: _nowMarkerKey,
-          child: TimelineRowTile(
-            startMinutes: minutes,
-            child: Semantics(
-              label: 'Now — ${formatMinutes(minutes)}',
-              excludeSemantics: true,
+          child: Semantics(
+            label: 'Now — ${formatMinutes(minutes)}',
+            excludeSemantics: true,
+            child: TimelineRowTile(
+              startMinutes: minutes,
               child: const NowMarker(),
             ),
           ),
@@ -1075,7 +1098,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                   onDismiss: () => setState(() => _eodCardDismissed = true),
                   onGoToSummary: () => context.push('/summary'),
                 ),
-              _buildHeader(context, schedule, mood),
+              _buildHeader(context, schedule, mood, nowDt),
               _buildEdgeStateLine(context, nowState),
               // SingleChildScrollView + Column, deliberately NOT a ListView:
               // the centre-on-open above needs the live row already laid
