@@ -126,3 +126,30 @@ None — no external service configuration required.
 - FOUND: commit `dc1cb59` (Task 2)
 - `flutter test` 502/502 passing, `flutter analyze` clean, `dart format` clean on both plan-touched files
 - `http://danserver:8123/` verified 200; `/flutter_service_worker.js` verified 404
+
+---
+
+## Orchestrator addendum — post-merge gate finding (2026-08-08, 18:04 local)
+
+The executor's `502/502 passing` self-check above was accurate **at the time it ran** (before
+18:00 local). The orchestrator's independent post-merge gate, run at 18:04, found
+`today_screen_test.dart`'s G-06 chunk-count test failing.
+
+**It was not a 24-04 regression.** Reproduced identically at `c5a09e5` — the commit before plan
+24-04 existed — in a throwaway worktree. Root cause was a pre-existing D-01 violation:
+`TodayScreen._shouldShowEodCard` called the top-level `shouldShowEodCard` without forwarding the
+screen's injected `_nowFn`, so the end-of-day card's `hour >= 18` branch read its own
+`DateTime.now`. After 6pm the card rendered `"2 of 5 chunks done"` into the tree, tripping the
+G-06 test's `findsNothing` assertion. The suite was green every morning and red every evening.
+
+Fixed in `a8966b4` (separate commit, deliberately NOT folded into 24-04's gap-closure diff):
+`nowDt` is now a required parameter, so the seam cannot be silently dropped again. Added a
+regression guard that injects a morning clock and asserts the card stays hidden, paired with a
+<50%-resolved fixture so the ratio branch cannot mask the clock branch. Verified by mutation —
+reverting the seam fails the new test.
+
+**Final gate: `flutter analyze` clean, `flutter test` 503/503 passing.**
+
+Worth noting for the phase record: this is the second time in phase 24 that a self-check passing
+in isolation did not mean the tree was green. It is the reason the orchestrator re-runs the suite
+itself rather than accepting an agent's reported result.
