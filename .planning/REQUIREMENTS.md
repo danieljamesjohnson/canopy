@@ -68,6 +68,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | LIVE-01 | Phase 23 | Complete |
 | LIVE-02 | Phase 23 | Complete |
 | LIVE-03 | Phase 23 | Complete |
+| NOW-01 | Phase 24 | Pending |
+| NOW-02 | Phase 24 | Pending |
 | BREAK-01 | Phase 21 | Complete |
 | BREAK-02 | Phase 21 | Complete |
 | TONE-01 | Phase 21 | Complete |
