@@ -442,6 +442,93 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     return result;
   }
 
+  /// G-05: when a work chunk is completed before its scheduled end, the
+  /// immediately-following break (if any) absorbs the reclaimed time — it
+  /// starts now and keeps its original end, becoming longer. This is Dan's
+  /// decision from `23-UAT.md` ("extend the break to fill"): completing a
+  /// 10:00-10:25 chunk at 10:10 turns a 10:25-10:30 break into a 10:10-10:30
+  /// break. Nothing downstream shifts.
+  ///
+  /// This is a write-side-only change. Because the break's
+  /// `syntheticStartMinutes` is genuinely moved to now, its clock window has
+  /// genuinely opened — so `resolveNowState` reaches `Active` through its
+  /// existing, unmodified path. The Phase 17 KEY INVARIANT ("an unopened
+  /// break window is never promoted to Active",
+  /// `test/screens/today_screen_now_state_test.dart:470-487`) is untouched:
+  /// `_absorbReclaimedTimeIntoNextBreak` never promotes an unopened window,
+  /// it moves the window itself before resolution ever runs.
+  ///
+  /// Returns null (a no-op) unless every explicit guard below holds. On
+  /// success, mutates the following break's `syntheticStartMinutes` and
+  /// `durationMinutes` in place and returns a record carrying the break plus
+  /// its previous values, so `markComplete`'s WR-05 `catch` can restore both
+  /// together if the save subsequently fails.
+  ({ScheduledChunk chunk, int? previousStart, int previousDuration})?
+  _absorbReclaimedTimeIntoNextBreak(ScheduledChunk completed) {
+    final schedule = _todaySchedule;
+    if (schedule == null) return null;
+
+    // Guard 1: only a work chunk's early completion reclaims break time.
+    if (completed.chunkType != ChunkType.work) return null;
+    // Guard 2: the completed chunk must itself have a clock position.
+    final completedStart = completed.displayStartMinutes;
+    if (completedStart == null) return null;
+
+    // Read the clock once through the injectable _now() seam (never
+    // DateTime.now() directly), matching resolveNowState's local
+    // wall-clock, no-toUtc() convention (FRAME-OF-REFERENCE, now_state.dart).
+    final nowDt = _now();
+    final nowMinutes = nowDt.hour * 60 + nowDt.minute;
+
+    // Guard 3: never move a break earlier than the work chunk's own start.
+    if (nowMinutes < completedStart) return null;
+    // Guard 4: genuinely early — completing at/after the scheduled end
+    // reclaims nothing.
+    if (nowMinutes >= completedStart + completed.durationMinutes) {
+      return null;
+    }
+
+    // Find the immediately following chunk by CLOCK order, not list order.
+    final byClock =
+        schedule.chunks.where((c) => c.displayStartMinutes != null).toList()
+          ..sort(
+            (a, b) => a.displayStartMinutes!.compareTo(b.displayStartMinutes!),
+          );
+    final idx = byClock.indexOf(completed);
+    if (idx == -1 || idx + 1 >= byClock.length) return null;
+    final next = byClock[idx + 1];
+
+    // Guard 5: a following chunk exists and is a break.
+    if (next.chunkType != ChunkType.shortBreak &&
+        next.chunkType != ChunkType.longBreak) {
+      return null;
+    }
+    // Guard 6: the break must be movable — a commitment-anchored chunk is
+    // never re-anchored.
+    if (next.anchoredStartMinutes != null) return null;
+    final breakStart = next.displayStartMinutes;
+    if (breakStart == null) return null;
+
+    // Guard 7: the break's window must not already be open — otherwise
+    // there is nothing to move.
+    if (nowMinutes >= breakStart) return null;
+
+    // Guard 8: the reclaimed span must be strictly positive.
+    final newDuration = (breakStart + next.durationMinutes) - nowMinutes;
+    if (newDuration <= 0) return null;
+
+    final previousStart = next.syntheticStartMinutes;
+    final previousDuration = next.durationMinutes;
+    next.syntheticStartMinutes = nowMinutes;
+    next.durationMinutes = newDuration;
+
+    return (
+      chunk: next,
+      previousStart: previousStart,
+      previousDuration: previousDuration,
+    );
+  }
+
   /// Marks the chunk with [chunkId] as completed, saves the updated schedule,
   /// and appends a CompletionLog entry.
   Future<void> markComplete(String chunkId) async {
@@ -452,6 +539,9 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     if (chunk == null || chunk.isCompleted) return;
 
     chunk.isCompleted = true;
+    // G-05: absorb reclaimed time into the following break, if eligible,
+    // BEFORE the single save below so one write persists both facts.
+    final absorbedBreak = _absorbReclaimedTimeIntoNextBreak(chunk);
     try {
       await _repo.save(_todaySchedule!);
 
@@ -500,6 +590,13 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       // WR-05: if save or log-append fails, revert the in-memory flag so the
       // schedule, the persisted store, and the completion log do not diverge,
       // then re-throw so the caller can surface feedback.
+      // G-05: restore the absorbed break's previous start/duration together
+      // with the completion flag, BEFORE re-saving, so an aborted completion
+      // leaves the break exactly where it was.
+      if (absorbedBreak != null) {
+        absorbedBreak.chunk.syntheticStartMinutes = absorbedBreak.previousStart;
+        absorbedBreak.chunk.durationMinutes = absorbedBreak.previousDuration;
+      }
       chunk.isCompleted = false;
       // Re-persist the reverted state so disk and memory stay in sync.
       // Best-effort: if this also fails we still rethrow the original error.

@@ -202,41 +202,38 @@ void main() {
   });
 
   group('G-05 no-op guards', () {
-    test(
-      'completed at the scheduled end leaves the break untouched',
-      () async {
-        final repo = _InMemoryScheduleRepository();
-        final w1 = ScheduledChunk(
-          id: 'w1',
-          chunkTypeIndex: ChunkType.work.index,
-          goalId: 'goal-1',
-          durationMinutes: 25,
-          syntheticStartMinutes: 600,
-          rationale: 'Cleaning',
-        );
-        final b1 = ScheduledChunk(
-          id: 'b1',
-          chunkTypeIndex: ChunkType.shortBreak.index,
-          durationMinutes: 5,
-          syntheticStartMinutes: 625,
-          rationale: '',
-        );
-        final notifier = makeNotifier(
-          repo: repo,
-          now: () => DateTime(2026, 6, 13, 10, 25), // exactly the sched. end
-          chunks: [w1, b1],
-        );
-        await notifier.init();
-        await notifier.markComplete('w1');
+    test('completed at the scheduled end leaves the break untouched', () async {
+      final repo = _InMemoryScheduleRepository();
+      final w1 = ScheduledChunk(
+        id: 'w1',
+        chunkTypeIndex: ChunkType.work.index,
+        goalId: 'goal-1',
+        durationMinutes: 25,
+        syntheticStartMinutes: 600,
+        rationale: 'Cleaning',
+      );
+      final b1 = ScheduledChunk(
+        id: 'b1',
+        chunkTypeIndex: ChunkType.shortBreak.index,
+        durationMinutes: 5,
+        syntheticStartMinutes: 625,
+        rationale: '',
+      );
+      final notifier = makeNotifier(
+        repo: repo,
+        now: () => DateTime(2026, 6, 13, 10, 25), // exactly the sched. end
+        chunks: [w1, b1],
+      );
+      await notifier.init();
+      await notifier.markComplete('w1');
 
-        expect(
-          b1.displayStartMinutes,
-          625,
-          reason: 'Guard 4: completing at the scheduled end reclaims nothing',
-        );
-        expect(b1.durationMinutes, 5, reason: 'Guard 4');
-      },
-    );
+      expect(
+        b1.displayStartMinutes,
+        625,
+        reason: 'Guard 4: completing at the scheduled end reclaims nothing',
+      );
+      expect(b1.durationMinutes, 5, reason: 'Guard 4');
+    });
 
     test(
       'completed after the scheduled end leaves the break untouched',
@@ -419,39 +416,36 @@ void main() {
     expect(w1.isCompleted, isFalse, reason: 'WR-05 revert (completion flag)');
   });
 
-  test(
-    'G-05 preserves the Phase 17 invariant — an unmoved, unopened break '
-    'still reads as a gap (today_screen_now_state_test.dart:470-487)',
-    () {
-      // The invariant's own fixture, reproduced directly: a completed work
-      // chunk at 480/25 (8:00-8:25) and an unopened break at 505/5
-      // (8:25-8:30). No markComplete ran here — this is the case where the
-      // break was NOT moved — so resolveNowState must still return
-      // GapBeforeNext, exactly as the KEY INVARIANT test asserts.
-      final w1 = ScheduledChunk(
-        id: 'w1',
-        chunkTypeIndex: ChunkType.work.index,
-        goalId: 'goal-1',
-        durationMinutes: 25,
-        syntheticStartMinutes: 480,
-        rationale: 'Cleaning',
-      )..isCompleted = true;
-      final b1 = ScheduledChunk(
-        id: 'b1',
-        chunkTypeIndex: ChunkType.shortBreak.index,
-        durationMinutes: 5,
-        syntheticStartMinutes: 505,
-        rationale: '',
-      );
+  test('G-05 preserves the Phase 17 invariant — an unmoved, unopened break '
+      'still reads as a gap (today_screen_now_state_test.dart:470-487)', () {
+    // The invariant's own fixture, reproduced directly: a completed work
+    // chunk at 480/25 (8:00-8:25) and an unopened break at 505/5
+    // (8:25-8:30). No markComplete ran here — this is the case where the
+    // break was NOT moved — so resolveNowState must still return
+    // GapBeforeNext, exactly as the KEY INVARIANT test asserts.
+    final w1 = ScheduledChunk(
+      id: 'w1',
+      chunkTypeIndex: ChunkType.work.index,
+      goalId: 'goal-1',
+      durationMinutes: 25,
+      syntheticStartMinutes: 480,
+      rationale: 'Cleaning',
+    )..isCompleted = true;
+    final b1 = ScheduledChunk(
+      id: 'b1',
+      chunkTypeIndex: ChunkType.shortBreak.index,
+      durationMinutes: 5,
+      syntheticStartMinutes: 505,
+      rationale: '',
+    );
 
-      final state = resolveNowState(
-        chunks: [w1, b1],
-        now: () => DateTime(2026, 6, 13, 8, 10),
-      );
-      expect(state, isA<GapBeforeNext>());
-      expect((state as GapBeforeNext).next.id, 'b1');
-    },
-  );
+    final state = resolveNowState(
+      chunks: [w1, b1],
+      now: () => DateTime(2026, 6, 13, 8, 10),
+    );
+    expect(state, isA<GapBeforeNext>());
+    expect((state as GapBeforeNext).next.id, 'b1');
+  });
 }
 
 /// A schedule repository whose [getTodaysSchedule] returns a fixed, seeded
