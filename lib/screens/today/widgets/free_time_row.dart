@@ -34,7 +34,7 @@ class FreeTimeRow extends StatelessWidget {
     final ruleColor = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           SizedBox(

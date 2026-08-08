@@ -472,6 +472,21 @@ void main() {
         expect(find.byType(ChunkDetailSheet), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'gutter label shares a left edge with the "Today" heading (G-04)',
+      (tester) async {
+        await pumpDay(tester);
+
+        // "8:00" is the c1 row's exact gutter text (distinct from "Free
+        // until 8:00 AM", which never renders as an exact "8:00" match).
+        // TimelineRowTile now owns the row's 16dp horizontal inset, so the
+        // gutter text should start at the same x as the header's "Today".
+        final gutterDx = tester.getTopLeft(find.text('8:00')).dx;
+        final headingDx = tester.getTopLeft(find.text('Today')).dx;
+        expect(gutterDx, headingDx);
+      },
+    );
   });
 
   group('Task 3 — centre the live row on open + edge-state copy', () {

@@ -57,7 +57,7 @@ class LiveRowCard extends StatelessWidget {
     final clampedProgress = progress.clamp(0.0, 1.0);
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+      margin: const EdgeInsets.symmetric(vertical: 4),
       color: colorScheme.primaryContainer,
       elevation: 2,
       shape: const RoundedRectangleBorder(

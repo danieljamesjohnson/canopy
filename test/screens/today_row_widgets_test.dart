@@ -14,6 +14,7 @@ import 'package:canopy/screens/today/widgets/free_time_row.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
 import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -126,10 +127,41 @@ void main() {
       expect(
         sizedBoxes.any((box) => box.width == kGutterWidth),
         isTrue,
-        reason: 'Expected a SizedBox of width kGutterWidth (46.0)',
+        reason: 'Expected a SizedBox of width kGutterWidth (75.0)',
       );
-      expect(kGutterWidth, 46.0);
+      // Bumped from 46.0 (UAT G-04) — see kGutterWidth's doc comment for the
+      // widest-label fit test that forced this and the test-harness caveat.
+      expect(kGutterWidth, 75.0);
     });
+
+    testWidgets(
+      'widest gutter label ("12:45p") fits within kGutterWidth (G-04)',
+      (tester) async {
+        // 765 minutes-from-midnight = 12:45 PM → formatMinutesCompact
+        // renders "12:45p", the 6-character worst case the formatter
+        // produces (see time_format.dart's own doc comment).
+        //
+        // Caveat (see kGutterWidth's doc comment): `flutter test` does not
+        // load real Roboto metrics, so this measures against a placeholder
+        // font where every glyph is a fixed fontSize-wide box — a
+        // conservative, environment-driven bound, not a real-device one.
+        await pumpWithMood(
+          tester,
+          const TimelineRowTile(startMinutes: 765, child: Text('Reading')),
+        );
+        expect(find.text('12:45p'), findsOneWidget);
+
+        final renderParagraph = tester.renderObject<RenderParagraph>(
+          find.text('12:45p'),
+        );
+        final painter = TextPainter(
+          text: TextSpan(text: '12:45p', style: renderParagraph.text.style),
+          textDirection: TextDirection.ltr,
+        )..layout();
+
+        expect(painter.width, lessThanOrEqualTo(kGutterWidth));
+      },
+    );
   });
 
   group('FreeTimeRow (D-05, LOCKED copy)', () {

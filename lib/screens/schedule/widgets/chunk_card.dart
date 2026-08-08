@@ -94,7 +94,7 @@ class ChunkCard extends StatelessWidget {
         : 'Long break';
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+      margin: const EdgeInsets.symmetric(vertical: 4),
       child: CustomPaint(
         painter: _DashedBorderPainter(color: theme.colorScheme.outlineVariant),
         child: Padding(
@@ -232,7 +232,7 @@ class _WorkChunkContent extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Card(
-          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+          margin: const EdgeInsets.symmetric(vertical: 4),
           color: cardColor,
           shape: cardShape,
           clipBehavior: Clip.antiAlias,
