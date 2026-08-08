@@ -30,6 +30,7 @@ import 'widgets/breathing_pulse_cta.dart';
 import 'widgets/end_of_day_card.dart';
 import 'widgets/free_time_row.dart';
 import 'widgets/live_row_card.dart';
+import 'widgets/now_marker.dart';
 import 'widgets/review_banner.dart';
 import 'widgets/timeline_row_tile.dart';
 
@@ -563,6 +564,23 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         return TimelineRowTile(
           startMinutes: startMinutes,
           child: FreeTimeRow.gap(durationMinutes: durationMinutes),
+        );
+      case NowMarkerRow(:final minutes):
+        // NOW-01: buildTimeline's nowMinutes parameter is still unthreaded
+        // from build() at this point in the phase (that's plan 24-02's
+        // job) — this case exists only to keep the exhaustive switch over
+        // TimelineRow compiling now that NowMarkerRow is a fourth subtype
+        // (sealed-class exhaustiveness is a compile-time error, not a
+        // lint). buildTimeline currently never emits a NowMarkerRow (its
+        // nowMinutes default is null), so this case is unreachable until
+        // 24-02 wires the call site.
+        return TimelineRowTile(
+          startMinutes: minutes,
+          child: Semantics(
+            label: 'Now — ${formatMinutes(minutes)}',
+            excludeSemantics: true,
+            child: const NowMarker(),
+          ),
         );
       case ChunkRow(:final chunk, :final isLive):
         if (isLive) {
