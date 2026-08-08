@@ -216,3 +216,12 @@ None — no external service configuration required.
 ---
 *Phase: 24-where-am-i*
 *Completed: 2026-08-08*
+
+## Self-Check: PASSED
+
+- FOUND: `.planning/phases/24-where-am-i/24-03-SUMMARY.md`
+- FOUND: commit `b57811e` (SUMMARY)
+- FOUND: commit `e2f48de` (VALIDATION/STATE/ROADMAP metadata)
+- FOUND: "PARTIAL PASS" recorded in `24-VALIDATION.md`
+- No files under `lib/` or `test/` modified (diff-checked against HEAD~4..HEAD)
+- No unexpected file deletions in either commit
