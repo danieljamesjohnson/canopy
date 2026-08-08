@@ -17,7 +17,7 @@ findings:
   warning: 2
   info: 2
   total: 4
-status: issues_found
+status: resolved
 ---
 
 # Phase 24: Code Review Report
@@ -159,3 +159,21 @@ directly.
 _Reviewed: 2026-08-08T23:17:26Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
+
+---
+
+## Resolution (2026-08-08, commit `159e45e`)
+
+| ID | Severity | Disposition |
+|----|----------|-------------|
+| WR-01 | Warning | **Fixed.** Semantics wrapper moved outside `TimelineRowTile` so the gutter Text falls inside the excluded subtree. Regression test added (IN-02 closed) and mutation-verified — it fails when the wrapper is moved back. |
+| WR-02 | Warning | **Fixed.** `_buildHeader` now takes build()'s single `nowDt`. `_openAddEvent`'s `_nowFn()` call was reviewed and deliberately left: it is a user-gesture callback, not the render path, where a fresh sample is correct. |
+| IN-01 | Info | **Not actioned.** Test-name overclaim mirroring a pre-existing pattern; renaming one instance without the others adds inconsistency rather than clarity. |
+| IN-02 | Info | **Closed by WR-01's fix** — the missing now-marker semantics coverage is exactly the test added there. |
+
+A first draft of the WR-01 regression test asserted the wrong gutter format (`'6:00a'`) and passed
+against the live bug — `formatMinutesCompact` emits no suffix before noon. Caught by mutation
+testing the guard rather than trusting that a green test meant a real assertion. Worth recording:
+that is the same failure mode as WR-01 itself, one level up.
+
+Post-fix state: `flutter analyze` clean, `flutter test` 504/504.
