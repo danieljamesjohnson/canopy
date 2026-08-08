@@ -1,5 +1,5 @@
 ---
-status: gaps_found
+status: resolved
 phase: 23-live-activity-tracking
 source: [23-VERIFICATION.md, 23-04-PLAN.md]
 started: 2026-08-07T23:10:00Z
@@ -102,6 +102,8 @@ check never depended on chunk type). The underlying `addEventToday` gap was pre-
 
 ## Gaps
 
+**All seven closed and verified in the running debug build, 2026-08-08.** Suite 459 → 479 tests.
+
 Reported by Dan at the 23-04 sign-off gate, 2026-08-08. Verbatim, then interpretation.
 
 > Minor: lifts should be right, drains should be left on the onboarding. Long breaks should look big
@@ -112,13 +114,13 @@ Reported by Dan at the 23-04 sign-off gate, 2026-08-08. Verbatim, then interpret
 
 | # | Gap | Kind | Surface | Status |
 |---|-----|------|---------|--------|
-| G-01 | Onboarding valence segmented control is ordered `Lifts / Neutral / Drains`; should be `Drains / Neutral / Lifts` (drains left, lifts right) | polish | onboarding screen 3 (Phase 19 surface) | open |
-| G-02 | A 25-min long break renders at the same visual weight as a 5-min short break — it should look big and stand out proportionate to its length | design | `chunk_card.dart` `_buildBreak` | open |
-| G-03 | **Opened the app at 9:13 with a chunk starting 9:15; the live row did not appear until a manual page refresh.** The minute tick did not carry PreStart → Active | **bug** | `today_screen.dart` tick / `resolveNowState` | open |
-| G-04 | Time gutter labels clip at the edge | bug | timeline gutter | open |
-| G-05 | Completing a chunk should put the user *in the following break*, not in a gap/next-up state | behaviour | `resolveNowState` resolved-advance path | open |
-| G-06 | Chunk count appears twice at the top ("0 of 9 Chunks" progress bar + "Sunny day · 9 chunks" mood chip) | polish | `today_screen.dart` header | open |
-| G-07 | Choosing a day type doesn't explain what it means — a sunny day should say it means more chunks / fewer long breaks, a low day the reverse | design | check-in / acknowledgment copy | open |
+| G-01 | Onboarding valence segmented control is ordered `Lifts / Neutral / Drains`; should be `Drains / Neutral / Lifts` (drains left, lifts right) | polish | onboarding screen 3 (Phase 19 surface) | **closed** 23-08 — flipped in onboarding AND goal form; verified live |
+| G-02 | A 25-min long break renders at the same visual weight as a 5-min short break — it should look big and stand out proportionate to its length | design | `chunk_card.dart` `_buildBreak` | **closed** 23-07 — long break is taller and carries a rest icon; verified live |
+| G-03 | **Opened the app at 9:13 with a chunk starting 9:15; the live row did not appear until a manual page refresh.** The minute tick did not carry PreStart → Active | **bug** | `today_screen.dart` tick / `resolveNowState` | **closed** 23-05 — `paused` no longer kills the minute tick; `_isBackgrounded` guards the fast tick; build-time self-heal. Regression test proven RED pre-fix |
+| G-04 | Time gutter labels clip at the edge | bug | timeline gutter | **closed** 23-07 — root cause was a missing 16dp inset, not width. `kGutterWidth` corrected 75 → 52 after a real-browser check (75 came from a placeholder-font measurement and over-indented every card) |
+| G-05 | Completing a chunk should put the user *in the following break*, not in a gap/next-up state | behaviour | `resolveNowState` resolved-advance path | **closed** 23-06 — write-side only. Verified live: completed 11:25–11:50 chunk at 11:34, break became 11:34–12:15 ("41 min left"), nothing downstream moved |
+| G-06 | Chunk count appears twice at the top ("0 of 9 Chunks" progress bar + "Sunny day · 9 chunks" mood chip) | polish | `today_screen.dart` header | **closed** 23-07 — chip is now just "Low day"; count lives only in the progress bar; 22-UI-SPEC example amended |
+| G-07 | Choosing a day type doesn't explain what it means — a sunny day should say it means more chunks / fewer long breaks, a low day the reverse | design | check-in / acknowledgment copy | **closed** 23-08 — shown before commit so moods can be compared; copy pinned to the real `_moodCap`/`_moodBreakCadence` values; dead `acknowledgment_screen.dart` deleted |
 
 G-03 is the only one that is straightforwardly a defect and it is the highest priority: the app
 silently failed to start tracking, which is the core promise of Phase 23. G-05 and G-07 are
