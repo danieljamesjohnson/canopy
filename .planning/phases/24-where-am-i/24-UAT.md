@@ -12,14 +12,12 @@ harness: Phase 25 time travel — Settings > Debug > Jump to 9pm today
 
 ## Current Test
 
-number: 1
-name: DayComplete — the marker is visible on open, without scrolling
+number: 2
+name: PreStart / GapBeforeNext — same fallback, spot check
 expected: |
-  Opening the app when the whole day's schedule is already behind you (after the
-  last chunk's end time) lands the list scrolled near the BOTTOM, with the "Now"
-  row — a short rule, the word "Now", then a fading rule in the theme's primary
-  colour — already on screen. You should not have to scroll up from the top of
-  the day to find where you are.
+  Jump the clock to before the day's first chunk (PreStart) or into a gap
+  between chunks (GapBeforeNext); the "Now" row is visible on open without a
+  manual scroll in both.
 awaiting: user response
 
 ## Tests
@@ -27,8 +25,10 @@ awaiting: user response
 ### 1. DayComplete — the marker is visible on open, without scrolling
 
 expected: The page opens already scrolled near the bottom of the list, with the "Now" marker row visible without any manual scrolling.
+result: pass
+verified: 2026-08-10 by Dan, via the Phase 25 time-travel harness (Jump to 9pm today), build_id 81887f7-0827
+note: This closes the defect reported in 24-03 — "now were 'done' and it's hard to tell". It also confirms, transitively, that the Phase 25 clock override and the same-day re-arm fix both work end to end in a real browser.
 why_human: This is the literal re-test of the defect Dan reported in 24-03 — *"now were 'done' and it's hard to tell"* — against the fix shipped in 24-04. The widget test proves `Scrollable.ensureVisible` fires against a synthetic fixture; only a real browser against real data can settle whether "now" is findable at a glance. This phase exists because a green suite once shipped with Dan still unable to answer that question.
-result: [pending]
 
 ### 2. PreStart / GapBeforeNext — same fallback, spot check
 
@@ -45,9 +45,9 @@ result: [pending]
 ## Summary
 
 total: 3
-passed: 0
+passed: 1
 issues: 0
-pending: 3
+pending: 2
 skipped: 0
 blocked: 0
 
