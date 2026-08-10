@@ -158,10 +158,14 @@ duration text, dashed outline, 24dp vertical padding. No change needed — it al
 Label only (`bodySmall`, "Short break" or "Long break" as applicable), **no duration text**
 (the row's own height already says "short" — repeating "5 min" in an already-tiny box is
 noise, not information). Dashed border keeps a 1dp stroke but tightens to a 2dp-dash/2dp-gap
-pitch (from 4/4) and a 6dp corner radius (from 12dp) — at 20px tall a 12dp radius would round
+pitch (from 4/4, both inside the micro-spacing tier below) and a 6dp corner radius (from 12dp,
+a separate radius token family — see Spacing Scale) — at 20px tall a 12dp radius would round
 away most of the box's visible straight edge, reading as a pill rather than a dashed rectangle.
-Vertical padding drops from 12dp to 2dp (below the 8-pt scale — a documented exception,
-identical in kind to the marker's existing 2dp stroke-weight exception).
+Vertical padding drops to `0dp` (from the Full-tier's `24dp`/`12dp`) — a real value on the 8-pt
+scale (`0` is trivially a multiple of `4`), not a new sub-4dp exception: the label is vertically
+centered inside the row's slot via alignment rather than pushed away from the dashed edge by
+padding, which is what a 20px-tall box needs anyway (padding plus a `bodySmall` line would
+overflow the slot; centering with no padding does not).
 
 **Breaks lose their tap target entirely, at every size, in this surface** — this is a
 deliberate behavior change from the current implicit `onTap` (every unresolved chunk,
@@ -179,10 +183,17 @@ including breaks, currently opens `ChunkDetailSheet`). Reasoning:
 
 ## The now-line (CAL-02)
 
+**The now-line is the screen's primary visual anchor.** Nothing else on the screen carries
+full-content-width stroke, topmost z-order, *and* the app's sole reserved accent color at the
+same time — every other element competes within the 60/30/10 split below it. That combination
+is deliberate: CAL-02's entire premise is "where am I" answered by position, so the one visual
+element whose whole job is answering that question is designed to out-rank everything else in
+the visual hierarchy, including `LiveRowCard`'s own full-bleed shadow-and-elevation treatment.
+
 | Property | Value |
 |---|---|
 | Stroke | `2dp` solid `colorScheme.primary`, full opacity, spans the **entire content width** (matches the "let now break the grid" full-bleed precedent from `LiveRowCard`, not a row-scoped rule) |
-| Time chip | Solid pill at the line's left end, sized to the hour-axis column width (`52dp`, reusing `kGutterWidth`): `colorScheme.primary` fill, `onPrimary` text, `labelSmall` (12px) weight 600, `8dp`/`2dp` padding, `4dp` corner radius, soft elevation (~2) so it stays legible over any card fill it happens to sit above |
+| Time chip | Solid pill at the line's left end, sized to the hour-axis column width (`52dp`, reusing `kGutterWidth`): `colorScheme.primary` fill, `onPrimary` text, `labelSmall` (12px) weight 600, `8dp` horizontal / `4dp` vertical padding (both on the 8-pt scale — `sm`/`xs`), `4dp` corner radius (separate radius token family, see Spacing Scale), soft elevation (~2) so it stays legible over any card fill it happens to sit above |
 | Chip copy | `"Now · <formatMinutes(nowMinutes)>"`, e.g. `"Now · 2:47 PM"` — **new locked copy**, replacing Phase 24's bare `"Now"` label. The exact time moved into the visible label because the per-row gutter that used to carry it is gone (see "Time gutter" below) — without this the exact minute would no longer be visible anywhere on the line itself. |
 | Semantics | `Semantics(label: 'Now — ${formatMinutes(nowMinutes)}', excludeSemantics: true)` around the whole overlay widget — same pattern and same string format Phase 24 already established, just re-anchored to the new overlay widget instead of a row |
 | Z-order | Topmost layer in the `Stack`, above every card's elevation/shadow |
@@ -344,37 +355,61 @@ already tiles to fill an arbitrary `size.height` — no code change needed there
   minutes still render as nothing (a short break already occupies that seam), per the existing
   D-05 rule. This phase does not touch that threshold.
 
-## Card seams — a small, documented exception
+## Card seams
 
-Chunk cards currently carry a `4dp` vertical `margin` (Card) or a `4dp` `Container` margin
-(break) between rows. At strict `durationMinutes * kPixelsPerMinute` height, two
-**time-contiguous** chunks (chunk B starts exactly when chunk A ends — no real gap between
-them) would otherwise show a visible seam that reads as if a small gap exists where none does.
-This phase reduces that inter-row margin to `2dp` (a documented, deliberate reduction from the
-pre-existing `4dp`, applied uniformly to every row type including free/gap rows) — enough to
-still visually separate one card from the next, not enough to misrepresent a real time
-boundary as a gap.
+Chunk cards keep their pre-existing `4dp` vertical `margin` (Card) / `4dp` `Container` margin
+(break) between rows — **unchanged, not reduced.** At `kPixelsPerMinute = 4.0`, `4dp` of margin
+between two time-contiguous chunks (chunk B starts exactly when chunk A ends) reads as roughly
+one minute of visual space — small enough, relative to the `10dp`/`40px` `kMinGapMinutes`
+threshold at which a real gap earns its own named `GapFreeRow`, that it does not misrepresent a
+genuine boundary as a gap. No spacing-scale exception is needed here.
 
 ---
 
 ## Spacing Scale
 
-Declared values (multiples of 4 — project-wide 8-point scale; this phase's exceptions are
-each individually justified above, not new general-purpose tokens):
+Declared values (multiples of 4 — project-wide 8-point scale, governing **layout rhythm**:
+padding, margin, and gaps between elements):
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| xs | 4px | Gaps inside the now-line time chip's internal layout |
+| xs | 4px | Gaps inside the now-line time chip's internal layout; now-line chip vertical padding; inter-row card margin (unchanged from the pre-existing value — see "Card seams") |
 | sm | 8px | Now-line chip horizontal padding; hour-axis label inset |
 | md | 16px | Inherited outer content inset (`TimelineRowTile`'s existing 16dp, unchanged) |
 | lg | 24px | Long-break Full-tier vertical padding (unchanged from `chunk_card.dart`) |
 | xl–3xl | 32/48/64px | not used by this phase |
 
-Exceptions (each documented in its own section above, not general tokens):
-- `2dp` — now-line stroke weight, hour-axis hairline weight, inter-row card margin (reduced
-  from the pre-existing `4dp`), now-line chip vertical padding
-- `6dp` — Compact-tier break dashed corner radius (reduced from `12dp`)
-- `2dp`/`2dp` — Compact-tier break dashed-pitch (reduced from `4dp`/`4dp`)
+**No layout-spacing exceptions this phase.** Every padding, margin, and gap value above sits on
+the 8-pt scale, including `0dp` (Compact-tier break vertical padding — see Row content
+density) and the unchanged `4dp` inter-row card margin (see "Card seams").
+
+### Micro-spacing exception tier — stroke, hairline & dash geometry only
+
+The 8-pt scale above governs *layout rhythm* — the distance between one element and the next.
+It does not govern *line weight* — how thick a single painted stroke is, which is a different
+kind of quantity. Material 3's own divider/outline weights already live below 4dp (a `Divider`'s
+default thickness is 1dp), and this codebase already has shipped precedent for a sub-4dp
+stroke: Phase 24's now-marker rule (`now_marker.dart`, `24-UI-SPEC.md`, checker-passed) is
+`Container(height: 2, ...)` — a 2dp stroke, approved before this phase existed. This tier names
+that existing practice as a bounded, closed set rather than leaving sub-4dp values scattered
+through the doc as ad-hoc prose.
+
+**Scope — closed set, stroke/hairline/dash geometry only.** Does **not** cover padding, margin,
+or any layout gap — those have zero exceptions and stay entirely on the 8-pt scale above.
+
+| Value | Usage |
+|-------|-------|
+| `1dp` | Compact-tier break dashed border stroke width (unchanged, `_DashedBorderPainter`'s existing default); hour-axis hairline weight (see "Time gutter becomes an hour axis" — a true hairline, deliberately thinner than the now-line so the two never compete) |
+| `1.5dp` | Full-tier (long) break dashed border stroke width (unchanged, existing) |
+| `2dp` | Now-line stroke weight; Compact-tier break dash length and dash gap (tightened from the existing Full-tier `4dp`/`4dp` pitch) |
+
+**Corner radius is a separate, pre-existing token family in this codebase — not governed by
+the 8-pt spacing scale, and not part of the tier above either.** `BorderRadius.circular` values
+already range from `2` to `30` across existing, shipped screens with no relationship to spacing
+tokens (`chunk_detail_sheet.dart`'s drag handle at `2`, `chunk_card.dart`'s priority chip at
+`10`, `breathing_pulse_cta.dart` at `30`). The Compact-tier break's `6dp` corner radius
+(reduced from the Full-tier dashed card's existing `12dp`) is judged against that existing,
+already-ungoverned radius practice — not against a spacing rule — and is consistent with it.
 
 ---
 
