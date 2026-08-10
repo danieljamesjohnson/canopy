@@ -332,4 +332,4 @@ Plans:
 | 23. Live Activity Tracking | v1.5 | 8/8 | Complete   | 2026-08-08 |
 | 24. Where Am I | v1.5 | 4/4 | Complete    | 2026-08-10 |
 | 25. Time Travel | v1.5 | 1/1 | Complete    | 2026-08-10 |
-| 26. The Day Has a Shape | v1.5 | 5/6 | In Progress|  |
+| 26. The Day Has a Shape | v1.5 | 6/7 | In Progress|  |

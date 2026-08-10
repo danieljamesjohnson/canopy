@@ -126,3 +126,7 @@ G-01 is closed. `resolveNowState` remains the single now-detector (verified: one
 ---
 *Phase: 26-the-day-has-a-shape*
 *Completed: 2026-08-10*
+
+## Self-Check: PASSED
+
+All modified files confirmed present on disk; all four commits (`9cff399`, `41540e6`, `afa3539`, `53ef4ff`) confirmed in `git log`.
