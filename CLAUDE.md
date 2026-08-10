@@ -71,18 +71,19 @@ requests.)
 # no service worker (so it can never collide on an origin):
 flutter build web --debug --source-maps --pwa-strategy=none
 
-# Serve statically, bound to all interfaces for the tailnet:
-cd build/web && python3 -m http.server <port> --bind 0.0.0.0
+# Serve statically, bound to all interfaces for the tailnet.
+# Use tools/serve-uat.py, NOT `python3 -m http.server` — see trap #3:
+python3 tools/serve-uat.py <port> --dir build/web
 ```
 
 Reach it at `http://danserver:<port>/`. Use a port that has NEVER served a different
 build type (see trap #1). Switch to `flutter build web --release` only once the basics
 are solid.
 
-### Two traps that fake a "blank page" (neither means the build is broken)
+### Three traps that fake a broken build (none of them means the build is broken)
 
-A blank Flutter-web page almost always means one of these — rule them out before
-concluding the build is broken:
+Traps #1 and #2 fake a *blank page*; trap #3 fakes a *missing feature*. Rule them
+out before concluding the build is broken:
 
 1. **Service-worker cache collision — never swap build types on one origin/port.**
    Release builds register `flutter_service_worker.js` scoped to that origin
@@ -102,6 +103,20 @@ concluding the build is broken:
    a real GPU-backed browser, or force stable software WebGL for headless runs
    (`--use-gl=swiftshader --enable-unsafe-swiftshader`). Don't conclude "debug is
    unreliable" from a headless blank.
+3. **A stale browser cache serves the PREVIOUS bundle — use `tools/serve-uat.py`.**
+   `python3 -m http.server` sends **no `Cache-Control` header**. Browsers are then
+   free to apply *heuristic* caching and keep serving a cached `main.dart.js`
+   without ever revalidating. On a 13 MB debug bundle this reliably means you
+   rebuild, reload, and still see the old build — then reasonably conclude the
+   change never landed. This is not hypothetical: it cost a round trip during
+   Phase 25's UAT, where the new feature was present in the served bytes while
+   the browser showed a two-day-old build. `tools/serve-uat.py` sends
+   `Cache-Control: no-store` and strips `If-Modified-Since`/`If-None-Match`, so a
+   cache entry created before the switch can't win a `304` either.
+   **Diagnosis first, always:** if a change seems missing from the running app,
+   `curl -s http://danserver:<port>/main.dart.js | grep -c '<a new string>'`.
+   Non-zero means the server is serving the right bytes and it's a client-side
+   cache — not a broken build, and not a missing feature.
 
 ## Architecture
 
