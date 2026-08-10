@@ -19,8 +19,11 @@ import 'package:canopy/screens/today/timeline_geometry.dart';
 import 'package:canopy/screens/today/today_screen.dart';
 import 'package:canopy/screens/today/widgets/breathing_pulse_cta.dart';
 import 'package:canopy/screens/today/widgets/end_of_day_card.dart';
+import 'package:canopy/screens/today/widgets/hour_axis.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
+import 'package:canopy/screens/today/widgets/now_line.dart';
 import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
+import 'package:canopy/utils/time_format.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -722,6 +725,321 @@ void main() {
               )
               .first;
           expect(tester.getSize(breakClipRect).height, 27.5);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    });
+
+    group('Phase 26 — CAL-02 the now-line', () {
+      // Dedicated fixture, deliberately NOT buildDayFixture() above: two
+      // unresolved 25-minute work chunks (9:00-9:25, 10:00-10:25) hit every
+      // NowState cleanly by clock alone, and match this task's own worked
+      // example verbatim (a 25-minute chunk starting at 9:00, clock 9:12).
+      // [firstResolved]/[secondResolved] let a caller reach GapBeforeNext
+      // without a third chunk.
+      List<ScheduledChunk> twoChunkFixture({
+        bool firstResolved = false,
+        bool secondResolved = false,
+      }) => [
+        _workChunk(
+          id: 'w1',
+          syntheticStartMinutes: 540, // 9:00
+          durationMinutes: 25,
+          isCompleted: firstResolved,
+          rationale: 'Deep work',
+        ),
+        _workChunk(
+          id: 'w2',
+          syntheticStartMinutes: 600, // 10:00
+          durationMinutes: 25,
+          isCompleted: secondResolved,
+          rationale: 'Reading',
+        ),
+      ];
+
+      Future<void> pumpAt(
+        WidgetTester tester,
+        DateTime clock, {
+        List<ScheduledChunk>? chunks,
+        ScheduleNotifier? scheduleNotifier,
+      }) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: chunks ?? twoChunkFixture(),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier:
+              scheduleNotifier ?? _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => clock,
+        );
+      }
+
+      testWidgets(
+        'no suppression — exactly one NowLineOverlay in every NowState '
+        '(the Active row is the one that used to assert findsNothing)',
+        (tester) async {
+          // Table-driven (26-04-PLAN.md task 2, item 1) so a future added
+          // NowState is obviously missing from this list.
+          final table = <String, (DateTime, List<ScheduledChunk>)>{
+            'PreStart': (DateTime(2026, 8, 7, 8, 0), twoChunkFixture()),
+            'Active (mid-chunk)': (
+              DateTime(2026, 8, 7, 9, 12),
+              twoChunkFixture(),
+            ),
+            'Overdue': (DateTime(2026, 8, 7, 9, 30), twoChunkFixture()),
+            'GapBeforeNext': (
+              DateTime(2026, 8, 7, 9, 30),
+              twoChunkFixture(firstResolved: true),
+            ),
+            'DayComplete': (DateTime(2026, 8, 7, 11, 0), twoChunkFixture()),
+          };
+
+          for (final entry in table.entries) {
+            final (clock, chunks) = entry.value;
+            await pumpAt(tester, clock, chunks: chunks);
+            expect(
+              find.byType(NowLineOverlay),
+              findsOneWidget,
+              reason: '${entry.key}: the now-line must render unconditionally',
+            );
+            expect(tester.takeException(), isNull);
+            // Full unmount before the next clock — _nowFn is late final,
+            // set once in initState; without this the next clock's closure
+            // is silently ignored and the assertion would re-check the
+            // FIRST clock's state while appearing to pass (Pitfall 8,
+            // bit the codebase once already in 23-03).
+            await tester.pumpWidget(const SizedBox.shrink());
+          }
+        },
+      );
+
+      testWidgets(
+        "mid-chunk truth — the line sits at TimelineGeometry's own "
+        "computed offset, strictly inside the live chunk's rendered span",
+        (tester) async {
+          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+
+          // Recomputed from the fixture's own numbers, never a hard-coded
+          // pixel constant — mirrors the CAL-01 group's own discipline.
+          final geometry = TimelineGeometry.forDay(
+            nowMinutes: 552, // 9:12
+            firstStartMinutes: 540, // w1 starts 9:00
+            lastEndMinutes: 625, // w2 ends 10:25
+            liveStartMinutes: 540,
+            liveEndMinutes: 565, // w1 ends 9:25
+          );
+
+          final liveRowTop = tester.getTopLeft(find.byType(LiveRowCard)).dy;
+          final liveRowBottom =
+              liveRowTop + tester.getSize(find.byType(LiveRowCard)).height;
+          final lineTop = tester.getTopLeft(find.byType(NowLineOverlay)).dy;
+
+          // The live row starts exactly at the Stack's own top here
+          // (rangeStart == firstStartMinutes == liveStartMinutes == 540),
+          // so liveRowTop doubles as the Stack's top in the same global
+          // coordinate frame — the delta below is directly comparable to
+          // geometry's own arithmetic.
+          expect(
+            lineTop - liveRowTop,
+            geometry.yFor(552) - kNowLineHeight / 2 - geometry.yFor(540),
+          );
+          expect(lineTop, greaterThan(liveRowTop));
+          expect(lineTop, lessThan(liveRowBottom));
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'motion — a one-minute tick advances the line by exactly '
+        'kPixelsPerMinute',
+        (tester) async {
+          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+          final lineTopAt912 = tester.getTopLeft(find.byType(NowLineOverlay)).dy;
+
+          // Full unmount between clocks (Pitfall 8) — see the no-suppression
+          // test's comment above for why this is load-bearing, not optional.
+          await tester.pumpWidget(const SizedBox.shrink());
+
+          await pumpAt(tester, DateTime(2026, 8, 7, 9, 13));
+          final lineTopAt913 = tester.getTopLeft(find.byType(NowLineOverlay)).dy;
+
+          expect(lineTopAt913 - lineTopAt912, kPixelsPerMinute);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'PreStart is representable — the line never renders above the top '
+        'of the rendered range',
+        (tester) async {
+          await pumpAt(tester, DateTime(2026, 8, 7, 8, 0)); // before 9:00
+
+          final geometry = TimelineGeometry.forDay(
+            nowMinutes: 480,
+            firstStartMinutes: 540,
+            lastEndMinutes: 625,
+          );
+
+          expect(geometry.yFor(480), greaterThanOrEqualTo(0));
+          expect(geometry.yFor(480), lessThanOrEqualTo(geometry.yFor(540)));
+          expect(find.byType(NowLineOverlay), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'DayComplete is representable — the line never renders below the '
+        'bottom of the rendered range',
+        (tester) async {
+          await pumpAt(tester, DateTime(2026, 8, 7, 11, 0)); // after 10:25
+
+          final geometry = TimelineGeometry.forDay(
+            nowMinutes: 660,
+            firstStartMinutes: 540,
+            lastEndMinutes: 625,
+          );
+
+          expect(geometry.yFor(660), lessThanOrEqualTo(geometry.totalHeight));
+          expect(geometry.yFor(660), greaterThanOrEqualTo(geometry.yFor(625)));
+          expect(find.byType(NowLineOverlay), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets('chip copy — renders exactly "Now · 9:12 AM"', (
+        tester,
+      ) async {
+        await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+
+        expect(find.text('Now · 9:12 AM'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets(
+        'semantics — exactly one "Now — 9:12 AM" node; the chip\'s own '
+        'visible text is excluded from the tree',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+
+          expect(
+            find.bySemanticsLabel(RegExp(r'^Now — 9:12 AM$')),
+            findsOneWidget,
+          );
+          expect(tester.takeException(), isNull);
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'hit-testing — a Complete tap still lands through the now-line '
+        '(IgnorePointer proof)',
+        (tester) async {
+          final schedule = DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: twoChunkFixture(),
+          );
+          final fakeNotifier = _FakeScheduleNotifierWithSchedule(schedule);
+          // 9:12 — mid w1's window. The now-line necessarily crosses w1's
+          // own (live) card here: nowMinutes inside an unresolved chunk's
+          // window makes that chunk Active by construction
+          // (resolveNowState), so there is no fixture that puts the line
+          // over a genuinely non-live unresolved ChunkCard's Complete
+          // button — the live row IS the unresolved work chunk's card the
+          // line is guaranteed to cross.
+          await pumpAt(
+            tester,
+            DateTime(2026, 8, 7, 9, 12),
+            scheduleNotifier: fakeNotifier,
+          );
+
+          // Confirm the line genuinely overlaps the card first — otherwise
+          // this test would prove nothing (task 2's own instruction).
+          final lineTop = tester.getTopLeft(find.byType(NowLineOverlay)).dy;
+          final cardRect = tester.getRect(find.byType(LiveRowCard));
+          expect(lineTop, greaterThanOrEqualTo(cardRect.top));
+          expect(lineTop, lessThanOrEqualTo(cardRect.bottom));
+
+          // Scoped to the live row specifically: w2 (unresolved, Full-tier,
+          // non-live) also renders its own Complete button in its own
+          // ChunkCard further down the day — an unscoped finder would match
+          // both.
+          final completeButton = find.descendant(
+            of: find.byType(LiveRowCard),
+            matching: find.widgetWithText(FilledButton, 'Complete'),
+          );
+          await tester.ensureVisible(completeButton);
+          await tester.tap(completeButton);
+          await tester.pump();
+
+          expect(fakeNotifier.lastCompletedId, 'w1');
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'colour — the now-line rule uses colorScheme.primary and the hour '
+        'hairline uses colorScheme.outlineVariant',
+        (tester) async {
+          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+
+          final scheme = Theme.of(
+            tester.element(find.byType(NowLineOverlay).first),
+          ).colorScheme;
+
+          final ruleContainer = tester.widget<Container>(
+            find
+                .descendant(
+                  of: find.byType(NowLineOverlay).first,
+                  matching: find.byWidgetPredicate(
+                    (widget) => widget is Container && widget.color != null,
+                  ),
+                )
+                .first,
+          );
+          expect(ruleContainer.color, scheme.primary);
+
+          final hairlineContainer = tester.widget<Container>(
+            find
+                .descendant(
+                  of: find.byType(HourAxisLine).first,
+                  matching: find.byWidgetPredicate(
+                    (widget) => widget is Container && widget.color != null,
+                  ),
+                )
+                .first,
+          );
+          expect(hairlineContainer.color, scheme.outlineVariant);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'hour axis coverage — one HourAxisLine per hour boundary, first '
+        'labelled from rangeStart',
+        (tester) async {
+          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+
+          final geometry = TimelineGeometry.forDay(
+            nowMinutes: 552,
+            firstStartMinutes: 540,
+            lastEndMinutes: 625,
+            liveStartMinutes: 540,
+            liveEndMinutes: 565,
+          );
+
+          expect(
+            find.byType(HourAxisLine),
+            findsNWidgets(geometry.hourBoundaries.length),
+          );
+          final firstAxisLine = tester.widget<HourAxisLine>(
+            find.byType(HourAxisLine).first,
+          );
+          expect(firstAxisLine.hourMinutes, geometry.rangeStart);
+          expect(find.text(formatHourLabel(geometry.rangeStart)), findsWidgets);
           expect(tester.takeException(), isNull);
         },
       );
