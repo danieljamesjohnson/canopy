@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -118,36 +119,42 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   bool _inReviewWindow = false;
   String? _lastScheduleDateYmd;
 
-  /// Centre-on-open (D-02) plumbing. [_liveRowKey] tags the live row's
-  /// TimelineRowTile so [Scrollable.ensureVisible] can find it;
-  /// [_dayScrollController] owns the day list's scroll position.
-  /// [_didCentreLiveRow] is a ONE-SHOT flag: the screen rebuilds every
-  /// minute (the ticker above), and re-running ensureVisible on every tick
-  /// would drag the list out from under a reading user (T-22-08). It is
-  /// set synchronously in build() — before the post-frame callback is even
-  /// scheduled — and is reset only when the schedule's dateYmd changes (a
-  /// new day), never on a tick. Do NOT add a sticky bar, floating pill, or
-  /// jump button here (D-03) — that is the rejected sketch variant B.
+  /// Centre-on-open (CAL-03) plumbing — ONE flag, ONE arithmetic
+  /// `animateTo` path (26-05-PLAN.md). This flag is set synchronously in
+  /// build() — before the post-frame callback is even scheduled — so a
+  /// rebuild triggered by the same tick that flips it can never schedule a
+  /// second callback (T-22-08). It is reset only when the schedule's
+  /// dateYmd changes (a new day) or on a `DevClock.offset` jump (Phase 25,
+  /// see build()), never on a tick.
   ///
-  /// The marker-fallback centring that used to live here (24-04 gap
-  /// closure — a separate GlobalKey/one-shot pair keyed on the discrete
-  /// current-moment row Phase 24 rendered) is retired in this plan along
-  /// with that row's sealed variant — plan 03 replaces it with a single
-  /// unconditional arithmetic centre-on-open path (26-UI-SPEC.md
-  /// "Scroll-on-open"), since the now-line overlay always exists at a
-  /// computable offset in every `NowState`, removing the "does a live row
-  /// exist" branch this two-flag design existed to handle.
-  final GlobalKey _liveRowKey = GlobalKey();
+  /// Replaces Phase 24's two flags (one for the live row, one as its
+  /// PreStart/GapBeforeNext/DayComplete fallback) and the pair of
+  /// `GlobalKey`s and widget-lookup scroll calls each of those flags used.
+  /// There is no longer a "does a live row exist" branch to choose
+  /// between: the now-line overlay always exists at a computable offset in
+  /// every `NowState` (PreStart, Active, Overdue, GapBeforeNext,
+  /// DayComplete), so opening the day centres on "now" unconditionally —
+  /// this is what closes the DayComplete gap Dan reported in the Phase 24
+  /// UAT, by construction rather than by a fallback branch. A
+  /// PreStart -> Active transition deliberately does NOT re-centre (PD-19,
+  /// 26-05-PLAN.md) — only a new day or a debug time jump re-arms this
+  /// flag.
+  ///
+  /// Do NOT add a sticky bar, floating pill, or jump button here (D-03) —
+  /// that is the rejected sketch variant B.
+  //
+  // NEVER pass a computed offset into the controller's constructor below —
+  // an out-of-bounds value there is a documented hard crash on iOS
+  // (flutter/flutter#96924). Scroll only via `animateTo` inside a
+  // post-frame callback (see build()).
   final ScrollController _dayScrollController = ScrollController();
-  bool _didCentreLiveRow = false;
+  bool _didCentreOnOpen = false;
 
   /// Tags the day's `SizedBox`-wrapped `Stack` (the fixed-height Layer-1
-  /// timeline surface, CAL-01) so plan 05's scroll-on-open arithmetic can
+  /// timeline surface, CAL-01) so the scroll-on-open arithmetic below can
   /// ask the viewport where the Stack's top sits inside the scroll content
   /// — the restoratives card can precede it, so that offset is not always
-  /// zero. Deliberately NOT a "find a row to scroll to" key like
-  /// [_liveRowKey]: there is no single row to find any more, only an
-  /// absolute pixel offset computed from [TimelineGeometry].
+  /// zero.
   final GlobalKey _timelineStackKey = GlobalKey();
 
   /// Last-seen [DevClock.offset], so a debug time jump can re-arm the
@@ -242,7 +249,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       setState(() {
         _lastScheduleDateYmd = newDateYmd;
         _eodCardDismissed = false; // new schedule → show card again
-        _didCentreLiveRow = false; // a new day re-centres; a tick never does
+        _didCentreOnOpen = false; // a new day re-centres; a tick never does
       });
     }
   }
@@ -720,9 +727,6 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
           );
         }
         if (isLive) {
-          // Keyed so build()'s centre-on-open can find this row's context
-          // via Scrollable.ensureVisible without a second "now" scan.
-          //
           // NO height: the live row swells to its natural size within
           // TimelineGeometry's reserved liveExtraPx (PD-2/PD-10) — every
           // other row's slot is duration-exact, but this is CAL-01's one
@@ -735,10 +739,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
             top: geometry.yFor(start),
             left: 0,
             right: 0,
-            child: KeyedSubtree(
-              key: _liveRowKey,
-              child: _buildLiveRow(context, chunk, nowState, secondsRemaining),
-            ),
+            child: _buildLiveRow(context, chunk, nowState, secondsRemaining),
           );
         }
         // Every non-live slot height is geometry.heightFor(...) and nothing
@@ -1172,13 +1173,13 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
 
     // A debug clock jump re-arms centre-on-open (Phase 25, DEV-01).
     //
-    // The one-shots below otherwise reset ONLY when the schedule's dateYmd
+    // The one-shot below otherwise resets ONLY when the schedule's dateYmd
     // changes (didChangeDependencies). Time-travelling from morning to 9pm
     // on the SAME day leaves dateYmd untouched, so without this the list
-    // would stay wherever it was and the marker would never be scrolled to
-    // — which would make the exact UAT this harness exists to enable
-    // ("jump to 9pm, check DayComplete") report a false negative against a
-    // fix that works.
+    // would stay wherever it was and "now" would never be scrolled to —
+    // which would make the exact UAT this harness exists to enable ("jump
+    // to 9pm, check DayComplete") report a false negative against a fix
+    // that works.
     //
     // Release-safe and behaviour-preserving: DevClock.offset is always
     // Duration.zero in release (DEV-03), so this can never fire there.
@@ -1186,27 +1187,50 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     // D-01's single-sample rule is untouched.
     if (DevClock.offset != _lastDevClockOffset) {
       _lastDevClockOffset = DevClock.offset;
-      _didCentreLiveRow = false;
+      _didCentreOnOpen = false;
     }
 
-    // Centre-on-open (D-02): schedule the scroll exactly once. The flag is
-    // set synchronously here — before the post-frame callback even runs —
-    // so a rebuild triggered by the same tick that flips this bit can never
-    // schedule a second one (T-22-08). See the field doc comment for why
-    // this is a one-shot, not a listener.
-    final hasLiveRow = timelineRows.any((row) => row is ChunkRow && row.isLive);
-    if (!_didCentreLiveRow && hasLiveRow) {
-      _didCentreLiveRow = true;
+    // Centre-on-open (CAL-03): schedule the scroll exactly once, in every
+    // NowState, with no primary/fallback branch (26-05-PLAN.md PD-19). The
+    // flag is set synchronously here — before the post-frame callback even
+    // runs — so a rebuild triggered by the same tick that flips this bit
+    // can never schedule a second one (T-22-08). See the field doc comment
+    // above for the full reset/one-shot discipline.
+    if (!_didCentreOnOpen) {
+      _didCentreOnOpen = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        final liveRowContext = _liveRowKey.currentContext;
-        // T-22-10: guarded on a non-null, still-mounted context — the day
-        // uses SingleChildScrollView (eager layout) so the target is
-        // always laid out by the time this callback runs.
-        if (liveRowContext == null) return;
-        Scrollable.ensureVisible(
-          liveRowContext,
-          alignment: 0.5,
+        // The empty state renders no scroll view at all, and a schedule
+        // can also become empty between the frame that scheduled this
+        // callback and the frame it runs in — reading the controller's
+        // position on a clientless controller throws (T-26-08).
+        if (!_dayScrollController.hasClients) return;
+        // The Stack's own leading offset inside the scroll content — NOT
+        // geometry.yFor(nowMinutes) alone, since a mood<=2 day scrolls the
+        // restoratives card above the Stack (PD-17). Resolved with the
+        // same viewport machinery Flutter's own scroll-into-view helper
+        // uses internally.
+        final stackBox =
+            _timelineStackKey.currentContext?.findRenderObject()
+                as RenderBox?;
+        if (stackBox == null) return;
+        final stackTop = RenderAbstractViewport.of(
+          stackBox,
+        ).getOffsetToReveal(stackBox, 0.0).offset;
+        final viewportHeight =
+            _dayScrollController.position.viewportDimension;
+        final raw = stackTop + geometry.yFor(nowMinutes) - viewportHeight / 2;
+        // Read post-layout only — this line, and only this line (PD-16). A
+        // DayComplete day puts "now" at the very bottom, so the naive
+        // target routinely exceeds this bound; clamping here is what lands
+        // that case gracefully at the bottom instead of throwing or
+        // no-op-ing.
+        final target = raw.clamp(
+          0.0,
+          _dayScrollController.position.maxScrollExtent,
+        );
+        _dayScrollController.animateTo(
+          target,
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
