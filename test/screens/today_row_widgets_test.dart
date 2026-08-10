@@ -6,6 +6,7 @@
 // Pure widget work — nothing here knows what time it is; the screen
 // (plan 22-03) decides what's live and passes it in.
 
+import 'package:canopy/data/models/energy_valence.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/theme_notifier.dart';
@@ -73,6 +74,40 @@ ScheduledChunk _breakChunk({required ChunkType type, bool completed = false}) =>
       chunkTypeIndex: type.index,
       durationMinutes: type == ChunkType.shortBreak ? 5 : 25,
     )..isCompleted = completed;
+
+/// A 25-minute work chunk carrying a goal name, a rationale, a non-default
+/// priority weight and a non-neutral valence — used by the ChunkCardDensity
+/// group to assert which of those fields each density suppresses.
+ScheduledChunk _denseWorkChunk() => ScheduledChunk(
+  id: 'w-dense',
+  chunkTypeIndex: ChunkType.work.index,
+  goalId: 'goal-1',
+  durationMinutes: 25,
+  rationale: 'Deep work',
+  syntheticStartMinutes: 540,
+);
+
+Future<void> _pumpDenseChunkCard(
+  WidgetTester tester,
+  ChunkCardDensity density,
+) async {
+  await pumpWithMood(
+    tester,
+    ChunkCard(
+      chunk: _denseWorkChunk(),
+      goalName: 'Write the report',
+      displayRationale: 'Deep work',
+      goalPriorityWeight: 0.75,
+      goalValence: EnergyValence.gives,
+      density: density,
+    ),
+    extraProviders: [
+      ChangeNotifierProvider<ScheduleNotifier>.value(
+        value: _FakeScheduleNotifier(),
+      ),
+    ],
+  );
+}
 
 Future<void> _pumpChunkCard(
   WidgetTester tester,
@@ -491,6 +526,98 @@ void main() {
       await _pumpChunkCard(tester, _workChunk(completed: true));
       expect(find.byType(ChunkCard), findsOneWidget);
     });
+  });
+
+  group('ChunkCardDensity (CAL-01, 26-02-PLAN.md PD-4)', () {
+    testWidgets(
+      'detailed (default): rationale, priority chip and valence chip all render',
+      (tester) async {
+        await _pumpDenseChunkCard(tester, ChunkCardDensity.detailed);
+        expect(find.text('Write the report'), findsOneWidget);
+        expect(find.text('Deep work'), findsOneWidget); // rationale
+        expect(find.text('High'), findsOneWidget); // _PriorityChip
+        expect(find.text('Gives'), findsOneWidget); // _ValenceChip
+      },
+    );
+
+    testWidgets(
+      'full: title and time range render; rationale, priority chip, '
+      'valence chip do not; Complete and Skip render',
+      (tester) async {
+        await _pumpDenseChunkCard(tester, ChunkCardDensity.full);
+        expect(find.text('Write the report'), findsOneWidget);
+        expect(find.text('9:00 AM – 9:25 AM'), findsOneWidget);
+        expect(find.text('Deep work'), findsNothing); // rationale suppressed
+        expect(find.text('High'), findsNothing); // _PriorityChip suppressed
+        expect(find.text('Gives'), findsNothing); // _ValenceChip suppressed
+        expect(find.widgetWithText(FilledButton, 'Complete'), findsOneWidget);
+        expect(find.widgetWithText(OutlinedButton, 'Skip'), findsOneWidget);
+      },
+    );
+
+    testWidgets('compact: only the title renders', (tester) async {
+      await _pumpDenseChunkCard(tester, ChunkCardDensity.compact);
+      expect(find.text('Write the report'), findsOneWidget);
+      expect(find.text('9:00 AM – 9:25 AM'), findsNothing);
+      expect(find.text('25 min'), findsNothing);
+      expect(find.text('Deep work'), findsNothing);
+      expect(find.text('High'), findsNothing);
+      expect(find.text('Gives'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Complete'), findsNothing);
+    });
+
+    group('break densities', () {
+      testWidgets(
+        'compact short break renders the label but not its duration text',
+        (tester) async {
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak),
+              density: ChunkCardDensity.compact,
+            ),
+          );
+          expect(find.text('Short break'), findsOneWidget);
+          expect(find.text('5 min'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'full short break renders both the label and its duration text',
+        (tester) async {
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak),
+              density: ChunkCardDensity.full,
+            ),
+          );
+          expect(find.text('Short break'), findsOneWidget);
+          expect(find.text('5 min'), findsOneWidget);
+        },
+      );
+    });
+
+    testWidgets(
+      'SwipeableChunkCard forwards density on the break early-return path '
+      '(regression guard for the forgotten-forward failure mode)',
+      (tester) async {
+        await pumpWithMood(
+          tester,
+          SwipeableChunkCard(
+            chunk: _breakChunk(type: ChunkType.shortBreak),
+            density: ChunkCardDensity.compact,
+          ),
+          extraProviders: [
+            ChangeNotifierProvider<ScheduleNotifier>.value(
+              value: _FakeScheduleNotifier(),
+            ),
+          ],
+        );
+        expect(find.text('Short break'), findsOneWidget);
+        expect(find.text('5 min'), findsNothing);
+      },
+    );
   });
 
   group('LiveRowCard (D-01, Phase 23 seam)', () {

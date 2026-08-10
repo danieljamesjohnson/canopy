@@ -24,6 +24,7 @@ class SwipeableChunkCard extends StatelessWidget {
     this.goalValence,
     this.onTap,
     this.showStartTime = true,
+    this.density = ChunkCardDensity.detailed,
   });
 
   final ScheduledChunk chunk;
@@ -55,6 +56,12 @@ class SwipeableChunkCard extends StatelessWidget {
   /// sees a break card's own clock time doubled.
   final bool showStartTime;
 
+  /// Forwarded to [ChunkCard] — see its doc comment. Also applied on the
+  /// break-card early-return path below (PD-4, 26-02-PLAN.md): a compact
+  /// break must not render at [ChunkCardDensity.detailed] inside a tiny
+  /// slot just because this early return forgot to forward it.
+  final ChunkCardDensity density;
+
   @override
   Widget build(BuildContext context) {
     // Swipe-reveal backgrounds resolve from the ColorScheme, matching the
@@ -70,6 +77,7 @@ class SwipeableChunkCard extends StatelessWidget {
         chunk: chunk,
         goalColor: goalColor,
         showStartTime: showStartTime,
+        density: density,
       );
     }
 
@@ -121,6 +129,7 @@ class SwipeableChunkCard extends StatelessWidget {
         goalEmojiTag: goalEmojiTag,
         goalValence: goalValence,
         showStartTime: showStartTime,
+        density: density,
         // Resolved chunks are not tappable — null out the callback.
         onTap: (chunk.isCompleted || chunk.isSkipped) ? null : onTap,
       ),

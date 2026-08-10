@@ -5,6 +5,33 @@ import '../../../data/models/scheduled_chunk.dart';
 import '../../../providers/schedule_notifier.dart';
 import '../../../utils/time_format.dart';
 
+/// Phase 26 (CAL-01) row content density. `ChunkCard` renders three distinct
+/// content sets depending on how much vertical room its (now duration-sized,
+/// per D-02) slot allocates — but the CONTENT degrades, never the box: no
+/// branch here ever floors, ceilings, or clamps a widget's height.
+enum ChunkCardDensity {
+  /// Today's card, byte-for-byte unchanged. Renders every field: title,
+  /// clock-time range, rationale, priority chip, valence chip, action row.
+  /// This is the default — every existing call site (four standalone
+  /// `chunk_card_*_test.dart` files covering GOALS-02/ENERGY-04b, plus every
+  /// screen that pumps `ChunkCard` without an explicit `density`) keeps
+  /// exactly today's behaviour (PD-4, `26-02-PLAN.md`).
+  detailed,
+
+  /// The UI-SPEC's "Full" tier (`26-UI-SPEC.md` § "Row content density"):
+  /// title + clock-time range + the Complete/Skip action row. Drops the
+  /// rationale line, the priority chip, and the valence chip — all three
+  /// stay reachable through `ChunkDetailSheet`, unchanged. Asked for by
+  /// `today_screen.dart` starting in plan 04, not this plan.
+  full,
+
+  /// The UI-SPEC's "Compact" tier: title only (single line, ellipsis). No
+  /// time text, no rationale, no chips, no action row — Complete/Skip are
+  /// reached via the row's own tap into `ChunkDetailSheet`. Asked for by
+  /// `today_screen.dart` starting in plan 04, not this plan.
+  compact,
+}
+
 /// A card widget that renders one of three visual variants depending on
 /// [chunk.chunkType]: work, shortBreak, or longBreak.
 class ChunkCard extends StatelessWidget {
@@ -19,6 +46,7 @@ class ChunkCard extends StatelessWidget {
     this.goalValence,
     this.onTap,
     this.showStartTime = true,
+    this.density = ChunkCardDensity.detailed,
   });
 
   final ScheduledChunk chunk;
@@ -61,6 +89,10 @@ class ChunkCard extends StatelessWidget {
   /// call site (schedule_screen.dart's plain list) is unaffected.
   final bool showStartTime;
 
+  /// Phase 26 (CAL-01) row content density. Defaults to [ChunkCardDensity.detailed]
+  /// — today's card, unchanged — so this parameter is purely additive.
+  final ChunkCardDensity density;
+
   @override
   Widget build(BuildContext context) {
     switch (chunk.chunkType) {
@@ -78,6 +110,7 @@ class ChunkCard extends StatelessWidget {
           goalValence: goalValence,
           onTap: onTap,
           showStartTime: showStartTime,
+          density: density,
         );
     }
   }
@@ -97,6 +130,38 @@ class ChunkCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isLong = chunk.chunkType == ChunkType.longBreak;
     final title = isLong ? 'Long break' : 'Short break';
+
+    // Compact tier (density-driven, CAL-01): label only, no leading icon,
+    // no duration text, no completed check icon — D-02 forbids inflating the
+    // box, so at a 5-minute break's 27.5px slot the only lever is content.
+    if (density == ChunkCardDensity.compact) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        child: CustomPaint(
+          painter: _DashedBorderPainter(
+            color: theme.colorScheme.outlineVariant,
+            strokeWidth: 1,
+            dashWidth: 2,
+            dashGap: 2,
+            radius: 6,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+            child: Center(
+              child: Text(
+                title,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // detailed / full — today's unchanged treatment (measured 80.0px for a
+    // long break, fits its 137.5px slot at kPixelsPerMinute).
     final titleStyle = isLong
         ? theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w500,
@@ -158,14 +223,19 @@ class ChunkCard extends StatelessWidget {
 /// [strokeWidth] defaults to the original 1dp; a long break (G-02) passes
 /// 1.5 for a slightly heavier outline within the same dashed vocabulary.
 class _DashedBorderPainter extends CustomPainter {
-  const _DashedBorderPainter({required this.color, this.strokeWidth = 1});
+  const _DashedBorderPainter({
+    required this.color,
+    this.strokeWidth = 1,
+    this.dashWidth = 4,
+    this.dashGap = 4,
+    this.radius = 12,
+  });
 
   final Color color;
   final double strokeWidth;
-
-  static const double _radius = 12;
-  static const double _dashWidth = 4;
-  static const double _dashGap = 4;
+  final double dashWidth;
+  final double dashGap;
+  final double radius;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -176,26 +246,30 @@ class _DashedBorderPainter extends CustomPainter {
 
     final rrect = RRect.fromRectAndRadius(
       Offset.zero & size,
-      const Radius.circular(_radius),
+      Radius.circular(radius),
     );
     final path = Path()..addRRect(rrect);
     final metrics = path.computeMetrics();
     for (final metric in metrics) {
       var distance = 0.0;
       while (distance < metric.length) {
-        final next = distance + _dashWidth;
+        final next = distance + dashWidth;
         canvas.drawPath(
           metric.extractPath(distance, next.clamp(0, metric.length)),
           paint,
         );
-        distance = next + _dashGap;
+        distance = next + dashGap;
       }
     }
   }
 
   @override
   bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
+      oldDelegate.color != color ||
+      oldDelegate.strokeWidth != strokeWidth ||
+      oldDelegate.dashWidth != dashWidth ||
+      oldDelegate.dashGap != dashGap ||
+      oldDelegate.radius != radius;
 }
 
 /// Internal widget for the work-variant chunk card.
@@ -217,6 +291,7 @@ class _WorkChunkContent extends StatelessWidget {
     this.goalValence,
     this.onTap,
     this.showStartTime = true,
+    this.density = ChunkCardDensity.detailed,
   });
 
   final ScheduledChunk chunk;
@@ -228,6 +303,16 @@ class _WorkChunkContent extends StatelessWidget {
   final EnergyValence? goalValence;
   final VoidCallback? onTap;
   final bool showStartTime;
+
+  /// Phase 26 (CAL-01/PD-4). Defaults to [ChunkCardDensity.detailed] — every
+  /// branch below changes CONTENT only; the Card/Stack wrapper, the coloured
+  /// left bar, the commitment tertiaryContainer treatment and the resolved
+  /// Opacity(0.5) rule are shared by all three densities and never resized.
+  final ChunkCardDensity density;
+
+  String get _titleText =>
+      '${goalEmojiTag != null ? "$goalEmojiTag " : ""}'
+      '${goalName ?? (chunk.rationale.isNotEmpty ? chunk.rationale : "Work block")}';
 
   @override
   Widget build(BuildContext context) {
@@ -251,6 +336,13 @@ class _WorkChunkContent extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(color: theme.colorScheme.outlineVariant),
           );
+
+    // Compact tier tightens vertical padding (12 -> 4) to fit a single-line
+    // title inside a small duration-sized slot (D-02: the box is never
+    // inflated to make room — only its content's padding changes).
+    final contentPadding = density == ChunkCardDensity.compact
+        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 4)
+        : const EdgeInsets.symmetric(horizontal: 12, vertical: 12);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -287,158 +379,24 @@ class _WorkChunkContent extends StatelessWidget {
                 child: Opacity(
                   opacity: contentOpacity,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '${goalEmojiTag != null ? "$goalEmojiTag " : ""}'
-                                    '${goalName ?? (chunk.rationale.isNotEmpty ? chunk.rationale : "Work block")}',
-                                    style: theme.textTheme.titleMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          decoration: isResolved
-                                              ? TextDecoration.lineThrough
-                                              : null,
-                                        ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  // SCHED-01: Clock-time range or duration
-                                  // fallback — gated on showStartTime so the
-                                  // 46dp gutter (D-06) doesn't duplicate it.
-                                  if (chunk.displayStartMinutes != null &&
-                                      showStartTime) ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      formatTimeRange(
-                                        chunk.displayStartMinutes!,
-                                        chunk.displayStartMinutes! +
-                                            chunk.durationMinutes,
-                                      ),
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: theme
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                    ),
-                                  ] else ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${chunk.durationMinutes} min',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: theme
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                    ),
-                                  ],
-                                  // Rationale below clock time when present.
-                                  if (goalName != null &&
-                                      displayRationale != null &&
-                                      displayRationale!.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      displayRationale!,
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: theme
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                    ),
-                                  ],
-                                  // Priority badge below rationale (GOALS-02).
-                                  if (goalPriorityWeight != null &&
-                                      goalPriorityWeight != 0.5) ...[
-                                    const SizedBox(height: 4),
-                                    _PriorityChip(
-                                      priorityWeight: goalPriorityWeight!,
-                                    ),
-                                  ],
-                                  // Valence chip after priority badge (ENERGY-04b).
-                                  if (goalValence != null &&
-                                      goalValence != EnergyValence.neutral) ...[
-                                    const SizedBox(height: 4),
-                                    _ValenceChip(valence: goalValence!),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            chunk.isCompleted
-                                ? Icon(
-                                    Icons.check_circle,
-                                    color: theme.colorScheme.primary,
-                                  )
-                                : chunk.isSkipped
-                                ? Text(
-                                    'skipped',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  )
-                                : Icon(
-                                    Icons.radio_button_unchecked,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                          ],
-                        ),
-                        // SCHED-03: Always-visible action row for unresolved chunks.
-                        // Resolved chunks show status icon only (no buttons).
-                        if (!isResolved) ...[
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Tooltip(
-                                message: 'Complete',
-                                child: FilledButton.icon(
-                                  icon: const Icon(Icons.check_circle_outline),
-                                  label: const Text('Complete'),
-                                  onPressed: () => context
-                                      .read<ScheduleNotifier>()
-                                      .markComplete(chunk.id),
-                                  style: FilledButton.styleFrom(
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Tooltip(
-                                message: 'Skip',
-                                child: OutlinedButton.icon(
-                                  icon: const Icon(Icons.skip_next_outlined),
-                                  label: const Text('Skip'),
-                                  onPressed: () => context
-                                      .read<ScheduleNotifier>()
-                                      .markSkipped(chunk.id),
-                                  style: OutlinedButton.styleFrom(
-                                    visualDensity: VisualDensity.compact,
-                                    foregroundColor: theme.colorScheme.error,
-                                    side: BorderSide(
-                                      color: theme.colorScheme.error,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
+                    padding: contentPadding,
+                    child: switch (density) {
+                      ChunkCardDensity.compact => _buildCompactContent(
+                        context,
+                        theme,
+                        isResolved,
+                      ),
+                      ChunkCardDensity.full => _buildFullContent(
+                        context,
+                        theme,
+                        isResolved,
+                      ),
+                      ChunkCardDensity.detailed => _buildDetailedContent(
+                        context,
+                        theme,
+                        isResolved,
+                      ),
+                    },
                   ),
                 ),
               ),
@@ -446,6 +404,249 @@ class _WorkChunkContent extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  /// Today's unchanged content: title, clock-time-or-duration, rationale,
+  /// priority chip, valence chip, trailing status/action row.
+  Widget _buildDetailedContent(
+    BuildContext context,
+    ThemeData theme,
+    bool isResolved,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _titleText,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      decoration: isResolved
+                          ? TextDecoration.lineThrough
+                          : null,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  // SCHED-01: Clock-time range or duration
+                  // fallback — gated on showStartTime so the
+                  // 46dp gutter (D-06) doesn't duplicate it.
+                  if (chunk.displayStartMinutes != null &&
+                      showStartTime) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      formatTimeRange(
+                        chunk.displayStartMinutes!,
+                        chunk.displayStartMinutes! + chunk.durationMinutes,
+                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '${chunk.durationMinutes} min',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  // Rationale below clock time when present.
+                  if (goalName != null &&
+                      displayRationale != null &&
+                      displayRationale!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      displayRationale!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  // Priority badge below rationale (GOALS-02).
+                  if (goalPriorityWeight != null &&
+                      goalPriorityWeight != 0.5) ...[
+                    const SizedBox(height: 4),
+                    _PriorityChip(priorityWeight: goalPriorityWeight!),
+                  ],
+                  // Valence chip after priority badge (ENERGY-04b).
+                  if (goalValence != null &&
+                      goalValence != EnergyValence.neutral) ...[
+                    const SizedBox(height: 4),
+                    _ValenceChip(valence: goalValence!),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            _buildTrailingStatus(theme),
+          ],
+        ),
+        // SCHED-03: Always-visible action row for unresolved chunks.
+        // Resolved chunks show status icon only (no buttons).
+        if (!isResolved) ...[
+          const SizedBox(height: 12),
+          _buildActionRow(context, theme),
+        ],
+      ],
+    );
+  }
+
+  /// UI-SPEC "Full" tier (26-02-PLAN.md PD-4): title + clock-time range +
+  /// action row (or status icon). Rationale, priority chip and valence chip
+  /// are suppressed — all three remain reachable via ChunkDetailSheet.
+  Widget _buildFullContent(
+    BuildContext context,
+    ThemeData theme,
+    bool isResolved,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _titleText,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      decoration: isResolved
+                          ? TextDecoration.lineThrough
+                          : null,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (chunk.displayStartMinutes != null &&
+                      showStartTime) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      formatTimeRange(
+                        chunk.displayStartMinutes!,
+                        chunk.displayStartMinutes! + chunk.durationMinutes,
+                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '${chunk.durationMinutes} min',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            _buildTrailingStatus(theme),
+          ],
+        ),
+        if (!isResolved) ...[
+          const SizedBox(height: 12),
+          _buildActionRow(context, theme),
+        ],
+      ],
+    );
+  }
+
+  /// UI-SPEC "Compact" tier: title only. No time text, no rationale, no
+  /// chips, no action row — Complete/Skip live in ChunkDetailSheet, reached
+  /// via the row's own tap ([onTap] is still wired by the caller). The
+  /// trailing status indicator stays ONLY for a resolved chunk (T-26-02):
+  /// dropping it for an unresolved chunk removes an empty icon slot; keeping
+  /// it for a resolved one avoids a completed chunk reading as unresolved.
+  Widget _buildCompactContent(
+    BuildContext context,
+    ThemeData theme,
+    bool isResolved,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Text(
+            _titleText,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              decoration: isResolved ? TextDecoration.lineThrough : null,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ),
+        if (isResolved) ...[const SizedBox(width: 8), _buildTrailingStatus(theme)],
+      ],
+    );
+  }
+
+  /// Shared trailing status: completed check icon, skipped label, or (for
+  /// unresolved chunks) the unchecked radio icon. Unchanged across densities
+  /// except that compact only calls this for a resolved chunk.
+  Widget _buildTrailingStatus(ThemeData theme) {
+    return chunk.isCompleted
+        ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
+        : chunk.isSkipped
+        ? Text(
+            'skipped',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        : Icon(
+            Icons.radio_button_unchecked,
+            color: theme.colorScheme.onSurfaceVariant,
+          );
+  }
+
+  /// Shared Complete/Skip action row (SCHED-03), unchanged across densities.
+  Widget _buildActionRow(BuildContext context, ThemeData theme) {
+    return Row(
+      children: [
+        Tooltip(
+          message: 'Complete',
+          child: FilledButton.icon(
+            icon: const Icon(Icons.check_circle_outline),
+            label: const Text('Complete'),
+            onPressed: () =>
+                context.read<ScheduleNotifier>().markComplete(chunk.id),
+            style: FilledButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Tooltip(
+          message: 'Skip',
+          child: OutlinedButton.icon(
+            icon: const Icon(Icons.skip_next_outlined),
+            label: const Text('Skip'),
+            onPressed: () =>
+                context.read<ScheduleNotifier>().markSkipped(chunk.id),
+            style: OutlinedButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              foregroundColor: theme.colorScheme.error,
+              side: BorderSide(color: theme.colorScheme.error),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
