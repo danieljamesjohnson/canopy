@@ -1,5 +1,5 @@
 ---
-status: testing
+status: complete
 phase: 24-where-am-i
 source: [24-VERIFICATION.md]
 started: 2026-08-08T23:35:00Z
@@ -12,13 +12,7 @@ harness: Phase 25 time travel — Settings > Debug > Jump to 9pm today
 
 ## Current Test
 
-number: 2
-name: PreStart / GapBeforeNext — same fallback, spot check
-expected: |
-  Jump the clock to before the day's first chunk (PreStart) or into a gap
-  between chunks (GapBeforeNext); the "Now" row is visible on open without a
-  manual scroll in both.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -33,21 +27,27 @@ why_human: This is the literal re-test of the defect Dan reported in 24-03 — *
 ### 2. PreStart / GapBeforeNext — same fallback, spot check
 
 expected: Before the day's first chunk, or during a gap between chunks, the marker is likewise visible on open with no manual scroll.
+result: pass
+verified: 2026-08-10 by Dan, via time travel
+caveat: WEAK EVIDENCE, recorded as such. In PreStart the marker is the second row, so it is on screen whether or not the auto-scroll fires — this test cannot distinguish a working fallback from a no-op. It is corroborating, not load-bearing.
 why_human: 24-04 applied the identical fallback to all three no-live-row states, but only `DayComplete` was explicitly regression-tested and only `DayComplete` was reported broken. Lower priority — worth a glance, not a blocker.
 result: [pending]
 
 ### 3. Active — no regression to the mid-day case Dan already approved
 
 expected: During a live activity, the live card still centres on open and there is NO "Now" rule duplicating it.
+result: pass
+verified: 2026-08-10 by Dan, via time travel
+note: Confirms no regression to the mid-day case Dan approved on 2026-08-08, which matters because 24-04 added a second scroll path underneath it after that approval.
 why_human: Dan approved this case in 24-03, before 24-04 added a second scroll path. The two one-shot flags are deliberately independent so a PreStart-open cannot suppress a later Active centring, and there is a regression test for exactly that — but the approved case is worth re-confirming since the scroll behaviour changed underneath it.
 result: [pending]
 
 ## Summary
 
 total: 3
-passed: 1
+passed: 3
 issues: 0
-pending: 2
+pending: 0
 skipped: 0
 blocked: 0
 

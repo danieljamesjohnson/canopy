@@ -1,7 +1,7 @@
 ---
 phase: 24-where-am-i
 verified: 2026-08-08T23:30:00Z
-status: human_needed
+status: passed
 score: 6/7 must-haves verified (1 perceptual truth partially confirmed — see below)
 overrides_applied: 0
 human_verification:
@@ -144,3 +144,27 @@ would mean the test's fixture doesn't match some aspect of his real data/viewpor
 
 _Verified: 2026-08-08T23:30:00Z_
 _Verifier: Claude (gsd-verifier)_
+
+
+---
+
+## UAT closed — status human_needed → passed (2026-08-10)
+
+All three human_verification items were executed by Dan in a real browser and passed. See
+`24-UAT.md` for per-test results.
+
+The blocking item — `DayComplete` opening with the now-marker on screen without a manual scroll —
+is confirmed. That closes the loop on his 24-03 report (*"now were 'done' and it's hard to tell"*)
+against the fix shipped in 24-04, in the only instrument that could settle it.
+
+Reaching the state required building the Phase 25 time-travel harness first, since `DayComplete`
+only exists after the day's last chunk ends and the running app had no clock seam the router used.
+Two client-side false alarms (a heuristically-cached bundle, and a likely service worker on the
+`:8123` origin) delayed that by two round trips; both are now diagnosable in one glance via the
+`BUILD_ID` shown in Settings → Debug.
+
+**Honest weighting of the evidence:** test 1 is load-bearing. Test 3 (no regression to the
+already-approved Active case) is meaningful because 24-04 changed the scroll behaviour underneath
+it. Test 2 (PreStart) is corroborating only — the marker is the second row there, so it is visible
+whether or not the auto-scroll fires, and it cannot distinguish a working fallback from a no-op.
+Phase 24's goal does not rest on it.
