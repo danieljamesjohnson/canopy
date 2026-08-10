@@ -8,6 +8,7 @@
 // Task 3 (added later in this file): centre-on-open + edge-state copy.
 
 import 'package:canopy/data/models/daily_schedule.dart';
+import 'package:canopy/dev/dev_clock.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/providers/goals_notifier.dart';
 import 'package:canopy/providers/restoratives_notifier.dart';
@@ -830,6 +831,70 @@ void main() {
         expect(scrollable.position.pixels, scrollable.position.maxScrollExtent);
       },
     );
+
+    testWidgets('a debug clock jump re-arms centre-on-open within the same day '
+        '(Phase 25 DEV-01 integration)', (tester) async {
+      // The one-shots reset only on a dateYmd change. Time-travelling from
+      // morning to 9pm on the SAME day leaves dateYmd untouched, so without
+      // the DevClock.offset check in build() the list would stay wherever
+      // the user left it — making "jump to 9pm and check DayComplete", the
+      // exact workflow the Phase 25 harness exists to enable, report a
+      // false negative against a fix that works.
+      DevClock.resetForTest();
+      addTearDown(DevClock.resetForTest);
+
+      final schedule = DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: longDayFixture(),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+        now: () => DateTime(2026, 8, 7, 18, 0),
+      );
+      await tester.pumpAndSettle();
+
+      final scrollable = tester.state<ScrollableState>(
+        find.byType(Scrollable).first,
+      );
+      expect(scrollable.position.pixels, scrollable.position.maxScrollExtent);
+
+      // Drag the list away from the marker, as a user reading their
+      // morning would. The one-shot has already fired, so nothing should
+      // pull it back...
+      scrollable.position.jumpTo(0);
+      await tester.pump();
+      expect(scrollable.position.pixels, 0);
+      await tester.pump(const Duration(minutes: 1));
+      await tester.pumpAndSettle();
+      expect(
+        scrollable.position.pixels,
+        0,
+        reason:
+            'a plain minute tick must NOT drag the list back — that is the '
+            'T-22-08 behaviour the one-shot exists to protect',
+      );
+
+      // ...until the debug clock moves, which re-arms it. The re-arm check
+      // lives in build(), so it needs a rebuild to run — in the app that
+      // comes from ScheduleNotifier.reloadToday() (Settings calls it after
+      // every DevClock mutation) and from the 1-minute ticker. Here the
+      // ticker supplies it, which also sharpens the contrast: the identical
+      // minute tick that must NOT move the list above MUST move it once the
+      // clock has jumped.
+      DevClock.setOffsetForTest(const Duration(hours: 3));
+      await tester.pump(const Duration(minutes: 1));
+      await tester.pumpAndSettle();
+
+      expect(
+        scrollable.position.pixels,
+        scrollable.position.maxScrollExtent,
+        reason:
+            'a DevClock jump must re-centre on the marker, otherwise the '
+            'time-travel UAT shows a stale scroll position',
+      );
+    });
 
     testWidgets(
       'opening in PreStart then transitioning to Active still centres the '

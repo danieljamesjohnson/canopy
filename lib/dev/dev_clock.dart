@@ -100,4 +100,13 @@ class DevClock {
   static void resetForTest() {
     _offset = Duration.zero;
   }
+
+  /// Test-only synchronous offset setter. [setSimulatedNow] and [shift] are
+  /// async (they persist) and gated on [kDebugMode]; widget tests need to
+  /// move the clock mid-pump without awaiting a SharedPreferences write, so
+  /// this sets the in-memory offset directly and nothing else.
+  @visibleForTesting
+  static void setOffsetForTest(Duration offset) {
+    _offset = offset;
+  }
 }

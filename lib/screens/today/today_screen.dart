@@ -144,6 +144,11 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   bool _didCentreLiveRow = false;
   bool _didCentreMarker = false;
 
+  /// Last-seen [DevClock.offset], so a debug time jump can re-arm the two
+  /// one-shots above (see build()). Always [Duration.zero] in release
+  /// builds, where it therefore never triggers anything.
+  Duration _lastDevClockOffset = DevClock.offset;
+
   @override
   void initState() {
     super.initState();
@@ -1063,6 +1068,26 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       nowState: nowState,
       nowMinutes: nowMinutes,
     );
+
+    // A debug clock jump re-arms centre-on-open (Phase 25, DEV-01).
+    //
+    // The one-shots below otherwise reset ONLY when the schedule's dateYmd
+    // changes (didChangeDependencies). Time-travelling from morning to 9pm
+    // on the SAME day leaves dateYmd untouched, so without this the list
+    // would stay wherever it was and the marker would never be scrolled to
+    // — which would make the exact UAT this harness exists to enable
+    // ("jump to 9pm, check DayComplete") report a false negative against a
+    // fix that works.
+    //
+    // Release-safe and behaviour-preserving: DevClock.offset is always
+    // Duration.zero in release (DEV-03), so this can never fire there.
+    // Reading `offset` is a Duration field access, not a clock read, so
+    // D-01's single-sample rule is untouched.
+    if (DevClock.offset != _lastDevClockOffset) {
+      _lastDevClockOffset = DevClock.offset;
+      _didCentreLiveRow = false;
+      _didCentreMarker = false;
+    }
 
     // Centre-on-open (D-02): schedule the scroll exactly once. The flag is
     // set synchronously here — before the post-frame callback even runs —
