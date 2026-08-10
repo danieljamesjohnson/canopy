@@ -447,6 +447,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
 
+          // Dev-only: which build is actually loaded. This exists because a
+          // stale service worker or browser cache can serve an OLD bundle
+          // while the server has the new one — the app then looks like a
+          // feature was never shipped, and `curl`ing the bundle (which
+          // bypasses both) says the opposite. A visible build id makes that
+          // diagnosable in one glance instead of a round trip. Populated by
+          // `--dart-define=BUILD_ID=...` at build time; reads "unknown" for a
+          // build that did not pass one.
+          if (kDebugMode)
+            ListTile(
+              leading: const Icon(Icons.fingerprint),
+              title: const Text('Build'),
+              subtitle: const Text(
+                String.fromEnvironment('BUILD_ID', defaultValue: 'unknown'),
+              ),
+            ),
+
           // Dev-only: Phase 25 (Time Travel) clock override. Stripped in
           // release — every control below routes through DevClock, whose
           // mutators are themselves kDebugMode-gated (DEV-03 belt-and-braces).
