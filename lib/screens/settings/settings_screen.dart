@@ -2,8 +2,10 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/repositories/hive_completion_log_repository.dart';
+import '../../dev/dev_clock.dart';
 import '../../dev/dev_data_loader.dart';
 import '../../providers/commitments_notifier.dart';
 import '../../providers/goals_notifier.dart';
@@ -136,6 +138,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
       '${result.boxesCleared} boxes. Starting fresh.',
     );
     context.go('/onboarding');
+  }
+
+  // ── Phase 25 (Time Travel) — debug clock override ──────────────────────
+  //
+  // After any DevClock mutation, ScheduleNotifier.reloadToday() re-fetches
+  // today's schedule against the (possibly now-different) "today" key, and
+  // setState() forces this screen's own status tile to repaint immediately.
+  // Everywhere else in the app, the existing 1-minute ticker plus setState
+  // does the rest (Today screen's `_startNowTimer`) — no new polling is
+  // introduced here.
+  Future<void> _afterDevClockChange(BuildContext context) async {
+    final schedule = context.read<ScheduleNotifier>();
+    await schedule.reloadToday();
+    if (!context.mounted) return;
+    setState(() {});
+  }
+
+  Future<void> _handleDevClockShift(
+    BuildContext context,
+    Duration delta,
+  ) async {
+    await DevClock.shift(delta);
+    if (!context.mounted) return;
+    await _afterDevClockChange(context);
+  }
+
+  Future<void> _handleDevClockJumpTo9pm(BuildContext context) async {
+    final now = DevClock.now();
+    final target = DateTime(now.year, now.month, now.day, 21);
+    await DevClock.setSimulatedNow(target);
+    if (!context.mounted) return;
+    await _afterDevClockChange(context);
+  }
+
+  Future<void> _handleDevClockReset(BuildContext context) async {
+    await DevClock.clear();
+    if (!context.mounted) return;
+    await _afterDevClockChange(context);
+  }
+
+  Future<void> _handleDevClockSetAbsolute(BuildContext context) async {
+    final current = DevClock.now();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: current,
+      firstDate: DateTime(current.year - 5),
+      lastDate: DateTime(current.year + 5),
+    );
+    if (pickedDate == null || !context.mounted) return;
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(current),
+    );
+    if (pickedTime == null || !context.mounted) return;
+    final target = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+    await DevClock.setSimulatedNow(target);
+    if (!context.mounted) return;
+    await _afterDevClockChange(context);
   }
 
   Future<void> _handleExport(BuildContext context) async {
@@ -380,6 +446,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ],
+
+          // Dev-only: Phase 25 (Time Travel) clock override. Stripped in
+          // release — every control below routes through DevClock, whose
+          // mutators are themselves kDebugMode-gated (DEV-03 belt-and-braces).
+          if (kDebugMode)
+            ListTile(
+              leading: Icon(
+                Icons.schedule_outlined,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: const Text('Time travel'),
+              subtitle: Text(
+                DevClock.isActive
+                    ? 'Simulated: '
+                          '${DateFormat('EEE d MMM, h:mm a').format(DevClock.now())}'
+                    : 'Off — showing real time',
+              ),
+            ),
+          if (kDebugMode)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => _handleDevClockShift(
+                      context,
+                      const Duration(hours: -1),
+                    ),
+                    child: const Text('-1h'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () =>
+                        _handleDevClockShift(context, const Duration(hours: 1)),
+                    child: const Text('+1h'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => _handleDevClockJumpTo9pm(context),
+                    child: const Text('Jump to 9pm today'),
+                  ),
+                  OutlinedButton(
+                    onPressed: DevClock.isActive
+                        ? () => _handleDevClockReset(context)
+                        : null,
+                    child: const Text('Reset to real time'),
+                  ),
+                ],
+              ),
+            ),
+          if (kDebugMode)
+            ListTile(
+              leading: const Icon(Icons.edit_calendar_outlined),
+              title: const Text('Set a specific time'),
+              subtitle: const Text('Pick an exact simulated date & time'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _handleDevClockSetAbsolute(context),
+            ),
 
           // Dev-only: open quarterly review directly (UAT shortcut). Stripped in release.
           if (kDebugMode)
