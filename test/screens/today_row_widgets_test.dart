@@ -195,11 +195,14 @@ void main() {
   });
 
   group('NowLineOverlay (CAL-02, UI-SPEC locked)', () {
-    testWidgets('renders the locked chip copy "Now · 2:47 PM"', (
+    // G-01 (26-UAT.md, fixed 26-07-PLAN.md): the chip's copy is
+    // formatMinutesCompact, not the longer "Now · <time>" string that
+    // could not fit kGutterWidth and shipped the occlusion bug.
+    testWidgets('renders the locked compact chip copy "2:47p"', (
       tester,
     ) async {
       await pumpWithMood(tester, const NowLineOverlay(nowMinutes: 887));
-      expect(find.text('Now · 2:47 PM'), findsOneWidget);
+      expect(find.text('2:47p'), findsOneWidget);
     });
 
     testWidgets('a 2dp-tall Container renders, colored colorScheme.primary '

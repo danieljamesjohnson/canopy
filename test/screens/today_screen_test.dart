@@ -912,12 +912,14 @@ void main() {
         },
       );
 
-      testWidgets('chip copy — renders exactly "Now · 9:12 AM"', (
-        tester,
-      ) async {
+      // G-01 (26-UAT.md, fixed 26-07-PLAN.md): the chip's copy is
+      // formatMinutesCompact, not the longer "Now · <time>" string that
+      // could not fit kGutterWidth and shipped the occlusion bug. The full
+      // time survives in the screen-reader semantics label, asserted below.
+      testWidgets('chip copy — renders exactly "9:12"', (tester) async {
         await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
 
-        expect(find.text('Now · 9:12 AM'), findsOneWidget);
+        expect(find.text('9:12'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
