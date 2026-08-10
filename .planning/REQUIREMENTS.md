@@ -33,9 +33,9 @@
 
 ### Dev Instrumentation (added 2026-08-10 from Phase 24 UAT)
 
-- [ ] **DEV-01**: A debug-only clock override puts the whole app into a simulated moment — timeline, schedule "today" key, and end-of-day card all agree on it.
-- [ ] **DEV-02**: The override is an OFFSET, not a frozen instant, so time keeps flowing and a moving marker can be observed. It survives a page reload and is always visibly indicated while active.
-- [ ] **DEV-03**: Release builds are unaffected — the override cannot be set and the clock is exactly `DateTime.now()`.
+- [x] **DEV-01**: A debug-only clock override puts the whole app into a simulated moment — timeline, schedule "today" key, and end-of-day card all agree on it.
+- [x] **DEV-02**: The override is an OFFSET, not a frozen instant, so time keeps flowing and a moving marker can be observed. It survives a page reload and is always visibly indicated while active.
+- [x] **DEV-03**: Release builds are unaffected — the override cannot be set and the clock is exactly `DateTime.now()`.
 
 ### Time-Proportional Day (added 2026-08-08 from Phase 24 UAT)
 
@@ -85,9 +85,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | BREAK-01 | Phase 21 | Complete |
 | BREAK-02 | Phase 21 | Complete |
 | TONE-01 | Phase 21 | Complete |
-| DEV-01 | Phase 25 | Not started |
-| DEV-02 | Phase 25 | Not started |
-| DEV-03 | Phase 25 | Not started |
+| DEV-01 | Phase 25 | Complete |
+| DEV-02 | Phase 25 | Complete |
+| DEV-03 | Phase 25 | Complete |
 | CAL-01 | Phase 26 | Not started |
 | CAL-02 | Phase 26 | Not started |
 | CAL-03 | Phase 26 | Not started |

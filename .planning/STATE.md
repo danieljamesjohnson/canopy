@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: completed
-stopped_at: Completed 24-04-PLAN.md
-last_updated: "2026-08-08T23:01:12.062Z"
-last_activity: 2026-08-08 -- Phase 24 plan 3 closed with a gap (24-04 pending)
+stopped_at: Completed 25-01 (Time Travel)
+last_updated: "2026-08-10T13:10:20.349Z"
+last_activity: 2026-08-10 -- Phase 25 (Time Travel) executed directly from a scoped prompt; DEV-01/02/03 delivered
 progress:
-  total_phases: 4
-  completed_phases: 3
-  total_plans: 18
-  completed_plans: 17
-  percent: 75
+  total_phases: 6
+  completed_phases: 4
+  total_plans: 19
+  completed_plans: 19
+  percent: 67
 ---
 
 # Execution State
@@ -24,13 +24,13 @@ progress:
 
 ## Current Position
 
-Phase: 24 (where-am-i) — EXECUTING
-Plan: 3 of 3 closed (24-03 partial pass)
-Status: Gap found — DayComplete now-marker not scrolled into view. Routed to gap-closure plan 24-04 (not yet created). Phase NOT complete; two forward ideas (auto-scroll past items, calendar red-line view) routed to a future phase.
-Last activity: 2026-08-08 -- Phase 24 plan 3 closed with a gap (24-04 pending)
+Phase: 25 (time-travel) — COMPLETE
+Plan: 1 of 1 (25-01; no PLAN.md — executed directly from a scoped prompt, see `.planning/phases/25-time-travel/25-01-SUMMARY.md`)
+Status: Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned.
+Last activity: 2026-08-10 -- Phase 25 (Time Travel) executed directly from a scoped prompt; DEV-01/02/03 delivered
 
 ```
-Progress: [░░░░░░░░░░] 0% — Phase 21/23
+Progress: [██████░░░░] 67% — Phase 25/26 (v1.5 phases: 21-26)
 ```
 
 ## Project Reference
@@ -38,7 +38,7 @@ Progress: [░░░░░░░░░░] 0% — Phase 21/23
 See: `.planning/PROJECT.md` (updated 2026-08-04)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Phase 24 — where-am-i
+**Current focus:** Phase 26 — The Day Has a Shape (not yet planned)
 
 ## v1.5 Phase Summary
 
@@ -47,6 +47,7 @@ See: `.planning/PROJECT.md` (updated 2026-08-04)
 | 21 — Mood-Scaled Breaks & Honest Rationale | Break cadence scales with mood; time-target rationale drops "behind" framing | BREAK-01/02, TONE-01 | Not started |
 | 22 — Unified Today Screen | Home and Schedule merge into one destination; every entry point still resolves | UNIFY-01/02 | Not started |
 | 23 — Live Activity Tracking | The unified screen always names the current activity, including breaks, with a live countdown | LIVE-01/02/03 | Not started |
+| 25 — Time Travel | Debug-only clock override lets time-gated states be inspected on demand | DEV-01/02/03 | Complete |
 
 ## Accumulated Context
 
@@ -90,6 +91,9 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 24-where-am-i]: 24-03 UAT verdict: PARTIAL PASS -- mid-day/between-activities now-marker confirmed by Dan; DayComplete state fails to scroll marker into view (root cause: today_screen.dart:971-972 gates centre-on-open behind hasLiveRow, never true for DayComplete/PreStart/GapBeforeNext); fix routed to gap-closure plan 24-04, not re-opened here
 - [Phase 24-where-am-i]: Dan routed two forward ideas (auto-scroll past items, time-proportional calendar view with a moving red now-line) to a new future phase, explicitly out of phase 24 scope
 - [Phase 24]: 24-04: separate _didCentreMarker flag (not reused _didCentreLiveRow) fallback-centres the now-marker for PreStart/GapBeforeNext/DayComplete, closing Dan's DayComplete UAT gap; verified via a dedicated two-flag regression test
+- [Phase 25-time-travel]: DevClock holds a Duration OFFSET, never a frozen instant — the defining design constraint (DEV-02), so the existing 1-minute ticker keeps advancing under simulated time and Phase 26's moving now-line stays testable
+- [Phase 25-time-travel]: Added ScheduleNotifier.reloadToday() (new method, extracted from init()'s load step) rather than calling init() again after a DevClock mutation — init() also registers a WidgetsBindingObserver, and calling it repeatedly would stack duplicate observers
+- [Phase 25-time-travel]: This phase had no PLAN.md — the /gsd-execute-phase prompt itself was the plan (design pre-decided, "do not relitigate" per the prompt). SUMMARY.md written to `.planning/phases/25-time-travel/25-01-SUMMARY.md` per the same numbering convention as planned phases
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -172,9 +176,9 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 
 ## Session Continuity
 
-Last session: 2026-08-04
-Stopped at: Completed 24-04-PLAN.md
-Resume at: `/gsd-plan-phase 21`
+Last session: 2026-08-10
+Stopped at: Completed 25-01 (Time Travel)
+Resume at: `/gsd-plan-phase 26`
 
 ## Performance Metrics
 
@@ -211,3 +215,4 @@ Resume at: `/gsd-plan-phase 21`
 | Phase 24-where-am-i P02 | 12min | 3 tasks | 3 files |
 | Phase 24-where-am-i P03 | ~15min | 2 tasks | 1 files |
 | Phase 24 P04 | 35min | 2 tasks | 2 files |
+| Phase 25-time-travel P01 | ~45min | 6 tasks | 8 files |

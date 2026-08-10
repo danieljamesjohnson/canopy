@@ -240,7 +240,7 @@ Plans:
 
 **UI hint**: yes (debug-only surface)
 
-**Plans**: not yet planned
+**Plans**: 1/1 complete — `25-01` (no PLAN.md; executed directly from a scoped prompt, see `.planning/phases/25-time-travel/25-01-SUMMARY.md`)
 
 ---
 
@@ -285,5 +285,5 @@ Plans:
 | 22. Unified Today Screen | v1.5 | 4/4 | Complete   | 2026-08-07 |
 | 23. Live Activity Tracking | v1.5 | 7/8 | In Progress|  |
 | 24. Where Am I | v1.5 | 4/4 | Complete   | 2026-08-08 |
-| 25. Time Travel | v1.5 | 0/? | Not started |  |
+| 25. Time Travel | v1.5 | 1/1 | Complete   | 2026-08-10 |
 | 26. The Day Has a Shape | v1.5 | 0/? | Not started |  |
