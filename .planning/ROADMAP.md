@@ -292,7 +292,7 @@ must compile and the suite must be green, which is the phase's dominant risk)
 Plans:
 **Wave 1**
 
-- [ ] 26-01-PLAN.md — Foundations, additive only: hour-range helpers in `time_format.dart`, the pure `TimelineGeometry` minute→pixel authority and its six constants, and the `NowLineOverlay` / `HourAxisLine` widgets (CAL-01/02/03)
+- [x] 26-01-PLAN.md — Foundations, additive only: hour-range helpers in `time_format.dart`, the pure `TimelineGeometry` minute→pixel authority and its six constants, and the `NowLineOverlay` / `HourAxisLine` widgets (CAL-01/02/03)
 
 **Wave 2** *(blocked on Wave 1)*
 
@@ -332,4 +332,4 @@ Plans:
 | 23. Live Activity Tracking | v1.5 | 8/8 | Complete   | 2026-08-08 |
 | 24. Where Am I | v1.5 | 4/4 | Complete    | 2026-08-10 |
 | 25. Time Travel | v1.5 | 1/1 | Complete    | 2026-08-10 |
-| 26. The Day Has a Shape | v1.5 | 0/6 | Planned |  |
+| 26. The Day Has a Shape | v1.5 | 1/6 | In Progress|  |

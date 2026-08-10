@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: "Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned."
-stopped_at: Phase 26 UI-SPEC approved
-last_updated: "2026-08-10T13:59:16.891Z"
+stopped_at: Completed 26-01-PLAN.md
+last_updated: "2026-08-10T14:58:22.157Z"
 last_activity: 2026-08-10
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 18
-  completed_plans: 18
+  total_plans: 24
+  completed_plans: 19
   percent: 50
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-10T13:59:16.886Z
+**Last session:** 2026-08-10T14:58:22.153Z
 
 ---
 
 ## Current Position
 
 Phase: 26
-Plan: Not started
+Plan: 2 of 6
 Status: Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned.
 Last activity: 2026-08-10
 
@@ -94,6 +94,9 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 25-time-travel]: DevClock holds a Duration OFFSET, never a frozen instant — the defining design constraint (DEV-02), so the existing 1-minute ticker keeps advancing under simulated time and Phase 26's moving now-line stays testable
 - [Phase 25-time-travel]: Added ScheduleNotifier.reloadToday() (new method, extracted from init()'s load step) rather than calling init() again after a DevClock mutation — init() also registers a WidgetsBindingObserver, and calling it repeatedly would stack duplicate observers
 - [Phase 25-time-travel]: This phase had no PLAN.md — the /gsd-execute-phase prompt itself was the plan (design pre-decided, "do not relitigate" per the prompt). SUMMARY.md written to `.planning/phases/25-time-travel/25-01-SUMMARY.md` per the same numbering convention as planned phases
+- [Phase 26-01]: kPixelsPerMinute corrected to 5.5 (PD-1), superseding UI-SPEC's 4.0 -- measured 126px Full-tier ChunkCard overflows a 4.0-scale 25min slot by 26px
+- [Phase 26-01]: kLiveRowReservedHeight=240.0 as a fixed estimate (PD-2), not a two-pass GlobalKey/RenderBox measurement -- measured LiveRowCard height is 230px
+- [Phase 26-01]: Density tiers (kFullTierMinHeight/kFullBreakMinHeight, PD-3) expressed in pixels not minutes, so they do not rot if the scale changes again
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -177,7 +180,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-10
-Stopped at: Phase 26 UI-SPEC approved
+Stopped at: Completed 26-01-PLAN.md
 Resume at: `/gsd-plan-phase 26`
 
 ## Performance Metrics
@@ -216,3 +219,4 @@ Resume at: `/gsd-plan-phase 26`
 | Phase 24-where-am-i P03 | ~15min | 2 tasks | 1 files |
 | Phase 24 P04 | 35min | 2 tasks | 2 files |
 | Phase 25-time-travel P01 | ~45min | 6 tasks | 8 files |
+| Phase 26-the-day-has-a-shape P01 | 41min | 3 tasks | 8 files |

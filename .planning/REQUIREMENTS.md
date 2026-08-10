@@ -39,9 +39,9 @@
 
 ### Time-Proportional Day (added 2026-08-08 from Phase 24 UAT)
 
-- [ ] **CAL-01**: The day reads as a time-proportional surface — a row's height corresponds to its duration — so the shape of the day (a long stretch of work, a thin gap) is legible without reading any times.
-- [ ] **CAL-02**: A continuously-positioned now-line sits at the true current moment, including *inside* an activity's span rather than only at chunk boundaries. This supersedes Phase 24's `Active`-state marker suppression, which exists only because a boundary-positioned marker would be mildly false mid-chunk.
-- [ ] **CAL-03**: Elapsed time recedes: the past does not compete for the viewport with what is upcoming, and reaching it is a deliberate scroll rather than the default view.
+- [x] **CAL-01**: The day reads as a time-proportional surface — a row's height corresponds to its duration — so the shape of the day (a long stretch of work, a thin gap) is legible without reading any times.
+- [x] **CAL-02**: A continuously-positioned now-line sits at the true current moment, including *inside* an activity's span rather than only at chunk boundaries. This supersedes Phase 24's `Active`-state marker suppression, which exists only because a boundary-positioned marker would be mildly false mid-chunk.
+- [x] **CAL-03**: Elapsed time recedes: the past does not compete for the viewport with what is upcoming, and reaching it is a deliberate scroll rather than the default view.
 
 ## Implementation Notes
 
