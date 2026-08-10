@@ -5,10 +5,14 @@
 // old Schedule plan-view screen.
 // Task 2 (added later in this file): the day as a single scrollable list,
 // live row placement, named free time.
-// Task 3 (added later in this file): centre-on-open + edge-state copy.
+// Task 3 (added later in this file): scroll-on-open + edge-state copy.
+// Phase 26 (26-05-PLAN.md) added a nested 'CAL-03 elapsed time recedes'
+// group inside Task 3, replacing Phase 24's two-flag centre-on-open tests
+// with assertions against the new one-flag arithmetic animateTo path.
 
 import 'package:canopy/data/models/daily_schedule.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
+import 'package:canopy/dev/dev_clock.dart';
 import 'package:canopy/providers/goals_notifier.dart';
 import 'package:canopy/providers/restoratives_notifier.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
@@ -1046,7 +1050,7 @@ void main() {
     });
   });
 
-  group('Task 3 — centre the live row on open + edge-state copy', () {
+  group('Task 3 — scroll-on-open + edge-state copy', () {
     /// A long day: 10 work chunks 40 minutes apart (8:00 through 13:20),
     /// the first 7 completed, chunk index 7 unresolved (the live one under
     /// a frozen clock 5 minutes into its window), and 2 more unresolved
@@ -1063,31 +1067,181 @@ void main() {
         ),
     ];
 
-    testWidgets('centres the live row on open (offset moves off zero)', (
-      tester,
-    ) async {
-      final schedule = DailySchedule(
-        dateYmd: _todayYmd(),
-        moodIndex: 3,
-        chunks: longDayFixture(),
+    group('Phase 26 — CAL-03 elapsed time recedes', () {
+      // Restore any DevClock offset a test in this group sets, so it can
+      // never leak into a neighbouring test (the field is a static, shared
+      // across every test in the file).
+      tearDown(DevClock.resetForTest);
+
+      testWidgets(
+        'centres on open in every NowState, including DayComplete '
+        '(closes the Phase 24 UAT gap by construction)',
+        (tester) async {
+          // Table-driven (mirrors the CAL-01/CAL-02 groups' own
+          // convention) so a future added NowState is obviously missing
+          // from this list. Every clock below is reached on the SAME
+          // longDayFixture() — no per-row resolution changes needed,
+          // since resolveNowState's classification is clock-driven alone
+          // for this fixture's fully-fixed completion pattern.
+          //
+          // expectPositive is false ONLY for PreStart: nowMinutes ==
+          // rangeStart by construction there (the rendered range starts
+          // AT "now" when now precedes the first chunk), so the clamped
+          // target is exactly 0 — there is nothing before "now" to
+          // scroll past yet, which is the correct, not a degenerate,
+          // outcome.
+          final table = <String, (DateTime, bool expectPositive)>{
+            'PreStart': (DateTime(2026, 8, 7, 7, 0), false),
+            'Active': (DateTime(2026, 8, 7, 12, 45), true),
+            'Overdue': (DateTime(2026, 8, 7, 13, 10), true),
+            'GapBeforeNext': (DateTime(2026, 8, 7, 12, 30), true),
+            // The exact state Dan's Phase 24 UAT found un-scrolled — this
+            // row is the literal regression guard, not a formality.
+            'DayComplete': (DateTime(2026, 8, 7, 14, 30), true),
+          };
+
+          for (final entry in table.entries) {
+            final (clock, expectPositive) = entry.value;
+            final schedule = DailySchedule(
+              dateYmd: _todayYmd(),
+              moodIndex: 3,
+              chunks: longDayFixture(),
+            );
+            await _pumpTodayScreen(
+              tester,
+              scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+              now: () => clock,
+            );
+            await tester.pumpAndSettle();
+
+            final scrollable = tester.state<ScrollableState>(
+              find.byType(Scrollable).first,
+            );
+            if (expectPositive) {
+              expect(
+                scrollable.position.pixels,
+                greaterThan(0),
+                reason: '${entry.key}: the computed target is > 0 here, so '
+                    'the settled offset must be too',
+              );
+            } else {
+              expect(
+                scrollable.position.pixels,
+                0.0,
+                reason: '${entry.key}: now IS the top of the rendered '
+                    'range here, so the clamped target is legitimately 0',
+              );
+            }
+            expect(tester.takeException(), isNull);
+
+            // Full unmount before the next clock (Pitfall 8) — _nowFn is
+            // late final, set once in initState.
+            await tester.pumpWidget(const SizedBox.shrink());
+          }
+        },
       );
-      await _pumpTodayScreen(
+
+      testWidgets('the target is the clamped centred-on-now value', (
         tester,
-        scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
-        now: () => DateTime(2026, 8, 7, 12, 45), // 5 min into chunk 7's window
-      );
-      await tester.pumpAndSettle();
+      ) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: longDayFixture(),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => DateTime(2026, 8, 7, 12, 45), // 5 min into chunk 7
+        );
+        await tester.pumpAndSettle();
 
-      final scrollable = tester.state<ScrollableState>(
-        find.byType(Scrollable).first,
-      );
-      expect(scrollable.position.pixels, greaterThan(0));
-    });
+        // Recomputed from the fixture's own numbers, never a hard-coded
+        // pixel constant — mirrors the CAL-01/CAL-02 groups' discipline.
+        final geometry = TimelineGeometry.forDay(
+          nowMinutes: 765, // 12:45
+          firstStartMinutes: 480, // chunk-0 starts 8:00
+          lastEndMinutes: 865, // chunk-9 ends 14:25
+          liveStartMinutes: 760, // chunk-7 starts 12:40
+          liveEndMinutes: 785, // chunk-7 ends 13:05
+        );
 
-    testWidgets(
-      'centres once — a later 1-minute tick does not move the offset again',
-      (tester) async {
-        DateTime injectedNow = DateTime(2026, 8, 7, 12, 45);
+        final scrollable = tester.state<ScrollableState>(
+          find.byType(Scrollable).first,
+        );
+        final viewportHeight = scrollable.position.viewportDimension;
+        // stackTop == 0: a mood-3 fixture renders no restoratives card, so
+        // the timeline Stack is the scroll content's very first child.
+        const stackTop = 0.0;
+        final raw = stackTop + geometry.yFor(765) - viewportHeight / 2;
+        final expectedTarget = raw.clamp(
+          0.0,
+          scrollable.position.maxScrollExtent,
+        );
+
+        expect(scrollable.position.pixels, closeTo(expectedTarget, 0.5));
+      });
+
+      testWidgets(
+        'the past is off-screen — the 8am chunk is not visible without '
+        'scrolling up',
+        (tester) async {
+          final schedule = DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: longDayFixture(),
+          );
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+            now: () => DateTime(2026, 8, 7, 12, 45), // Active, mid-afternoon
+          );
+          await tester.pumpAndSettle();
+
+          // CAL-03's literal statement, not just "we scrolled a bit": the
+          // day starts at 8am, but at 12:45 chunk-0's row is scrolled
+          // above the viewport's own top edge.
+          final viewportTop = tester
+              .getTopLeft(find.byType(Scrollable).first)
+              .dy;
+          final firstChunkTop = tester.getTopLeft(find.text('Chunk 0')).dy;
+          expect(firstChunkTop, lessThan(viewportTop));
+        },
+      );
+
+      testWidgets(
+        'centres once — a later 1-minute tick does not move the offset '
+        'again',
+        (tester) async {
+          DateTime injectedNow = DateTime(2026, 8, 7, 12, 45);
+          final schedule = DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: longDayFixture(),
+          );
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+            now: () => injectedNow,
+          );
+          await tester.pumpAndSettle();
+
+          final scrollable = tester.state<ScrollableState>(
+            find.byType(Scrollable).first,
+          );
+          final offsetAfterFirstSettle = scrollable.position.pixels;
+          expect(offsetAfterFirstSettle, greaterThan(0));
+
+          injectedNow = injectedNow.add(const Duration(minutes: 1));
+          await tester.pump(const Duration(minutes: 1));
+          await tester.pumpAndSettle();
+
+          expect(scrollable.position.pixels, offsetAfterFirstSettle);
+        },
+      );
+
+      testWidgets('a DevClock jump re-arms it exactly once', (tester) async {
+        DateTime injectedNow = DateTime(2026, 8, 7, 12, 45); // Active
         final schedule = DailySchedule(
           dateYmd: _todayYmd(),
           moodIndex: 3,
@@ -1103,65 +1257,111 @@ void main() {
         final scrollable = tester.state<ScrollableState>(
           find.byType(Scrollable).first,
         );
-        final offsetAfterFirstSettle = scrollable.position.pixels;
-        expect(offsetAfterFirstSettle, greaterThan(0));
+        final offsetBeforeJump = scrollable.position.pixels;
+        expect(offsetBeforeJump, greaterThan(0));
 
+        // Simulate a debug time-travel jump (Phase 25) on the SAME day:
+        // build() detects the jump by reading DevClock.offset, independent
+        // of which `now` closure is actually injected — exactly like the
+        // real debug settings screen, which mutates DevClock rather than
+        // this test harness's `now:` seam.
+        injectedNow = DateTime(2026, 8, 7, 14, 30); // now DayComplete
+        DevClock.setOffsetForTest(const Duration(hours: 2));
+        await tester.pump(const Duration(minutes: 1)); // the 1-min ticker
+        await tester.pumpAndSettle();
+
+        final offsetAfterJump = scrollable.position.pixels;
+        expect(offsetAfterJump, isNot(offsetBeforeJump));
+
+        // A later tick at the SAME (now-stable) DevClock offset must not
+        // re-trigger a second scroll.
         injectedNow = injectedNow.add(const Duration(minutes: 1));
         await tester.pump(const Duration(minutes: 1));
         await tester.pumpAndSettle();
+        expect(scrollable.position.pixels, offsetAfterJump);
+      });
 
-        expect(scrollable.position.pixels, offsetAfterFirstSettle);
-      },
-    );
+      testWidgets(
+        'a state transition does NOT re-centre on a mounted tree (PD-19) '
+        '— a fresh open still does',
+        (tester) async {
+          // Rewrite of the 24-04 two-flag regression test this group
+          // replaces (previously left as `// REWRITTEN IN 26-05`). That
+          // test proved a SECOND flag let a live-row centring survive a
+          // marker flag firing first. That premise is gone: there is only
+          // one flag, and PD-19 says a transition on an ALREADY-MOUNTED
+          // tree deliberately does not re-centre (re-centring on every
+          // transition would be exactly the "dragging the list out from
+          // under a reading user" the one-shot exists to prevent). What
+          // this test proves instead: a genuinely FRESH open (a new
+          // mount, e.g. app restart on the same day) still centres
+          // correctly regardless of which NowState it opens into, and a
+          // tick on that fresh mount does not re-trigger.
+          final schedule = DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: longDayFixture(),
+          );
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+            now: () => DateTime(2026, 8, 7, 7, 0), // PreStart
+          );
+          await tester.pumpAndSettle();
+          final preStartScrollable = tester.state<ScrollableState>(
+            find.byType(Scrollable).first,
+          );
+          // PreStart: now == rangeStart by construction (see the
+          // five-state table test above), so the clamped target is 0.
+          expect(preStartScrollable.position.pixels, 0.0);
 
-    // REWRITTEN IN 26-05
-    testWidgets(
-      'opening in PreStart then transitioning to Active still centres the '
-      'live row (two-flag regression, 24-04)',
-      (tester) async {
-        DateTime injectedNow = DateTime(2026, 8, 7, 7, 0); // before 8:00
-        final schedule = DailySchedule(
-          dateYmd: _todayYmd(),
-          moodIndex: 3,
-          chunks: longDayFixture(),
-        );
+          // Full unmount + fresh mount — proving a state transition
+          // doesn't need a live re-centre requires a genuinely new open,
+          // not an in-place rebuild.
+          await tester.pumpWidget(const SizedBox.shrink());
+
+          DateTime injectedNow = DateTime(2026, 8, 7, 12, 45); // Active
+          final freshSchedule = DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: longDayFixture(),
+          );
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(
+              freshSchedule,
+            ),
+            now: () => injectedNow,
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(LiveRowCard), findsOneWidget);
+          final activeScrollable = tester.state<ScrollableState>(
+            find.byType(Scrollable).first,
+          );
+          final activeOffset = activeScrollable.position.pixels;
+          expect(activeOffset, greaterThan(0));
+
+          // On THIS mounted Active tree, a tick must not re-centre.
+          injectedNow = injectedNow.add(const Duration(minutes: 1));
+          await tester.pump(const Duration(minutes: 1));
+          await tester.pumpAndSettle();
+          expect(activeScrollable.position.pixels, activeOffset);
+        },
+      );
+
+      testWidgets('empty state does not throw (hasClients guard)', (
+        tester,
+      ) async {
         await _pumpTodayScreen(
           tester,
-          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
-          now: () => injectedNow,
+          scheduleNotifier: _FakeScheduleNotifier(),
         );
-        await tester.pumpAndSettle();
-        // PreStart: no live row, so the marker-fallback fires and sets
-        // _didCentreMarker — not _didCentreLiveRow.
+        await tester.pump();
 
-        // Deliberately no unmount here (unlike 24-02-PLAN.md's general
-        // "prefer one clock, unmount otherwise" guidance): unmounting would
-        // destroy and recreate TodayScreenState, resetting both flags to
-        // false again, which would make it impossible to observe whether
-        // the first flag firing suppresses the second. Keeping the same
-        // mounted instance across the clock change is the entire point of
-        // this test.
-        injectedNow = DateTime(2026, 8, 7, 12, 45); // 5 min into chunk 7
-        await tester.pump(const Duration(minutes: 345));
-        await tester.pumpAndSettle();
-
-        // Confirms Active was actually reached for chunk index 7 — the
-        // state transition genuinely happened, this isn't a no-op.
-        expect(find.byType(LiveRowCard), findsOneWidget);
-
-        // Load-bearing assertion: under a design that reused ONE shared
-        // flag for both centrings, the marker's earlier fire in the
-        // PreStart phase would have consumed that single flag, and the
-        // `if (!_didCentreLiveRow && hasLiveRow)` check on the Active
-        // transition would then be permanently false for the rest of this
-        // schedule's day — the live row would never get centred. This test
-        // fails under that design and passes under the two-flag design.
-        final scrollable = tester.state<ScrollableState>(
-          find.byType(Scrollable).first,
-        );
-        expect(scrollable.position.pixels, greaterThan(0));
-      },
-    );
+        expect(tester.takeException(), isNull);
+      });
+    });
 
     testWidgets('pre-start: "Nothing until" is present, no LiveRowCard', (
       tester,
