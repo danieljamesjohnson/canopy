@@ -206,6 +206,42 @@ including breaks, currently opens `ChunkDetailSheet`). Reasoning:
 
 ## The now-line (CAL-02)
 
+> **AMENDED 2026-08-10 (UAT, G-01, `26-UAT.md`, `26-07-PLAN.md`).** Dan, at the 26-06
+> sign-off gate: *"The now box draws over the name of the chunk and any other
+> information."* Root cause: the row below was a **self-contradiction**. It specified the
+> chip **sized to `52dp`** (`kGutterWidth`) AND gave its content as `"Now · 2:47 PM"` in the
+> same breath — that string at `labelSmall` 12px/w600 is ~85px of glyphs plus 16dp of
+> padding ≈ **101px**, which cannot fit a 52dp column. The shipped code (`now_line.dart`)
+> resolved the contradiction by honouring the string and dropping the width constraint,
+> so the chip spanned into the card's leading ~49px — exactly where `ChunkCard`'s title
+> renders — and painted over it whenever the line fell mid-chunk (the normal `Active`
+> case during a working day).
+>
+> Dan's decision: honour the spec's *intent* (a chip that lives in the time column,
+> alongside the hour labels) and change the string, not the column — rejecting both
+> deleting the chip outright and widening the gutter to ~101dp (which would cost every
+> row ~12% of a 430px phone's width all day for a marker that matters at one y).
+> Superseding rules:
+>
+> - The chip is genuinely confined to `kGutterWidth` (52dp) — `SizedBox(width:
+>   kGutterWidth, ...)`, mirroring `HourAxisLine`'s own gutter-column shape — not just
+>   "sized to" it in name.
+> - Chip copy becomes `formatMinutesCompact(nowMinutes)` (e.g. `"2:47p"`), not the
+>   `"Now · <time>"` string below — the two-part label is what could not fit.
+> - Horizontal padding drops `8dp → 4dp` so a 6-character compact string ("12:10p") plus
+>   padding fits inside 52dp without ellipsizing. Vertical padding, corner radius, fill,
+>   text color, weight, and elevation are all unchanged.
+> - The `2dp` rule is explicitly **unchanged** — it still spans the full content width and
+>   still crosses the card; only the chip is confined. That crossing is the truthful
+>   mid-chunk position CAL-02 exists to deliver.
+> - The screen-reader `Semantics` label keeps the full `formatMinutes` string
+>   unabridged — a screen-reader user gains nothing from a narrow-column abbreviation.
+>
+> A geometric regression test (`test/screens/today_screen_test.dart`, "G-01: the now chip
+> stays inside the time gutter and never overlaps a chunk card") now asserts the chip's
+> right edge never exceeds a `ChunkCard`'s left edge — the assertion class that was
+> missing and let this ship.
+
 **The now-line is the screen's primary visual anchor.** Nothing else on the screen carries
 full-content-width stroke, topmost z-order, *and* the app's sole reserved accent color at the
 same time — every other element competes within the 60/30/10 split below it. That combination
@@ -216,8 +252,8 @@ the visual hierarchy, including `LiveRowCard`'s own full-bleed shadow-and-elevat
 | Property | Value |
 |---|---|
 | Stroke | `2dp` solid `colorScheme.primary`, full opacity, spans the **entire content width** (matches the "let now break the grid" full-bleed precedent from `LiveRowCard`, not a row-scoped rule) |
-| Time chip | Solid pill at the line's left end, sized to the hour-axis column width (`52dp`, reusing `kGutterWidth`): `colorScheme.primary` fill, `onPrimary` text, `labelSmall` (12px) weight 600, `8dp` horizontal / `4dp` vertical padding (both on the 8-pt scale — `sm`/`xs`), `4dp` corner radius (separate radius token family, see Spacing Scale), soft elevation (~2) so it stays legible over any card fill it happens to sit above |
-| Chip copy | `"Now · <formatMinutes(nowMinutes)>"`, e.g. `"Now · 2:47 PM"` — **new locked copy**, replacing Phase 24's bare `"Now"` label. The exact time moved into the visible label because the per-row gutter that used to carry it is gone (see "Time gutter" below) — without this the exact minute would no longer be visible anywhere on the line itself. |
+| Time chip | Solid pill at the line's left end, ~~sized to the hour-axis column width (`52dp`, reusing `kGutterWidth`)~~ **genuinely confined to `kGutterWidth` (52dp) — see the G-01 amendment above**: `colorScheme.primary` fill, `onPrimary` text, `labelSmall` (12px) weight 600, ~~`8dp`~~ **`4dp` (G-01)** horizontal / `4dp` vertical padding (both on the 8-pt scale — `sm`/`xs`), `4dp` corner radius (separate radius token family, see Spacing Scale), soft elevation (~2) so it stays legible over any card fill it happens to sit above |
+| Chip copy | ~~`"Now · <formatMinutes(nowMinutes)>"`, e.g. `"Now · 2:47 PM"`~~ **`formatMinutesCompact(nowMinutes)`, e.g. `"2:47p"` (G-01, 2026-08-10) — the two-part label below could not fit `kGutterWidth`; see the amendment above.** ~~**new locked copy**, replacing Phase 24's bare `"Now"` label. The exact time moved into the visible label because the per-row gutter that used to carry it is gone (see "Time gutter" below) — without this the exact minute would no longer be visible anywhere on the line itself.~~ |
 | Semantics | `Semantics(label: 'Now — ${formatMinutes(nowMinutes)}', excludeSemantics: true)` around the whole overlay widget — same pattern and same string format Phase 24 already established, just re-anchored to the new overlay widget instead of a row |
 | Z-order | Topmost layer in the `Stack`, above every card's elevation/shadow |
 | Hit-testing | The entire now-line overlay (rule + chip) is wrapped in `IgnorePointer` — it must never intercept a `Complete`/`Skip` tap on the card it happens to be crossing |
