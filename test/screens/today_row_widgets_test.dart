@@ -11,8 +11,11 @@ import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/theme_notifier.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_card.dart';
 import 'package:canopy/screens/schedule/widgets/swipeable_chunk_card.dart';
+import 'package:canopy/screens/today/timeline_geometry.dart';
 import 'package:canopy/screens/today/widgets/free_time_row.dart';
+import 'package:canopy/screens/today/widgets/hour_axis.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
+import 'package:canopy/screens/today/widgets/now_line.dart';
 import 'package:canopy/screens/today/widgets/now_marker.dart';
 import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
 import 'package:flutter/material.dart';
@@ -245,6 +248,83 @@ void main() {
         expect(find.text('Now'), findsOneWidget);
       },
     );
+  });
+
+  group('NowLineOverlay (CAL-02, UI-SPEC locked)', () {
+    testWidgets('renders the locked chip copy "Now · 2:47 PM"', (
+      tester,
+    ) async {
+      await pumpWithMood(tester, const NowLineOverlay(nowMinutes: 887));
+      expect(find.text('Now · 2:47 PM'), findsOneWidget);
+    });
+
+    testWidgets('a 2dp-tall Container renders, colored colorScheme.primary '
+        'from the pumped theme', (tester) async {
+      await pumpWithMood(tester, const NowLineOverlay(nowMinutes: 887));
+      final containers = tester.widgetList<Container>(
+        find.descendant(
+          of: find.byType(NowLineOverlay),
+          matching: find.byType(Container),
+        ),
+      );
+      final expectedColor = ColorScheme.fromSeed(
+        seedColor: ThemeNotifier.moodSeeds[3]!,
+      ).primary;
+      final ruleContainer = containers.firstWhere(
+        (c) => c.constraints?.maxHeight == 2,
+      );
+      expect(ruleContainer.color, expectedColor);
+    });
+
+    testWidgets('the widget\'s own rendered height equals kNowLineHeight', (
+      tester,
+    ) async {
+      await pumpWithMood(tester, const NowLineOverlay(nowMinutes: 887));
+      final size = tester.getSize(find.byType(NowLineOverlay));
+      expect(size.height, kNowLineHeight);
+    });
+  });
+
+  group('HourAxisLine (CAL-01 hour axis)', () {
+    testWidgets('renders "9 AM" for hourMinutes 540', (tester) async {
+      await pumpWithMood(tester, const HourAxisLine(hourMinutes: 540));
+      expect(find.text('9 AM'), findsOneWidget);
+    });
+
+    testWidgets('renders "12 PM" for hourMinutes 720', (tester) async {
+      await pumpWithMood(tester, const HourAxisLine(hourMinutes: 720));
+      expect(find.text('12 PM'), findsOneWidget);
+    });
+
+    testWidgets('the label column is exactly kGutterWidth wide', (
+      tester,
+    ) async {
+      await pumpWithMood(tester, const HourAxisLine(hourMinutes: 540));
+      final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
+      expect(
+        sizedBoxes.any((box) => box.width == kGutterWidth),
+        isTrue,
+        reason: 'Expected a SizedBox of width kGutterWidth',
+      );
+    });
+
+    testWidgets('the hairline Container is 1dp tall and colored '
+        'outlineVariant', (tester) async {
+      await pumpWithMood(tester, const HourAxisLine(hourMinutes: 540));
+      final expectedColor = ColorScheme.fromSeed(
+        seedColor: ThemeNotifier.moodSeeds[3]!,
+      ).outlineVariant;
+      final containers = tester.widgetList<Container>(
+        find.descendant(
+          of: find.byType(HourAxisLine),
+          matching: find.byType(Container),
+        ),
+      );
+      final hairline = containers.firstWhere(
+        (c) => c.constraints?.maxHeight == 1,
+      );
+      expect(hairline.color, expectedColor);
+    });
   });
 
   group('ChunkCard row vocabulary (D-06, D-07, P10)', () {
