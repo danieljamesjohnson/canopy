@@ -3,9 +3,11 @@ status: testing
 phase: 24-where-am-i
 source: [24-VERIFICATION.md]
 started: 2026-08-08T23:35:00Z
-updated: 2026-08-08T23:35:00Z
-build: http://danserver:8123/ (debug, single bundle, no service worker)
-build_commit: fa885c6
+updated: 2026-08-10T13:35:00Z
+build: http://danserver:8788/ (virgin origin) or http://danserver:8123/ (Dan's data)
+build_commit: 154d11b
+build_id: 81887f7-0827
+harness: Phase 25 time travel — Settings > Debug > Jump to 9pm today
 ---
 
 ## Current Test
@@ -53,7 +55,22 @@ blocked: 0
 
 _None recorded yet._
 
-## Execution constraints
+## Execution constraints — RESOLVED 2026-08-10
+
+Test 1's time gate is **lifted**. Phase 25 (Time Travel) shipped a debug-only clock override, so
+`DayComplete` can be reached on demand via Settings → Debug → "Jump to 9pm today" instead of waiting
+for evening. The constraint recorded below is kept for the record, not because it still binds.
+
+Two false alarms cost round trips before the control became visible, both client-side and both
+invisible to `curl`:
+1. `python3 -m http.server` sends no `Cache-Control`, so the browser heuristically cached a 13 MB
+   `main.dart.js` and served a two-day-old build. Fixed at source with `tools/serve-uat.py`
+   (`no-store`, strips conditional validators) and documented as CLAUDE.md trap #3.
+2. A likely service-worker registration on the `:8123` origin, which intercepts fetches and ignores
+   cache headers entirely. Worked around by serving a virgin origin on `:8788`.
+Both are now diagnosable in one glance: Settings → Debug → **Build** shows the loaded `BUILD_ID`.
+
+## Original execution constraints (superseded)
 
 - **Test 1 is time-gated.** `DayComplete` requires the wall clock to be past the last chunk's end
   (`now_state.dart` step 4), so it is only executable in the evening. There is no dev-side clock
