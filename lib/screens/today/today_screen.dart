@@ -12,6 +12,7 @@ import '../../data/models/goal.dart';
 import '../../data/models/scheduled_chunk.dart';
 import '../../data/repositories/hive_completion_log_repository.dart';
 import '../../data/repositories/hive_quarterly_snapshot_repository.dart';
+import '../../dev/dev_clock.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/restoratives_notifier.dart';
 import '../../providers/schedule_notifier.dart';
@@ -57,9 +58,13 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   // Mood seed palette is the single source of truth in `ThemeNotifier.moodSeeds`.
   // This screen reads it directly via `ThemeNotifier.moodSeeds[mood]`.
 
-  /// Injectable clock function. Defaults to [DateTime.now]; overridden in
-  /// tests via [TodayScreen.now] to simulate specific wall-clock times.
-  late final DateTime Function() _nowFn = widget.now ?? DateTime.now;
+  /// Injectable clock function. Defaults to [DevClock.now] (Phase 25,
+  /// DEV-01) so this screen picks up a debug-only simulated time; that is
+  /// exactly [DateTime.now] in release builds (DEV-03). Overridden in tests
+  /// via [TodayScreen.now] to simulate specific wall-clock times — the
+  /// widget's own `now` constructor parameter is unchanged, so existing
+  /// tests keep passing.
+  late final DateTime Function() _nowFn = widget.now ?? DevClock.now;
 
   /// 1-minute periodic timer that triggers setState() so the current-moment
   /// classification below is re-evaluated as wall-clock time passes. Paused

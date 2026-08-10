@@ -1,4 +1,5 @@
 import 'package:hive_ce/hive.dart';
+import '../../dev/dev_clock.dart';
 import '../models/daily_schedule.dart';
 import 'daily_schedule_repository.dart';
 
@@ -25,8 +26,11 @@ class HiveDailyScheduleRepository implements DailyScheduleRepository {
 
   @override
   Future<DailySchedule?> getTodaysSchedule() async {
+    // Phase 25 (Time Travel, DEV-01): routed through DevClock so the loaded
+    // schedule matches a simulated day, not just real wall-clock time.
+    // DevClock.now() is DateTime.now() in release builds (DEV-03).
     final today =
-        DateTime.now(); // local time — must match generateToday() key format
+        DevClock.now(); // local time — must match generateToday() key format
     final dateYmd =
         '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
     return getByDate(dateYmd);

@@ -7,6 +7,7 @@ import '../../data/repositories/completion_log_repository.dart';
 import '../../data/repositories/hive_completion_log_repository.dart';
 import '../../data/repositories/hive_quarterly_snapshot_repository.dart';
 import '../../data/repositories/quarterly_snapshot_repository.dart';
+import '../../dev/dev_clock.dart';
 import '../../providers/commitments_notifier.dart';
 import '../../providers/goals_notifier.dart';
 import '../../services/quarterly_aggregation_service.dart';
@@ -93,7 +94,10 @@ class _QuarterlyReviewScreenState extends State<QuarterlyReviewScreen> {
     final commitmentBlocks = commitmentsNotifier.blocks;
 
     final service = QuarterlyAggregationService();
-    final today = DateTime.now();
+    // Phase 25 (Time Travel, DEV-01): route through DevClock for consistency
+    // with the rest of the app's clock-gated surfaces. DevClock.now() is
+    // DateTime.now() in release builds (DEV-03).
+    final today = DevClock.now();
     final todayYmd = _toYmd(today);
 
     // Determine period start

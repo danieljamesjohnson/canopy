@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/database/hive_database.dart';
+import 'dev/dev_clock.dart';
 import 'platform/window_setup.dart';
 import 'providers/goals_notifier.dart';
 import 'providers/commitments_notifier.dart';
@@ -33,13 +34,21 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   await HiveDatabase.init(prefs);
 
+  // Phase 25 (Time Travel, DEV-01): load any persisted clock override before
+  // any notifier is constructed, so the very first clock read of this launch
+  // already reflects a simulated time. No-op in release builds (DEV-03).
+  await DevClock.init();
+
   // SettingsNotifier is constructed before runApp so init() can load persisted
   // values. The same instance is passed to createRouter and registered via
   // ChangeNotifierProvider.value so no double-construction occurs.
   final settingsNotifier = SettingsNotifier();
   await settingsNotifier.init();
 
-  final scheduleNotifier = ScheduleNotifier();
+  // DEV-01: ScheduleNotifier's now seam routes through DevClock so the whole
+  // app agrees on a simulated moment — the schedule's day-boundary checks
+  // included. DevClock.now is DateTime.now in release builds (DEV-03).
+  final scheduleNotifier = ScheduleNotifier(now: DevClock.now);
   await scheduleNotifier.init();
 
   // Phase 6 Plan 02: ThemeNotifier is the single source of truth for the
