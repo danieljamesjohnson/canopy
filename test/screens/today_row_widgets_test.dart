@@ -17,7 +17,6 @@ import 'package:canopy/screens/today/widgets/free_time_row.dart';
 import 'package:canopy/screens/today/widgets/hour_axis.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
 import 'package:canopy/screens/today/widgets/now_line.dart';
-import 'package:canopy/screens/today/widgets/now_marker.dart';
 import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -193,67 +192,6 @@ void main() {
       await pumpWithMood(tester, const FreeTimeRow.gap(durationMinutes: 100));
       expect(find.byType(Card), findsNothing);
     });
-  });
-
-  group('NowMarker (NOW-01, UI-SPEC locked)', () {
-    testWidgets('renders the locked "Now" label exactly once', (
-      tester,
-    ) async {
-      await pumpWithMood(tester, const NowMarker());
-      expect(find.text('Now'), findsOneWidget);
-    });
-
-    testWidgets('renders no Card', (tester) async {
-      await pumpWithMood(tester, const NowMarker());
-      expect(find.byType(Card), findsNothing);
-    });
-
-    testWidgets('leading rule is a 24x2dp Container', (tester) async {
-      await pumpWithMood(tester, const NowMarker());
-      final containerFinder = find.descendant(
-        of: find.byType(NowMarker),
-        matching: find.byType(Container),
-      );
-      expect(containerFinder, findsWidgets);
-      final leadingSize = tester.getSize(containerFinder.first);
-      expect(leadingSize, const Size(24, 2));
-    });
-
-    testWidgets(
-      '"Now" label is w600 and colored colorScheme.primary from the pumped '
-      'theme',
-      (tester) async {
-        await pumpWithMood(tester, const NowMarker());
-        final style = tester.widget<Text>(find.text('Now')).style;
-        expect(style?.fontWeight, FontWeight.w600);
-        final expectedColor = ColorScheme.fromSeed(
-          seedColor: ThemeNotifier.moodSeeds[3]!,
-        ).primary;
-        expect(style?.color, expectedColor);
-      },
-    );
-
-    testWidgets('no hardcoded Colors literal reaches the widget tree', (
-      tester,
-    ) async {
-      // Static grep gate (flutter analyze + task verify) is the real check;
-      // this just proves the mood-3 render path still completes cleanly.
-      await pumpWithMood(tester, const NowMarker());
-      expect(find.byType(NowMarker), findsOneWidget);
-    });
-
-    testWidgets(
-      'wrapped in TimelineRowTile, the gutter renders no time text and the '
-      'marker still shows "Now" (PD-5: gutter is reserved-but-blank)',
-      (tester) async {
-        await pumpWithMood(
-          tester,
-          const TimelineRowTile(child: NowMarker()),
-        );
-        expect(find.text('12:34p'), findsNothing);
-        expect(find.text('Now'), findsOneWidget);
-      },
-    );
   });
 
   group('NowLineOverlay (CAL-02, UI-SPEC locked)', () {

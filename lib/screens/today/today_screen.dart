@@ -31,7 +31,6 @@ import 'widgets/breathing_pulse_cta.dart';
 import 'widgets/end_of_day_card.dart';
 import 'widgets/free_time_row.dart';
 import 'widgets/live_row_card.dart';
-import 'widgets/now_marker.dart';
 import 'widgets/review_banner.dart';
 import 'widgets/timeline_row_tile.dart';
 
@@ -126,26 +125,20 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   /// new day), never on a tick. Do NOT add a sticky bar, floating pill, or
   /// jump button here (D-03) — that is the rejected sketch variant B.
   ///
-  /// [_nowMarkerKey] (24-04 gap closure) tags the [NowMarkerRow]'s
-  /// TimelineRowTile the same way, so build()'s centre-on-open can fall back
-  /// to centring the marker when there is no live row at all — PreStart,
-  /// GapBeforeNext, DayComplete (Dan's DayComplete UAT report, routed from
-  /// 24-03-SUMMARY.md). [_didCentreMarker] is a SEPARATE one-shot flag from
-  /// [_didCentreLiveRow], deliberately not a reuse of it: a day can open in
-  /// PreStart (no live row — the marker-fallback flag fires) and later cross
-  /// into Active (a live row now exists — the live-row flag must still be
-  /// free to fire on that transition). A single shared flag would let the
-  /// marker's earlier fire silently suppress the live-row centring that
-  /// should still happen. Do NOT add a sticky bar, floating pill, or jump
-  /// button here (D-03) — that applies to this fallback too.
+  /// The marker-fallback centring that used to live here (24-04 gap
+  /// closure — a separate GlobalKey/one-shot pair keyed on the discrete
+  /// current-moment row Phase 24 rendered) is retired in this plan along
+  /// with that row's sealed variant — plan 03 replaces it with a single
+  /// unconditional arithmetic centre-on-open path (26-UI-SPEC.md
+  /// "Scroll-on-open"), since the now-line overlay always exists at a
+  /// computable offset in every `NowState`, removing the "does a live row
+  /// exist" branch this two-flag design existed to handle.
   final GlobalKey _liveRowKey = GlobalKey();
-  final GlobalKey _nowMarkerKey = GlobalKey();
   final ScrollController _dayScrollController = ScrollController();
   bool _didCentreLiveRow = false;
-  bool _didCentreMarker = false;
 
-  /// Last-seen [DevClock.offset], so a debug time jump can re-arm the two
-  /// one-shots above (see build()). Always [Duration.zero] in release
+  /// Last-seen [DevClock.offset], so a debug time jump can re-arm the
+  /// one-shot above (see build()). Always [Duration.zero] in release
   /// builds, where it therefore never triggers anything.
   Duration _lastDevClockOffset = DevClock.offset;
 
@@ -237,7 +230,6 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         _lastScheduleDateYmd = newDateYmd;
         _eodCardDismissed = false; // new schedule → show card again
         _didCentreLiveRow = false; // a new day re-centres; a tick never does
-        _didCentreMarker = false; // same day-boundary reset, 24-04's flag
       });
     }
   }
@@ -637,31 +629,6 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       case GapFreeRow(:final durationMinutes):
         return TimelineRowTile(
           child: FreeTimeRow.gap(durationMinutes: durationMinutes),
-        );
-      case NowMarkerRow(:final minutes):
-        // NOW-01: the fourth and final arm of this exhaustive switch.
-        // Phase 26 (26-02-PLAN.md, PD-5): TimelineRowTile's gutter no longer
-        // renders any per-row time text — the persistent hour axis owns
-        // that column now, so the gutter here is reserved-but-blank like
-        // every other row's. NowMarker's own visible label still carries no
-        // time (24-UI-SPEC.md); the Semantics node lives here at the call
-        // site, not inside NowMarker. Keyed so build()'s marker-fallback
-        // centre-on-open (24-04 gap closure) can find this row's context
-        // via Scrollable.ensureVisible, exactly as _liveRowKey already does
-        // for the live row. Plan 03 deletes this whole arm — not pre-empted
-        // here.
-        //
-        // The Semantics wrapper MUST enclose TimelineRowTile rather than be
-        // passed as its `child` (24-REVIEW.md WR-01) — keeps the whole tile
-        // inside the excluded subtree so a screen reader gets one clean
-        // announcement instead of two.
-        return KeyedSubtree(
-          key: _nowMarkerKey,
-          child: Semantics(
-            label: 'Now — ${formatMinutes(minutes)}',
-            excludeSemantics: true,
-            child: TimelineRowTile(child: const NowMarker()),
-          ),
         );
       case ChunkRow(:final chunk, :final isLive):
         if (isLive) {
@@ -1077,7 +1044,6 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     if (DevClock.offset != _lastDevClockOffset) {
       _lastDevClockOffset = DevClock.offset;
       _didCentreLiveRow = false;
-      _didCentreMarker = false;
     }
 
     // Centre-on-open (D-02): schedule the scroll exactly once. The flag is
@@ -1097,36 +1063,6 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         if (liveRowContext == null) return;
         Scrollable.ensureVisible(
           liveRowContext,
-          alignment: 0.5,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
-      });
-    }
-
-    // Marker-fallback centre-on-open (24-04 gap closure, Dan's DayComplete
-    // UAT report in 24-03-SUMMARY.md): PreStart, GapBeforeNext, and
-    // DayComplete render no live row, so hasLiveRow above is false and the
-    // block above never fires — the day list would otherwise open at its
-    // natural top, which late in the day is entirely in the past. This
-    // fallback centres on the NowMarkerRow instead, the only other row that
-    // answers "where am I" (D-02). The !hasLiveRow guard is what makes this
-    // genuinely a fallback: Overdue sets hasLiveRow true (it renders through
-    // LiveRowCard) even though it also shows a marker, so Overdue continues
-    // to use the live-row path above only — this block must never fire for
-    // it. Same one-shot-before-callback discipline, same alignment/duration/
-    // curve as the live-row block, so the two centrings feel identical. No
-    // sticky bar, floating pill, or jump button (D-03) — scroll position
-    // only.
-    final hasMarkerRow = timelineRows.any((row) => row is NowMarkerRow);
-    if (!hasLiveRow && !_didCentreMarker && hasMarkerRow) {
-      _didCentreMarker = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        final markerContext = _nowMarkerKey.currentContext;
-        if (markerContext == null) return;
-        Scrollable.ensureVisible(
-          markerContext,
           alignment: 0.5,
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,

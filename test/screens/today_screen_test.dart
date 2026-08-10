@@ -8,7 +8,6 @@
 // Task 3 (added later in this file): centre-on-open + edge-state copy.
 
 import 'package:canopy/data/models/daily_schedule.dart';
-import 'package:canopy/dev/dev_clock.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/providers/goals_notifier.dart';
 import 'package:canopy/providers/restoratives_notifier.dart';
@@ -20,7 +19,6 @@ import 'package:canopy/screens/today/today_screen.dart';
 import 'package:canopy/screens/today/widgets/breathing_pulse_cta.dart';
 import 'package:canopy/screens/today/widgets/end_of_day_card.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
-import 'package:canopy/screens/today/widgets/now_marker.dart';
 import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -391,10 +389,8 @@ void main() {
         await pumpDay(tester);
 
         // At 10:47 with this fixture, c3's 10:45–10:50 window is open, so
-        // resolveNowState is Active — the correct marker assertion here is
-        // absence, not presence (D-02's Active suppression).
+        // resolveNowState is Active.
         expect(find.textContaining('Free until 8:00 AM'), findsNothing);
-        expect(find.byType(NowMarker), findsNothing);
       },
     );
 
@@ -567,168 +563,6 @@ void main() {
       },
     );
 
-    group('Phase 24 — now-marker (NOW-01)', () {
-      testWidgets(
-        'the marker announces once, not twice — the gutter time is inside '
-        'the excluded subtree (24-REVIEW.md WR-01)',
-        (tester) async {
-          // WR-01 shipped against a fully green 503-test suite because
-          // nothing anywhere asserted the marker's Semantics wiring. The
-          // Semantics node was passed as TimelineRowTile's `child`, but the
-          // tile lays its gutter Text out as a SIBLING of `child`, so
-          // excludeSemantics never covered it — a screen reader read the row
-          // twice, in two different time formats. 24-UI-SPEC.md introduced
-          // this node specifically to give "one clean announcement".
-          final handle = tester.ensureSemantics();
-          final schedule = DailySchedule(
-            dateYmd: _todayYmd(),
-            moodIndex: 3,
-            chunks: [
-              _workChunk(syntheticStartMinutes: 480, durationMinutes: 60),
-            ],
-          );
-          await _pumpTodayScreen(
-            tester,
-            scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
-            now: () => DateTime(2026, 8, 7, 6, 0),
-          );
-
-          // The merged node the spec asks for.
-          expect(find.bySemanticsLabel('Now — 6:00 AM'), findsOneWidget);
-          // Phase 26 (PD-5): TimelineRowTile's gutter no longer renders any
-          // compact-time Text at all, so the double-announcement failure
-          // mode WR-01 fixed can no longer recur via that path — there is
-          // no separate gutter node left to merge or duplicate. This
-          // assertion still pins that no stray '6:00' semantics node exists.
-          expect(find.bySemanticsLabel('6:00'), findsNothing);
-
-          handle.dispose();
-        },
-      );
-
-      testWidgets('PreStart shows the marker', (tester) async {
-        final schedule = DailySchedule(
-          dateYmd: _todayYmd(),
-          moodIndex: 3,
-          chunks: [_workChunk(syntheticStartMinutes: 480, durationMinutes: 60)],
-        );
-        await _pumpTodayScreen(
-          tester,
-          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
-          now: () => DateTime(2026, 8, 7, 6, 0),
-        );
-
-        expect(find.byType(NowMarker), findsOneWidget);
-        expect(find.text('Now'), findsOneWidget);
-        // Phase 26 (PD-5): the gutter no longer renders a compact time.
-        expect(find.text('6:00'), findsNothing);
-      });
-
-      testWidgets('GapBeforeNext shows the marker', (tester) async {
-        final schedule = DailySchedule(
-          dateYmd: _todayYmd(),
-          moodIndex: 3,
-          chunks: [
-            _workChunk(
-              id: 'c1',
-              syntheticStartMinutes: 540, // 9:00
-              durationMinutes: 25,
-              isCompleted: true,
-              rationale: 'Morning routine',
-            ),
-            _workChunk(
-              id: 'c2',
-              syntheticStartMinutes: 600, // 10:00
-              durationMinutes: 25,
-              rationale: 'Reading',
-            ),
-          ],
-        );
-        await _pumpTodayScreen(
-          tester,
-          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
-          now: () => DateTime(2026, 8, 7, 9, 30),
-        );
-
-        expect(find.byType(NowMarker), findsOneWidget);
-        // Phase 26 (PD-5): the gutter no longer renders a compact time.
-        expect(find.text('9:30'), findsNothing);
-      });
-
-      testWidgets('DayComplete shows the marker, last', (tester) async {
-        final schedule = DailySchedule(
-          dateYmd: _todayYmd(),
-          moodIndex: 3,
-          chunks: [
-            _workChunk(
-              syntheticStartMinutes: 480,
-              durationMinutes: 60,
-              rationale: 'Morning routine',
-            ),
-          ],
-        );
-        await _pumpTodayScreen(
-          tester,
-          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
-          now: () => DateTime(2026, 8, 7, 18, 0),
-        );
-
-        expect(find.byType(NowMarker), findsOneWidget);
-        // Phase 26 (PD-5): the gutter no longer renders a compact time.
-        expect(find.text('6:00p'), findsNothing);
-      });
-
-      testWidgets('Active suppresses the marker', (tester) async {
-        // c3's 10:45-10:50 window is open at pumpDay's 10:47, so
-        // resolveNowState is Active — "the loud card answers it, so the
-        // quiet marker stands down" (D-02).
-        await pumpDay(tester);
-
-        expect(find.byType(NowMarker), findsNothing);
-        expect(find.byType(LiveRowCard), findsOneWidget);
-      });
-
-      testWidgets(
-        'Single-sample agreement (D-01): the header and the marker read the '
-        'same clock sample',
-        (tester) async {
-          // Phase 26 (PD-5): the gutter no longer renders its own compact
-          // time, so this test now proves agreement via the marker's own
-          // Semantics label (still derived from the same single nowDt
-          // sample) rather than comparing two separate Text renderings.
-          final handle = tester.ensureSemantics();
-          final schedule = DailySchedule(
-            dateYmd: _todayYmd(),
-            moodIndex: 3,
-            chunks: [
-              _workChunk(
-                id: 'c1',
-                syntheticStartMinutes: 540, // 9:00
-                durationMinutes: 25,
-                isCompleted: true,
-                rationale: 'Morning routine',
-              ),
-              _workChunk(
-                id: 'c2',
-                syntheticStartMinutes: 600, // 10:00
-                durationMinutes: 25,
-                rationale: 'Reading',
-              ),
-            ],
-          );
-          await _pumpTodayScreen(
-            tester,
-            scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
-            now: () => DateTime(2026, 8, 7, 9, 30),
-          );
-
-          expect(find.text('Up next'), findsOneWidget);
-          expect(find.bySemanticsLabel('Now — 9:30 AM'), findsOneWidget);
-
-          handle.dispose();
-        },
-      );
-    });
   });
 
   group('Task 3 — centre the live row on open + edge-state copy', () {
@@ -799,105 +633,7 @@ void main() {
       },
     );
 
-    testWidgets(
-      'centres the now-marker on open when there is no live row to centre '
-      'on instead (DayComplete overflow, 24-04)',
-      (tester) async {
-        final schedule = DailySchedule(
-          dateYmd: _todayYmd(),
-          moodIndex: 3,
-          chunks: longDayFixture(),
-        );
-        await _pumpTodayScreen(
-          tester,
-          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
-          // 18:00 — well past longDayFixture's last chunk (ends 14:25), so
-          // resolveNowState returns DayComplete and hasLiveRow is false.
-          now: () => DateTime(2026, 8, 7, 18, 0),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byType(NowMarker), findsOneWidget);
-
-        final scrollable = tester.state<ScrollableState>(
-          find.byType(Scrollable).first,
-        );
-        // This assertion would have FAILED before the 24-04 fix: hasLiveRow
-        // is false for DayComplete, so the old code never scheduled any
-        // ensureVisible call at all and the list stayed at pixels == 0.
-        expect(scrollable.position.pixels, greaterThan(0));
-        // The marker is the very last row buildTimeline emits for
-        // DayComplete, so ensureVisible clamps at the bottom — the literal
-        // encoding of Dan's "things in the past should have to be scrolled
-        // to" (24-03-SUMMARY.md).
-        expect(scrollable.position.pixels, scrollable.position.maxScrollExtent);
-      },
-    );
-
-    testWidgets('a debug clock jump re-arms centre-on-open within the same day '
-        '(Phase 25 DEV-01 integration)', (tester) async {
-      // The one-shots reset only on a dateYmd change. Time-travelling from
-      // morning to 9pm on the SAME day leaves dateYmd untouched, so without
-      // the DevClock.offset check in build() the list would stay wherever
-      // the user left it — making "jump to 9pm and check DayComplete", the
-      // exact workflow the Phase 25 harness exists to enable, report a
-      // false negative against a fix that works.
-      DevClock.resetForTest();
-      addTearDown(DevClock.resetForTest);
-
-      final schedule = DailySchedule(
-        dateYmd: _todayYmd(),
-        moodIndex: 3,
-        chunks: longDayFixture(),
-      );
-      await _pumpTodayScreen(
-        tester,
-        scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
-        now: () => DateTime(2026, 8, 7, 18, 0),
-      );
-      await tester.pumpAndSettle();
-
-      final scrollable = tester.state<ScrollableState>(
-        find.byType(Scrollable).first,
-      );
-      expect(scrollable.position.pixels, scrollable.position.maxScrollExtent);
-
-      // Drag the list away from the marker, as a user reading their
-      // morning would. The one-shot has already fired, so nothing should
-      // pull it back...
-      scrollable.position.jumpTo(0);
-      await tester.pump();
-      expect(scrollable.position.pixels, 0);
-      await tester.pump(const Duration(minutes: 1));
-      await tester.pumpAndSettle();
-      expect(
-        scrollable.position.pixels,
-        0,
-        reason:
-            'a plain minute tick must NOT drag the list back — that is the '
-            'T-22-08 behaviour the one-shot exists to protect',
-      );
-
-      // ...until the debug clock moves, which re-arms it. The re-arm check
-      // lives in build(), so it needs a rebuild to run — in the app that
-      // comes from ScheduleNotifier.reloadToday() (Settings calls it after
-      // every DevClock mutation) and from the 1-minute ticker. Here the
-      // ticker supplies it, which also sharpens the contrast: the identical
-      // minute tick that must NOT move the list above MUST move it once the
-      // clock has jumped.
-      DevClock.setOffsetForTest(const Duration(hours: 3));
-      await tester.pump(const Duration(minutes: 1));
-      await tester.pumpAndSettle();
-
-      expect(
-        scrollable.position.pixels,
-        scrollable.position.maxScrollExtent,
-        reason:
-            'a DevClock jump must re-centre on the marker, otherwise the '
-            'time-travel UAT shows a stale scroll position',
-      );
-    });
-
+    // REWRITTEN IN 26-05
     testWidgets(
       'opening in PreStart then transitioning to Active still centres the '
       'live row (two-flag regression, 24-04)',

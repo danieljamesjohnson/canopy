@@ -8,7 +8,7 @@ const int kMinGapMinutes = 10;
 
 /// A single row in the unified Today timeline.
 ///
-/// Exactly four subtypes, so the render layer can use an exhaustive switch
+/// Exactly three subtypes, so the render layer can use an exhaustive switch
 /// with no default branch.
 sealed class TimelineRow {}
 
@@ -34,14 +34,6 @@ class GapFreeRow extends TimelineRow {
   final int startMinutes;
   final int durationMinutes;
   GapFreeRow(this.startMinutes, this.durationMinutes);
-}
-
-/// The current-moment position marker, injected as a value — never derived
-/// from a clock read inside this file (INVARIANT 1). It is a *position
-/// only*, never a second opinion about which chunk is current (D-01).
-class NowMarkerRow extends TimelineRow {
-  final int minutes;
-  NowMarkerRow(this.minutes);
 }
 
 /// Builds the unified Today timeline's row list from the day's [chunks] and
@@ -75,15 +67,6 @@ List<TimelineRow> buildTimeline({
     _ => null,
   };
 
-  // NOW-01: show the marker unless nowMinutes was omitted (back-compat,
-  // Pitfall 2) or the current state is Active — LiveRowCard already answers
-  // "where am I" during Active, and the marker's chunk-boundary position
-  // would be slightly false mid-chunk. Guarded on the sealed variant
-  // specifically (not on "does the row list contain an isLive row"),
-  // because Overdue also sets isLive and Overdue MUST show the marker.
-  final bool showMarker = nowMinutes != null && nowState is! Active;
-  bool markerInserted = false;
-
   final rows = <TimelineRow>[];
   int? prevEnd;
 
@@ -98,8 +81,8 @@ List<TimelineRow> buildTimeline({
         // NOW-02: suppress once the window has closed (nowMinutes has
         // reached or passed start) — there is no truthful alternate copy to
         // show once "Free until <time>" describes a window that's already
-        // passed; the NowMarkerRow below is what tells the user where they
-        // are instead.
+        // passed; the now-line overlay (CAL-02, plan 04) is what tells the
+        // user where they are instead.
         if (start > 0 && (nowMinutes == null || nowMinutes < start)) {
           rows.add(LeadingFreeRow(start));
         }
@@ -112,22 +95,7 @@ List<TimelineRow> buildTimeline({
       prevEnd = start + chunk.durationMinutes;
     }
 
-    // NOW-01 insertion rule (24-UI-SPEC.md): free row (if any, above) then
-    // the marker, then the chunk — the marker is a point inside the span
-    // the free/gap row just named. Inserted immediately before the first
-    // ChunkRow whose start is after nowMinutes.
-    if (showMarker && !markerInserted && start != null && nowMinutes < start) {
-      rows.add(NowMarkerRow(nowMinutes));
-      markerInserted = true;
-    }
-
     rows.add(ChunkRow(chunk, isLive: chunk.id == liveId));
-  }
-
-  // DayComplete / no-future-chunk case — the marker lands as the very last
-  // row.
-  if (showMarker && !markerInserted) {
-    rows.add(NowMarkerRow(nowMinutes));
   }
 
   return rows;
