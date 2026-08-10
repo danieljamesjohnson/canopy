@@ -139,3 +139,7 @@ No blockers. `now_marker.dart` deliberately still exists and is still referenced
 ---
 *Phase: 26-the-day-has-a-shape*
 *Completed: 2026-08-10*
+
+## Self-Check: PASSED
+
+All created files confirmed present on disk; all four commit hashes (8ad18f0, 7f3441e, e455e42, ba55d53) confirmed present in `git log --oneline --all`.
