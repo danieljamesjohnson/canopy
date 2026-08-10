@@ -1,7 +1,7 @@
 # Canopy — Roadmap
 
 **Created:** 2026-02-24
-**Last updated:** 2026-08-07 (Phase 22 planned)
+**Last updated:** 2026-08-10 (Phases 23-25 reconciled complete; Phase 26 next)
 
 ## Milestones
 
@@ -10,7 +10,7 @@
 - ✅ **v1.2 — Make It Usable** — Phases 12-14 (shipped 2026-06-13)
 - ✅ **v1.3 — An Honest Day** — Phases 15-17 (shipped 2026-06-14)
 - ✅ **v1.4 — Energy-Aware** — Phases 18-20 (shipped 2026-06-15)
-- 🚧 **v1.5 — Right Now** — Phases 21-23 (in progress)
+- 🚧 **v1.5 — Right Now** — Phases 21-26 (in progress)
 
 Full per-milestone detail (phase goals, success criteria, coverage maps) is archived in
 `.planning/milestones/`: `v1.2-ROADMAP.md` carries the complete cumulative roadmap through v1.2;
@@ -85,7 +85,10 @@ browser-verified; 289/289 tests green. See `v1.4-MILESTONE-AUDIT.md`.
 
 - [x] **Phase 21: Mood-Scaled Breaks & Honest Rationale** - Long-break cadence scales with morning mood; time-target rationale drops "behind" framing (completed 2026-08-07)
 - [x] **Phase 22: Unified Today Screen** - Home and Schedule merge into one destination; every existing entry point still resolves somewhere real (completed 2026-08-07)
-- [ ] **Phase 23: Live Activity Tracking** - The unified screen always names the current activity, including breaks, with a live countdown
+- [x] **Phase 23: Live Activity Tracking** - The unified screen always names the current activity, including breaks, with a live countdown (completed 2026-08-08)
+- [x] **Phase 24: Where Am I** - The timeline carries a now-marker at the current clock position (completed 2026-08-10)
+- [x] **Phase 25: Time Travel** - Debug-only clock override makes time-gated states inspectable on demand (completed 2026-08-10)
+- [ ] **Phase 26: The Day Has a Shape** - Time-proportional day surface with a continuously-moving now-line
 
 ## Phase Details
 
@@ -160,7 +163,14 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 23-04-PLAN.md — Phase gate: full suite + analyze, served debug build, and Dan's sign-off on the two manual-only verifications and the gap-banner decision
+- [x] 23-04-PLAN.md — Phase gate: full suite + analyze, served debug build, and Dan's sign-off on the two manual-only verifications and the gap-banner decision
+
+  **No 23-04-SUMMARY.md exists.** The gate was discharged through `23-UAT.md` rather than a summary
+  write-up: all 4 sign-off items passed (Dan, 2026-08-08), the served debug build ran on
+  `danserver:8123`, and the seven gaps Dan raised at that same gate were closed by 23-05..23-08.
+  One item is genuinely outstanding and is *not* being smoothed over: `23-VALIDATION.md` never left
+  `status: draft` / `nyquist_compliant: false`, matching the same carried tech-debt item already
+  logged for phases 15/16/17. Recorded here rather than back-filled.
 
 ### Phase 23 gap closure (UAT, 2026-08-08)
 
@@ -283,7 +293,7 @@ Plans:
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21. Mood-Scaled Breaks & Honest Rationale | v1.5 | 2/2 | Complete   | 2026-08-07 |
 | 22. Unified Today Screen | v1.5 | 4/4 | Complete   | 2026-08-07 |
-| 23. Live Activity Tracking | v1.5 | 7/8 | In Progress|  |
+| 23. Live Activity Tracking | v1.5 | 8/8 | Complete   | 2026-08-08 |
 | 24. Where Am I | v1.5 | 4/4 | Complete    | 2026-08-10 |
 | 25. Time Travel | v1.5 | 1/1 | Complete    | 2026-08-10 |
 | 26. The Day Has a Shape | v1.5 | 0/? | Not started |  |
