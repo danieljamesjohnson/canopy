@@ -58,13 +58,34 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
   /// calls _resetIfDayChanged so a stale schedule from a prior day is cleared
   /// immediately on startup. Call once at startup before runApp().
   Future<void> init() async {
+    await _loadToday();
+    WidgetsBinding.instance.addObserver(this);
+    notifyListeners();
+  }
+
+  /// Re-reads today's persisted schedule WITHOUT re-registering the
+  /// lifecycle observer — [init] already does that once at startup, and
+  /// calling it again here would register [this] as a duplicate
+  /// [WidgetsBindingObserver] on every call.
+  ///
+  /// Phase 25 (Time Travel, DEV-01): this is what lets the debug clock
+  /// override UI make the rest of the app agree on a simulated moment —
+  /// after moving [DevClock], the "today" key `getTodaysSchedule()` reads
+  /// may have changed, so the in-memory schedule needs to be re-fetched to
+  /// match. Safe to call any time after [init].
+  Future<void> reloadToday() async {
+    await _loadToday();
+    notifyListeners();
+  }
+
+  /// Shared load step behind [init] and [reloadToday]: fetch today's
+  /// schedule and clear it if it turns out to be from a prior local day.
+  Future<void> _loadToday() async {
     _loading = true;
     _todaySchedule = await _repo.getTodaysSchedule();
     _loading = false;
     // LOOP-02: clear stale in-memory schedule if it belongs to a prior day.
     _resetIfDayChanged();
-    WidgetsBinding.instance.addObserver(this);
-    notifyListeners();
   }
 
   /// Called on resume and at end of init(): if the loaded schedule is from a
