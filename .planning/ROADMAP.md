@@ -296,7 +296,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 26-02-PLAN.md — Row vocabulary at proportional scale: `ChunkCardDensity` (detailed/full/compact) with a parameterised dashed painter, and `TimelineRowTile` reduced to a blank reserved gutter with `FreeTimeRow` centring in its allocated height (CAL-01)
+- [x] 26-02-PLAN.md — Row vocabulary at proportional scale: `ChunkCardDensity` (detailed/full/compact) with a parameterised dashed painter, and `TimelineRowTile` reduced to a blank reserved gutter with `FreeTimeRow` centring in its allocated height (CAL-01)
 
 **Wave 3** *(blocked on Wave 2)*
 
@@ -332,4 +332,4 @@ Plans:
 | 23. Live Activity Tracking | v1.5 | 8/8 | Complete   | 2026-08-08 |
 | 24. Where Am I | v1.5 | 4/4 | Complete    | 2026-08-10 |
 | 25. Time Travel | v1.5 | 1/1 | Complete    | 2026-08-10 |
-| 26. The Day Has a Shape | v1.5 | 1/6 | In Progress|  |
+| 26. The Day Has a Shape | v1.5 | 2/6 | In Progress|  |
