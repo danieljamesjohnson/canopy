@@ -31,6 +31,12 @@
 - [x] **NOW-01**: The timeline carries a visible now-marker at the current clock position, so the user can locate themselves by looking at the list rather than reading a header line rows away. Its position derives from the same clock sample `resolveNowState` uses — a position, never a second opinion about which activity is current.
 - [x] **NOW-02**: A leading "Free until <time>" row never describes a window that has already closed.
 
+### Dev Instrumentation (added 2026-08-10 from Phase 24 UAT)
+
+- [ ] **DEV-01**: A debug-only clock override puts the whole app into a simulated moment — timeline, schedule "today" key, and end-of-day card all agree on it.
+- [ ] **DEV-02**: The override is an OFFSET, not a frozen instant, so time keeps flowing and a moving marker can be observed. It survives a page reload and is always visibly indicated while active.
+- [ ] **DEV-03**: Release builds are unaffected — the override cannot be set and the clock is exactly `DateTime.now()`.
+
 ### Time-Proportional Day (added 2026-08-08 from Phase 24 UAT)
 
 - [ ] **CAL-01**: The day reads as a time-proportional surface — a row's height corresponds to its duration — so the shape of the day (a long stretch of work, a thin gap) is legible without reading any times.
@@ -79,16 +85,19 @@ Which phases cover which requirements. Populated during roadmap creation.
 | BREAK-01 | Phase 21 | Complete |
 | BREAK-02 | Phase 21 | Complete |
 | TONE-01 | Phase 21 | Complete |
-| CAL-01 | Phase 25 | Not started |
-| CAL-02 | Phase 25 | Not started |
-| CAL-03 | Phase 25 | Not started |
+| DEV-01 | Phase 25 | Not started |
+| DEV-02 | Phase 25 | Not started |
+| DEV-03 | Phase 25 | Not started |
+| CAL-01 | Phase 26 | Not started |
+| CAL-02 | Phase 26 | Not started |
+| CAL-03 | Phase 26 | Not started |
 
 **Coverage:**
 
-- v1.5 requirements: 11 total
-- Mapped to phases: 11 (100%)
+- v1.5 requirements: 14 total
+- Mapped to phases: 14 (100%)
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-08-04*
-*Last updated: 2026-08-08 — CAL-01..03 added from Phase 24's UAT verdict*
+*Last updated: 2026-08-10 — DEV-01..03 added; calendar work renumbered to Phase 26*

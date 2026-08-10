@@ -220,7 +220,31 @@ Plans:
 
 ---
 
-### Phase 25: The Day Has a Shape
+### Phase 25: Time Travel
+
+**Goal**: A debug-only clock override lets time-gated states be inspected on demand, so UAT of "what does the app look like at 9pm" does not require waiting until 9pm
+**Depends on**: nothing (pure dev infrastructure; the seams it uses already exist)
+**Requirements**: DEV-01, DEV-02, DEV-03
+**Success Criteria** (what must be TRUE):
+
+  1. A debug build can be put into any simulated moment and the whole app agrees — the timeline, the schedule's "today" key, and the end-of-day card all read the same clock
+  2. Time still *flows* while overridden — the override is an offset, not a frozen instant, so the minute ticker keeps advancing and a moving marker can be watched
+  3. The override survives a page reload (web UAT means reloads) and is impossible to leave on by accident — it is always visibly indicated
+  4. Release builds are unaffected: the override cannot be set, and the clock is exactly `DateTime.now()`
+
+**Origin**: Dan, Phase 24 UAT 2026-08-10 — *"Probably need a testing harness that we can set time and such."* Phase 24's final UAT item (`DayComplete`) was blocked purely on wall-clock time: the state only exists after the day's last chunk ends, and the running app has no clock seam the router uses. Phase 26 will be strictly worse — a continuously-moving now-line cannot be UAT'd by waiting.
+
+**Why this is cheap**: the seams already exist and are already used by the test suite — `ScheduleNotifier(now:)`, `TodayScreen(now:)`, `shouldShowEodCard(now:)`, `resolveNowState(now:)`. Only `HiveDailyScheduleRepository.getTodaysSchedule()` reads `DateTime.now()` hard-coded. This phase supplies one source for those seams rather than inventing new ones.
+
+**Deliberate constraint**: this is dev instrumentation, not a product feature. It must be `kDebugMode`-gated end to end. A user-facing time override would be a footgun in an app whose whole premise is a schedule you can trust.
+
+**UI hint**: yes (debug-only surface)
+
+**Plans**: not yet planned
+
+---
+
+### Phase 26: The Day Has a Shape
 
 **Goal**: The day renders as a time-proportional surface with a continuously-moving now-line, so "where am I" is answered by position rather than by a marker slotted between rows
 **Depends on**: Phase 24 (owns the row model, the single clock sample, and the marker this phase generalises)
@@ -261,4 +285,5 @@ Plans:
 | 22. Unified Today Screen | v1.5 | 4/4 | Complete   | 2026-08-07 |
 | 23. Live Activity Tracking | v1.5 | 7/8 | In Progress|  |
 | 24. Where Am I | v1.5 | 4/4 | Complete   | 2026-08-08 |
-| 25. The Day Has a Shape | v1.5 | 0/? | Not started |  |
+| 25. Time Travel | v1.5 | 0/? | Not started |  |
+| 26. The Day Has a Shape | v1.5 | 0/? | Not started |  |

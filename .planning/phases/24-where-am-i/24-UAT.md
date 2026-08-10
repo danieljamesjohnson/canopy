@@ -53,6 +53,19 @@ blocked: 0
 
 _None recorded yet._
 
+## Execution constraints
+
+- **Test 1 is time-gated.** `DayComplete` requires the wall clock to be past the last chunk's end
+  (`now_state.dart` step 4), so it is only executable in the evening. There is no dev-side clock
+  override in the running app: `TodayScreen.now` is a constructor seam used only by widget tests,
+  and the router constructs `TodayScreen()` without it.
+- A clock-injected throwaway build was considered and rejected as a shortcut: it would have to be
+  served on a fresh port, which is a fresh IndexedDB origin with no schedule in it — more friction
+  than waiting, and it would test seeded data rather than Dan's real day.
+- Test 1 is the load-bearing one. Tests 2 and 3 share the same code path but are weaker evidence:
+  in `PreStart` the marker sits second in the list and is on screen whether or not the scroll fires,
+  so it cannot distinguish a working fallback from a no-op.
+
 ## Notes
 
 - Served from the established Canopy debug-UAT origin (port 8123, same as phases 22 and 23-04), so
