@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
-status: completed
+status: "Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned."
 stopped_at: Completed 25-01 (Time Travel)
-last_updated: "2026-08-10T13:10:20.349Z"
-last_activity: 2026-08-10 -- Phase 25 (Time Travel) executed directly from a scoped prompt; DEV-01/02/03 delivered
+last_updated: "2026-08-10T13:35:52.985Z"
+last_activity: 2026-08-10
 progress:
   total_phases: 6
-  completed_phases: 4
-  total_plans: 19
-  completed_plans: 19
-  percent: 67
+  completed_phases: 3
+  total_plans: 18
+  completed_plans: 18
+  percent: 50
 ---
 
 # Execution State
@@ -24,10 +24,10 @@ progress:
 
 ## Current Position
 
-Phase: 25 (time-travel) — COMPLETE
-Plan: 1 of 1 (25-01; no PLAN.md — executed directly from a scoped prompt, see `.planning/phases/25-time-travel/25-01-SUMMARY.md`)
+Phase: 25
+Plan: Not started
 Status: Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned.
-Last activity: 2026-08-10 -- Phase 25 (Time Travel) executed directly from a scoped prompt; DEV-01/02/03 delivered
+Last activity: 2026-08-10
 
 ```
 Progress: [██████░░░░] 67% — Phase 25/26 (v1.5 phases: 21-26)
