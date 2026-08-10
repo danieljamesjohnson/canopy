@@ -300,7 +300,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 26-03-PLAN.md — Retire `NowMarkerRow` end-to-end in one green commit, then render the day as a fixed-height `Stack` of duration-positioned rows (CAL-01, CAL-02)
+- [x] 26-03-PLAN.md — Retire `NowMarkerRow` end-to-end in one green commit, then render the day as a fixed-height `Stack` of duration-positioned rows (CAL-01, CAL-02)
 
 **Wave 4** *(blocked on Wave 3)*
 
@@ -332,4 +332,4 @@ Plans:
 | 23. Live Activity Tracking | v1.5 | 8/8 | Complete   | 2026-08-08 |
 | 24. Where Am I | v1.5 | 4/4 | Complete    | 2026-08-10 |
 | 25. Time Travel | v1.5 | 1/1 | Complete    | 2026-08-10 |
-| 26. The Day Has a Shape | v1.5 | 2/6 | In Progress|  |
+| 26. The Day Has a Shape | v1.5 | 3/6 | In Progress|  |
