@@ -4,7 +4,7 @@ milestone: v1.5
 milestone_name: Right Now
 status: "Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned."
 stopped_at: Completed 25-01 (Time Travel)
-last_updated: "2026-08-10T13:35:52.985Z"
+last_updated: "2026-08-10T13:39:33.932Z"
 last_activity: 2026-08-10
 progress:
   total_phases: 6
@@ -24,7 +24,7 @@ progress:
 
 ## Current Position
 
-Phase: 25
+Phase: 26
 Plan: Not started
 Status: Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned.
 Last activity: 2026-08-10
