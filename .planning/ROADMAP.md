@@ -1,7 +1,7 @@
 # Canopy — Roadmap
 
 **Created:** 2026-02-24
-**Last updated:** 2026-08-10 (Phases 23-25 reconciled complete; Phase 26 next)
+**Last updated:** 2026-08-10 (Phase 26 planned — 6 plans, 6 waves)
 
 ## Milestones
 
@@ -270,13 +270,49 @@ Plans:
 
 **Why this is not just a skin**: Phase 24's `24-UI-SPEC.md` suppresses the marker during `Active` on the explicit grounds that a chunk-boundary position "would visually assert a boundary position that isn't the true one" mid-chunk. A time-proportional layout removes that constraint rather than working around it, so CAL-02 supersedes the `Active`-suppression rule instead of coexisting with it. Expect `NowMarkerRow`'s between-rows insertion contract in `timeline.dart` to be reworked, not extended.
 
-**Open questions for discuss-phase**: whether this replaces the list view or sits alongside it as a second mode; what happens to a day with large empty stretches (a proportional 6-hour gap is mostly whitespace); whether "red" is right given the app's mood-seeded `ColorScheme` and the current marker's `colorScheme.primary`.
+**Open questions — RESOLVED at discuss-phase, 2026-08-10** (`26-CONTEXT.md`): **D-01** — the
+proportional surface *replaces* the list; no toggle, no second mode, no persisted view
+preference. **D-02** — fully proportional; an empty 4-hour stretch renders 4 hours tall, with no
+gap compression and no min/max row clamping. **D-03** — the now-line is `colorScheme.primary`,
+not a hardcoded red and not `colorScheme.error`.
 
-**Scope boundary inherited from Phase 24**: D-03's prohibition on a sticky bar, floating pill, or jump button was about the *marker*. Whether it binds a proportional layout is an open question for this phase, not a settled constraint.
+**Scope boundary inherited from Phase 24**: D-03's prohibition on a sticky bar, floating pill, or jump button was about the *marker*. Whether it binds a proportional layout is an open question for this phase, not a settled constraint. (Planning added none — Dan has not asked for one.)
 
 **UI hint**: yes
 
-**Plans**: not yet planned
+**Planner corrections to `26-UI-SPEC.md`** (measured 2026-08-10, recorded in plan 26-01 as PD-1
+and PD-2): `kPixelsPerMinute` is **5.5**, not the UI-SPEC's 4.0 — a Full-tier work card measures
+126px, so a 25-minute chunk needs 137.5px of slot, not 100px. `kLiveRowReservedHeight` is
+**240.0** — `LiveRowCard` measures 230px, above the UI-SPEC's 200–220 estimate. Density tiers are
+keyed on pixel slot height, not on minutes, so they cannot rot if the scale moves again. All
+three are subject to Dan's real-browser verdict at the phase gate.
+
+**Plans**: 6 plans, 6 waves (strictly sequential — every plan boundary is a point where the tree
+must compile and the suite must be green, which is the phase's dominant risk)
+Plans:
+**Wave 1**
+
+- [ ] 26-01-PLAN.md — Foundations, additive only: hour-range helpers in `time_format.dart`, the pure `TimelineGeometry` minute→pixel authority and its six constants, and the `NowLineOverlay` / `HourAxisLine` widgets (CAL-01/02/03)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 26-02-PLAN.md — Row vocabulary at proportional scale: `ChunkCardDensity` (detailed/full/compact) with a parameterised dashed painter, and `TimelineRowTile` reduced to a blank reserved gutter with `FreeTimeRow` centring in its allocated height (CAL-01)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 26-03-PLAN.md — Retire `NowMarkerRow` end-to-end in one green commit, then render the day as a fixed-height `Stack` of duration-positioned rows (CAL-01, CAL-02)
+
+**Wave 4** *(blocked on Wave 3)*
+
+- [ ] 26-04-PLAN.md — Wire the hour axis and the now-line overlays into the `Stack`; suppression deleted, not relocated; CAL-02 asserted across all five `NowState`s including mid-chunk (CAL-02)
+
+**Wave 5** *(blocked on Wave 4)*
+
+- [ ] 26-05-PLAN.md — Centre-on-open: two flags, two `GlobalKey`s and two `ensureVisible` blocks collapse into one flag and one arithmetic `animateTo` (CAL-03)
+
+**Wave 6** *(blocked on Wave 5, has checkpoint)*
+
+- [ ] 26-06-PLAN.md — Phase gate: full suite + analyze, debug web build served on fresh port 8131 via `tools/serve-uat.py`, and Dan's real-browser sign-off on the ten harness-bound checks using Phase 25's DevClock offset (CAL-01/02/03)
 
 ## Progress
 
@@ -296,4 +332,4 @@ Plans:
 | 23. Live Activity Tracking | v1.5 | 8/8 | Complete   | 2026-08-08 |
 | 24. Where Am I | v1.5 | 4/4 | Complete    | 2026-08-10 |
 | 25. Time Travel | v1.5 | 1/1 | Complete    | 2026-08-10 |
-| 26. The Day Has a Shape | v1.5 | 0/? | Not started |  |
+| 26. The Day Has a Shape | v1.5 | 0/6 | Planned |  |
