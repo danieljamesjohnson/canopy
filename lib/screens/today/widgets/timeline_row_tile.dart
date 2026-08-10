@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../utils/time_format.dart';
-
 /// Width of the time gutter reserved on the left of every timeline row
 /// (D-06's ~46px time column).
 ///
@@ -19,8 +17,9 @@ import '../../../utils/time_format.dart';
 /// "12:10p" rendering ~40px in actual Roboto, so 75 reserved ~35dp of dead
 /// space and pushed every card right, which was visible on screen.
 ///
-/// 52.0 = the real-browser ~40px worst case ("12:45p", `formatMinutesCompact`'s
-/// 6-character maximum) plus ~12dp slack for larger text-scale settings.
+/// 52.0 = the real-browser ~40px worst case ("12:45p", the compact
+/// time-format's 6-character maximum) plus ~12dp slack for larger
+/// text-scale settings.
 /// Verified visually in the served debug build, not just in tests.
 const double kGutterWidth = 52.0;
 
@@ -28,10 +27,16 @@ const double kGutterWidth = 52.0;
 /// rail: no connector line, no dot, no continuous stroke down the gutter.
 /// Anyone adding one is re-opening a rejected sketch variant.
 ///
-/// Reserves a fixed-width left column holding the row's compact start time
-/// (or nothing, when [startMinutes] is null — the gutter stays reserved,
-/// not collapsed, so every row's content still starts at the same
-/// horizontal offset), then lays out [child] beside it.
+/// **Phase 26 (CAL-01, PD-5, `26-02-PLAN.md`):** this is now a PURE
+/// 16dp-inset + [kGutterWidth]-reserved-blank-column wrapper. It no longer
+/// renders any text in the gutter column — the column stays reserved (so
+/// every row's content still starts at the same horizontal offset) but
+/// shows nothing, because the persistent hour axis
+/// (`lib/screens/today/widgets/hour_axis.dart`) now owns everything drawn
+/// in that column. Do not "restore" a per-row time label here; a
+/// duration-driven row (as small as a 5-minute break's ~27.5px slot) has no
+/// room for one, and the hour axis is the one source of time reference in
+/// that column now.
 ///
 /// Owns a 16dp horizontal inset on the whole row (UAT G-04) — this matches
 /// `_buildHeader`'s `EdgeInsets.fromLTRB(16, ...)` in `today_screen.dart` so
@@ -43,43 +48,18 @@ const double kGutterWidth = 52.0;
 /// `ChunkCard`) carry vertical margin/padding ONLY — adding a horizontal
 /// inset back onto one of them would double it.
 class TimelineRowTile extends StatelessWidget {
-  const TimelineRowTile({
-    super.key,
-    required this.startMinutes,
-    required this.child,
-  });
-
-  /// Minutes-from-midnight for the row's start time. Null renders no time
-  /// text but still reserves the gutter width.
-  final int? startMinutes;
+  const TimelineRowTile({super.key, required this.child});
 
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // Tabular figures deliver the column alignment the UI-SPEC's "monospace"
-    // is actually buying — no monospace font asset ships with the app, and
-    // adding one would be a new dependency for a single text style. The
-    // platform monospace family is used where it exists via the fallback
-    // list; tabularFigures does the real work everywhere else.
-    final gutterStyle = theme.textTheme.bodySmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontFeatures: const [FontFeature.tabularFigures()],
-      fontFamilyFallback: const ['monospace', 'RobotoMono', 'Courier New'],
-    );
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: kGutterWidth,
-            child: startMinutes != null
-                ? Text(formatMinutesCompact(startMinutes!), style: gutterStyle)
-                : const SizedBox.shrink(),
-          ),
+          SizedBox(width: kGutterWidth, child: const SizedBox.shrink()),
           Expanded(child: child),
         ],
       ),

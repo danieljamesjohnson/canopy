@@ -632,43 +632,35 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     switch (row) {
       case LeadingFreeRow(:final untilMinutes):
         return TimelineRowTile(
-          startMinutes: null,
           child: FreeTimeRow.until(untilMinutes: untilMinutes),
         );
-      case GapFreeRow(:final startMinutes, :final durationMinutes):
+      case GapFreeRow(:final durationMinutes):
         return TimelineRowTile(
-          startMinutes: startMinutes,
           child: FreeTimeRow.gap(durationMinutes: durationMinutes),
         );
       case NowMarkerRow(:final minutes):
         // NOW-01: the fourth and final arm of this exhaustive switch.
-        // startMinutes: minutes (not null) is what makes TimelineRowTile
-        // render the current compact time in the 52dp gutter — NowMarker's
-        // own visible label carries no time (24-UI-SPEC.md). The Semantics
-        // node lives here at the call site, not inside NowMarker. Keyed so
-        // build()'s marker-fallback centre-on-open (24-04 gap closure) can
-        // find this row's context via Scrollable.ensureVisible, exactly as
-        // _liveRowKey already does for the live row.
+        // Phase 26 (26-02-PLAN.md, PD-5): TimelineRowTile's gutter no longer
+        // renders any per-row time text — the persistent hour axis owns
+        // that column now, so the gutter here is reserved-but-blank like
+        // every other row's. NowMarker's own visible label still carries no
+        // time (24-UI-SPEC.md); the Semantics node lives here at the call
+        // site, not inside NowMarker. Keyed so build()'s marker-fallback
+        // centre-on-open (24-04 gap closure) can find this row's context
+        // via Scrollable.ensureVisible, exactly as _liveRowKey already does
+        // for the live row. Plan 03 deletes this whole arm — not pre-empted
+        // here.
         //
         // The Semantics wrapper MUST enclose TimelineRowTile rather than be
-        // passed as its `child` (24-REVIEW.md WR-01). TimelineRowTile lays
-        // the gutter's compact-time Text out as a SIBLING of `child`, so an
-        // excludeSemantics node handed in as `child` never covers the
-        // gutter: a screen reader announced this one row twice, in two
-        // different time formats ("12:34p" from the gutter and
-        // "Now — 12:34 PM" from the label). That is exactly the double
-        // announcement 24-UI-SPEC.md introduced this node to prevent.
-        // Enclosing the whole tile puts the gutter inside the excluded
-        // subtree, giving the single clean announcement the spec asks for.
+        // passed as its `child` (24-REVIEW.md WR-01) — keeps the whole tile
+        // inside the excluded subtree so a screen reader gets one clean
+        // announcement instead of two.
         return KeyedSubtree(
           key: _nowMarkerKey,
           child: Semantics(
             label: 'Now — ${formatMinutes(minutes)}',
             excludeSemantics: true,
-            child: TimelineRowTile(
-              startMinutes: minutes,
-              child: const NowMarker(),
-            ),
+            child: TimelineRowTile(child: const NowMarker()),
           ),
         );
       case ChunkRow(:final chunk, :final isLive):
@@ -691,7 +683,6 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         final goalName = _lookupGoalName(context, chunk);
         final displayRationale = _toDisplayRationale(chunk.rationale);
         return TimelineRowTile(
-          startMinutes: chunk.displayStartMinutes,
           child: SwipeableChunkCard(
             chunk: chunk,
             goalColor: goalColor,

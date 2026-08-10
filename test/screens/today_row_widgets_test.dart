@@ -129,38 +129,19 @@ Future<void> _pumpChunkCard(
 }
 
 void main() {
-  group('TimelineRowTile (D-04, D-06)', () {
-    testWidgets('renders compact time text for a given startMinutes', (
-      tester,
-    ) async {
+  group('TimelineRowTile (Phase 26 CAL-01, PD-5: pure inset wrapper)', () {
+    testWidgets('still lays out the child', (tester) async {
       await pumpWithMood(
         tester,
-        const TimelineRowTile(startMinutes: 645, child: Text('Reading')),
+        const TimelineRowTile(child: Text('Free until 8:00 AM')),
       );
-      expect(find.text('10:45'), findsOneWidget);
-      expect(find.text('Reading'), findsOneWidget);
+      expect(find.text('Free until 8:00 AM'), findsOneWidget);
     });
-
-    testWidgets(
-      'renders no time text but still lays out the child when startMinutes is null',
-      (tester) async {
-        await pumpWithMood(
-          tester,
-          const TimelineRowTile(
-            startMinutes: null,
-            child: Text('Free until 8:00 AM'),
-          ),
-        );
-        expect(find.text('Free until 8:00 AM'), findsOneWidget);
-        // No gutter time text rendered anywhere.
-        expect(find.text('10:45'), findsNothing);
-      },
-    );
 
     testWidgets('gutter SizedBox is exactly kGutterWidth wide', (tester) async {
       await pumpWithMood(
         tester,
-        const TimelineRowTile(startMinutes: 480, child: Text('Exercise')),
+        const TimelineRowTile(child: Text('Exercise')),
       );
       final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
       expect(
@@ -174,30 +155,20 @@ void main() {
     });
 
     testWidgets(
-      'widest gutter label ("12:45p") renders and the gutter reserves room for it (G-04)',
+      'the reserved gutter column renders no Text for any row (PD-5)',
       (tester) async {
-        // 765 minutes-from-midnight = 12:45 PM → formatMinutesCompact renders
-        // "12:45p", the 6-character worst case the formatter produces (see
-        // time_format.dart's own doc comment).
         await pumpWithMood(
           tester,
-          const TimelineRowTile(startMinutes: 765, child: Text('Reading')),
+          const TimelineRowTile(child: Text('Reading')),
         );
-        expect(find.text('12:45p'), findsOneWidget);
-
-        // Deliberately NOT a TextPainter width assertion. `flutter test`
-        // renders with a placeholder font whose glyphs are all a fixed
-        // fontSize wide, so measuring "12:45p" here reports 72px — a fact
-        // about the harness, not the app. Sizing the gutter from that number
-        // is exactly the mistake this test used to encode: it forced
-        // kGutterWidth to 75, which visibly over-indented every card in a
-        // real browser.
-        //
-        // The real worst case, measured in the served debug build with actual
-        // Roboto metrics, is ~40px. This gate pins the documented floor plus
-        // slack; the "does it actually clip" question is answered visually
-        // (per CLAUDE.md) and by the gutter/heading alignment test below.
-        expect(kGutterWidth, greaterThanOrEqualTo(44.0));
+        final gutterColumn = find.byWidgetPredicate(
+          (widget) => widget is SizedBox && widget.width == kGutterWidth,
+        );
+        expect(gutterColumn, findsOneWidget);
+        expect(
+          find.descendant(of: gutterColumn, matching: find.byType(Text)),
+          findsNothing,
+        );
       },
     );
   });
@@ -272,14 +243,14 @@ void main() {
     });
 
     testWidgets(
-      'wrapped in TimelineRowTile, the gutter shows the compact time and '
-      'the marker still shows "Now"',
+      'wrapped in TimelineRowTile, the gutter renders no time text and the '
+      'marker still shows "Now" (PD-5: gutter is reserved-but-blank)',
       (tester) async {
         await pumpWithMood(
           tester,
-          const TimelineRowTile(startMinutes: 754, child: NowMarker()),
+          const TimelineRowTile(child: NowMarker()),
         );
-        expect(find.text('12:34p'), findsOneWidget);
+        expect(find.text('12:34p'), findsNothing);
         expect(find.text('Now'), findsOneWidget);
       },
     );

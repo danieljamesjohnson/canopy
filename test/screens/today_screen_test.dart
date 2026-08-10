@@ -21,6 +21,7 @@ import 'package:canopy/screens/today/widgets/breathing_pulse_cta.dart';
 import 'package:canopy/screens/today/widgets/end_of_day_card.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
 import 'package:canopy/screens/today/widgets/now_marker.dart';
+import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -408,15 +409,6 @@ void main() {
       expect(find.text('Free · 1h 45m'), findsOneWidget);
     });
 
-    testWidgets('the gutter shows the compact start time for timed rows', (
-      tester,
-    ) async {
-      await pumpDay(tester);
-
-      expect(find.textContaining('8:00'), findsWidgets);
-      expect(find.textContaining('1:00p'), findsOneWidget);
-    });
-
     testWidgets('"See full schedule" appears nowhere (D-08 / G4)', (
       tester,
     ) async {
@@ -502,15 +494,20 @@ void main() {
     );
 
     testWidgets(
-      'gutter label shares a left edge with the "Today" heading (G-04)',
+      'gutter column shares a left edge with the "Today" heading (G-04)',
       (tester) async {
         await pumpDay(tester);
 
-        // "8:00" is the c1 row's exact gutter text (distinct from "Free
-        // until 8:00 AM", which never renders as an exact "8:00" match).
-        // TimelineRowTile now owns the row's 16dp horizontal inset, so the
-        // gutter text should start at the same x as the header's "Today".
-        final gutterDx = tester.getTopLeft(find.text('8:00')).dx;
+        // Phase 26 (PD-5): the gutter no longer renders per-row text, but
+        // it still reserves a kGutterWidth-wide column — TimelineRowTile
+        // owns the row's 16dp horizontal inset, so that reserved column
+        // should still start at the same x as the header's "Today".
+        final gutterColumn = find
+            .byWidgetPredicate(
+              (widget) => widget is SizedBox && widget.width == kGutterWidth,
+            )
+            .first;
+        final gutterDx = tester.getTopLeft(gutterColumn).dx;
         final headingDx = tester.getTopLeft(find.text('Today')).dx;
         expect(gutterDx, headingDx);
       },
@@ -598,16 +595,11 @@ void main() {
 
           // The merged node the spec asks for.
           expect(find.bySemanticsLabel('Now — 6:00 AM'), findsOneWidget);
-          // The gutter's compact rendering must NOT survive as its own
-          // semantics node. formatMinutesCompact(360) is exactly '6:00'
-          // (no suffix before noon), and the only row with that gutter value
-          // is the marker itself — the 8:00 chunk renders '8:00'. With the
-          // Semantics wrapper in the wrong place this resolved to a second,
-          // separate node and the row was announced twice.
-          //
-          // Note the visible Text still exists and is still asserted by the
-          // 'PreStart shows the marker' test below via find.text('6:00');
-          // what must not exist is a SEPARATE semantics node for it.
+          // Phase 26 (PD-5): TimelineRowTile's gutter no longer renders any
+          // compact-time Text at all, so the double-announcement failure
+          // mode WR-01 fixed can no longer recur via that path — there is
+          // no separate gutter node left to merge or duplicate. This
+          // assertion still pins that no stray '6:00' semantics node exists.
           expect(find.bySemanticsLabel('6:00'), findsNothing);
 
           handle.dispose();
@@ -628,7 +620,8 @@ void main() {
 
         expect(find.byType(NowMarker), findsOneWidget);
         expect(find.text('Now'), findsOneWidget);
-        expect(find.text('6:00'), findsOneWidget);
+        // Phase 26 (PD-5): the gutter no longer renders a compact time.
+        expect(find.text('6:00'), findsNothing);
       });
 
       testWidgets('GapBeforeNext shows the marker', (tester) async {
@@ -658,7 +651,8 @@ void main() {
         );
 
         expect(find.byType(NowMarker), findsOneWidget);
-        expect(find.text('9:30'), findsOneWidget);
+        // Phase 26 (PD-5): the gutter no longer renders a compact time.
+        expect(find.text('9:30'), findsNothing);
       });
 
       testWidgets('DayComplete shows the marker, last', (tester) async {
@@ -680,7 +674,8 @@ void main() {
         );
 
         expect(find.byType(NowMarker), findsOneWidget);
-        expect(find.text('6:00p'), findsOneWidget);
+        // Phase 26 (PD-5): the gutter no longer renders a compact time.
+        expect(find.text('6:00p'), findsNothing);
       });
 
       testWidgets('Active suppresses the marker', (tester) async {
@@ -697,6 +692,11 @@ void main() {
         'Single-sample agreement (D-01): the header and the marker read the '
         'same clock sample',
         (tester) async {
+          // Phase 26 (PD-5): the gutter no longer renders its own compact
+          // time, so this test now proves agreement via the marker's own
+          // Semantics label (still derived from the same single nowDt
+          // sample) rather than comparing two separate Text renderings.
+          final handle = tester.ensureSemantics();
           final schedule = DailySchedule(
             dateYmd: _todayYmd(),
             moodIndex: 3,
@@ -723,7 +723,9 @@ void main() {
           );
 
           expect(find.text('Up next'), findsOneWidget);
-          expect(find.text('9:30'), findsOneWidget);
+          expect(find.bySemanticsLabel('Now — 9:30 AM'), findsOneWidget);
+
+          handle.dispose();
         },
       );
     });
