@@ -18,6 +18,7 @@ import 'package:canopy/providers/restoratives_notifier.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/theme_notifier.dart';
 import 'package:canopy/screens/commitments/commitment_form_sheet.dart';
+import 'package:canopy/screens/schedule/widgets/chunk_card.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_detail_sheet.dart';
 import 'package:canopy/screens/today/timeline_geometry.dart';
 import 'package:canopy/screens/today/today_screen.dart';
@@ -922,6 +923,37 @@ void main() {
         expect(find.text('9:12'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
+
+      testWidgets(
+        'G-01: the now chip stays inside the time gutter and never '
+        'overlaps a chunk card',
+        (tester) async {
+          // Geometric assertion (26-VALIDATION.md) — a comparison of two
+          // laid-out rects' x-coordinates, not a text-fit measurement, so
+          // it is trustworthy in the widget-test harness's placeholder
+          // font. w1 (9:00-9:25) is live at 9:12 and renders as
+          // LiveRowCard; w2 (10:00-10:25) is the fixture's one non-live
+          // ChunkCard, wrapped in TimelineRowTile, whose content begins at
+          // a fixed x-offset (16dp inset + kGutterWidth) regardless of
+          // whether the chip's y-position happens to cross it — proving
+          // the chip can never reach ANY ChunkCard's content, not just
+          // one it happens to vertically overlap in this fixture.
+          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+
+          final chipRect = tester.getRect(
+            find.descendant(
+              of: find.byType(NowLineOverlay),
+              matching: find.byWidgetPredicate(
+                (widget) => widget is SizedBox && widget.width == kGutterWidth,
+              ),
+            ),
+          );
+          final cardRect = tester.getRect(find.byType(ChunkCard));
+
+          expect(chipRect.right, lessThanOrEqualTo(cardRect.left));
+          expect(tester.takeException(), isNull);
+        },
+      );
 
       testWidgets(
         'semantics — exactly one "Now — 9:12 AM" node; the chip\'s own '
