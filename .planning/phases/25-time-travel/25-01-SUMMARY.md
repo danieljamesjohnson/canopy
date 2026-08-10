@@ -144,3 +144,41 @@ surface (SharedPreferences write) but it's a debug-only utility that no-ops in r
 - `lib/screens/settings/settings_screen.dart` — FOUND (Time travel section present)
 - Commits `985f71b`, `c3b9784`, `b463661`, `02baabe`, `a5b1ab3`, `c779503` — all FOUND in
   `git log --oneline --all`
+
+---
+
+## Orchestrator addendum (2026-08-10)
+
+Three things were added after the executor returned, all verified by mutation testing:
+
+**1. Wiring coverage (`test/dev/dev_clock_wiring_test.dart`, commit `38544fc`).**
+The executor's 8 tests covered DevClock's own arithmetic. Nothing covered the wiring, so DevClock
+could have been perfectly correct while time travel did nothing observable — a failure that would
+only have surfaced during a manual UAT, i.e. the exact loop this phase exists to close. Two tests
+now assert that `getTodaysSchedule()` loads the *simulated* day's schedule (with a real-day schedule
+also on disk, to rule out a false positive) and that an overridden clock still rolls 23:59 into the
+next day. Reverting `getTodaysSchedule` to `DateTime.now()` fails both.
+
+**2. A real integration defect between Phase 24 and Phase 25 (commit `513552a`).**
+Phase 24's centre-on-open one-shots reset only on a `dateYmd` change. Jumping from morning to 9pm on
+the same day does not change `dateYmd`, so the list would not re-scroll — meaning "jump to 9pm and
+check DayComplete", the workflow this harness was built for, would have shown a stale scroll
+position and reported a false negative against a fix that works. `build()` now re-arms both
+one-shots when `DevClock.offset` changes. The accompanying test pins both halves: a plain minute
+tick must NOT move the list (T-22-08), and the identical tick MUST move it once the clock jumped.
+
+**3. `DevClock.setOffsetForTest`** — a synchronous test hook, since the real mutators are async and
+persist.
+
+### Known coverage gaps, stated rather than papered over
+
+- **DEV-03 (release safety) is not covered by a test and cannot easily be.** `kDebugMode` is `true`
+  under `flutter test`, so the release no-op path is unreachable from the suite. The guarantee rests
+  on inspection: every mutator and `init()` early-returns on `!kDebugMode`, and `resetForTest` /
+  `setOffsetForTest` can only ever set the offset to a value, never persist one. Believed correct,
+  not proven by test.
+- **The Settings debug UI has no widget test.** The handlers are thin wrappers over DevClock methods
+  that are themselves covered, and the screen has no existing test file to extend. The controls'
+  first real exercise is Dan's own use.
+- A headless boot check confirmed the app starts cleanly with `await DevClock.init()` in `main()`
+  (all 8 Hive boxes open, no JS errors) — that was the main bootstrap risk.
