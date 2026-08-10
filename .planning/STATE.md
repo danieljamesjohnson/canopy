@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: "Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned."
-stopped_at: Completed 26-03-PLAN.md
-last_updated: "2026-08-10T15:32:59.540Z"
+stopped_at: Completed 26-04-PLAN.md
+last_updated: "2026-08-10T15:44:58.932Z"
 last_activity: 2026-08-10
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 24
-  completed_plans: 21
+  completed_plans: 22
   percent: 50
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-10T15:32:59.535Z
+**Last session:** 2026-08-10T15:44:58.927Z
 
 ---
 
 ## Current Position
 
 Phase: 26
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned.
 Last activity: 2026-08-10
 
@@ -99,6 +99,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 26-01]: Density tiers (kFullTierMinHeight/kFullBreakMinHeight, PD-3) expressed in pixels not minutes, so they do not rot if the scale changes again
 - [Phase ?]: [Phase 26-02]: PD-4/PD-5 implemented as specified — ChunkCardDensity defaults to detailed (today's card byte-for-byte); TimelineRowTile.startMinutes deleted outright, gutter column reserved-but-blank — Keeps the four standalone chunk_card_*_test.dart files untouched while making the density/gutter machinery ready for plan 04's Stack wiring
 - [Phase 26-03]: NowMarkerRow deleted outright (D-01) — the day now renders as a fixed-height Stack of TimelineGeometry-positioned rows; showStartTime flipped false->true now that the per-row gutter is gone
+- [Phase ?]: 26-04: The now-line renders unconditionally in every NowState (PD-12) — Phase 24's Active-suppression rule is deleted from the render path outright, not relocated. — CAL-02's premise is that a proportional layout can place the line truthfully mid-chunk; suppression only ever existed to hide the old between-rows marker at a boundary, which no longer applies.
+- [Phase ?]: 26-04: Semantics wraps IgnorePointer at the now-line/hour-axis call sites, not the reverse (PD-13). — Modern IgnorePointer strips its subtree from the semantics tree too — nesting the label inside it would silently delete the 'Now — <time>' screen-reader announcement (24-REVIEW.md WR-01).
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -182,7 +184,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-10
-Stopped at: Completed 26-03-PLAN.md
+Stopped at: Completed 26-04-PLAN.md
 Resume at: `/gsd-plan-phase 26`
 
 ## Performance Metrics
@@ -224,3 +226,4 @@ Resume at: `/gsd-plan-phase 26`
 | Phase 26-the-day-has-a-shape P01 | 41min | 3 tasks | 8 files |
 | Phase 26-the-day-has-a-shape P02 | 45min | 2 tasks | 7 files |
 | Phase 26-the-day-has-a-shape P3 | ~35min | 2 tasks | 7 files |
+| Phase 26-the-day-has-a-shape P04 | 45min | 2 tasks | 2 files |

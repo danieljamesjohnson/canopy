@@ -304,7 +304,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3)*
 
-- [ ] 26-04-PLAN.md — Wire the hour axis and the now-line overlays into the `Stack`; suppression deleted, not relocated; CAL-02 asserted across all five `NowState`s including mid-chunk (CAL-02)
+- [x] 26-04-PLAN.md — Wire the hour axis and the now-line overlays into the `Stack`; suppression deleted, not relocated; CAL-02 asserted across all five `NowState`s including mid-chunk (CAL-02)
 
 **Wave 5** *(blocked on Wave 4)*
 
@@ -332,4 +332,4 @@ Plans:
 | 23. Live Activity Tracking | v1.5 | 8/8 | Complete   | 2026-08-08 |
 | 24. Where Am I | v1.5 | 4/4 | Complete    | 2026-08-10 |
 | 25. Time Travel | v1.5 | 1/1 | Complete    | 2026-08-10 |
-| 26. The Day Has a Shape | v1.5 | 3/6 | In Progress|  |
+| 26. The Day Has a Shape | v1.5 | 4/6 | In Progress|  |
