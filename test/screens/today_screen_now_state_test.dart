@@ -816,9 +816,25 @@ void main() {
         findsNothing,
         reason: 'CR-01: no LiveRowCard in gap state',
       );
-      // Must show the upcoming time in the body.
+      // Must show the upcoming time in the body. Phase 26 (26-03-PLAN.md):
+      // scoped to the edge-state banner itself. showStartTime flipped
+      // false -> true for every non-live chunk row (CAL-01, "the time
+      // gutter becomes an hour axis") means c2's own row NOW also renders
+      // "10:00 AM – 10:25 AM" inside its ChunkCard, so an unscoped
+      // find.textContaining('10:00 AM') is ambiguous between the banner
+      // and the row beneath it. The original intent — the gap banner names
+      // the next chunk's start time — is unchanged; only the finder is
+      // narrowed to the banner's own subtree, mirroring the identical
+      // ancestor-scoping pattern in today_screen_test.dart's "gap-before-next
+      // targeting a break names the break" test.
+      final upNextHeader = find
+          .ancestor(of: find.text('Up next'), matching: find.byType(Padding))
+          .first;
       expect(
-        find.textContaining('10:00 AM'),
+        find.descendant(
+          of: upNextHeader,
+          matching: find.textContaining('10:00 AM'),
+        ),
         findsOneWidget,
         reason: 'CR-01: gap body must mention the next chunk start time',
       );

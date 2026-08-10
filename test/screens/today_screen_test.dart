@@ -15,6 +15,7 @@ import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/theme_notifier.dart';
 import 'package:canopy/screens/commitments/commitment_form_sheet.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_detail_sheet.dart';
+import 'package:canopy/screens/today/timeline_geometry.dart';
 import 'package:canopy/screens/today/today_screen.dart';
 import 'package:canopy/screens/today/widgets/breathing_pulse_cta.dart';
 import 'package:canopy/screens/today/widgets/end_of_day_card.dart';
@@ -563,6 +564,168 @@ void main() {
       },
     );
 
+    group('Phase 26 — CAL-01 the day has a shape', () {
+      // Reuses buildDayFixture() (the group's own fixture, above) at 18:00
+      // — past every chunk, DayComplete — rather than pumpDay's 10:47, so
+      // nothing is live and every slot height is duration-exact with no
+      // liveExtraPx shift muddying the arithmetic these assertions check.
+      Future<void> pumpDayComplete(WidgetTester tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: buildDayFixture(),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => DateTime(2026, 8, 7, 18, 0),
+        );
+      }
+
+      testWidgets(
+        'a 25-minute work chunk slot measures exactly 137.5px tall',
+        (tester) async {
+          await pumpDayComplete(tester);
+
+          // c4: 10:50-11:15, 25 minutes, renders as "Reading".
+          final c4ClipRect = find
+              .ancestor(
+                of: find.text('Reading'),
+                matching: find.byType(ClipRect),
+              )
+              .first;
+          expect(tester.getSize(c4ClipRect).height, 137.5);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'a 105-minute gap renders as a 577.5px GapFreeRow — not compressed, '
+        'not clamped (D-02)',
+        (tester) async {
+          await pumpDayComplete(tester);
+
+          // The 11:15-13:00 gap between c4 and c5 is 105 minutes.
+          final gapTile = find
+              .ancestor(
+                of: find.text('Free · 1h 45m'),
+                matching: find.byType(TimelineRowTile),
+              )
+              .first;
+          expect(tester.getSize(gapTile).height, 577.5);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'two clock-contiguous chunks: the second slot top equals the first '
+        'slot top plus the first slot height',
+        (tester) async {
+          await pumpDayComplete(tester);
+
+          // c3 (10:45-10:50, "Taking a break") and c4 (10:50-11:15,
+          // "Reading") are clock-contiguous. At DayComplete c3 is a normal
+          // Compact-tier row (not the live row), so its slot participates
+          // in this offset comparison.
+          final c3ClipRect = find
+              .ancestor(
+                of: find.text('Taking a break'),
+                matching: find.byType(ClipRect),
+              )
+              .first;
+          final c4ClipRect = find
+              .ancestor(
+                of: find.text('Reading'),
+                matching: find.byType(ClipRect),
+              )
+              .first;
+          final c3Top = tester.getTopLeft(c3ClipRect).dy;
+          final c4Top = tester.getTopLeft(c4ClipRect).dy;
+          final c3Height = tester.getSize(c3ClipRect).height;
+
+          expect(c4Top, c3Top + c3Height);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        "the timeline Stack's SizedBox height equals (rangeEnd - rangeStart) "
+        '* kPixelsPerMinute when no live row is swelling it',
+        (tester) async {
+          await pumpDayComplete(tester);
+
+          // firstStart 8:00 (480), lastEnd 14:00 (840), now 18:00 (1080) —
+          // rangeStart = floorToHour(480) = 480, rangeEnd =
+          // ceilToHour(1080) = 1080, both already hour-aligned, so this is
+          // a clean check with no liveExtraPx term to account for.
+          final expectedTotalHeight = (1080 - 480) * kPixelsPerMinute;
+          final sizedBoxes = tester.widgetList<SizedBox>(
+            find.byType(SizedBox),
+          );
+          expect(
+            sizedBoxes.any((box) => box.height == expectedTotalHeight),
+            isTrue,
+            reason: 'Expected a SizedBox of height $expectedTotalHeight',
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'the live row renders taller than its duration-implied slot, '
+        'capped at kLiveRowReservedHeight',
+        (tester) async {
+          await pumpDay(tester); // 10:47 — c3 (10:45-10:50, 5min) is live
+
+          final liveSize = tester.getSize(find.byType(LiveRowCard));
+          expect(liveSize.height, greaterThan(5 * kPixelsPerMinute));
+          expect(liveSize.height, lessThanOrEqualTo(kLiveRowReservedHeight));
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'a 5-minute short break slot measures exactly 27.5px tall',
+        (tester) async {
+          final schedule = DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'w1',
+                syntheticStartMinutes: 480, // 8:00
+                durationMinutes: 25,
+                isCompleted: true,
+              ),
+              _breakChunk(
+                id: 'b1',
+                syntheticStartMinutes: 505, // 8:25
+                durationMinutes: 5,
+              ),
+              _workChunk(
+                id: 'w2',
+                syntheticStartMinutes: 510, // 8:30
+                durationMinutes: 25,
+              ),
+            ],
+          );
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+            now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
+          );
+
+          final breakClipRect = find
+              .ancestor(
+                of: find.text('Short break'),
+                matching: find.byType(ClipRect),
+              )
+              .first;
+          expect(tester.getSize(breakClipRect).height, 27.5);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    });
   });
 
   group('Task 3 — centre the live row on open + edge-state copy', () {

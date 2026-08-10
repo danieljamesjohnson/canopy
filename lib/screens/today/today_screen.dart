@@ -22,11 +22,13 @@ import '../../utils/rationale_mapper.dart';
 import '../../utils/time_format.dart';
 import '../../widgets/adaptive_form_modal.dart';
 import '../commitments/commitment_form_sheet.dart';
+import '../schedule/widgets/chunk_card.dart';
 import '../schedule/widgets/chunk_detail_sheet.dart';
 import '../schedule/widgets/schedule_progress_bar.dart';
 import '../schedule/widgets/swipeable_chunk_card.dart';
 import 'now_state.dart';
 import 'timeline.dart';
+import 'timeline_geometry.dart';
 import 'widgets/breathing_pulse_cta.dart';
 import 'widgets/end_of_day_card.dart';
 import 'widgets/free_time_row.dart';
@@ -136,6 +138,15 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   final GlobalKey _liveRowKey = GlobalKey();
   final ScrollController _dayScrollController = ScrollController();
   bool _didCentreLiveRow = false;
+
+  /// Tags the day's `SizedBox`-wrapped `Stack` (the fixed-height Layer-1
+  /// timeline surface, CAL-01) so plan 05's scroll-on-open arithmetic can
+  /// ask the viewport where the Stack's top sits inside the scroll content
+  /// — the restoratives card can precede it, so that offset is not always
+  /// zero. Deliberately NOT a "find a row to scroll to" key like
+  /// [_liveRowKey]: there is no single row to find any more, only an
+  /// absolute pixel offset computed from [TimelineGeometry].
+  final GlobalKey _timelineStackKey = GlobalKey();
 
   /// Last-seen [DevClock.offset], so a debug time jump can re-arm the
   /// one-shot above (see build()). Always [Duration.zero] in release
@@ -613,61 +624,154 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   // The now-classifier and buildTimeline are called exactly once, in
   // build() (P1 / 22-PATTERNS.md section 5): this dispatch never reads the
   // clock or re-derives which chunk is "now" — it only renders what it is
-  // handed.
+  // handed. Per CAL-01 (26-03-PLAN.md) every row is now placed at an
+  // absolute pixel offset via [TimelineGeometry] rather than laid out in a
+  // Column, so this dispatch returns a [Positioned] per row instead of a
+  // plain child widget.
 
-  Widget _buildTimelineRow(
+  /// Builds the [SwipeableChunkCard] for [chunk] at the given [density].
+  /// Shared by the Layer-1 positioned arm below and the trailing untimed
+  /// block (PD-11) so both keep supplying identical goal-lookup data —
+  /// [density] is the only thing that varies between call sites.
+  Widget _buildChunkCard(
+    BuildContext context,
+    ScheduledChunk chunk,
+    ChunkCardDensity density,
+  ) {
+    final goalColor = _lookupGoalColor(context, chunk);
+    final goalName = _lookupGoalName(context, chunk);
+    final displayRationale = _toDisplayRationale(chunk.rationale);
+    return SwipeableChunkCard(
+      chunk: chunk,
+      goalColor: goalColor,
+      goalName: goalName,
+      displayRationale: displayRationale,
+      goalPriorityWeight: _lookupGoalPriorityWeight(context, chunk),
+      goalEmojiTag: _lookupGoalEmojiTag(context, chunk),
+      goalValence: _lookupGoalValence(context, chunk),
+      // The per-row gutter that used to carry a chunk's start time is gone
+      // (the hour axis owns round-hour reference points instead), so the
+      // card is now the only place a chunk's exact start time is legible —
+      // flipped from Phase 22's `false` (26-UI-SPEC.md "The time gutter
+      // becomes an hour axis").
+      showStartTime: true,
+      density: density,
+      onTap: (chunk.isCompleted || chunk.isSkipped)
+          ? null
+          : () => _openDetailSheet(
+              context,
+              chunk,
+              goalColor,
+              goalName,
+              displayRationale,
+            ),
+    );
+  }
+
+  /// Returns a [Positioned] for [row], placed by [geometry] against the
+  /// day's rendered range. This dispatch never reads the clock or
+  /// re-derives which chunk is "now" — [nowState]/[secondsRemaining] are
+  /// threaded straight through to the live row.
+  Widget _buildPositionedRow(
     BuildContext context,
     TimelineRow row,
+    TimelineGeometry geometry,
     NowState nowState,
     int? secondsRemaining,
   ) {
     switch (row) {
       case LeadingFreeRow(:final untilMinutes):
-        return TimelineRowTile(
-          child: FreeTimeRow.until(untilMinutes: untilMinutes),
+        return Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: geometry.heightFor(
+            geometry.rangeStart,
+            untilMinutes - geometry.rangeStart,
+          ),
+          child: TimelineRowTile(
+            child: FreeTimeRow.until(untilMinutes: untilMinutes),
+          ),
         );
-      case GapFreeRow(:final durationMinutes):
-        return TimelineRowTile(
-          child: FreeTimeRow.gap(durationMinutes: durationMinutes),
+      case GapFreeRow(:final startMinutes, :final durationMinutes):
+        return Positioned(
+          top: geometry.yFor(startMinutes),
+          left: 0,
+          right: 0,
+          height: geometry.heightFor(startMinutes, durationMinutes),
+          child: TimelineRowTile(
+            child: FreeTimeRow.gap(durationMinutes: durationMinutes),
+          ),
         );
       case ChunkRow(:final chunk, :final isLive):
+        final start = chunk.displayStartMinutes;
+        if (start == null) {
+          // No clock position — rendered in the trailing untimed block
+          // below the Stack instead (PD-11); this arm contributes nothing
+          // to Layer 1.
+          return const Positioned(
+            top: 0,
+            left: 0,
+            width: 0,
+            height: 0,
+            child: SizedBox.shrink(),
+          );
+        }
         if (isLive) {
           // Keyed so build()'s centre-on-open can find this row's context
           // via Scrollable.ensureVisible without a second "now" scan.
           //
-          // Deliberately NOT wrapped in TimelineRowTile. Every other row
-          // reserves the fixed time gutter, so they all share one silhouette;
-          // the live row spans the full content column instead, which is what
-          // makes "where I am" read at a glance rather than only on reading.
-          // Its start time moves into the kicker (see _liveKicker).
-          // 22-UI-SPEC.md "The live row", amended 2026-08-08 after UAT.
-          return KeyedSubtree(
-            key: _liveRowKey,
-            child: _buildLiveRow(context, chunk, nowState, secondsRemaining),
+          // NO height: the live row swells to its natural size within
+          // TimelineGeometry's reserved liveExtraPx (PD-2/PD-10) — every
+          // other row's slot is duration-exact, but this is CAL-01's one
+          // named exception ("let now break the grid," carried forward
+          // unchanged from Phase 22/23). Deliberately NOT wrapped in
+          // TimelineRowTile — it spans the full content width instead of
+          // reserving the fixed gutter column every other row shares. Its
+          // start time moves into the kicker (see _liveKicker).
+          return Positioned(
+            top: geometry.yFor(start),
+            left: 0,
+            right: 0,
+            child: KeyedSubtree(
+              key: _liveRowKey,
+              child: _buildLiveRow(context, chunk, nowState, secondsRemaining),
+            ),
           );
         }
-        final goalColor = _lookupGoalColor(context, chunk);
-        final goalName = _lookupGoalName(context, chunk);
-        final displayRationale = _toDisplayRationale(chunk.rationale);
-        return TimelineRowTile(
-          child: SwipeableChunkCard(
-            chunk: chunk,
-            goalColor: goalColor,
-            goalName: goalName,
-            displayRationale: displayRationale,
-            goalPriorityWeight: _lookupGoalPriorityWeight(context, chunk),
-            goalEmojiTag: _lookupGoalEmojiTag(context, chunk),
-            goalValence: _lookupGoalValence(context, chunk),
-            showStartTime: false,
-            onTap: (chunk.isCompleted || chunk.isSkipped)
-                ? null
-                : () => _openDetailSheet(
-                    context,
-                    chunk,
-                    goalColor,
-                    goalName,
-                    displayRationale,
-                  ),
+        // Every non-live slot height is geometry.heightFor(...) and nothing
+        // else (D-02) — no floor, no ceiling, no "cap a huge gap" shortcut.
+        final slot = geometry.heightFor(start, chunk.durationMinutes);
+        final isBreak =
+            chunk.chunkType == ChunkType.shortBreak ||
+            chunk.chunkType == ChunkType.longBreak;
+        final density = isBreak
+            ? (slot >= kFullBreakMinHeight
+                  ? ChunkCardDensity.full
+                  : ChunkCardDensity.compact)
+            : (slot >= kFullTierMinHeight
+                  ? ChunkCardDensity.full
+                  : ChunkCardDensity.compact);
+        // PD-10: ClipRect + OverflowBox is a safety net, not a min/max
+        // clamp — the slot is always exactly `durationMinutes *
+        // kPixelsPerMinute`. OverflowBox lets the card lay out at its
+        // natural height (no RenderFlex overflow even for a pathological
+        // 3-minute chunk); ClipRect guarantees nothing paints outside the
+        // slot.
+        return Positioned(
+          top: geometry.yFor(start),
+          left: 0,
+          right: 0,
+          height: slot,
+          child: ClipRect(
+            child: OverflowBox(
+              alignment: Alignment.topCenter,
+              minHeight: 0,
+              maxHeight: double.infinity,
+              child: TimelineRowTile(
+                child: _buildChunkCard(context, chunk, density),
+              ),
+            ),
           ),
         );
     }
@@ -1007,9 +1111,10 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     // (WR-01). The end-of-day card was the fourth consumer all along but
     // used to read its own `DateTime.now`; that made it the one element on
     // this screen that could disagree with every other one about what time
-    // it was. nowMinutes feeds the now-marker
-    // (NOW-01): it is a *position* derived from that same sample, never a
-    // second opinion about which chunk is current (D-01).
+    // it was. nowMinutes also feeds the geometry construction below and
+    // (plan 04) the now-line overlay: it is a *position* derived from that
+    // same sample, never a second opinion about which chunk is current
+    // (D-01).
     final nowDt = _nowFn();
     final nowMinutes = minutesOfDay(nowDt);
     final nowState = resolveNowState(chunks: schedule.chunks, now: () => nowDt);
@@ -1025,6 +1130,42 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       chunks: schedule.chunks,
       nowState: nowState,
       nowMinutes: nowMinutes,
+    );
+
+    // CAL-01 geometry (26-03-PLAN.md): derived from the SAME nowMinutes
+    // sampled above — never a second clock read (T-26-04). firstStart/
+    // lastEnd span every chunk with a clock position; the live chunk's
+    // bounds mirror timeline.dart's own liveId derivation (Active and
+    // Overdue both count as "live"), so TimelineGeometry's liveExtraPx
+    // exception applies consistently with ChunkRow.isLive above.
+    int? firstStartMinutes;
+    int? lastEndMinutes;
+    for (final chunk in schedule.chunks) {
+      final start = chunk.displayStartMinutes;
+      if (start == null) continue;
+      if (firstStartMinutes == null || start < firstStartMinutes) {
+        firstStartMinutes = start;
+      }
+      final end = start + chunk.durationMinutes;
+      if (lastEndMinutes == null || end > lastEndMinutes) {
+        lastEndMinutes = end;
+      }
+    }
+    final ScheduledChunk? liveChunk = switch (nowState) {
+      Active(:final current) => current,
+      Overdue(:final overdue) => overdue,
+      _ => null,
+    };
+    final liveStartMinutes = liveChunk?.displayStartMinutes;
+    final liveEndMinutes = liveStartMinutes != null
+        ? liveStartMinutes + liveChunk!.durationMinutes
+        : null;
+    final geometry = TimelineGeometry.forDay(
+      nowMinutes: nowMinutes,
+      firstStartMinutes: firstStartMinutes,
+      lastEndMinutes: lastEndMinutes,
+      liveStartMinutes: liveStartMinutes,
+      liveEndMinutes: liveEndMinutes,
     );
 
     // A debug clock jump re-arms centre-on-open (Phase 25, DEV-01).
@@ -1100,7 +1241,12 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
               // out, and a lazy ListView may not have built a row far down
               // the day. A day is bounded at a few dozen rows, so eager
               // layout is the cheap correct answer and avoids a
-              // scroll-positioning package.
+              // scroll-positioning package. CAL-01 (26-03-PLAN.md) adds a
+              // second reason that now applies too: a lazy list cannot
+              // express an overlay painted at an arbitrary absolute pixel
+              // offset across the whole scrollable content, which plan 04's
+              // hour axis and now-line both require — eager layout is what
+              // makes a single fixed-height Stack region possible at all.
               Expanded(
                 child: SingleChildScrollView(
                   controller: _dayScrollController,
@@ -1108,13 +1254,52 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (mood <= 2) _buildRestorativeSuggestions(context),
-                      for (final row in timelineRows)
-                        _buildTimelineRow(
-                          context,
-                          row,
-                          nowState,
-                          liveSecondsLeft,
+                      // Layer 1 — every non-live row first, then the live
+                      // row's Positioned last (PD-10): it is appended last
+                      // within this Stack so a future content addition that
+                      // overruns its reservation paints over its neighbour
+                      // rather than being clipped by one painted after it.
+                      SizedBox(
+                        key: _timelineStackKey,
+                        height: geometry.totalHeight,
+                        child: Stack(
+                          children: [
+                            for (final row in timelineRows)
+                              if (!(row is ChunkRow && row.isLive))
+                                _buildPositionedRow(
+                                  context,
+                                  row,
+                                  geometry,
+                                  nowState,
+                                  liveSecondsLeft,
+                                ),
+                            for (final row in timelineRows)
+                              if (row is ChunkRow && row.isLive)
+                                _buildPositionedRow(
+                                  context,
+                                  row,
+                                  geometry,
+                                  nowState,
+                                  liveSecondsLeft,
+                                ),
+                          ],
                         ),
+                      ),
+                      // Trailing block (PD-11): a chunk with no clock
+                      // position has no truthful y, so it renders here at
+                      // natural height instead of inside the Stack above.
+                      // The schedule generator does not currently produce
+                      // one — this is a preservation branch, not a feature.
+                      for (final row in timelineRows)
+                        if (row is ChunkRow &&
+                            row.chunk.displayStartMinutes == null)
+                          TimelineRowTile(
+                            child: _buildChunkCard(
+                              context,
+                              row.chunk,
+                              ChunkCardDensity.detailed,
+                            ),
+                          ),
                     ],
                   ),
                 ),
