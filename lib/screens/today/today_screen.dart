@@ -32,7 +32,9 @@ import 'timeline_geometry.dart';
 import 'widgets/breathing_pulse_cta.dart';
 import 'widgets/end_of_day_card.dart';
 import 'widgets/free_time_row.dart';
+import 'widgets/hour_axis.dart';
 import 'widgets/live_row_card.dart';
+import 'widgets/now_line.dart';
 import 'widgets/review_banner.dart';
 import 'widgets/timeline_row_tile.dart';
 
@@ -1264,6 +1266,36 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                         height: geometry.totalHeight,
                         child: Stack(
                           children: [
+                            // Layer 2 — hour axis, painted behind every row's
+                            // content. The hairline is `outlineVariant`, not
+                            // `primary` (26-UI-SPEC.md "The time gutter
+                            // becomes an hour axis") — deliberately, so the
+                            // axis reads as quiet infrastructure and
+                            // `colorScheme.primary` stays reserved for
+                            // "where now is" (D-03). Purely decorative:
+                            // wrapped below so it never eats a tap, and
+                            // `ExcludeSemantics` so it doesn't add a dozen
+                            // unlabelled nodes to a screen that already
+                            // announces every row.
+                            for (final hourMinutes in geometry.hourBoundaries)
+                              Positioned(
+                                top:
+                                    geometry.yFor(hourMinutes) -
+                                    kHourAxisHeight / 2,
+                                left: 0,
+                                right: 0,
+                                height: kHourAxisHeight,
+                                child: IgnorePointer(
+                                  child: ExcludeSemantics(
+                                    child: HourAxisLine(
+                                      hourMinutes: hourMinutes,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            // Layer 1 — the rows (26-03-PLAN.md), unchanged.
+                            // Non-live rows first, the live row's Positioned
+                            // appended last (PD-10).
                             for (final row in timelineRows)
                               if (!(row is ChunkRow && row.isLive))
                                 _buildPositionedRow(
@@ -1282,6 +1314,38 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                                   nowState,
                                   liveSecondsLeft,
                                 ),
+                            // Layer 3 — the now-line (CAL-02), topmost in the
+                            // Stack, above every card's elevation/shadow.
+                            // This overlay replaces Phase 24's
+                            // `NowMarkerRow`; the state-check suppression
+                            // that used to hide it whenever the current
+                            // moment fell outside an active chunk's window
+                            // is DELETED, not relocated (PD-12) — a
+                            // proportional layout can place the line
+                            // truthfully mid-chunk, which is the exact
+                            // condition that suppression existed to avoid,
+                            // and the exact reason this phase exists.
+                            // Unconditional: no `if`, no ternary, no state
+                            // check. `Semantics` sits OUTSIDE the
+                            // pointer-ignoring wrapper below (PD-13) —
+                            // modern pointer-ignoring widgets also strip
+                            // their subtree from the semantics tree, so
+                            // putting the label inside it would silently
+                            // delete the "Now — <time>" announcement
+                            // (24-REVIEW.md WR-01).
+                            Positioned(
+                              top: geometry.yFor(nowMinutes) - kNowLineHeight / 2,
+                              left: 0,
+                              right: 0,
+                              height: kNowLineHeight,
+                              child: Semantics(
+                                label: 'Now — ${formatMinutes(nowMinutes)}',
+                                excludeSemantics: true,
+                                child: IgnorePointer(
+                                  child: NowLineOverlay(nowMinutes: nowMinutes),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
