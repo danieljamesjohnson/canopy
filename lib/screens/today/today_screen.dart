@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -311,6 +311,43 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         .where((c) => c.isCompleted || c.isSkipped)
         .length;
     return resolved / workChunks.length;
+  }
+
+  /// Phase 25 (Time Travel, DEV-02) — a compact banner making it impossible
+  /// to leave a debug clock override on and mistake it for real time.
+  /// Visible only when [kDebugMode] AND [DevClock.isActive]; renders nothing
+  /// in every other case (including every release build, DEV-03). Takes
+  /// [nowDt] — build()'s single already-sampled clock read — rather than
+  /// calling `DevClock.now()` itself, so this indicator can never be the
+  /// second, independent clock read the D-01 discipline forbids in the
+  /// render path (see the doc comment on `build()`'s `nowDt` sample).
+  Widget _buildDevClockBanner(BuildContext context, DateTime nowDt) {
+    if (!kDebugMode || !DevClock.isActive) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      color: theme.colorScheme.errorContainer,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        children: [
+          Icon(
+            Icons.schedule_outlined,
+            size: 16,
+            color: theme.colorScheme.onErrorContainer,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Simulated time — ${DateFormat('EEE d MMM, h:mm a').format(nowDt)}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onErrorContainer,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // ── Header + mood chip (UI-SPEC "Structure") ─────────────────────────────
@@ -1090,6 +1127,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildDevClockBanner(context, nowDt),
               ScheduleProgressBar(schedule: schedule, moodColor: moodColor),
               if (_inReviewWindow && !_bannerDismissed)
                 ReviewBanner(
@@ -1151,6 +1189,12 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
           constraints: const BoxConstraints(maxWidth: 720),
           child: Column(
             children: [
+              // The empty state has no schedule to derive a nowDt sample
+              // from (build() below never reaches the active-schedule
+              // branch that samples _nowFn()), so this is the one path in
+              // this file that reads the clock fresh for display purposes
+              // only — nothing here derives day-state from it.
+              _buildDevClockBanner(context, _nowFn()),
               if (_inReviewWindow && !_bannerDismissed)
                 ReviewBanner(
                   onStart: () => context.push('/review'),
