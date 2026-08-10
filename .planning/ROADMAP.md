@@ -308,7 +308,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4)*
 
-- [ ] 26-05-PLAN.md — Centre-on-open: two flags, two `GlobalKey`s and two `ensureVisible` blocks collapse into one flag and one arithmetic `animateTo` (CAL-03)
+- [x] 26-05-PLAN.md — Centre-on-open: two flags, two `GlobalKey`s and two `ensureVisible` blocks collapse into one flag and one arithmetic `animateTo` (CAL-03)
 
 **Wave 6** *(blocked on Wave 5, has checkpoint)*
 
@@ -332,4 +332,4 @@ Plans:
 | 23. Live Activity Tracking | v1.5 | 8/8 | Complete   | 2026-08-08 |
 | 24. Where Am I | v1.5 | 4/4 | Complete    | 2026-08-10 |
 | 25. Time Travel | v1.5 | 1/1 | Complete    | 2026-08-10 |
-| 26. The Day Has a Shape | v1.5 | 4/6 | In Progress|  |
+| 26. The Day Has a Shape | v1.5 | 5/6 | In Progress|  |
