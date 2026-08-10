@@ -8,6 +8,7 @@
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/screens/today/now_state.dart';
 import 'package:canopy/screens/today/timeline.dart';
+import 'package:canopy/screens/today/timeline_geometry.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // ─── Chunk factories (modelled on home_screen_now_state_test.dart) ──────────
@@ -413,6 +414,124 @@ void main() {
       final workRow = chunkRows.firstWhere((r) => r.chunk.id == 'w1');
       expect(breakRow.isLive, isTrue);
       expect(workRow.isLive, isFalse);
+    });
+  });
+
+  group('TimelineGeometry — CAL-01 minute→pixel mapping', () {
+    test('Active: now inside [firstStart, lastEnd] reduces to the plain day '
+        'span', () {
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: 555,
+        firstStartMinutes: 540,
+        lastEndMinutes: 1020,
+      );
+      expect(geometry.rangeStart, 540);
+      expect(geometry.rangeEnd, 1020);
+    });
+
+    test('PreStart: now precedes firstStart extends rangeStart back to now',
+        () {
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: 390,
+        firstStartMinutes: 540,
+        lastEndMinutes: 1020,
+      );
+      expect(geometry.rangeStart, 360);
+    });
+
+    test('DayComplete: now follows lastEnd extends rangeEnd forward to now',
+        () {
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: 1265,
+        firstStartMinutes: 540,
+        lastEndMinutes: 1020,
+      );
+      expect(geometry.rangeEnd, 1320);
+    });
+
+    test('yFor(rangeStart) is always 0.0', () {
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: 555,
+        firstStartMinutes: 540,
+        lastEndMinutes: 1020,
+      );
+      expect(geometry.yFor(geometry.rangeStart), 0.0);
+    });
+
+    test('a 25-minute chunk heightFor equals 137.5 with no live row', () {
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: 555,
+        firstStartMinutes: 540,
+        lastEndMinutes: 1020,
+      );
+      expect(geometry.heightFor(540, 25), 137.5);
+    });
+
+    test('a 5-minute break heightFor equals 27.5', () {
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: 555,
+        firstStartMinutes: 540,
+        lastEndMinutes: 1020,
+      );
+      expect(geometry.heightFor(540, 5), 27.5);
+    });
+
+    test('totalHeight equals (rangeEnd - rangeStart) * 5.5 with no live row',
+        () {
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: 555,
+        firstStartMinutes: 540,
+        lastEndMinutes: 1020,
+      );
+      expect(
+        geometry.totalHeight,
+        (geometry.rangeEnd - geometry.rangeStart) * kPixelsPerMinute,
+      );
+    });
+
+    test('the live row exception: liveExtraPx == 240.0 - 137.5', () {
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: 550,
+        firstStartMinutes: 540,
+        lastEndMinutes: 1020,
+        liveStartMinutes: 540,
+        liveEndMinutes: 565,
+      );
+      expect(geometry.liveExtraPx, 240.0 - 137.5);
+    });
+
+    test('the live row exception: heightFor(liveStart, 25) equals '
+        'kLiveRowReservedHeight (240.0)', () {
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: 550,
+        firstStartMinutes: 540,
+        lastEndMinutes: 1020,
+        liveStartMinutes: 540,
+        liveEndMinutes: 565,
+      );
+      expect(geometry.heightFor(540, 25), 240.0);
+    });
+
+    test('a row starting at liveEndMinutes has yFor equal to the live row\'s '
+        'bottom edge', () {
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: 550,
+        firstStartMinutes: 540,
+        lastEndMinutes: 1020,
+        liveStartMinutes: 540,
+        liveEndMinutes: 565,
+      );
+      expect(geometry.yFor(565), geometry.yFor(540) + 240.0);
+    });
+
+    test('yFor clamps rather than returning a negative for an out-of-range '
+        'minute', () {
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: 555,
+        firstStartMinutes: 540,
+        lastEndMinutes: 1020,
+      );
+      expect(geometry.yFor(geometry.rangeStart - 120), 0.0);
     });
   });
 }

@@ -90,6 +90,29 @@ below) makes it always representable.
 
 ## The pixels-per-minute scale (CAL-01) — `kPixelsPerMinute = 4.0`, fixed
 
+> **Amendment, 2026-08-10 (Plan 01, PD-1) — `kPixelsPerMinute` corrected to
+> `5.5`, superseding `4.0` below.** The `4.0` rationale text that follows
+> claimed a 25-minute work chunk renders `100px`, "enough for a trimmed
+> Full-tier card (title + time range + action row)." That claim is
+> measurably false: a `ChunkCard` work card carrying exactly title + time
+> range + the Complete/Skip row, rendered at a width wide enough that no
+> text wraps, measures **126.0px** (measured 2026-08-10 via
+> `tester.getSize(find.byType(ChunkCard))`). At `4.0` every standard
+> 25-minute chunk would overflow its slot by 26px. `5.5` gives `137.5px`
+> for 25 minutes — fits with ~11px of slack — and a 12-hour day still
+> renders ~3960px (≈5 mobile screens), squarely inside D-02's "the user
+> scrolls through it." Also measured: `LiveRowCard`'s real height is
+> **230.0px** (the range below's "200–220px" estimate was low), which sets
+> `kLiveRowReservedHeight = 240.0`. The density-tier thresholds below
+> (`Full` at `≥ 20 min` / `≥ 80px`, `Compact` at `< 20 min` / `< 80px`) are
+> now expressed in **pixels**, not minutes — `kFullTierMinHeight = 132.0`
+> for work chunks, `kFullBreakMinHeight = 88.0` for breaks — so the
+> threshold doesn't silently rot if the scale is ever corrected again. See
+> `lib/screens/today/timeline_geometry.dart` and `26-01-PLAN.md`'s "Locked
+> planner decisions" (PD-1/PD-2/PD-3) for the full reasoning. The original
+> `4.0` rationale text below is left unmodified as the reasoning trail —
+> this note supersedes it, not replaces it.
+
 **Fixed, not responsive to viewport height.** Responsive-to-fit (scaling so the whole day
 always fits one screen) would eliminate scrolling — which directly contradicts D-02's own
 wording ("the user scrolls") and CAL-03 ("reaching \[the past\] is a deliberate scroll"). A
