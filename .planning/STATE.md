@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: "Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned."
-stopped_at: Completed 25-01 (Time Travel)
-last_updated: "2026-08-10T13:39:33.932Z"
+stopped_at: Phase 26 UI-SPEC approved
+last_updated: "2026-08-10T13:59:16.891Z"
 last_activity: 2026-08-10
 progress:
   total_phases: 6
@@ -18,7 +18,7 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-08T23:01:12.057Z
+**Last session:** 2026-08-10T13:59:16.886Z
 
 ---
 
@@ -177,7 +177,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-10
-Stopped at: Completed 25-01 (Time Travel)
+Stopped at: Phase 26 UI-SPEC approved
 Resume at: `/gsd-plan-phase 26`
 
 ## Performance Metrics
