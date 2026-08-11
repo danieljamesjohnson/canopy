@@ -50,7 +50,30 @@ Reported by Dan at the 26-06 sign-off gate, 2026-08-10. Verbatim, then diagnosis
 
 | # | Gap | Kind | Surface | Status |
 |---|-----|------|---------|--------|
-| G-01 | The now-line's `Now · <time>` chip paints on top of the chunk card beneath it, occluding the title and other card content whenever the line falls inside or near a card (i.e. mid-chunk `Active` — the normal case during a working day) | **bug** | `lib/screens/today/widgets/now_line.dart` | open |
+| G-01 | The now-line's `Now · <time>` chip paints on top of the chunk card beneath it, occluding the title and other card content whenever the line falls inside or near a card (i.e. mid-chunk `Active` — the normal case during a working day) | **bug** | `lib/screens/today/widgets/now_line.dart` | **closed** 26-07 — chip confined to the 52dp gutter, label now `formatMinutesCompact`; verified mid-chunk in a real browser at simulated 12:38 PM via Phase 25's DevClock. Regression test proven RED pre-fix |
+| G-02 | ~80px of dead white space renders between the live row and the next card — `kLiveRowReservedHeight = 240.0` over-reserves against a break live row measured at ~143 logical px in a real browser | polish | `lib/screens/today/timeline_geometry.dart` | open — routed to 26-08 |
+
+### G-02 origin and diagnosis
+
+Not reported by Dan — surfaced by the agent during the 26-07 fix verification and raised rather
+than shipped quietly. Dan chose "tighten the constant" over accepting it and over replacing the
+fixed estimate with a two-pass measure/correct (2026-08-11).
+
+The live row's swell is the one locked exception to CAL-01's proportional-height rule. Because
+`Positioned` children cannot negotiate size post-layout, 26-01 reserved a fixed
+`kLiveRowReservedHeight = 240.0` and threads it through `TimelineGeometry` as a `liveExtraPx` term
+read by every consumer (rows, hour hairlines, now-line, scroll target). `26-RESEARCH.md` Pitfall 3
+recommended the fixed estimate; that mechanism is not in question here — only the number is.
+
+**Why the number is wrong:** 240.0 came from a `flutter test` pump. The live row's height is
+text-driven, which is exactly the class of quantity `26-VALIDATION.md` routes to the manual-only
+gate. Same failure mode that took `kGutterWidth` 46 → 75 (harness) → 52 (corrected in a real
+browser), and the same one that leaves `kPixelsPerMinute = 5.5` formally provisional.
+
+**Trap for the fix:** the ~143px agent observation was a **break** live row, which Phase 23's
+LIVE-01 deliberately renders without the Complete/Skip action row. A **work** live row is taller.
+Reserving against the break variant would clip a work live row — strictly worse than the dead space
+being fixed. 26-08 measures the work variant and sanity-checks the break variant under it.
 
 ### G-01 root cause
 
