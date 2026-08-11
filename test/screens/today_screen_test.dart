@@ -917,28 +917,50 @@ void main() {
       // formatMinutesCompact, not the longer "Now · <time>" string that
       // could not fit kGutterWidth and shipped the occlusion bug. The full
       // time survives in the screen-reader semantics label, asserted below.
-      testWidgets('chip copy — renders exactly "9:12"', (tester) async {
-        await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+      //
+      // G-03 (26-09-PLAN.md) moved this test's clock off 9:12 — at 9:12 w1
+      // is live by this fixture's own construction, and the chip is now
+      // suppressed there (see the G-03 test below). This test's job is
+      // "the chip renders correctly when it renders at all", so it uses a
+      // non-live moment instead: 9:30 with w1 already completed puts the
+      // day in GapBeforeNext (w2's 10:00 window hasn't opened yet), so
+      // there is no live row and the chip is expected to show.
+      testWidgets('chip copy — renders exactly "9:30" in a non-live state', (
+        tester,
+      ) async {
+        await pumpAt(
+          tester,
+          DateTime(2026, 8, 7, 9, 30),
+          chunks: twoChunkFixture(firstResolved: true),
+        );
 
-        expect(find.text('9:12'), findsOneWidget);
+        expect(find.byType(LiveRowCard), findsNothing);
+        expect(find.text('9:30'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
       testWidgets(
         'G-01: the now chip stays inside the time gutter and never '
-        'overlaps a chunk card',
+        'overlaps a (non-live) ChunkCard',
         (tester) async {
           // Geometric assertion (26-VALIDATION.md) — a comparison of two
           // laid-out rects' x-coordinates, not a text-fit measurement, so
           // it is trustworthy in the widget-test harness's placeholder
-          // font. w1 (9:00-9:25) is live at 9:12 and renders as
-          // LiveRowCard; w2 (10:00-10:25) is the fixture's one non-live
-          // ChunkCard, wrapped in TimelineRowTile, whose content begins at
-          // a fixed x-offset (16dp inset + kGutterWidth) regardless of
-          // whether the chip's y-position happens to cross it — proving
-          // the chip can never reach ANY ChunkCard's content, not just
-          // one it happens to vertically overlap in this fixture.
-          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+          // font.
+          //
+          // G-03 (26-09-PLAN.md): this fixture is deliberately a non-live
+          // moment (9:30, w1 already completed — GapBeforeNext, no
+          // LiveRowCard at all) so the chip renders and this test can keep
+          // proving the ORIGINAL G-01 claim — gutter confinement against an
+          // ordinary ChunkCard. The live-row case (where the chip must be
+          // ABSENT, not merely confined) is the separate G-03 test below;
+          // LiveRowCard is named there, closing the exact gap 26-07's
+          // ChunkCard-only assertion left open.
+          await pumpAt(
+            tester,
+            DateTime(2026, 8, 7, 9, 30),
+            chunks: twoChunkFixture(firstResolved: true),
+          );
 
           final chipRect = tester.getRect(
             find.descendant(
@@ -948,9 +970,52 @@ void main() {
               ),
             ),
           );
-          final cardRect = tester.getRect(find.byType(ChunkCard));
+          final cardRect = tester.getRect(find.byType(ChunkCard).first);
 
           expect(chipRect.right, lessThanOrEqualTo(cardRect.left));
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'G-03: no time chip over the live row — the full-bleed card '
+        'leaves no gutter',
+        (tester) async {
+          // Work chunk (not break) live, clock mid-chunk — the tall
+          // variant with the Complete/Skip action row, per the plan's own
+          // instruction: the break variant is shorter and its extra
+          // headroom is exactly what masked this defect through two prior
+          // rounds of checking (26-UAT.md G-03).
+          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+
+          // The live row is genuinely present and is the WORK variant —
+          // otherwise this test would prove nothing.
+          expect(find.byType(LiveRowCard), findsOneWidget);
+
+          // No chip: no Text descendant of the overlay at all.
+          expect(
+            find.descendant(
+              of: find.byType(NowLineOverlay),
+              matching: find.byType(Text),
+            ),
+            findsNothing,
+          );
+
+          // The rule survives — a future "fix" cannot satisfy this test by
+          // deleting the whole overlay, only the chip. Exactly one coloured
+          // Container remains (the rule); with the chip's own Container
+          // gone too, "the rule is still there" and "the chip really is
+          // gone" are both provable from the same finder.
+          expect(
+            find.descendant(
+              of: find.byType(NowLineOverlay),
+              matching: find.byWidgetPredicate(
+                (widget) => widget is Container && widget.color != null,
+              ),
+            ),
+            findsOneWidget,
+          );
+
           expect(tester.takeException(), isNull);
         },
       );
