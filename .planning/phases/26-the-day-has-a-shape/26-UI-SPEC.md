@@ -242,6 +242,44 @@ including breaks, currently opens `ChunkDetailSheet`). Reasoning:
 > right edge never exceeds a `ChunkCard`'s left edge — the assertion class that was
 > missing and let this ship.
 
+> **AMENDED 2026-08-11 (UAT, G-03, `26-UAT.md`, `26-09-PLAN.md`).** This is Dan's
+> **original** report from the 26-06 gate — the G-01 fix above closed a real but
+> *different* collision (against ordinary `ChunkCard`s) and left this one open, because its
+> own regression test asserted non-collision against `ChunkCard` only and never evaluated
+> `LiveRowCard`. Root cause: `LiveRowCard` is **full-bleed by design** (the "let now break
+> the grid" precedent below), so it has no `52dp` gutter column for the now-genuinely-52dp
+> chip to occupy — the chip sits at x≈16, directly over the live row's own title, which
+> also starts at x≈16.
+>
+> Dan's decision: hide the chip specifically while the line falls inside the live row's
+> span; keep the rule crossing it. Rationale: `LiveRowCard` already states the current time
+> in its own copy (`RIGHT NOW · <time>`, larger type), so the chip is redundant there, not
+> lost. Explicitly rejected: indenting the live row to match ordinary cards (reverses the
+> deliberate full-bleed decision) and inset-the-text-only (asymmetric internal padding on
+> one card type).
+>
+> Superseding rule:
+>
+> - `NowLineOverlay` gained a `showChip` parameter (default `true`). The caller
+>   (`today_screen.dart`) passes `false` exactly while `nowMinutes` falls inside
+>   `TimelineGeometry.liveStartMinutes`/`liveEndMinutes` (half-open, matching the
+>   `liveExtraPx` boundary convention already documented below). The `2dp` rule is
+>   unaffected — it still spans the full content width and still crosses the live row; only
+>   the chip is conditional.
+> - The screen-reader `Semantics` label is unchanged — it keeps announcing the full time in
+>   every state, including inside the live row where the chip is now visually absent.
+> - G-01's gutter-confinement fix (above) is unchanged and remains correct for ordinary
+>   `ChunkCard`s; this amendment only adds a second, narrower condition (inside the live
+>   row's own span) under which the chip does not render at all.
+>
+> A dedicated regression test (`test/screens/today_screen_test.dart`, "G-03: no time chip
+> over the live row — the full-bleed card leaves no gutter") names `LiveRowCard` directly —
+> the assertion class 26-07's `ChunkCard`-only test was missing. Proven RED against the
+> unfixed widget before being accepted (26-09-SUMMARY.md records both observations).
+> Verified in a real browser against a WORK live row (the tallest variant, with the
+> Complete/Skip action row) — the variant whose extra headroom is what let the break
+> variant's shorter card mask this defect through two earlier rounds of checking.
+
 **The now-line is the screen's primary visual anchor.** Nothing else on the screen carries
 full-content-width stroke, topmost z-order, *and* the app's sole reserved accent color at the
 same time — every other element competes within the 60/30/10 split below it. That combination
@@ -259,7 +297,7 @@ the visual hierarchy, including `LiveRowCard`'s own full-bleed shadow-and-elevat
 | Hit-testing | The entire now-line overlay (rule + chip) is wrapped in `IgnorePointer` — it must never intercept a `Complete`/`Skip` tap on the card it happens to be crossing |
 | Rendering inside a card vs. empty space | Identical in both cases — it is a single overlay drawn on top of the whole `Stack`, so it does not know or care whether a `ChunkCard`, a free-time gap, or the `LiveRowCard` is beneath it at that y-offset. This is what makes CAL-02's "including inside an activity's span" true without a special case. |
 | Fade / trailing opacity | **Dropped.** Phase 24's discrete marker faded its trailing rule to 35% because it sat quietly in an otherwise plain free-time row. This overlay now regularly crosses colorful card fills (`primaryContainer`, `surfaceContainer`) — a partial-opacity line would lose contrast unpredictably depending on what's beneath it at any given scroll position. Full opacity throughout is simpler and reads consistently everywhere. |
-| Suppression | None. Renders in every `NowState` — `PreStart`, `Active`, `Overdue`, `GapBeforeNext`, `DayComplete` — because the rendered range is defined to always contain `nowMinutes` (next section). This is the literal mechanism by which CAL-02 supersedes Phase 24's `Active`-suppression rule. |
+| Suppression | ~~None.~~ **The rule: none — see below.** The chip: suppressed while `nowMinutes` falls inside the live row's span (G-03, `26-09-PLAN.md`, see the amendment above); rendered otherwise. Renders (rule always; chip except as just noted) in every `NowState` — `PreStart`, `Active`, `Overdue`, `GapBeforeNext`, `DayComplete` — because the rendered range is defined to always contain `nowMinutes` (next section). This is the literal mechanism by which CAL-02 supersedes Phase 24's `Active`-suppression rule; G-03's chip suppression is a narrower, later exception scoped to the live row only, not a reintroduction of that rule. |
 
 ---
 
