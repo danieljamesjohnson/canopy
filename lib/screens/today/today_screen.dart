@@ -1321,7 +1321,9 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                             // Non-live rows first, the live row's Positioned
                             // appended last (PD-10).
                             for (final row in timelineRows)
-                              if (!(row is ChunkRow && row.isLive))
+                              if (!(row is ChunkRow && row.isLive) &&
+                                  !(row is ChunkRow &&
+                                      row.chunk.displayStartMinutes == null))
                                 _buildPositionedRow(
                                   context,
                                   row,
