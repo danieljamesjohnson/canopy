@@ -22,6 +22,18 @@ import 'timeline_row_tile.dart';
 /// that Phase 24 rule is superseded outright by this overlay's ability to
 /// sit truthfully mid-chunk (26-UI-SPEC.md "The now-line (CAL-02)").
 ///
+/// **G-03 (26-UAT.md, fixed 26-09-PLAN.md):** [showChip] suppresses the
+/// chip specifically — the 2dp rule still always renders — while the line
+/// falls inside the live row's span. `LiveRowCard` is full-bleed by design
+/// (26-UI-SPEC.md "let now break the grid", inherited from Phase 22/23), so
+/// there is no gutter column there for a gutter-confined chip (G-01,
+/// 26-07-PLAN.md) to occupy: it would sit directly over `LiveRowCard`'s
+/// title, which is the defect G-01's own fix did not cover. The live row
+/// already states the current time in its own copy (`RIGHT NOW · <time>`),
+/// so the chip is redundant there, not lost — do not "simplify" this
+/// parameter away; without it the chip re-collides with the live row.
+///
+
 /// Carries NO `Semantics` node of its own. The call site in
 /// `today_screen.dart` applies one labelled `excludeSemantics` node around
 /// the whole positioned element (24-REVIEW.md WR-01: the wrapper must
@@ -32,11 +44,19 @@ import 'timeline_row_tile.dart';
 /// tree, so putting the label inside it would silently delete the
 /// announcement.
 class NowLineOverlay extends StatelessWidget {
-  const NowLineOverlay({super.key, required this.nowMinutes});
+  const NowLineOverlay({super.key, required this.nowMinutes, this.showChip = true});
 
   /// Minutes-from-midnight of the current moment, injected — never derived
   /// from a clock read inside this file.
   final int nowMinutes;
+
+  /// Whether the time chip renders. The 2dp rule below always renders
+  /// regardless of this flag — only the chip is conditional. The caller
+  /// passes `false` while [nowMinutes] falls inside the live row's span
+  /// (see the G-03 doc comment above); every other call passes `true` (or
+  /// omits the parameter), preserving G-01's gutter-confined chip exactly
+  /// as 26-07 left it.
+  final bool showChip;
 
   @override
   Widget build(BuildContext context) {
@@ -51,44 +71,45 @@ class NowLineOverlay extends StatelessWidget {
             alignment: Alignment.center,
             child: Container(height: 2, color: colorScheme.primary),
           ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 16),
-              // G-01: confined to the gutter column so the chip can never
-              // reach a ChunkCard's content (which begins immediately after
-              // this SizedBox, at 16dp + kGutterWidth).
-              child: SizedBox(
-                width: kGutterWidth,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary,
-                    borderRadius: BorderRadius.circular(4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.shadow.withValues(alpha: 0.3),
-                        blurRadius: 2,
-                        offset: const Offset(0, 1),
+          if (showChip)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16),
+                // G-01: confined to the gutter column so the chip can never
+                // reach a ChunkCard's content (which begins immediately after
+                // this SizedBox, at 16dp + kGutterWidth).
+                child: SizedBox(
+                  width: kGutterWidth,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary,
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colorScheme.shadow.withValues(alpha: 0.3),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      formatMinutesCompact(nowMinutes),
+                      maxLines: 1,
+                      overflow: TextOverflow.clip,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onPrimary,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
-                  ),
-                  child: Text(
-                    formatMinutesCompact(nowMinutes),
-                    maxLines: 1,
-                    overflow: TextOverflow.clip,
-                    style: textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onPrimary,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
