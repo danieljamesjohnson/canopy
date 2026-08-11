@@ -125,3 +125,7 @@ None — this plan only changes a layout constant. No new network, auth, file-ac
 ## Server for Dan to look at
 
 Debug build served at **`http://danserver:8132/`** (fresh port per CLAUDE.md trap #1 — 8131 was already serving a prior build of this phase). Server process left running (`python3 tools/serve-uat.py 8132 --dir build/web`, background, `no-store` headers via `tools/serve-uat.py`). To see the fix: open a fresh onboarding flow, generate a day, then use Settings → Debug → Time travel (or the `+1h`/`-1h`/absolute picker) to land inside a live work chunk or break and compare the space below the live card to the pre-fix evidence screenshots in `evidence-26-08/`.
+
+## Self-Check: PASSED
+
+All files and commit hashes referenced above were verified present on disk / in `git log` after writing this SUMMARY.

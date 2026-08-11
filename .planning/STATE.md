@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: "Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned."
-stopped_at: Completed 26-05-PLAN.md
-last_updated: "2026-08-10T16:34:24.593Z"
-last_activity: 2026-08-10
+stopped_at: Completed 26-08-PLAN.md (G-02 gap closure)
+last_updated: "2026-08-11T13:00:45.017Z"
+last_activity: 2026-08-11
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 25
-  completed_plans: 24
+  total_plans: 26
+  completed_plans: 25
   percent: 50
 ---
 
@@ -18,7 +18,7 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-10T16:34:24.588Z
+**Last session:** 2026-08-11T13:00:45.011Z
 
 ---
 
@@ -27,7 +27,7 @@ progress:
 Phase: 26
 Plan: 6 of 6
 Status: Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned.
-Last activity: 2026-08-10
+Last activity: 2026-08-11
 
 ```
 Progress: [██████░░░░] 67% — Phase 25/26 (v1.5 phases: 21-26)
@@ -104,6 +104,7 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 26-05]: One _didCentreOnOpen flag and one arithmetic animateTo (stackTop via RenderAbstractViewport.getOffsetToReveal + geometry.yFor(nowMinutes), clamped to maxScrollExtent read only post-layout) replace Phase 24's two flags/GlobalKeys/ensureVisible blocks — the now-line always exists at a computable offset in every NowState, closing the DayComplete UAT gap by construction
 - [Phase 26-05]: PD-19: a NowState transition on an already-mounted tree deliberately does NOT re-centre — only a new dateYmd or a DevClock.offset jump re-arms the single flag; a fresh mount always re-centres correctly regardless of state
 - [Phase 26-07]: Now-line chip confined to kGutterWidth (SizedBox width, mirroring HourAxisLine), copy switched to formatMinutesCompact; 2dp rule and full-time Semantics label left untouched — Dan's decision (26-UAT.md G-01): honour the UI-SPEC's intent (chip in the time column) and change the string, not the column -- rejected deleting the chip and rejected widening the gutter to ~101dp
+- [Phase ?]: 26-08: kLiveRowReservedHeight corrected 240.0->232.0 via real-browser measurement (G-02) — measured LiveRowCard's work variant (tallest, has action row) at 224px natural height in headless Chromium, +8px explicit margin; documented that the correction is smaller than the ~80px original estimate because this card's height is dominated by fixed-size elements rather than text-driven wrapping — Dan chose tightening the fixed-estimate constant over two-pass measurement (26-UAT.md, 2026-08-11); liveExtraPx mechanism and TimelineGeometry API left unchanged
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -187,7 +188,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-10
-Stopped at: Completed 26-05-PLAN.md
+Stopped at: Completed 26-08-PLAN.md (G-02 gap closure)
 Resume at: `/gsd-plan-phase 26`
 
 ## Performance Metrics
@@ -232,3 +233,4 @@ Resume at: `/gsd-plan-phase 26`
 | Phase 26-the-day-has-a-shape P04 | 45min | 2 tasks | 2 files |
 | Phase 26-the-day-has-a-shape P05 | ~30min | 2 tasks | 2 files |
 | Phase 26-the-day-has-a-shape P07 | ~20min | 3 tasks | 4 files |
+| Phase 26-the-day-has-a-shape P08 | ~45min | 3 tasks | 3 files |
