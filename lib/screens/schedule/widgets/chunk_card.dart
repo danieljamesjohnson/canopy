@@ -414,6 +414,62 @@ class _WorkChunkContent extends StatelessWidget {
     ThemeData theme,
     bool isResolved,
   ) {
+    return _buildContentShell(
+      context,
+      theme,
+      isResolved,
+      extras: [
+        // Rationale below clock time when present.
+        if (goalName != null &&
+            displayRationale != null &&
+            displayRationale!.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(
+            displayRationale!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        // Priority badge below rationale (GOALS-02).
+        if (goalPriorityWeight != null && goalPriorityWeight != 0.5) ...[
+          const SizedBox(height: 4),
+          _PriorityChip(priorityWeight: goalPriorityWeight!),
+        ],
+        // Valence chip after priority badge (ENERGY-04b).
+        if (goalValence != null && goalValence != EnergyValence.neutral) ...[
+          const SizedBox(height: 4),
+          _ValenceChip(valence: goalValence!),
+        ],
+      ],
+    );
+  }
+
+  /// UI-SPEC "Full" tier (26-02-PLAN.md PD-4): title + clock-time range +
+  /// action row (or status icon). Rationale, priority chip and valence chip
+  /// are suppressed — all three remain reachable via ChunkDetailSheet.
+  Widget _buildFullContent(
+    BuildContext context,
+    ThemeData theme,
+    bool isResolved,
+  ) {
+    return _buildContentShell(context, theme, isResolved);
+  }
+
+  /// Shared shell for the `detailed` and `full` densities (WR-02,
+  /// `26-REVIEW.md`): title, clock-time-or-duration fallback, trailing
+  /// status, and (for unresolved chunks) the action row. [extras] renders
+  /// immediately after the time/duration text and before the trailing
+  /// status column — empty for `full`; the rationale line, priority chip,
+  /// and valence chip (in that order) for `detailed`. Do not add a
+  /// density-specific branch here — anything that differs between the two
+  /// tiers belongs in the caller's `extras` list, not in this shell.
+  Widget _buildContentShell(
+    BuildContext context,
+    ThemeData theme,
+    bool isResolved, {
+    List<Widget> extras = const [],
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -460,30 +516,7 @@ class _WorkChunkContent extends StatelessWidget {
                       ),
                     ),
                   ],
-                  // Rationale below clock time when present.
-                  if (goalName != null &&
-                      displayRationale != null &&
-                      displayRationale!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      displayRationale!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                  // Priority badge below rationale (GOALS-02).
-                  if (goalPriorityWeight != null &&
-                      goalPriorityWeight != 0.5) ...[
-                    const SizedBox(height: 4),
-                    _PriorityChip(priorityWeight: goalPriorityWeight!),
-                  ],
-                  // Valence chip after priority badge (ENERGY-04b).
-                  if (goalValence != null &&
-                      goalValence != EnergyValence.neutral) ...[
-                    const SizedBox(height: 4),
-                    _ValenceChip(valence: goalValence!),
-                  ],
+                  ...extras,
                 ],
               ),
             ),
@@ -493,72 +526,6 @@ class _WorkChunkContent extends StatelessWidget {
         ),
         // SCHED-03: Always-visible action row for unresolved chunks.
         // Resolved chunks show status icon only (no buttons).
-        if (!isResolved) ...[
-          const SizedBox(height: 12),
-          _buildActionRow(context, theme),
-        ],
-      ],
-    );
-  }
-
-  /// UI-SPEC "Full" tier (26-02-PLAN.md PD-4): title + clock-time range +
-  /// action row (or status icon). Rationale, priority chip and valence chip
-  /// are suppressed — all three remain reachable via ChunkDetailSheet.
-  Widget _buildFullContent(
-    BuildContext context,
-    ThemeData theme,
-    bool isResolved,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _titleText,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      decoration: isResolved
-                          ? TextDecoration.lineThrough
-                          : null,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (chunk.displayStartMinutes != null &&
-                      showStartTime) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      formatTimeRange(
-                        chunk.displayStartMinutes!,
-                        chunk.displayStartMinutes! + chunk.durationMinutes,
-                      ),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ] else ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      '${chunk.durationMinutes} min',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            _buildTrailingStatus(theme),
-          ],
-        ),
         if (!isResolved) ...[
           const SizedBox(height: 12),
           _buildActionRow(context, theme),
