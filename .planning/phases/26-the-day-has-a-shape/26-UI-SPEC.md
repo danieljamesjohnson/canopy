@@ -396,6 +396,41 @@ about the live row being visually different from its neighbors); it is called ou
 checker does not flag the live row's size as a CAL-01 violation — it is a documented, locked
 exception, not an oversight.
 
+> **Amendment, 2026-08-11 (26-UAT.md G-02, `26-08-PLAN.md`) — `kLiveRowReservedHeight` corrected
+> from `240.0` to `232.0`, a real-browser measurement.** The `200–220px` estimate quoted just
+> above, and the `240.0` reservation it fed (`26-01-PLAN.md` PD-2), both came from a `flutter
+> test` pump — a placeholder-font harness that this codebase has now been bitten by twice
+> (`kGutterWidth` `46 -> 75 -> 52`). Re-measured in a real GPU-backed browser (headless Chromium,
+> `--use-gl=swiftshader`, 430px viewport, debug build served via `tools/serve-uat.py`),
+> screenshot-pixel-counted against `LiveRowCard`'s `primaryContainer` fill:
+>
+> - **Work variant (the tallest — carries the Complete/Skip action row, so this is what the
+>   reservation must be sized against)**: 200px fill + the card's own 24px vertical margin
+>   (`EdgeInsets.symmetric(vertical: 12)`, part of its natural `Positioned` layout size since it
+>   has no `height:` constraint) = **224px natural height**.
+> - **Break variant (sanity-check only — Phase 23's LIVE-01 omits the action row for breaks, so
+>   it is shorter)**: 158px fill + 24px margin = **182px natural height**, comfortably under the
+>   new reservation.
+>
+> New value: `224` (measured) `+ 8` (explicit safety margin, absorbing minor cross-renderer/DPI
+> anti-aliasing variance — not a full second-line title wrap, which remains a documented residual
+> risk) `= 232.0`.
+>
+> **Honest finding, not just a fix:** the real-browser work-variant figure (224) is close to the
+> old harness figure (230) — only 6px apart. Unlike `kGutterWidth` (a width/glyph-advance
+> measurement, heavily distorted by the placeholder font), `LiveRowCard`'s height is dominated by
+> fixed-size elements (padding, `SizedBox` gaps, button heights) rather than text wrapping, so it
+> was far less exposed to the harness's font-metric distortion. The net reservation only dropped
+> `240 -> 232` (8px), which shifts every row after the live row up by exactly 8px in both
+> variants (confirmed: `liveExtraPx` is `kLiveRowReservedHeight - liveDurationPx`, so the shift is
+> constant regardless of which chunk type is live). The `~80px` dead space `26-UAT.md` G-02
+> described was observed while a **break** was live — under the corrected value that gap is
+> `232 - 182 = 50px`, still visible, because the mechanism reserves for the tallest (work)
+> variant by design (Dan's decision, `26-RESEARCH.md` Pitfall 3: a fixed estimate, not two-pass
+> measurement). That residual gap during a live break is an accepted structural consequence of
+> the single-reservation model, not a defect this plan was scoped to eliminate. Before/after
+> evidence: `.planning/phases/26-the-day-has-a-shape/evidence-26-08/`.
+
 ---
 
 ## Free / gap rows at proportional height
