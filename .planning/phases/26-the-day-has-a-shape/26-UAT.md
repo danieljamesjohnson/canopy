@@ -51,7 +51,37 @@ Reported by Dan at the 26-06 sign-off gate, 2026-08-10. Verbatim, then diagnosis
 | # | Gap | Kind | Surface | Status |
 |---|-----|------|---------|--------|
 | G-01 | The now-line's `Now · <time>` chip paints on top of the chunk card beneath it, occluding the title and other card content whenever the line falls inside or near a card (i.e. mid-chunk `Active` — the normal case during a working day) | **bug** | `lib/screens/today/widgets/now_line.dart` | **closed** 26-07 — chip confined to the 52dp gutter, label now `formatMinutesCompact`; verified mid-chunk in a real browser at simulated 12:38 PM via Phase 25's DevClock. Regression test proven RED pre-fix |
-| G-02 | ~80px of dead white space renders between the live row and the next card — `kLiveRowReservedHeight = 240.0` over-reserves against a break live row measured at ~143 logical px in a real browser | polish | `lib/screens/today/timeline_geometry.dart` | open — routed to 26-08 |
+| G-02 | ~80px of dead white space renders between the live row and the next card — `kLiveRowReservedHeight = 240.0` over-reserves against a break live row measured at ~143 logical px in a real browser | polish | `lib/screens/today/timeline_geometry.dart` | **partially closed** 26-08 — constant corrected 240.0 → 232.0 against a real-browser work-variant measurement (224px + 8px margin). Only 8px of the ~80px: the remainder is structural, since reserving for the tallest variant necessarily leaves slack when the shorter break variant is live. Recorded, not overclaimed |
+| G-03 | The now-line chip paints over the **live row's** title — the case Dan originally reported, which 26-07 did NOT fix | **bug** | `lib/screens/today/widgets/now_line.dart` | open — routed to 26-09 |
+
+### G-03 — and the process failure that let it through
+
+**This is Dan's original G-01 report, still open.** 26-07 closed a real but *different* instance of
+the same symptom and reported the whole thing fixed. Recording the failure honestly because the
+repo is public as a work sample and because the mechanism is worth not repeating.
+
+**What 26-07 got right:** ordinary `ChunkCard`s sit behind a `16dp` outer inset plus a `52dp`
+reserved gutter, so their content starts at x≈68. Confining the chip to `kGutterWidth` genuinely
+fixed those, and that fix stands.
+
+**What it missed:** the live row is **full-bleed by design** — the UI-SPEC's "let now break the
+grid" rule, inherited from Phase 22/23. `LiveRowCard` extends to x=0 and its title starts at x≈16,
+exactly where the gutter-confined chip now sits. "Put the chip in the gutter" is meaningless where
+the live row renders, because there is no gutter there.
+
+**How the test let it pass:** 26-07's regression test asserted `chipRect.right <= cardRect.left`
+against a finder for **`ChunkCard`**. The live row is **`LiveRowCard`** — a different widget — so
+the assertion never evaluated the reported case. It was green from the start, against the real bug.
+A test that proves the wrong thing converted an open defect into a closed one.
+
+**How the manual check let it pass:** the mid-chunk verification screenshot landed on a **break**
+live row, whose shorter content (no Complete/Skip row, per Phase 23 LIVE-01) happened to leave the
+title clear of the chip. Coincidence read as coverage. The work variant — the tall one — was never
+looked at until 26-08's evidence crops surfaced it.
+
+**Generalised lesson for the remaining phases:** when a symptom is "X overlaps Y", enumerate every
+widget type that can be Y before writing the assertion. This surface has two card types with
+deliberately different insets, and only one of them was considered.
 
 ### G-02 origin and diagnosis
 
