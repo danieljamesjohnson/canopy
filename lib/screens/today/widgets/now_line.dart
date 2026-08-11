@@ -33,7 +33,6 @@ import 'timeline_row_tile.dart';
 /// so the chip is redundant there, not lost — do not "simplify" this
 /// parameter away; without it the chip re-collides with the live row.
 ///
-
 /// Carries NO `Semantics` node of its own. The call site in
 /// `today_screen.dart` applies one labelled `excludeSemantics` node around
 /// the whole positioned element (24-REVIEW.md WR-01: the wrapper must
