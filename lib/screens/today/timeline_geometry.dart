@@ -41,15 +41,57 @@ const double kPixelsPerMinute = 5.5;
 /// exception — "let now break the grid," carried forward unchanged from
 /// `LiveRowCard`, see `26-UI-SPEC.md` "The live row exception").
 ///
-/// **PD-2.** `LiveRowCard` (kicker + title + remaining + progress + actions
-/// + next-line) measures 230.0px (measured 2026-08-10 — the UI-SPEC's
-/// "200–220px" estimate was low). `240.0` reserves a small margin above
+/// **G-02 (26-08-PLAN.md) — REAL-BROWSER measurement, 2026-08-11, 430px
+/// viewport.** The prior `240.0` was derived from a `flutter test` pump
+/// (PD-2 below) — a placeholder-font harness measurement, exactly the class
+/// of quantity `26-VALIDATION.md` routes to the manual-only gate. Measured
+/// instead in a real GPU-backed browser (headless Chromium,
+/// `--use-gl=swiftshader`, debug build served via `tools/serve-uat.py`),
+/// screenshot-pixel-counted against `LiveRowCard`'s `primaryContainer` fill:
+///
+/// - **Work variant (the tallest — carries the Complete/Skip action row;
+///   this is what the reservation is sized against)**: 200px of
+///   `primaryContainer` fill + this card's own 24px vertical margin
+///   (`EdgeInsets.symmetric(vertical: 12)`, itself part of the natural size
+///   `Positioned` lays out against since it has no `height:` constraint) =
+///   **224px natural height**.
+/// - **Break variant (for contrast only — Phase 23's LIVE-01 omits the
+///   action row for breaks, so this is shorter)**: 158px fill + 24px margin
+///   = **182px natural height**. Comfortably under the reservation below;
+///   not what the reservation is sized against.
+///
+/// `232.0` = 224 (measured work-variant natural height) + an explicit
+/// **8px margin** (the tight end of the plan's stated 8–16px range) to
+/// absorb minor cross-renderer/DPI anti-aliasing variance. This margin is
+/// NOT enough to fully absorb a goal title wrapping to a second
+/// `headlineSmall` line (~28–32px) — that remains a documented residual
+/// risk, not a claim this constant covers.
+///
+/// **Do NOT re-derive this from `flutter test`.** Its placeholder font has
+/// no real Roboto metrics and inflates/distorts measured glyph geometry —
+/// the same failure mode that took `kGutterWidth` 46 → 75 (harness) → 52
+/// (real-browser correction), and the reason the harness-derived `230.0`
+/// below undershot what a real browser draws by only a little rather than a
+/// lot, which is itself not something to trust without re-measuring.
+///
+/// **What would invalidate this value:** any change to `LiveRowCard`'s
+/// children (kicker/title/remaining/progress/actions/next-line), its
+/// typography (`theme.textTheme.headlineSmall`/`bodyMedium`/`bodySmall`), or
+/// whether the action row renders for work chunks.
+///
+/// ---
+///
+/// **PD-2 (superseded 2026-08-11, kept for history).** `LiveRowCard` (kicker
+/// + title + remaining + progress + actions + next-line) measures 230.0px
+/// (measured 2026-08-10 via a `flutter test` pump — the UI-SPEC's
+/// "200–220px" estimate was low). `240.0` reserved a small margin above
 /// that measurement. This is a fixed estimate, not a two-pass
 /// measure-then-`setState` flow (`26-RESEARCH.md` Pitfall 3, option (a)) —
 /// rejected because a `GlobalKey`/`RenderBox` measure-then-correct flow
 /// buys ~10px of precision at the cost of a correction frame and a whole
-/// class of one-frame-snap bugs.
-const double kLiveRowReservedHeight = 240.0;
+/// class of one-frame-snap bugs. **That mechanism choice still stands** —
+/// only the number changed (G-02, above).
+const double kLiveRowReservedHeight = 232.0;
 
 /// Full-tier density threshold for a work-chunk row, expressed in pixels
 /// (PD-3), not minutes.
