@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Right Now
 status: "Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned."
-stopped_at: Completed 26-09-PLAN.md
-last_updated: "2026-08-11T13:21:18.567Z"
-last_activity: 2026-08-11
+stopped_at: Completed 26-10-PLAN.md
+last_updated: "2026-08-13T13:26:28.503Z"
+last_activity: 2026-08-13
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 27
-  completed_plans: 26
+  total_plans: 28
+  completed_plans: 28
   percent: 50
 ---
 
@@ -18,16 +18,16 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-11T13:21:18.562Z
+**Last session:** 2026-08-13T13:26:21.405Z
 
 ---
 
 ## Current Position
 
 Phase: 26
-Plan: 6 of 6
-Status: Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned.
-Last activity: 2026-08-11
+Plan: 10 of 10
+Status: 26-10 (gap closure) closed G-04/G-05/G-06 from 26-UI-REVIEW.md — reserved kTimelineEdgePadding at both ends of TimelineGeometry's rendered range (fixes the sheared first/last hour-axis label and the now-line clipping at PreStart/DayComplete) and added an AM suffix to formatMinutesCompact. 560/560 tests passing (558 baseline + 2 new), `flutter analyze` clean. Confirmed in a real browser at http://danserver:8134/. 26-06-PLAN.md remains an open, unaddressed item for this phase.
+Last activity: 2026-08-13
 
 ```
 Progress: [██████░░░░] 67% — Phase 25/26 (v1.5 phases: 21-26)
@@ -106,6 +106,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 26-07]: Now-line chip confined to kGutterWidth (SizedBox width, mirroring HourAxisLine), copy switched to formatMinutesCompact; 2dp rule and full-time Semantics label left untouched — Dan's decision (26-UAT.md G-01): honour the UI-SPEC's intent (chip in the time column) and change the string, not the column -- rejected deleting the chip and rejected widening the gutter to ~101dp
 - [Phase ?]: 26-08: kLiveRowReservedHeight corrected 240.0->232.0 via real-browser measurement (G-02) — measured LiveRowCard's work variant (tallest, has action row) at 224px natural height in headless Chromium, +8px explicit margin; documented that the correction is smaller than the ~80px original estimate because this card's height is dominated by fixed-size elements rather than text-driven wrapping — Dan chose tightening the fixed-estimate constant over two-pass measurement (26-UAT.md, 2026-08-11); liveExtraPx mechanism and TimelineGeometry API left unchanged
 - [Phase 26-the-day-has-a-shape]: G-03: chip suppressed only inside the live row's span (not the whole overlay); rule unchanged — LiveRowCard already states the current time in its own copy, so the chip is redundant there; the rule alone still marks the position
+- [Phase 26-the-day-has-a-shape]: 26-10: kTimelineEdgePadding = max(kHourAxisHeight, kNowLineHeight) / 2 reserved at both ends of TimelineGeometry's rendered range, applied in yFor()/totalHeight() only — Closes G-04 (sheared first/last hour-axis label) and G-05 (now-line clipped at PreStart/DayComplete) from 26-UI-REVIEW.md; rejected the one-line Clip.none fix because it would let the top label paint into the header block above the Stack
+- [Phase 26-the-day-has-a-shape]: 26-10: formatMinutesCompact gained an 'a' AM suffix, mirroring the existing 'p' for PM — Closes G-06 (26-UI-REVIEW.md) — the now-line chip is the app's most prominent, always-on-screen element and previously showed AM times with no meridiem cue
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -189,7 +191,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-10
-Stopped at: Completed 26-09-PLAN.md
+Stopped at: Completed 26-10-PLAN.md
 Resume at: `/gsd-plan-phase 26`
 
 ## Performance Metrics
@@ -236,3 +238,4 @@ Resume at: `/gsd-plan-phase 26`
 | Phase 26-the-day-has-a-shape P07 | ~20min | 3 tasks | 4 files |
 | Phase 26-the-day-has-a-shape P08 | ~45min | 3 tasks | 3 files |
 | Phase 26-the-day-has-a-shape P09 | ~25min | 3 tasks | 4 files |
+| Phase 26 P10 | 90min | 4 tasks | 7 files |
