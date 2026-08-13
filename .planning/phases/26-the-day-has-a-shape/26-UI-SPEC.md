@@ -280,6 +280,40 @@ including breaks, currently opens `ChunkDetailSheet`). Reasoning:
 > Complete/Skip action row) — the variant whose extra headroom is what let the break
 > variant's shorter card mask this defect through two earlier rounds of checking.
 
+> **AMENDED 2026-08-13 (26-UI-REVIEW.md, G-04/G-05, `26-10-PLAN.md`).** A retroactive
+> visual audit found the topmost and bottommost hour-axis labels sheared in half on
+> **every single render**, and the now-line itself clipped identically whenever
+> `nowMinutes` landed within half a box-height of `rangeStart`/`rangeEnd` — which is
+> exactly `PreStart` and `DayComplete`, since those two states derive the rendered range
+> from `nowMinutes` itself. Root cause: `HourAxisLine` and this overlay are both
+> positioned as `Positioned(top: geometry.yFor(x) - <height>/2, height: <height>)` — they
+> straddle their own y — and the outer `Stack` defaults to `Clip.hardEdge` with no
+> override, so the first/last boundary box painted past `[0, totalHeight]` and was cut
+> off.
+>
+> **`Clip.none` was considered and rejected.** It un-shears the labels but lets the top
+> box paint ~10px *above* the Stack, into the header block directly above it — trading a
+> sheared label for one colliding with body copy, which is the exact defect this phase's
+> earliest gate screenshot already showed once.
+>
+> Superseding rule: `TimelineGeometry` reserves `kTimelineEdgePadding = max(kHourAxisHeight,
+> kNowLineHeight) / 2` (currently `14.0`, since `kNowLineHeight` `28.0` is the larger of
+> the two) as headroom at **both** ends of `totalHeight`, and folds it into every `yFor`
+> result. Applied in exactly one place (`timeline_geometry.dart`) — every consumer (rows,
+> hour hairlines, this overlay, the centre-on-open scroll target) inherits it automatically
+> through `yFor`/`totalHeight`, with no re-derivation at any individual call site. The
+> now-line's position stays truthful throughout — the padding shifts the whole coordinate
+> system, it never clamps or nudges the line itself off its real minute.
+>
+> Two regression tests (`test/screens/today_screen_test.dart`, "G-04" and "G-05") assert
+> painted rects (`getTopLeft`/`getBottomLeft`) against the Stack's own bounds — for the
+> now-line, at the EXACT boundary minutes (`nowMinutes == rangeStart`/`rangeEnd`), not
+> merely "near" them. Both proven RED against the unfixed geometry (temporarily reverted,
+> both failed with real rect measurements) before being accepted; see 26-10-SUMMARY.md.
+> Confirmed in a real browser (debug build, `tools/serve-uat.py`): the topmost/bottommost
+> hour-axis labels render in full, the now-line renders in full at `PreStart` and
+> `DayComplete`, and neither collides with the header above or the trailing block below.
+
 **The now-line is the screen's primary visual anchor.** Nothing else on the screen carries
 full-content-width stroke, topmost z-order, *and* the app's sole reserved accent color at the
 same time — every other element competes within the 60/30/10 split below it. That combination
@@ -410,6 +444,14 @@ start time is legible up close; the hour axis only gives round-hour reference po
 specific chunk's minute. Compact-tier work chunks and both break tiers omit the time text per
 the density rules above (their own position plus the axis already carries enough information
 at that size).
+
+> **AMENDED 2026-08-13 (26-UI-REVIEW.md, G-04, `26-10-PLAN.md`).** The `Placement` row's
+> formula above (`top: (hourMinutes - rangeStart) * kPixelsPerMinute`) omits the edge
+> padding `TimelineGeometry` now folds into `yFor` — see the G-04/G-05 amendment under
+> "The now-line (CAL-02)" below for the full root cause (every first/last hour-axis label
+> sheared in half, unconditionally) and the fix (`kTimelineEdgePadding`, reserved at both
+> ends of the rendered range, applied once inside `TimelineGeometry` and inherited by this
+> axis automatically).
 
 ---
 
@@ -593,6 +635,23 @@ D-03's framing that `colorScheme.primary` is specifically "now," not a general h
 | Empty state | Not applicable — out of scope, unchanged from Phase 22/23 |
 | Error state | Not applicable — no error surface (pure client-side layout arithmetic, no I/O) |
 | Destructive confirmation | Not applicable — no destructive action in this phase |
+
+> **AMENDED 2026-08-13 (26-UI-REVIEW.md, G-06, `26-10-PLAN.md`) — `formatMinutesCompact`
+> now carries an AM suffix.** `time_format.dart:47-54` returned no meridiem letter for AM
+> times and a single `p` for PM (`"8:10"` vs `"1:00p"`) — a convention inherited from the
+> old per-row time gutter (D-04), where the asymmetry was low-stakes. This phase (G-01,
+> above) promotes that exact formatter onto the now-line chip — the single most
+> prominent, always-on-screen, `colorScheme.primary`-filled element in the app — so a bare
+> AM time with no meridiem cue became a real legibility gap, especially for a schedule
+> that can run into the evening.
+>
+> Superseding rule: an `'a'` suffix mirrors the existing `'p'` for PM. `formatMinutesCompact(480)`
+> now returns `"8:00a"` (was `"8:00"`); `formatMinutesCompact(780)` is unchanged at
+> `"1:00p"`. The worst-case width (6 characters, e.g. `"12:45a"`) was already confirmed to
+> fit `kGutterWidth` by the G-01 fix's own math, and re-verified in a real browser
+> (`5:00a`, `8:18a` chips, both fully rendered with no ellipsis). Every caller/assertion of
+> `formatMinutesCompact` was reviewed (`grep -rn "formatMinutesCompact" lib/ test/`) and
+> updated where it asserted a bare-AM string; see 26-10-SUMMARY.md for the full list.
 
 ---
 
