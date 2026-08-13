@@ -1148,6 +1148,110 @@ void main() {
           expect(tester.takeException(), isNull);
         },
       );
+
+      // G-04/G-05 (26-UI-REVIEW.md Top Fix #1/#2, closed 26-10-PLAN.md):
+      // rect assertions against the Stack's OWN painted bounds, not widget
+      // count or label text — the "hour axis coverage" test above only
+      // asserts the latter and went green against a real shear (26-UAT.md's
+      // G-03 postmortem's generalised lesson, applied here). Both tests
+      // below were proven RED against the unfixed geometry (kTimelineEdgePadding
+      // temporarily reverted to 0-equivalent pre-fix code, both failed) and
+      // GREEN after restoring the fix — see 26-10-SUMMARY.md for the
+      // recorded observations.
+      testWidgets(
+        'G-04: the first and last hour-axis labels stay inside the '
+        "Stack's own painted bounds",
+        (tester) async {
+          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+
+          final stackRect = tester.getRect(
+            find
+                .ancestor(
+                  of: find.byType(HourAxisLine).first,
+                  matching: find.byType(Stack),
+                )
+                .first,
+          );
+          final firstLabelRect = tester.getRect(
+            find.byType(HourAxisLine).first,
+          );
+          final lastLabelRect = tester.getRect(find.byType(HourAxisLine).last);
+
+          expect(
+            firstLabelRect.top,
+            greaterThanOrEqualTo(stackRect.top),
+            reason:
+                'G-04: the FIRST hour-axis label must not be sheared above '
+                'the Stack',
+          );
+          expect(
+            lastLabelRect.bottom,
+            lessThanOrEqualTo(stackRect.bottom),
+            reason:
+                'G-04: the LAST hour-axis label must not be sheared below '
+                'the Stack',
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'G-05: the now-line stays inside the Stack at the EXACT boundary '
+        'minute — PreStart (nowMinutes == rangeStart) and DayComplete '
+        '(nowMinutes == rangeEnd), not merely "near" the edge',
+        (tester) async {
+          // PreStart: 8:00 AM — before w1's 9:00 start and already
+          // hour-aligned, so rangeStart = floorToHour(480) = 480 ==
+          // nowMinutes exactly (twoChunkFixture: firstStart 540, lastEnd
+          // 625).
+          await pumpAt(tester, DateTime(2026, 8, 7, 8, 0));
+          var stackRect = tester.getRect(
+            find
+                .ancestor(
+                  of: find.byType(NowLineOverlay),
+                  matching: find.byType(Stack),
+                )
+                .first,
+          );
+          var lineRect = tester.getRect(find.byType(NowLineOverlay));
+          expect(
+            lineRect.top,
+            greaterThanOrEqualTo(stackRect.top),
+            reason:
+                'G-05: the now-line must not be sheared above the Stack at '
+                'PreStart (nowMinutes == rangeStart == 480)',
+          );
+          expect(lineRect.bottom, lessThanOrEqualTo(stackRect.bottom));
+
+          // Full unmount before the next clock (_nowFn is late final —
+          // Pitfall 8, see the no-suppression test's comment above).
+          await tester.pumpWidget(const SizedBox.shrink());
+
+          // DayComplete: 11:00 AM — after w2's 10:25 end and already
+          // hour-aligned, so rangeEnd = ceilToHour(660) = 660 == nowMinutes
+          // exactly.
+          await pumpAt(tester, DateTime(2026, 8, 7, 11, 0));
+          stackRect = tester.getRect(
+            find
+                .ancestor(
+                  of: find.byType(NowLineOverlay),
+                  matching: find.byType(Stack),
+                )
+                .first,
+          );
+          lineRect = tester.getRect(find.byType(NowLineOverlay));
+          expect(lineRect.top, greaterThanOrEqualTo(stackRect.top));
+          expect(
+            lineRect.bottom,
+            lessThanOrEqualTo(stackRect.bottom),
+            reason:
+                'G-05: the now-line must not be sheared below the Stack at '
+                'DayComplete (nowMinutes == rangeEnd == 660)',
+          );
+
+          expect(tester.takeException(), isNull);
+        },
+      );
     });
   });
 
