@@ -927,19 +927,21 @@ void main() {
       // non-live moment instead: 9:30 with w1 already completed puts the
       // day in GapBeforeNext (w2's 10:00 window hasn't opened yet), so
       // there is no live row and the chip is expected to show.
-      testWidgets('chip copy — renders exactly "9:30" in a non-live state', (
-        tester,
-      ) async {
-        await pumpAt(
-          tester,
-          DateTime(2026, 8, 7, 9, 30),
-          chunks: twoChunkFixture(firstResolved: true),
-        );
+      testWidgets(
+        'chip copy — renders exactly "9:30a" in a non-live state (G-06: '
+        'AM now carries its own suffix, mirroring PM)',
+        (tester) async {
+          await pumpAt(
+            tester,
+            DateTime(2026, 8, 7, 9, 30),
+            chunks: twoChunkFixture(firstResolved: true),
+          );
 
-        expect(find.byType(LiveRowCard), findsNothing);
-        expect(find.text('9:30'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      });
+          expect(find.byType(LiveRowCard), findsNothing);
+          expect(find.text('9:30a'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
 
       testWidgets(
         'G-01: the now chip stays inside the time gutter and never '

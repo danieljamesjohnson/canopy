@@ -39,17 +39,30 @@ String formatDurationShort(int minutes) {
 }
 
 /// Formats minutes-from-midnight as a compact 12-hour string for the 46dp
-/// time gutter (D-04). Mirrors [formatMinutes]'s 12-hour conversion, but
-/// drops the space and the AM suffix (PM keeps a single 'p') so the string
-/// fits the narrow gutter column.
-/// Examples: 480 → "8:00", 645 → "10:45", 780 → "1:00p", 720 → "12:00p",
-/// 0 → "12:00", 1350 → "10:30p".
+/// time gutter (D-04) and the now-line chip (G-01, `26-UI-SPEC.md`
+/// amendment). Mirrors [formatMinutes]'s 12-hour conversion, but drops the
+/// space so the string fits the narrow gutter column — a single 'a'/'p'
+/// meridiem suffix instead of the full " AM"/" PM".
+///
+/// **G-06 (26-UI-REVIEW.md, fixed 26-10-PLAN.md):** AM times now carry an
+/// 'a' suffix, mirroring the existing 'p' for PM. The original asymmetric
+/// convention (no AM suffix at all) was inherited from this function's
+/// lower-stakes original role in the old per-row time gutter (D-04); this
+/// phase promotes it onto the now-line chip — the single most prominent,
+/// always-on-screen element in the app (`colorScheme.primary`-filled) — so
+/// a bare AM time with no meridiem cue became a real legibility gap. The
+/// gutter column already has budget for the extra character (confirmed by
+/// the G-01 fix's own math: the worst case, 6 characters like "12:45p"/
+/// "12:45a", already fits `kGutterWidth`).
+///
+/// Examples: 480 → "8:00a", 645 → "10:45a", 780 → "1:00p", 720 → "12:00p",
+/// 0 → "12:00a", 1350 → "10:30p".
 String formatMinutesCompact(int minutes) {
   final h = minutes ~/ 60;
   final m = minutes % 60;
   final isPm = h >= 12;
   final hour = h == 0 ? 12 : (h > 12 ? h - 12 : h);
-  final suffix = isPm ? 'p' : '';
+  final suffix = isPm ? 'p' : 'a';
   return '$hour:${m.toString().padLeft(2, '0')}$suffix';
 }
 

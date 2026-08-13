@@ -37,12 +37,15 @@ void main() {
   });
 
   group('formatMinutesCompact', () {
-    test('480 gives "8:00"', () {
-      expect(formatMinutesCompact(480), '8:00');
+    // G-06 (26-UI-REVIEW.md, fixed 26-10-PLAN.md): AM times now carry an
+    // 'a' suffix, mirroring the existing 'p' for PM — closes the AM/PM
+    // asymmetry the audit flagged on the now-line chip.
+    test('480 gives "8:00a"', () {
+      expect(formatMinutesCompact(480), '8:00a');
     });
 
-    test('645 gives "10:45"', () {
-      expect(formatMinutesCompact(645), '10:45');
+    test('645 gives "10:45a"', () {
+      expect(formatMinutesCompact(645), '10:45a');
     });
 
     test('780 gives "1:00p"', () {
@@ -53,8 +56,8 @@ void main() {
       expect(formatMinutesCompact(720), '12:00p');
     });
 
-    test('0 (midnight) gives "12:00"', () {
-      expect(formatMinutesCompact(0), '12:00');
+    test('0 (midnight) gives "12:00a"', () {
+      expect(formatMinutesCompact(0), '12:00a');
     });
 
     test('1350 gives "10:30p"', () {
