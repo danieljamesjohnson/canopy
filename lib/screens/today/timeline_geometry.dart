@@ -120,6 +120,45 @@ const double kNowLineHeight = 28.0;
 /// the hour-boundary label + hairline.
 const double kHourAxisHeight = 20.0;
 
+/// Headroom reserved at BOTH the top and bottom of the rendered range so no
+/// `Positioned` box can ever be clipped by the Stack's default
+/// `Clip.hardEdge` (G-04/G-05, `26-10-PLAN.md`).
+///
+/// **Root cause:** `HourAxisLine` and `NowLineOverlay` are both positioned
+/// as `Positioned(top: geometry.yFor(x) - <height>/2, height: <height>)` —
+/// they straddle their own y. `hourBoundariesIn` always includes
+/// `rangeStart` as the first boundary and `rangeEnd` as the last, and
+/// (pre-this-constant) `yFor` mapped those to exactly `0` and `totalHeight`
+/// — so the first/last hour-axis label straddled the Stack's own edge and
+/// was sheared in half (G-04), and the now-line clipped identically
+/// whenever `nowMinutes` landed within half a box-height of `rangeStart`/
+/// `rangeEnd` — which is exactly `PreStart` and `DayComplete`, since those
+/// two states derive `rangeStart`/`rangeEnd` from `nowMinutes` itself
+/// (G-05).
+///
+/// **Rejected fix:** `clipBehavior: Clip.none` on the outer Stack. That
+/// un-shears the labels but lets the top box paint above the Stack, into
+/// the header block directly above it — trading a sheared label for one
+/// that collides with body copy (`26-UI-REVIEW.md` Top Fix #1).
+///
+/// **This fix instead:** reserve `kTimelineEdgePadding` of blank space at
+/// both ends of [TimelineGeometry.totalHeight] and shift every
+/// [TimelineGeometry.yFor] result down by that amount, so the straddling
+/// box's own half-height always has room inside `[0, totalHeight]`. Applied
+/// in exactly one place (inside this file) — every consumer (rows, hour
+/// hairlines, the now-line, the centre-on-open scroll target) inherits it
+/// automatically through `yFor`/`totalHeight`; do NOT re-derive or add this
+/// offset at an individual call site.
+///
+/// Sized to `max(kHourAxisHeight, kNowLineHeight) / 2` — the larger of the
+/// two straddling widgets' half-heights — so both are covered by the same
+/// single constant. `kNowLineHeight` (28.0) is currently the larger of the
+/// two, so this evaluates to `14.0`; if either constant changes, this stays
+/// correct without editing this value by hand.
+const double kTimelineEdgePadding = kNowLineHeight > kHourAxisHeight
+    ? kNowLineHeight / 2
+    : kHourAxisHeight / 2;
+
 /// The minute-to-pixel authority for Phase 26's proportional Today surface.
 ///
 /// Pure and immutable: every method is arithmetic on the `int`/`double`
@@ -205,15 +244,19 @@ class TimelineGeometry {
     );
   }
 
-  /// The pixel offset of [minutes] from the top of the rendered range.
+  /// The pixel offset of [minutes] from the top of the rendered range, PLUS
+  /// [kTimelineEdgePadding] (G-04/G-05) — every offset this method returns
+  /// is shifted down by that fixed amount, so a box straddling `yFor(x)` by
+  /// up to `kTimelineEdgePadding` on either side can never start above `0`
+  /// or (per [totalHeight]) end below the Stack's own bottom edge.
   ///
   /// Clamps [minutes] into `[rangeStart, rangeEnd]` first — defensive:
-  /// guarantees no negative offset and no offset past [totalHeight]. Adds
-  /// [liveExtraPx] once the clamped minute reaches or passes
-  /// [liveEndMinutes]. The `>=` (not `>`) is load-bearing: it makes the
-  /// live chunk's own slot exactly [kLiveRowReservedHeight] tall, and makes
-  /// the row starting at the live chunk's end minute begin immediately
-  /// below the swelled card rather than underneath it.
+  /// guarantees the pre-padding offset is never negative and never past
+  /// the pre-padding total. Adds [liveExtraPx] once the clamped minute
+  /// reaches or passes [liveEndMinutes]. The `>=` (not `>`) is load-bearing:
+  /// it makes the live chunk's own slot exactly [kLiveRowReservedHeight]
+  /// tall, and makes the row starting at the live chunk's end minute begin
+  /// immediately below the swelled card rather than underneath it.
   double yFor(int minutes) {
     final clamped = minutes < rangeStart
         ? rangeStart
@@ -222,19 +265,29 @@ class TimelineGeometry {
     if (liveEndMinutes != null && clamped >= liveEndMinutes!) {
       offset += liveExtraPx;
     }
-    return offset;
+    return offset + kTimelineEdgePadding;
   }
 
   /// The pixel height of a row spanning `[startMinutes, startMinutes +
   /// durationMinutes)`, clamped to a non-negative value (T-26-01 — guards
   /// against corrupt/out-of-order data yielding a negative duration).
+  ///
+  /// [kTimelineEdgePadding] cancels out of this difference (both [yFor]
+  /// calls add the same constant), so a row's height stays exactly
+  /// duration-implied (or [kLiveRowReservedHeight] for the live row) —
+  /// unaffected by the edge padding, as it must be (D-02).
   double heightFor(int startMinutes, int durationMinutes) {
     final height = yFor(startMinutes + durationMinutes) - yFor(startMinutes);
     return height < 0.0 ? 0.0 : height;
   }
 
-  /// The rendered range's total pixel height.
-  double get totalHeight => yFor(rangeEnd);
+  /// The rendered range's total pixel height, including
+  /// [kTimelineEdgePadding] at BOTH the top (already folded into every
+  /// [yFor] result, including this one) and the bottom (added explicitly
+  /// here) — so the last hour-axis label and a `DayComplete` now-line have
+  /// the same headroom below `rangeEnd` that the first label and a
+  /// `PreStart` now-line have above `rangeStart`.
+  double get totalHeight => yFor(rangeEnd) + kTimelineEdgePadding;
 
   /// Every whole-hour boundary minute inside the rendered range, ascending.
   List<int> get hourBoundaries => hourBoundariesIn(rangeStart, rangeEnd);

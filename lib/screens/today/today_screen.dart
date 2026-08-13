@@ -691,7 +691,13 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     switch (row) {
       case LeadingFreeRow(:final untilMinutes):
         return Positioned(
-          top: 0,
+          // geometry.yFor(geometry.rangeStart), not a hard-coded 0 — that
+          // literal only ever equaled yFor(rangeStart) because yFor used to
+          // return exactly 0 there (26-10-PLAN.md's edge-padding fix,
+          // timeline_geometry.dart, changed that). A hard-coded 0 would
+          // silently misalign this row from every other consumer of
+          // geometry now that yFor(rangeStart) carries a fixed offset.
+          top: geometry.yFor(geometry.rangeStart),
           left: 0,
           right: 0,
           height: geometry.heightFor(

@@ -658,7 +658,8 @@ void main() {
 
       testWidgets(
         "the timeline Stack's SizedBox height equals (rangeEnd - rangeStart) "
-        '* kPixelsPerMinute when no live row is swelling it',
+        '* kPixelsPerMinute plus 2 * kTimelineEdgePadding (G-04/G-05, '
+        '26-10-PLAN.md) when no live row is swelling it',
         (tester) async {
           await pumpDayComplete(tester);
 
@@ -666,7 +667,8 @@ void main() {
           // rangeStart = floorToHour(480) = 480, rangeEnd =
           // ceilToHour(1080) = 1080, both already hour-aligned, so this is
           // a clean check with no liveExtraPx term to account for.
-          final expectedTotalHeight = (1080 - 480) * kPixelsPerMinute;
+          final expectedTotalHeight =
+              (1080 - 480) * kPixelsPerMinute + 2 * kTimelineEdgePadding;
           final sizedBoxes = tester.widgetList<SizedBox>(
             find.byType(SizedBox),
           );

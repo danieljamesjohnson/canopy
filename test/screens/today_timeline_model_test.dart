@@ -351,13 +351,15 @@ void main() {
       expect(geometry.rangeEnd, 1320);
     });
 
-    test('yFor(rangeStart) is always 0.0', () {
+    test(
+        'yFor(rangeStart) is always kTimelineEdgePadding (G-04/G-05, '
+        '26-10-PLAN.md)', () {
       final geometry = TimelineGeometry.forDay(
         nowMinutes: 555,
         firstStartMinutes: 540,
         lastEndMinutes: 1020,
       );
-      expect(geometry.yFor(geometry.rangeStart), 0.0);
+      expect(geometry.yFor(geometry.rangeStart), kTimelineEdgePadding);
     });
 
     test('a 25-minute chunk heightFor equals 137.5 with no live row', () {
@@ -378,8 +380,10 @@ void main() {
       expect(geometry.heightFor(540, 5), 27.5);
     });
 
-    test('totalHeight equals (rangeEnd - rangeStart) * 5.5 with no live row',
-        () {
+    test(
+        'totalHeight equals (rangeEnd - rangeStart) * 5.5 plus '
+        '2 * kTimelineEdgePadding with no live row (G-04/G-05, '
+        '26-10-PLAN.md)', () {
       final geometry = TimelineGeometry.forDay(
         nowMinutes: 555,
         firstStartMinutes: 540,
@@ -387,7 +391,8 @@ void main() {
       );
       expect(
         geometry.totalHeight,
-        (geometry.rangeEnd - geometry.rangeStart) * kPixelsPerMinute,
+        (geometry.rangeEnd - geometry.rangeStart) * kPixelsPerMinute +
+            2 * kTimelineEdgePadding,
       );
     });
 
@@ -454,14 +459,18 @@ void main() {
       expect(kLiveRowReservedHeight, measuredWorkVariantHeight + explicitMargin);
     });
 
-    test('yFor clamps rather than returning a negative for an out-of-range '
-        'minute', () {
+    test(
+        'yFor clamps rather than returning a negative-before-padding '
+        'offset for an out-of-range minute', () {
       final geometry = TimelineGeometry.forDay(
         nowMinutes: 555,
         firstStartMinutes: 540,
         lastEndMinutes: 1020,
       );
-      expect(geometry.yFor(geometry.rangeStart - 120), 0.0);
+      expect(
+        geometry.yFor(geometry.rangeStart - 120),
+        kTimelineEdgePadding,
+      );
     });
   });
 }
