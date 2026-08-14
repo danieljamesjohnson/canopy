@@ -88,9 +88,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | DEV-01 | Phase 25 | Complete |
 | DEV-02 | Phase 25 | Complete |
 | DEV-03 | Phase 25 | Complete |
-| CAL-01 | Phase 26 | Not started |
-| CAL-02 | Phase 26 | Not started |
-| CAL-03 | Phase 26 | Not started |
+| CAL-01 | Phase 26 | Complete |
+| CAL-02 | Phase 26 | Complete |
+| CAL-03 | Phase 26 | Complete |
 
 **Coverage:**
 
