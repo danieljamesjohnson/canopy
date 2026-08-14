@@ -4,9 +4,15 @@ import '../../../utils/time_format.dart';
 import '../timeline_geometry.dart';
 import 'timeline_row_tile.dart';
 
+/// Diameter of the now-line's terminus dot (the Google Calendar
+/// current-time idiom). 10dp reads clearly against the 2dp rule without
+/// exceeding [kNowLineHeight]'s 28dp band.
+const double kNowDotDiameter = 10.0;
+
 /// The screen's primary visual anchor (CAL-02): a full-content-width 2dp
-/// rule plus a compact time chip, positioned by the caller at an
-/// arithmetic pixel offset — never a between-rows list item.
+/// rule, a terminus dot at the content edge, plus a compact time chip,
+/// positioned by the caller at an arithmetic pixel offset — never a
+/// between-rows list item.
 ///
 /// **G-01 (26-UAT.md, fixed 26-07-PLAN.md):** the chip is confined to the
 /// `kGutterWidth` (52dp) time-gutter column and can never reach a
@@ -69,6 +75,32 @@ class NowLineOverlay extends StatelessWidget {
           Align(
             alignment: Alignment.center,
             child: Container(height: 2, color: colorScheme.primary),
+          ),
+          // The calendar-style terminus dot. Sits at the content edge —
+          // 16dp row inset + [kGutterWidth] — so its left edge lands exactly
+          // where every row's content begins, and it therefore cannot touch
+          // the gutter-confined chip (which ends at that same offset). Do not
+          // centre it ON that offset "to straddle the boundary": the chip and
+          // the dot are both `colorScheme.primary`, so a 5px overlap reads as
+          // a lump growing out of the chip rather than as two elements.
+          //
+          // This is NOT the vertical rail rejected as D-04 (see
+          // `timeline_row_tile.dart`'s constant doc): that rejection covers a
+          // per-row connector running down the gutter column. This is a single
+          // dot on the now-line only, the Google Calendar current-time idiom.
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16 + kGutterWidth),
+              child: Container(
+                width: kNowDotDiameter,
+                height: kNowDotDiameter,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
           ),
           if (showChip)
             Align(

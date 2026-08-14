@@ -230,6 +230,60 @@ void main() {
       final size = tester.getSize(find.byType(NowLineOverlay));
       expect(size.height, kNowLineHeight);
     });
+
+    // The calendar terminus dot. Its left edge must land on the content
+    // edge (16dp row inset + kGutterWidth) so it never overlaps the
+    // gutter-confined chip — both are colorScheme.primary, so an overlap
+    // would read as a lump on the chip rather than as a distinct dot.
+    testWidgets('renders a circular primary-colored dot at the content edge', (
+      tester,
+    ) async {
+      await pumpWithMood(tester, const NowLineOverlay(nowMinutes: 887));
+      final dotFinder = find.descendant(
+        of: find.byType(NowLineOverlay),
+        matching: find.byWidgetPredicate((w) {
+          if (w is! Container) return false;
+          final d = w.decoration;
+          return d is BoxDecoration && d.shape == BoxShape.circle;
+        }),
+      );
+      expect(dotFinder, findsOneWidget);
+
+      final expectedColor = ColorScheme.fromSeed(
+        seedColor: ThemeNotifier.moodSeeds[3]!,
+      ).primary;
+      final dot = tester.widget<Container>(dotFinder);
+      expect((dot.decoration as BoxDecoration).color, expectedColor);
+
+      expect(tester.getSize(dotFinder).width, kNowDotDiameter);
+
+      final overlayLeft = tester.getTopLeft(find.byType(NowLineOverlay)).dx;
+      expect(
+        tester.getTopLeft(dotFinder).dx - overlayLeft,
+        16 + kGutterWidth,
+      );
+    });
+
+    // The dot is part of the rule, not the chip: it must survive the
+    // live-row suppression that hides the chip (G-03).
+    testWidgets('the dot still renders when showChip is false', (tester) async {
+      await pumpWithMood(
+        tester,
+        const NowLineOverlay(nowMinutes: 887, showChip: false),
+      );
+      expect(find.text('2:47p'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(NowLineOverlay),
+          matching: find.byWidgetPredicate((w) {
+            if (w is! Container) return false;
+            final d = w.decoration;
+            return d is BoxDecoration && d.shape == BoxShape.circle;
+          }),
+        ),
+        findsOneWidget,
+      );
+    });
   });
 
   group('HourAxisLine (CAL-01 hour axis)', () {
