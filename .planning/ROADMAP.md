@@ -1,7 +1,7 @@
 # Canopy — Roadmap
 
 **Created:** 2026-02-24
-**Last updated:** 2026-08-10 (Phase 26 planned — 6 plans, 6 waves)
+**Last updated:** 2026-08-14 (Phase 26 complete — all v1.5 phases done)
 
 ## Milestones
 
@@ -10,7 +10,7 @@
 - ✅ **v1.2 — Make It Usable** — Phases 12-14 (shipped 2026-06-13)
 - ✅ **v1.3 — An Honest Day** — Phases 15-17 (shipped 2026-06-14)
 - ✅ **v1.4 — Energy-Aware** — Phases 18-20 (shipped 2026-06-15)
-- 🚧 **v1.5 — Right Now** — Phases 21-26 (in progress)
+- 🚧 **v1.5 — Right Now** — Phases 21-26 (all phases complete, milestone closing)
 
 Full per-milestone detail (phase goals, success criteria, coverage maps) is archived in
 `.planning/milestones/`: `v1.2-ROADMAP.md` carries the complete cumulative roadmap through v1.2;
@@ -88,7 +88,7 @@ browser-verified; 289/289 tests green. See `v1.4-MILESTONE-AUDIT.md`.
 - [x] **Phase 23: Live Activity Tracking** - The unified screen always names the current activity, including breaks, with a live countdown (completed 2026-08-08)
 - [x] **Phase 24: Where Am I** - The timeline carries a now-marker at the current clock position (completed 2026-08-10)
 - [x] **Phase 25: Time Travel** - Debug-only clock override makes time-gated states inspectable on demand (completed 2026-08-10)
-- [ ] **Phase 26: The Day Has a Shape** - Time-proportional day surface with a continuously-moving now-line
+- [x] **Phase 26: The Day Has a Shape** - Time-proportional day surface with a continuously-moving now-line (completed 2026-08-14)
 
 ## Phase Details
 
@@ -332,4 +332,4 @@ Plans:
 | 23. Live Activity Tracking | v1.5 | 8/8 | Complete   | 2026-08-08 |
 | 24. Where Am I | v1.5 | 4/4 | Complete    | 2026-08-10 |
 | 25. Time Travel | v1.5 | 1/1 | Complete    | 2026-08-10 |
-| 26. The Day Has a Shape | v1.5 | 9/10 | In Progress|  |
+| 26. The Day Has a Shape | v1.5 | 10/10 | Complete   | 2026-08-14 |
