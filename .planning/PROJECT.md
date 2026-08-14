@@ -14,44 +14,50 @@ Generate a usable daily schedule every morning — one that reflects your real g
 
 ## Current State
 
+**Shipped through v1.5 "Right Now" (2026-08-14).** Canopy is a working personal time-budgeting app.
+A daily mood check-in shapes a generated schedule of 25-min Chunks built around three goal types,
+and — as of v1.5 — the whole day lives on **one screen** that answers "what am I doing right now?"
+
+That screen renders the day as a **time-proportional surface**: row height corresponds to duration,
+so the shape of a day is legible without reading a single time, and a **now-line sits at the true
+current moment**, including inside an activity's span. A running break reads as rest, not dead time,
+with a countdown that switches to per-second in the final minute. Break cadence scales with the
+morning mood, and no copy anywhere tells the user they're behind.
+
+Underneath: an honest, energy-aware scheduling engine (fair capacity, truthful streaks,
+priority-driven allocation, full-day fill, restorative low days, reserved energy slot on high days),
+per-goal energy valence, responsive modals, and a quarterly review. A debug-only `DevClock` offset
+makes any time of day inspectable on demand — built as its own phase specifically so time-gated UI
+could be verified without waiting for the clock.
+
+~17k LOC in `lib/`, **560-test suite green**, `flutter analyze` clean. Rule-based only — no LLM, by
+design rather than by schedule.
+
+The engine is solid and the primary surface is now genuinely good; the rest of the UI is still
+plain. That trade remains deliberate.
+
+**Architectural invariant worth preserving:** there is exactly **one** now-detector
+(`resolveNowState`, one definition + one call site) and exactly **one** minute→pixel authority
+(`TimelineGeometry`). v1.5 spent real effort establishing both — Phase 22 eliminated parallel
+detectors and a code review caught a third — and every subsequent phase carried assertions to keep
+it true. Reintroducing a second source of "what's happening now" or "where does this minute sit" is
+the specific regression this codebase is guarding against.
+
+**Tracked tech debt:** `kPixelsPerMinute = 5.5` is provisional (set from a `flutter test`
+measurement — the harness class that previously produced a wrong `kGutterWidth`); ~50px structural
+dead space below a break live row; several `VALIDATION.md` files (15/16/17, 21, 23, 24) still at
+`status: draft`; onboarding desktop polish (full-bleed + day-chip labels).
+
+**Next:** milestone not yet defined. Run `/gsd-new-milestone`.
+
+<details>
+<summary>Previous state (through v1.4 "Energy-Aware", 2026-06-15)</summary>
+
 **Shipped through v1.4 "Energy-Aware" (2026-06-15).** Canopy is a working personal time-budgeting app: a daily mood check-in shapes a generated schedule of 25-min Chunks built around three goal types, with a time-anchored Home (Now/Next), an honest + energy-aware scheduling engine (fair capacity, truthful streaks, priority-driven allocation, full-day fill, restorative low days, reserved energy slot on high days), responsive modals (centered dialog on desktop / bottom sheet on phone), per-goal energy valence (gives/neutral/costs + emoji tag) visible across goal form, goals list, and schedule, an onboarding energy step, Goals-as-prioritization, and a quarterly review. Post-v1.4 dogfooding produced a run of onboarding fixes (keyboard/scroll reachability, day-chip fit, pre-filled job capture). ~14k LOC of app code in `lib/`, 340-test suite green, `flutter analyze` clean. Rule-based only — no LLM, by design rather than by schedule.
 
 The engine is solid; the UI is plain. Effort has gone into correct, predictable scheduling rather than visual polish, and that trade is deliberate at this stage.
 
 **Next:** Executing milestone **v1.5 "Right Now"** (below). Tracked tech debt: onboarding desktop polish (full-bleed + day-chip labels), chunk_card color-token hygiene.
-
-## Current Milestone: v1.5 Right Now
-
-**Goal:** Make Canopy answer "what am I doing right now?" in one place — and stop telling the user they're behind.
-
-**Target features:**
-- **One screen** — Home and Schedule merge into a single destination instead of two shell tabs.
-- **Live activity tracking** — always name the current activity, *including breaks*, with time remaining. `resolveNowState` filters to work chunks today, so a running break resolves to "next chunk at 8:00" rather than "on a break, 4 min left".
-- **Mood-scaled break cadence** — keep 25-min chunks + 5-min short breaks; scale chunks-before-a-long-break with the morning mood (low day ~2, sunny day ~5). Currently hardcoded `isLowMood ? 3 : 4`.
-- **No "behind"** — drop the `'Xh behind this week'` rationale. The schedule exists to absorb the catching-up, not to report a deficit.
-
-**Source:** Dan's dogfood pass on the hosted debug build, 2026-08-04. Research skipped — no new domain territory; all four items are existing surfaces.
-
-**Key context:** The break cadence and the "behind" copy are contained changes (one constant, one string, three tests asserting the every-4 cadence). The merged screen and live tracking are the milestone proper, and they converge — the unified screen is where "right now" wants to live. The UI-SPEC's lock on four shell destinations gets revisited. Notification taps currently deep-link to `/schedule` (`main.dart:86`), so that entry point must survive the merge.
-
-<details>
-<summary>Previous milestone: v1.4 "Energy-Aware" — SHIPPED 2026-06-15</summary>
-
-3 phases (18-20), 12 plans, 13/13 requirements satisfied (browser-verified where visual), 289-test suite green. Made Canopy fit the screen and schedule around feeling: responsive adaptive modals (dialog ≥720dp / sheet below) + 720dp content constraints on primary screens (RESP-01/02/03, POLISH-01/02); per-goal energy valence (gives/neutral/costs, additive Hive migration schema 7→8, neutral-default crash-safe) + emoji tag, surfaced in goal form, goal card, and schedule chunks, with an onboarding "what gives you energy?" step (ENERGY-01/02/03/04, ONBOARD-01); and a valence-aware engine — restorative floor on low-mood days (bounded) + reserved energy/high-priority slot on high-mood days (VSCHED-01/02/03), all deterministic-unit-tested. See `.planning/milestones/v1.4-*` and `MILESTONES.md`.
-
-</details>
-
-<details>
-<summary>Previous milestone: v1.3 "An Honest Day" — SHIPPED 2026-06-14</summary>
-
-3 phases (15-17), 4 plans, 9/9 requirements satisfied and browser-verified, 247-test suite green. Made the scheduling engine tell the truth and use the whole day: time-anchored Home Now/Next with pre-start/day-complete states (NOW-01/02); priority drives chunk count for all three goal types with reconciled drag/form priority models (PRIORITY-02/03); capacity shared across goal types so habits don't monopolize the low-mood cap (CAP-01); generation-time honest streaks (STREAK-01); regular-time goals fill open days, priority-spread and mood-capped (FILL-01/02); and a true-modal-height goal-sheet reachability test (GOALFORM-02). See `.planning/milestones/v1.3-*` and `MILESTONES.md`.
-
-</details>
-
-<details>
-<summary>Previous milestone: v1.2 "Make It Usable" — SHIPPED 2026-06-13</summary>
-
-3 phases (12-14), 7 plans, 11/11 requirements implemented and wired, 209-test suite green. Reworked the UI foundations from the first real dogfood: Home landing + clock-timed schedule with now/next framing, labeled chunk actions, legible check-in, goal form that fits the viewport, Goals-as-prioritization, and priority that measurably drives scheduling. See `.planning/milestones/v1.2-*`.
 
 </details>
 
@@ -175,4 +181,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-04 — positioning pass (dumb-app-by-design, AI-as-developer) and refreshed counts; last milestone shipped was v1.4 "Energy-Aware" on 2026-06-15*
+*Last updated: 2026-08-14 — v1.5 "Right Now" shipped and archived. Next milestone not yet defined.*

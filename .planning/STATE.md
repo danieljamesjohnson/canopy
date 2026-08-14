@@ -1,53 +1,80 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: Right Now
-status: "Debug-only DevClock offset override delivered and wired into every clock-gated seam (main.dart, ScheduleNotifier, TodayScreen, HiveDailyScheduleRepository, QuarterlyReviewScreen). Debug settings UI + always-visible simulated-time indicator shipped. 512/512 tests passing (504 baseline + 8 new), `flutter analyze` clean. Next up: Phase 26 (The Day Has a Shape), not yet planned."
-stopped_at: Completed 26-10-PLAN.md
-last_updated: "2026-08-13T13:26:28.503Z"
-last_activity: 2026-08-13
+milestone: none
+milestone_name: "(next milestone not yet defined)"
+status: "v1.5 \"Right Now\" SHIPPED and archived 2026-08-14. 16/16 requirements satisfied, 560/560 tests green, flutter analyze clean, 0 integration blockers. Run /gsd-new-milestone to define v1.6."
+stopped_at: v1.5 complete — milestone archived
+last_updated: "2026-08-14T00:00:00.000Z"
+last_activity: 2026-08-14
 progress:
-  total_phases: 6
-  completed_phases: 3
-  total_plans: 28
-  completed_plans: 28
-  percent: 50
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Execution State
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-13T13:26:21.405Z
+**Last session:** 2026-08-14
 
 ---
 
 ## Current Position
 
-Phase: 26
-Plan: 10 of 10
-Status: 26-10 (gap closure) closed G-04/G-05/G-06 from 26-UI-REVIEW.md — reserved kTimelineEdgePadding at both ends of TimelineGeometry's rendered range (fixes the sheared first/last hour-axis label and the now-line clipping at PreStart/DayComplete) and added an AM suffix to formatMinutesCompact. 560/560 tests passing (558 baseline + 2 new), `flutter analyze` clean. Confirmed in a real browser at http://danserver:8134/. 26-06-PLAN.md remains an open, unaddressed item for this phase.
-Last activity: 2026-08-13
+Phase: none — between milestones
+Plan: none
+Status: v1.5 "Right Now" shipped and archived. No active milestone.
+Last activity: 2026-08-14
 
 ```
-Progress: [██████░░░░] 67% — Phase 25/26 (v1.5 phases: 21-26)
+v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  v1.6 not yet defined
 ```
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-08-04)
+See: `.planning/PROJECT.md` (updated 2026-08-14)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Phase 26 — The Day Has a Shape (not yet planned)
+**Current focus:** none — run `/gsd-new-milestone` to define the next milestone.
 
-## v1.5 Phase Summary
+## Shipped Milestones
 
-| Phase | Goal | Requirements | Status |
-|-------|------|--------------|--------|
-| 21 — Mood-Scaled Breaks & Honest Rationale | Break cadence scales with mood; time-target rationale drops "behind" framing | BREAK-01/02, TONE-01 | Not started |
-| 22 — Unified Today Screen | Home and Schedule merge into one destination; every entry point still resolves | UNIFY-01/02 | Not started |
-| 23 — Live Activity Tracking | The unified screen always names the current activity, including breaks, with a live countdown | LIVE-01/02/03 | Not started |
-| 25 — Time Travel | Debug-only clock override lets time-gated states be inspected on demand | DEV-01/02/03 | Complete |
+| Milestone | Phases | Shipped | Archive |
+|-----------|--------|---------|---------|
+| v1.0 Core Product Loop | 1-6 | 2026-02 | `milestones/v1.0-phases/` |
+| v1.1 Actually Daily | 7-11 | — | `milestones/v1.1-phases/` |
+| v1.2 Make It Usable | 12-14 | 2026-06-13 | `milestones/v1.2-ROADMAP.md` |
+| v1.3 An Honest Day | 15-17 | 2026-06-14 | `milestones/v1.3-ROADMAP.md` |
+| v1.4 Energy-Aware | 18-20 | 2026-06-15 | `milestones/v1.4-ROADMAP.md` |
+| v1.5 Right Now | 21-26 | 2026-08-14 | `milestones/v1.5-ROADMAP.md` |
+
+## Carry-Forward Invariants (read before touching lib/screens/today/)
+
+These cost real effort to establish across v1.5 and are the specific regressions this codebase
+guards against:
+
+- **One now-detector.** `resolveNowState` — one definition (`lib/screens/today/now_state.dart`),
+  one call site (`lib/screens/today/today_screen.dart`). Doc-comment cross-references elsewhere are
+  fine. Phase 22 eliminated parallel detectors; a code review caught a third.
+- **One minute→pixel authority.** `TimelineGeometry` — rows, hour axis, now-line and the scroll
+  target all derive offsets from it, so they can never disagree about where a minute sits. No
+  independent offset arithmetic anywhere.
+- **The tick contract (Phase 23).** All-day ticker is 1-minute and survives `paused`; a 1-second
+  ticker exists ONLY inside the final minute of the current activity; `_isBackgrounded` guards the
+  fast tick; `build()` self-heals a dead timer. Do not add an all-day faster ticker.
+- **Clock injection.** Never call `DateTime.now()` in `lib/screens/today/` — use the injectable
+  `_nowFn`, sampled once per `build()`. Phase 25's `DevClock` depends on this; bypassing it silently
+  breaks time-travel for whatever surface does so.
+- **Test-harness caveat.** `flutter test`'s placeholder font inflates glyph widths. Any *text-driven*
+  measurement asserted in a widget test is a harness bound, not a device requirement — verify in a
+  real browser. `kGutterWidth` went 46 → 75 (harness) → 52 (corrected). Geometric assertions
+  (heights and offsets computed from arithmetic) ARE trustworthy.
+- **Regression tests must be proven RED.** v1.5 shipped two defects behind green tests, both
+  assertions that could not fail — one scoped to the wrong widget type, one counting widgets instead
+  of checking painted rects. Observe red against the unfixed code before accepting a regression test.
 
 ## Accumulated Context
 
