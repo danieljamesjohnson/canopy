@@ -1,5 +1,5 @@
 ---
-status: testing
+status: resolved
 phase: 21-mood-scaled-breaks-honest-rationale
 source: [21-VERIFICATION.md]
 started: 2026-08-07T19:35:00Z
@@ -13,7 +13,7 @@ name: Time-target rationale reads as help, not as a deficit report
 expected: |
   The rationale must not imply the user has failed or is behind — it should read as what the
   schedule is doing for the user (e.g. "Working toward 5.0h this week").
-awaiting: user response
+awaiting: none — closed 2026-08-14
 
 ## Tests
 
@@ -38,12 +38,22 @@ item listed in `21-VALIDATION.md`.
 - On-track sibling branch still reads `'On track this week'`
 - Both branches pinned by tests; full suite 348/348 green
 
+### Outcome — Dan, 2026-08-14 (milestone audit)
+
+**Test 1 passed.** The time-target rationale reads as help, not as a deficit report.
+
+Mechanical half was already airtight: a repo-wide grep gate proves no "behind"/"missed"/
+deficit copy exists anywhere in `lib/`, and the integration check at the v1.5 audit
+re-confirmed it (the only textual hits are doc comments *forbidding* the language).
+What remained was the tone judgment — whether "Working toward N.Nh this week" reads as
+the schedule working for you rather than reporting a shortfall. Dan: it does.
+
 ## Summary
 
 total: 1
-passed: 0
+passed: 1
 issues: 0
-pending: 1
+pending: 0
 skipped: 0
 blocked: 0
 

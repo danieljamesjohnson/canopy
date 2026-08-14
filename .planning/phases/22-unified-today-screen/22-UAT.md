@@ -1,5 +1,5 @@
 ---
-status: testing
+status: resolved
 phase: 22-unified-today-screen
 source: [22-VERIFICATION.md]
 started: 2026-08-07T20:15:00Z
@@ -13,7 +13,7 @@ name: Centre-on-open scroll feel
 expected: |
   On open, the list scrolls smoothly (250ms ease-out) to bring the live row to roughly the vertical
   centre of the viewport, and does not jump or re-scroll while reading.
-awaiting: user response
+awaiting: none — closed 2026-08-14 as SUPERSEDED by Phase 26-05
 
 ## Tests
 
@@ -66,12 +66,30 @@ spans x=321→1041). Reads as one composed screen, not a stack of two old screen
 navigation confirmed collapsed to three destinations (Today / Goals / Settings) — NavigationRail on
 desktop, NavigationBar on phone — with no Home or Schedule entry anywhere.
 
+### Outcome — 2026-08-14 (milestone audit): test 2 closed as SUPERSEDED
+
+**Test 2 ("centre-on-open scroll feel — 250ms ease-out, brings the live row to centre,
+does not re-scroll while reading") is closed as superseded, NOT as verified.** The
+distinction matters and is recorded deliberately.
+
+Phase 26-05 replaced the mechanism this test targets. Phase 22 centred the live row with
+`Scrollable.ensureVisible` behind two one-shot flags (`_didCentreLiveRow`,
+`_didCentreMarker`); under Phase 26's absolute positioning the target offset is pure
+arithmetic, so that became a single flag and one `animateTo`. The code this test was
+written against no longer exists.
+
+The replacement carries its own coverage — a CAL-03 assertion that a 1-minute tick after
+open does not re-trigger the scroll (the "does not re-scroll while reading" half), plus
+real-browser confirmation at the 26-06 gate. Nobody ever judged the original 250ms
+ease-out feel, and nobody now can: it is gone. Marking it "passed" would be a fabrication.
+
 ## Summary
 
 total: 4
 passed: 3
 issues: 0
-pending: 1
+pending: 0
+superseded: 1
 skipped: 0
 blocked: 0
 
