@@ -495,6 +495,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     child: const Text('-1h'),
                   ),
+                  // Sub-hour nudges: an hour overshoots when watching a single
+                  // chunk boundary or the now-marker cross a gap, so these step
+                  // the same offset in the granularity the day is built from.
+                  OutlinedButton(
+                    onPressed: () => _handleDevClockShift(
+                      context,
+                      const Duration(minutes: 5),
+                    ),
+                    child: const Text('+5m'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => _handleDevClockShift(
+                      context,
+                      const Duration(minutes: 15),
+                    ),
+                    child: const Text('+15m'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => _handleDevClockShift(
+                      context,
+                      const Duration(minutes: 30),
+                    ),
+                    child: const Text('+30m'),
+                  ),
                   OutlinedButton(
                     onPressed: () =>
                         _handleDevClockShift(context, const Duration(hours: 1)),
