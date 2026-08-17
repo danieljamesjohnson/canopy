@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/schedule_notifier.dart';
+import 'timeline_row_tile.dart';
 
 /// The swelled in-place current-activity card (D-01, UI-SPEC "The live row").
 ///
@@ -57,12 +58,23 @@ class LiveRowCard extends StatelessWidget {
     final clampedProgress = progress.clamp(0.0, 1.0);
 
     // "Let now break the grid" (22-UI-SPEC.md "The live row", amended
-    // 2026-08-08 after UAT). Zero horizontal margin + square corners means
-    // this row spans the full content column while every other row is inset
-    // by the time gutter — a different silhouette, not just a different fill.
-    // The generous vertical margin gives it air the list rows don't get.
+    // 2026-08-08 after UAT, and again after the now-line landed). This row
+    // still breaks the grid — it reaches left across the time gutter that
+    // every other row keeps blank, so it reads as a wider silhouette, not
+    // just a different fill — but it stops at [kTimelineRowInset] rather
+    // than bleeding to the raw viewport edge.
+    //
+    // Why it stops: the screen positions this row `left: 0, right: 0` with no
+    // TimelineRowTile, so a vertical-only margin ran it to the screen edge
+    // while the now-line drawn on top of it stops at the row inset. The
+    // mismatched right edges made the line look like it was overshooting the
+    // card. The generous vertical margin still gives it air the list rows
+    // don't get.
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 12),
+      margin: const EdgeInsets.symmetric(
+        vertical: 12,
+        horizontal: kTimelineRowInset,
+      ),
       color: colorScheme.primaryContainer,
       elevation: 6,
       shadowColor: colorScheme.shadow,

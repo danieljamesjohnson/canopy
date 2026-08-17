@@ -23,6 +23,17 @@ import 'package:flutter/material.dart';
 /// Verified visually in the served debug build, not just in tests.
 const double kGutterWidth = 52.0;
 
+/// The horizontal inset every element on the Today timeline shares — the
+/// header, the hour axis, each row, the now-line, and the live row.
+///
+/// Single source of truth deliberately: the two elements the screen positions
+/// `left: 0, right: 0` (the now-line overlay and the live row) do NOT inherit
+/// [TimelineRowTile]'s padding and must reapply this themselves. Both did so
+/// with their own literal `16`, and both got it wrong at least once — the
+/// now-line ran 16dp past every card off the viewport edge, and the live row
+/// bled to the raw screen edge. Reference this rather than re-typing 16.
+const double kTimelineRowInset = 16.0;
+
 /// D-06's ~46dp time gutter, and explicitly NOT D-04's rejected vertical
 /// rail: no connector line, no dot, no continuous stroke down the gutter.
 /// Anyone adding one is re-opening a rejected sketch variant.
@@ -55,7 +66,7 @@ class TimelineRowTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: kTimelineRowInset),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

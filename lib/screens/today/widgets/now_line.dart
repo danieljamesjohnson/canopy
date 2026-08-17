@@ -9,14 +9,6 @@ import 'timeline_row_tile.dart';
 /// exceeding [kNowLineHeight]'s 28dp band.
 const double kNowDotDiameter = 10.0;
 
-/// `TimelineRowTile`'s horizontal row inset. The now-line is positioned
-/// `left: 0, right: 0` by its caller (it must be free to sit at any pixel
-/// offset), so it does NOT inherit that tile's padding and has to reapply
-/// the inset itself — on BOTH sides. Miss the right one and the rule
-/// overshoots every card and the hour axis by 16dp and runs off the screen
-/// edge (caught in UAT on a narrow viewport, where the overhang is obvious).
-const double kTimelineRowInset = 16.0;
-
 /// Where the timeline's content column begins: [kTimelineRowInset] plus the
 /// reserved [kGutterWidth] column. Both the rule and the dot start here, so
 /// the now-line aligns with every card's left edge and never intrudes on the
