@@ -9,10 +9,25 @@ import 'timeline_row_tile.dart';
 /// exceeding [kNowLineHeight]'s 28dp band.
 const double kNowDotDiameter = 10.0;
 
-/// The screen's primary visual anchor (CAL-02): a full-content-width 2dp
-/// rule, a terminus dot at the content edge, plus a compact time chip,
-/// positioned by the caller at an arithmetic pixel offset — never a
-/// between-rows list item.
+/// `TimelineRowTile`'s horizontal row inset. The now-line is positioned
+/// `left: 0, right: 0` by its caller (it must be free to sit at any pixel
+/// offset), so it does NOT inherit that tile's padding and has to reapply
+/// the inset itself — on BOTH sides. Miss the right one and the rule
+/// overshoots every card and the hour axis by 16dp and runs off the screen
+/// edge (caught in UAT on a narrow viewport, where the overhang is obvious).
+const double kTimelineRowInset = 16.0;
+
+/// Where the timeline's content column begins: [kTimelineRowInset] plus the
+/// reserved [kGutterWidth] column. Both the rule and the dot start here, so
+/// the now-line aligns with every card's left edge and never intrudes on the
+/// gutter the hour axis owns. Derived from the same constants the rows use —
+/// do not hard-code 68.
+const double kNowContentEdge = kTimelineRowInset + kGutterWidth;
+
+/// The screen's primary visual anchor (CAL-02): a 2dp rule spanning the
+/// content column, capped at its left end by a terminus dot, plus a compact
+/// time chip in the gutter — positioned by the caller at an arithmetic pixel
+/// offset, never a between-rows list item.
 ///
 /// **G-01 (26-UAT.md, fixed 26-07-PLAN.md):** the chip is confined to the
 /// `kGutterWidth` (52dp) time-gutter column and can never reach a
@@ -72,17 +87,35 @@ class NowLineOverlay extends StatelessWidget {
       height: kNowLineHeight,
       child: Stack(
         children: [
+          // The rule begins at the content edge — the dot's left edge — so
+          // the dot caps it rather than sitting as a bead on a longer
+          // stroke (Google Calendar's current-time indicator). It does NOT
+          // run back through the gutter: that full-bleed stroke read as a
+          // stray line crossing the time column, which is what the dot plus
+          // this inset together fix. The gutter column belongs to the hour
+          // axis and the chip.
+          //
+          // The right inset is NOT optional symmetry: the caller positions
+          // this overlay `right: 0`, so without it the rule outruns every
+          // card and the hour axis by [kTimelineRowInset] and bleeds off the
+          // viewport edge. Both ends must land on the content column.
           Align(
             alignment: Alignment.center,
-            child: Container(height: 2, color: colorScheme.primary),
+            child: Padding(
+              padding: const EdgeInsets.only(
+                left: kNowContentEdge,
+                right: kTimelineRowInset,
+              ),
+              child: Container(height: 2, color: colorScheme.primary),
+            ),
           ),
-          // The calendar-style terminus dot. Sits at the content edge —
-          // 16dp row inset + [kGutterWidth] — so its left edge lands exactly
-          // where every row's content begins, and it therefore cannot touch
-          // the gutter-confined chip (which ends at that same offset). Do not
-          // centre it ON that offset "to straddle the boundary": the chip and
-          // the dot are both `colorScheme.primary`, so a 5px overlap reads as
-          // a lump growing out of the chip rather than as two elements.
+          // The calendar-style terminus dot, drawn after the rule so it caps
+          // the rule's starting edge. Its left edge sits on [kNowContentEdge]
+          // — the same offset the rule starts at — so it cannot touch the
+          // gutter-confined chip (which ends there). Do not centre it ON that
+          // offset "to straddle the boundary": the chip and the dot are both
+          // `colorScheme.primary`, so a 5px overlap reads as a lump growing
+          // out of the chip rather than as two elements.
           //
           // This is NOT the vertical rail rejected as D-04 (see
           // `timeline_row_tile.dart`'s constant doc): that rejection covers a
@@ -91,7 +124,7 @@ class NowLineOverlay extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: Padding(
-              padding: const EdgeInsets.only(left: 16 + kGutterWidth),
+              padding: const EdgeInsets.only(left: kNowContentEdge),
               child: Container(
                 width: kNowDotDiameter,
                 height: kNowDotDiameter,

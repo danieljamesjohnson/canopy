@@ -258,9 +258,45 @@ void main() {
       expect(tester.getSize(dotFinder).width, kNowDotDiameter);
 
       final overlayLeft = tester.getTopLeft(find.byType(NowLineOverlay)).dx;
+      expect(tester.getTopLeft(dotFinder).dx - overlayLeft, kNowContentEdge);
+    });
+
+    // The rule starts at the dot rather than running full-bleed back through
+    // the gutter, so the dot caps it instead of sitting as a bead on a longer
+    // stroke. Guards against a "simplification" that drops the inset.
+    testWidgets('the 2dp rule starts at the content edge, not at x=0', (
+      tester,
+    ) async {
+      await pumpWithMood(tester, const NowLineOverlay(nowMinutes: 887));
+      final ruleFinder = find.descendant(
+        of: find.byType(NowLineOverlay),
+        matching: find.byWidgetPredicate(
+          (w) => w is Container && w.constraints?.maxHeight == 2,
+        ),
+      );
+      expect(ruleFinder, findsOneWidget);
+
+      final overlayLeft = tester.getTopLeft(find.byType(NowLineOverlay)).dx;
+      expect(tester.getTopLeft(ruleFinder).dx - overlayLeft, kNowContentEdge);
+    });
+
+    // UAT edge case: the caller positions this overlay `right: 0`, so the rule
+    // must reapply TimelineRowTile's inset on the RIGHT too. Without it the
+    // rule outran every card and the hour axis by 16dp and bled off the
+    // viewport edge — invisible on a wide desktop window, obvious on a phone.
+    testWidgets('the 2dp rule stops at the row inset on the right, not the '
+        'overlay edge', (tester) async {
+      await pumpWithMood(tester, const NowLineOverlay(nowMinutes: 887));
+      final ruleFinder = find.descendant(
+        of: find.byType(NowLineOverlay),
+        matching: find.byWidgetPredicate(
+          (w) => w is Container && w.constraints?.maxHeight == 2,
+        ),
+      );
+      final overlayRight = tester.getTopRight(find.byType(NowLineOverlay)).dx;
       expect(
-        tester.getTopLeft(dotFinder).dx - overlayLeft,
-        16 + kGutterWidth,
+        overlayRight - tester.getTopRight(ruleFinder).dx,
+        kTimelineRowInset,
       );
     });
 
