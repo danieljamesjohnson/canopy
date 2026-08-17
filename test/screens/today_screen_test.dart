@@ -959,15 +959,18 @@ void main() {
       );
 
       // The successor to G-01's gutter-confinement assertion. G-01 guarded a
-      // chip that no longer exists, but its underlying claim — the overlay
-      // must not begin on top of a card — is exactly the defect that survived
-      // four rounds of UAT, so it is worth pinning harder than before.
+      // chip that no longer exists, but the underlying question — where the
+      // overlay sits relative to a card — is what five rounds of UAT were
+      // about, so it stays pinned at screen level.
       //
-      // Geometric, not a text measurement, so it is trustworthy in the
-      // harness's placeholder font.
+      // The dot is CENTRED on the card's left edge (Google Calendar's
+      // treatment). It deliberately overlaps the card by half its width: the
+      // alternative, holding the cards clear of it, left a blank strip down
+      // the timeline that read as dead space. Geometric, not a text
+      // measurement, so it is trustworthy in the harness's placeholder font.
       testWidgets(
-        'the now-line dot clears the ChunkCard entirely — it never starts '
-        'on top of one',
+        'the now-line dot is centred on the ChunkCard left edge, straddling '
+        'the gutter boundary',
         (tester) async {
           await pumpAt(
             tester,
@@ -978,20 +981,21 @@ void main() {
           final dotRect = tester.getRect(_nowDotFinder());
           final cardRect = tester.getRect(find.byType(ChunkCard).first);
 
-          expect(dotRect.right, lessThanOrEqualTo(cardRect.left));
+          expect(dotRect.center.dx, cardRect.left);
           expect(tester.takeException(), isNull);
         },
       );
 
-      // The live row is the case that actually shipped broken: it is
-      // positioned left:0/right:0 with no TimelineRowTile, so it inherits no
-      // inset and twice started left of the dot — putting the dot inside the
-      // card, on its title. Assert the clearance against the LIVE card by
-      // name, and that it stays wider than an ordinary row (so a future fix
-      // cannot satisfy this by flattening "let now break the grid" away).
+      // The live row is the case that actually shipped broken, three times: it
+      // is positioned left:0/right:0 with no TimelineRowTile, so it inherits
+      // no inset and every offset must be restated in LiveRowCard. It ran to
+      // the raw viewport edge, then started left of the dot (putting the dot
+      // on its title), then sat behind a clearance strip. It is now FLUSH with
+      // an ordinary row, so assert that by name — a regression here is a
+      // regression in the thing UAT kept catching.
       testWidgets(
-        'the now-line dot clears the LIVE row too, which still starts left '
-        'of an ordinary card',
+        'the LIVE row is flush with an ordinary card on both edges, and the '
+        'dot is centred on that shared edge',
         (tester) async {
           await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
 
@@ -1014,9 +1018,9 @@ void main() {
           );
           final cardRect = tester.getRect(find.byType(ChunkCard).first);
 
-          expect(dotRect.right, lessThanOrEqualTo(liveRect.left));
-          expect(liveRect.left, lessThan(cardRect.left));
+          expect(liveRect.left, cardRect.left);
           expect(liveRect.right, cardRect.right);
+          expect(dotRect.center.dx, liveRect.left);
           expect(tester.takeException(), isNull);
         },
       );

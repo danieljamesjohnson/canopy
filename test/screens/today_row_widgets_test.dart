@@ -246,11 +246,12 @@ void main() {
       expect(size.height, kNowLineHeight);
     });
 
-    // The calendar terminus dot. Its left edge must land on the content
-    // edge (16dp row inset + kGutterWidth) so it never overlaps the
-    // gutter-confined chip — both are colorScheme.primary, so an overlap
-    // would read as a lump on the chip rather than as a distinct dot.
-    testWidgets('renders a circular primary-colored dot at the content edge', (
+    // The calendar terminus dot straddles the content edge — CENTRED on it,
+    // so half sits in the hour-label gutter and half over the card's left
+    // edge, which is what Google Calendar does and what lets the cards sit
+    // flush against the gutter with no blank clearance strip.
+    testWidgets('renders a circular primary-colored dot centred on the '
+        'content edge', (
       tester,
     ) async {
       await pumpWithMood(tester, const NowLineOverlay(nowMinutes: 887));
@@ -273,7 +274,10 @@ void main() {
       expect(tester.getSize(dotFinder).width, kNowDotDiameter);
 
       final overlayLeft = tester.getTopLeft(find.byType(NowLineOverlay)).dx;
-      expect(tester.getTopLeft(dotFinder).dx - overlayLeft, kNowContentEdge);
+      final dotRect = tester.getRect(dotFinder);
+      expect(dotRect.center.dx - overlayLeft, kNowContentEdge);
+      // and therefore overhangs into the gutter by half its width
+      expect(dotRect.left - overlayLeft, kNowContentEdge - kNowDotDiameter / 2);
     });
 
     // The rule starts at the dot rather than running full-bleed back through

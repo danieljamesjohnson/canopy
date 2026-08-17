@@ -58,26 +58,27 @@ class LiveRowCard extends StatelessWidget {
     final clampedProgress = progress.clamp(0.0, 1.0);
 
     // "Let now break the grid" (22-UI-SPEC.md "The live row", amended
-    // 2026-08-08 after UAT, then twice more as the now-line landed). This row
-    // is still the widest thing on the timeline — it starts left of
-    // [kCardLeftInset], so its silhouette reads wider than every list row and
-    // not merely differently filled — and the generous vertical margin still
-    // gives it air the list rows don't get.
+    // 2026-08-08 after UAT, then three times more as the now-line landed).
+    // The horizontal half of that treatment is gone: this row is flush with
+    // every list row at [kCardLeftInset]. It reaches further left three times
+    // and each attempt broke something — the raw viewport edge overshot every
+    // other row's right edge; a symmetric row inset still started it left of
+    // the now-line's dot, putting the dot on this card's title; and holding
+    // the cards off the dot instead left an ugly blank strip down the whole
+    // timeline. Google Calendar gives its current event no extra width either.
     //
-    // Its left edge is [kLiveCardLeftInset], NOT the row inset, and that is
-    // load-bearing: the screen positions this row `left: 0, right: 0` with no
-    // TimelineRowTile, so it inherits no padding and every horizontal offset
-    // must be stated here. Two rounds of UAT died on exactly that. A
-    // vertical-only margin ran it to the raw viewport edge, past every other
-    // row's right edge; correcting that to a symmetric row inset still started
-    // it LEFT of the now-line's dot, so the dot landed inside this card, on
-    // this card's title. It has to begin right of that dot — see
-    // kNowDotClearance.
+    // What still marks this row: square corners, the content-driven height
+    // that lets it swell past its duration slot, primaryContainer fill, and
+    // the generous vertical margin that gives it air the list rows don't get.
+    //
+    // Every horizontal offset must be stated HERE — the screen positions this
+    // row `left: 0, right: 0` with no TimelineRowTile, so it inherits no
+    // padding. That is what made each of those three regressions possible.
     return Card(
       margin: const EdgeInsets.only(
         top: 12,
         bottom: 12,
-        left: kLiveCardLeftInset,
+        left: kCardLeftInset,
         right: kTimelineRowInset,
       ),
       color: colorScheme.primaryContainer,

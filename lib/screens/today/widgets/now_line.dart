@@ -80,9 +80,20 @@ class NowLineOverlay extends StatelessWidget {
             ),
           ),
           // The calendar-style terminus dot, drawn after the rule so it caps
-          // the rule's starting edge. Its left edge sits on [kNowContentEdge],
-          // the same offset the rule starts at, so the two share one edge and
-          // the dot reads as the line's cap rather than a bead on it.
+          // the rule's starting edge.
+          //
+          // CENTRED on [kNowContentEdge] — straddling the boundary between the
+          // hour-label gutter and the content column, which is exactly what
+          // Google Calendar does with its own now-dot. Its left half therefore
+          // overhangs into the gutter and its right half onto the card's left
+          // edge, and that overhang is the point: it is what lets the cards sit
+          // flush against the gutter with no blank clearance strip (the strip
+          // was tried, and reading as dead space was the complaint that killed
+          // it — see kCardLeftInset).
+          //
+          // A previous pass deliberately did NOT centre it, to avoid a 5px
+          // overlap with the time chip that used to occupy the gutter. That
+          // chip is retired, so the constraint is gone.
           //
           // This is NOT the vertical rail rejected as D-04 (see
           // `timeline_row_tile.dart`'s constant doc): that rejection covers a
@@ -91,7 +102,9 @@ class NowLineOverlay extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: Padding(
-              padding: const EdgeInsets.only(left: kNowContentEdge),
+              padding: const EdgeInsets.only(
+                left: kNowContentEdge - kNowDotDiameter / 2,
+              ),
               child: Container(
                 width: kNowDotDiameter,
                 height: kNowDotDiameter,

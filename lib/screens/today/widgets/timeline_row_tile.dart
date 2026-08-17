@@ -54,40 +54,21 @@ const double kNowDotDiameter = 10.0;
 /// [kNowDotClearance]).
 const double kNowContentEdge = kTimelineRowInset + kGutterWidth;
 
-/// Blank ground reserved between [kNowContentEdge] and where any card begins,
-/// so the now-line's dot and the start of its rule land on empty background
-/// rather than on top of a card.
+/// Left inset of EVERY timeline card — ordinary rows and the live row alike.
 ///
-/// **This is the fix for the defect that took four rounds of UAT.** The dot
-/// used to sit exactly on the content edge, which was also the left edge of
-/// an ordinary card — and the live row started further left still, so the dot
-/// landed inside it, on its title. A line that *begins* inside a card reads as
-/// a strike-through; the same line reads as a calendar now-line as soon as its
-/// dot sits in open space to the left of everything. The rule crossing a card
-/// after that is fine and expected (Google Calendar does it, and so does
-/// Dan's own sketch of this fix) — it is only the origin that must be clear.
+/// Equal to [kNowContentEdge] on purpose: cards begin exactly where the
+/// now-line begins, so no blank column opens up between the hour-label gutter
+/// and the content. An earlier pass reserved 26dp of clear ground here to keep
+/// the now-line's dot off the cards; it worked, but the empty strip it left
+/// down the left of the timeline was the next thing to look wrong (UAT,
+/// 2026-08-17 — compared side by side against Google Calendar, which reserves
+/// nothing: its events butt straight against the gutter and its now-dot
+/// straddles that boundary).
 ///
-/// Consequence, and the reason both card types got narrower: every card is
-/// pushed right by this, the live row included. Do not "reclaim" it by
-/// zeroing one of these — the dot then lands back on a card.
-const double kNowDotClearance = 4.0;
-
-/// Left inset of the live row — the leftmost, widest card on the timeline.
-/// Sits clear of the now-line's dot ([kNowContentEdge] + [kNowDotDiameter] +
-/// [kNowDotClearance]) and nothing closer: this is the edge the dot is
-/// measured against.
-const double kLiveCardLeftInset =
-    kNowContentEdge + kNowDotDiameter + kNowDotClearance;
-
-/// How much wider the live row is than an ordinary row. This is all that is
-/// left of "let now break the grid" (22-UI-SPEC.md) as a horizontal effect —
-/// the live row can no longer reach further left than the now-line's dot, so
-/// it earns its distinct silhouette from this offset plus its square corners,
-/// content-driven height, and fill.
-const double kLiveRowGridBreak = 12.0;
-
-/// Left inset of an ordinary timeline card.
-const double kCardLeftInset = kLiveCardLeftInset + kLiveRowGridBreak;
+/// The dot is kept legible by centring it ON this edge instead — see
+/// `now_line.dart` — which is Calendar's own treatment. Do not reintroduce a
+/// clearance band to "protect" the dot; that trade was tried and rejected.
+const double kCardLeftInset = kNowContentEdge;
 
 /// D-06's ~46dp time gutter, and explicitly NOT D-04's rejected vertical
 /// rail: no connector line, no dot, no continuous stroke down the gutter.
@@ -126,13 +107,11 @@ class TimelineRowTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(width: kGutterWidth, child: const SizedBox.shrink()),
-          // Blank ground for the now-line's dot and the start of its rule, so
-          // neither lands on this card. Kept as its own SizedBox rather than
-          // folded into kGutterWidth: the gutter is the hour axis's column and
-          // HourAxisLine sizes its label off that constant, so widening it
-          // would drag the hour labels and the now-line's own origin right
-          // too — the offset has to sit AFTER the gutter, not inside it.
-          const SizedBox(width: kCardLeftInset - kNowContentEdge),
+          // No spacer between the gutter and the content: [kCardLeftInset]
+          // equals [kNowContentEdge], so the card starts immediately after the
+          // hour-label column. A spacer used to live here to hold the
+          // now-line's dot off the cards, and the blank strip it left down the
+          // left of the timeline is exactly what UAT flagged next.
           Expanded(child: child),
         ],
       ),
