@@ -202,6 +202,19 @@ Future<void> _pumpTodayScreen(
   );
 }
 
+/// The now-line's terminus dot: the only circular-decorated Container in the
+/// overlay. Matched by shape rather than by size so the assertions that use it
+/// keep testing the *clearance* invariant if kNowDotDiameter is ever retuned.
+Finder _nowDotFinder() => find.descendant(
+  of: find.byType(NowLineOverlay),
+  matching: find.byWidgetPredicate((widget) {
+    if (widget is! Container) return false;
+    final decoration = widget.decoration;
+    return decoration is BoxDecoration &&
+        decoration.shape == BoxShape.circle;
+  }),
+);
+
 void main() {
   group('Task 1 — scaffold, AppBar, reconciled empty state', () {
     testWidgets(
@@ -945,18 +958,16 @@ void main() {
         },
       );
 
-      // Replaces the G-01 gutter-confinement test, whose subject (the chip)
-      // no longer exists. G-01's concern — the overlay occluding a card's
-      // content — is moot for a 2dp rule and a 10dp dot carrying no text.
+      // The successor to G-01's gutter-confinement assertion. G-01 guarded a
+      // chip that no longer exists, but its underlying claim — the overlay
+      // must not begin on top of a card — is exactly the defect that survived
+      // four rounds of UAT, so it is worth pinning harder than before.
       //
-      // What is worth pinning at screen level instead is the alignment the
-      // new design depends on: the dot marks where the content column starts,
-      // so it must land on the ChunkCard's left edge. This is the assertion
-      // that would have caught the gutter change if kNowContentEdge and
-      // TimelineRowTile had drifted apart, and it stays a comparison of two
-      // laid-out rects — trustworthy in the harness's placeholder font.
+      // Geometric, not a text measurement, so it is trustworthy in the
+      // harness's placeholder font.
       testWidgets(
-        'the now-line dot starts exactly at the ChunkCard left edge',
+        'the now-line dot clears the ChunkCard entirely — it never starts '
+        'on top of one',
         (tester) async {
           await pumpAt(
             tester,
@@ -964,19 +975,48 @@ void main() {
             chunks: twoChunkFixture(firstResolved: true),
           );
 
-          final dotRect = tester.getRect(
-            find.descendant(
-              of: find.byType(NowLineOverlay),
-              matching: find.byWidgetPredicate((widget) {
-                if (widget is! Container) return false;
-                final d = widget.decoration;
-                return d is BoxDecoration && d.shape == BoxShape.circle;
-              }),
-            ),
+          final dotRect = tester.getRect(_nowDotFinder());
+          final cardRect = tester.getRect(find.byType(ChunkCard).first);
+
+          expect(dotRect.right, lessThanOrEqualTo(cardRect.left));
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      // The live row is the case that actually shipped broken: it is
+      // positioned left:0/right:0 with no TimelineRowTile, so it inherits no
+      // inset and twice started left of the dot — putting the dot inside the
+      // card, on its title. Assert the clearance against the LIVE card by
+      // name, and that it stays wider than an ordinary row (so a future fix
+      // cannot satisfy this by flattening "let now break the grid" away).
+      testWidgets(
+        'the now-line dot clears the LIVE row too, which still starts left '
+        'of an ordinary card',
+        (tester) async {
+          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+
+          expect(find.byType(LiveRowCard), findsOneWidget);
+          final dotRect = tester.getRect(_nowDotFinder());
+          // The painted Material, not the LiveRowCard widget and not its Card:
+          // the widget's rect spans the full positioned width, and Card
+          // implements `margin` as padding INSIDE its own render box, so both
+          // report the inset as zero. Measuring either would let this
+          // assertion pass while the dot sat on the card's title — the very
+          // defect it exists to catch. The Material is the first thing whose
+          // rect is the card's actual painted edge.
+          final liveRect = tester.getRect(
+            find
+                .descendant(
+                  of: find.byType(LiveRowCard),
+                  matching: find.byType(Material),
+                )
+                .first,
           );
           final cardRect = tester.getRect(find.byType(ChunkCard).first);
 
-          expect(dotRect.left, cardRect.left);
+          expect(dotRect.right, lessThanOrEqualTo(liveRect.left));
+          expect(liveRect.left, lessThan(cardRect.left));
+          expect(liveRect.right, cardRect.right);
           expect(tester.takeException(), isNull);
         },
       );

@@ -58,22 +58,27 @@ class LiveRowCard extends StatelessWidget {
     final clampedProgress = progress.clamp(0.0, 1.0);
 
     // "Let now break the grid" (22-UI-SPEC.md "The live row", amended
-    // 2026-08-08 after UAT, and again after the now-line landed). This row
-    // still breaks the grid — it reaches left across the time gutter that
-    // every other row keeps blank, so it reads as a wider silhouette, not
-    // just a different fill — but it stops at [kTimelineRowInset] rather
-    // than bleeding to the raw viewport edge.
+    // 2026-08-08 after UAT, then twice more as the now-line landed). This row
+    // is still the widest thing on the timeline — it starts left of
+    // [kCardLeftInset], so its silhouette reads wider than every list row and
+    // not merely differently filled — and the generous vertical margin still
+    // gives it air the list rows don't get.
     //
-    // Why it stops: the screen positions this row `left: 0, right: 0` with no
-    // TimelineRowTile, so a vertical-only margin ran it to the screen edge
-    // while the now-line drawn on top of it stops at the row inset. The
-    // mismatched right edges made the line look like it was overshooting the
-    // card. The generous vertical margin still gives it air the list rows
-    // don't get.
+    // Its left edge is [kLiveCardLeftInset], NOT the row inset, and that is
+    // load-bearing: the screen positions this row `left: 0, right: 0` with no
+    // TimelineRowTile, so it inherits no padding and every horizontal offset
+    // must be stated here. Two rounds of UAT died on exactly that. A
+    // vertical-only margin ran it to the raw viewport edge, past every other
+    // row's right edge; correcting that to a symmetric row inset still started
+    // it LEFT of the now-line's dot, so the dot landed inside this card, on
+    // this card's title. It has to begin right of that dot — see
+    // kNowDotClearance.
     return Card(
-      margin: const EdgeInsets.symmetric(
-        vertical: 12,
-        horizontal: kTimelineRowInset,
+      margin: const EdgeInsets.only(
+        top: 12,
+        bottom: 12,
+        left: kLiveCardLeftInset,
+        right: kTimelineRowInset,
       ),
       color: colorScheme.primaryContainer,
       elevation: 6,

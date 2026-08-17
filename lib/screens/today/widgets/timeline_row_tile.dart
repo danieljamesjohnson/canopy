@@ -43,6 +43,52 @@ const double kGutterWidth = 40.0;
 /// bled to the raw screen edge. Reference this rather than re-typing 16.
 const double kTimelineRowInset = 16.0;
 
+/// Diameter of the now-line's terminus dot (the Google Calendar current-time
+/// idiom). 10dp reads clearly against the 2dp rule without exceeding
+/// `kNowLineHeight`'s 28dp band.
+const double kNowDotDiameter = 10.0;
+
+/// Where the now-line starts: [kTimelineRowInset] plus the reserved
+/// [kGutterWidth] column. The rule and its dot both begin here — clear of the
+/// gutter, which belongs to the hour axis, and clear of every card (see
+/// [kNowDotClearance]).
+const double kNowContentEdge = kTimelineRowInset + kGutterWidth;
+
+/// Blank ground reserved between [kNowContentEdge] and where any card begins,
+/// so the now-line's dot and the start of its rule land on empty background
+/// rather than on top of a card.
+///
+/// **This is the fix for the defect that took four rounds of UAT.** The dot
+/// used to sit exactly on the content edge, which was also the left edge of
+/// an ordinary card — and the live row started further left still, so the dot
+/// landed inside it, on its title. A line that *begins* inside a card reads as
+/// a strike-through; the same line reads as a calendar now-line as soon as its
+/// dot sits in open space to the left of everything. The rule crossing a card
+/// after that is fine and expected (Google Calendar does it, and so does
+/// Dan's own sketch of this fix) — it is only the origin that must be clear.
+///
+/// Consequence, and the reason both card types got narrower: every card is
+/// pushed right by this, the live row included. Do not "reclaim" it by
+/// zeroing one of these — the dot then lands back on a card.
+const double kNowDotClearance = 4.0;
+
+/// Left inset of the live row — the leftmost, widest card on the timeline.
+/// Sits clear of the now-line's dot ([kNowContentEdge] + [kNowDotDiameter] +
+/// [kNowDotClearance]) and nothing closer: this is the edge the dot is
+/// measured against.
+const double kLiveCardLeftInset =
+    kNowContentEdge + kNowDotDiameter + kNowDotClearance;
+
+/// How much wider the live row is than an ordinary row. This is all that is
+/// left of "let now break the grid" (22-UI-SPEC.md) as a horizontal effect —
+/// the live row can no longer reach further left than the now-line's dot, so
+/// it earns its distinct silhouette from this offset plus its square corners,
+/// content-driven height, and fill.
+const double kLiveRowGridBreak = 12.0;
+
+/// Left inset of an ordinary timeline card.
+const double kCardLeftInset = kLiveCardLeftInset + kLiveRowGridBreak;
+
 /// D-06's ~46dp time gutter, and explicitly NOT D-04's rejected vertical
 /// rail: no connector line, no dot, no continuous stroke down the gutter.
 /// Anyone adding one is re-opening a rejected sketch variant.
@@ -80,6 +126,13 @@ class TimelineRowTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(width: kGutterWidth, child: const SizedBox.shrink()),
+          // Blank ground for the now-line's dot and the start of its rule, so
+          // neither lands on this card. Kept as its own SizedBox rather than
+          // folded into kGutterWidth: the gutter is the hour axis's column and
+          // HourAxisLine sizes its label off that constant, so widening it
+          // would drag the hour labels and the now-line's own origin right
+          // too — the offset has to sit AFTER the gutter, not inside it.
+          const SizedBox(width: kCardLeftInset - kNowContentEdge),
           Expanded(child: child),
         ],
       ),

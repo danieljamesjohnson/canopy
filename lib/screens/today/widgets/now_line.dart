@@ -3,18 +3,6 @@ import 'package:flutter/material.dart';
 import '../timeline_geometry.dart';
 import 'timeline_row_tile.dart';
 
-/// Diameter of the now-line's terminus dot (the Google Calendar
-/// current-time idiom). 10dp reads clearly against the 2dp rule without
-/// exceeding [kNowLineHeight]'s 28dp band.
-const double kNowDotDiameter = 10.0;
-
-/// Where the timeline's content column begins: [kTimelineRowInset] plus the
-/// reserved [kGutterWidth] column. Both the rule and the dot start here, so
-/// the now-line aligns with every card's left edge and never intrudes on the
-/// gutter the hour axis owns. Derived from the same constants the rows use —
-/// do not hard-code 68.
-const double kNowContentEdge = kTimelineRowInset + kGutterWidth;
-
 /// The screen's primary visual anchor (CAL-02): a 2dp rule spanning the
 /// content column, capped at its left end by a terminus dot — positioned by
 /// the caller at an arithmetic pixel offset, never a between-rows list item.
