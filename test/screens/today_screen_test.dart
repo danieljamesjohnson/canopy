@@ -915,21 +915,16 @@ void main() {
         },
       );
 
-      // G-01 (26-UAT.md, fixed 26-07-PLAN.md): the chip's copy is
-      // formatMinutesCompact, not the longer "Now · <time>" string that
-      // could not fit kGutterWidth and shipped the occlusion bug. The full
-      // time survives in the screen-reader semantics label, asserted below.
-      //
-      // G-03 (26-09-PLAN.md) moved this test's clock off 9:12 — at 9:12 w1
-      // is live by this fixture's own construction, and the chip is now
-      // suppressed there (see the G-03 test below). This test's job is
-      // "the chip renders correctly when it renders at all", so it uses a
-      // non-live moment instead: 9:30 with w1 already completed puts the
-      // day in GapBeforeNext (w2's 10:00 window hasn't opened yet), so
-      // there is no live row and the chip is expected to show.
+      // Replaces 'chip copy — renders exactly "9:30a" in a non-live state'.
+      // The time chip was retired 2026-08-17 so kGutterWidth could drop
+      // 52 → 40 (it, not the hour labels, was holding the gutter wide) and
+      // give that width back to every chunk card. 9:30 with w1 completed is
+      // GapBeforeNext — no live row — i.e. the exact state where the chip
+      // used to be guaranteed to show, so it is the strongest place to assert
+      // it is really gone rather than merely suppressed.
       testWidgets(
-        'chip copy — renders exactly "9:30a" in a non-live state (G-06: '
-        'AM now carries its own suffix, mirroring PM)',
+        'no chip text in a non-live state — the chip is retired, not '
+        'suppressed',
         (tester) async {
           await pumpAt(
             tester,
@@ -938,45 +933,50 @@ void main() {
           );
 
           expect(find.byType(LiveRowCard), findsNothing);
-          expect(find.text('9:30a'), findsOneWidget);
+          expect(find.text('9:30a'), findsNothing);
+          expect(
+            find.descendant(
+              of: find.byType(NowLineOverlay),
+              matching: find.byType(Text),
+            ),
+            findsNothing,
+          );
           expect(tester.takeException(), isNull);
         },
       );
 
+      // Replaces the G-01 gutter-confinement test, whose subject (the chip)
+      // no longer exists. G-01's concern — the overlay occluding a card's
+      // content — is moot for a 2dp rule and a 10dp dot carrying no text.
+      //
+      // What is worth pinning at screen level instead is the alignment the
+      // new design depends on: the dot marks where the content column starts,
+      // so it must land on the ChunkCard's left edge. This is the assertion
+      // that would have caught the gutter change if kNowContentEdge and
+      // TimelineRowTile had drifted apart, and it stays a comparison of two
+      // laid-out rects — trustworthy in the harness's placeholder font.
       testWidgets(
-        'G-01: the now chip stays inside the time gutter and never '
-        'overlaps a (non-live) ChunkCard',
+        'the now-line dot starts exactly at the ChunkCard left edge',
         (tester) async {
-          // Geometric assertion (26-VALIDATION.md) — a comparison of two
-          // laid-out rects' x-coordinates, not a text-fit measurement, so
-          // it is trustworthy in the widget-test harness's placeholder
-          // font.
-          //
-          // G-03 (26-09-PLAN.md): this fixture is deliberately a non-live
-          // moment (9:30, w1 already completed — GapBeforeNext, no
-          // LiveRowCard at all) so the chip renders and this test can keep
-          // proving the ORIGINAL G-01 claim — gutter confinement against an
-          // ordinary ChunkCard. The live-row case (where the chip must be
-          // ABSENT, not merely confined) is the separate G-03 test below;
-          // LiveRowCard is named there, closing the exact gap 26-07's
-          // ChunkCard-only assertion left open.
           await pumpAt(
             tester,
             DateTime(2026, 8, 7, 9, 30),
             chunks: twoChunkFixture(firstResolved: true),
           );
 
-          final chipRect = tester.getRect(
+          final dotRect = tester.getRect(
             find.descendant(
               of: find.byType(NowLineOverlay),
-              matching: find.byWidgetPredicate(
-                (widget) => widget is SizedBox && widget.width == kGutterWidth,
-              ),
+              matching: find.byWidgetPredicate((widget) {
+                if (widget is! Container) return false;
+                final d = widget.decoration;
+                return d is BoxDecoration && d.shape == BoxShape.circle;
+              }),
             ),
           );
           final cardRect = tester.getRect(find.byType(ChunkCard).first);
 
-          expect(chipRect.right, lessThanOrEqualTo(cardRect.left));
+          expect(dotRect.left, cardRect.left);
           expect(tester.takeException(), isNull);
         },
       );

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../utils/time_format.dart';
 import '../timeline_geometry.dart';
 import 'timeline_row_tile.dart';
 
@@ -17,34 +16,31 @@ const double kNowDotDiameter = 10.0;
 const double kNowContentEdge = kTimelineRowInset + kGutterWidth;
 
 /// The screen's primary visual anchor (CAL-02): a 2dp rule spanning the
-/// content column, capped at its left end by a terminus dot, plus a compact
-/// time chip in the gutter — positioned by the caller at an arithmetic pixel
-/// offset, never a between-rows list item.
+/// content column, capped at its left end by a terminus dot — positioned by
+/// the caller at an arithmetic pixel offset, never a between-rows list item.
 ///
-/// **G-01 (26-UAT.md, fixed 26-07-PLAN.md):** the chip is confined to the
-/// `kGutterWidth` (52dp) time-gutter column and can never reach a
-/// `ChunkCard`'s content. The original UI-SPEC specified both a 52dp chip
-/// AND a longer two-part "Now" + full-time label — arithmetically
-/// incompatible (that longer string is ~101px at `labelSmall` 12px/w600).
-/// The chip honours the width and uses [formatMinutesCompact] instead; the
-/// full time survives only in the screen-reader `Semantics` label at the
-/// call site. Do NOT restore the longer bare-time label here — that is
-/// precisely what shipped the occlusion bug.
+/// **The time chip was retired (2026-08-17, Dan's call during UAT).** The
+/// overlay used to carry a `formatMinutesCompact` chip inside the gutter
+/// column, and that chip — not the hour-axis labels — was what held
+/// [kGutterWidth] at 52dp: measured in the browser it filled 51 of those
+/// 52dp. Retiring it let the gutter drop to 40dp and gave every chunk card
+/// that width back, which is what this change was for. The dot now marks the
+/// line's position and `HourAxisLine` still labels the column, so the chip's
+/// job is covered; the precise current minute survives in the screen-reader
+/// `Semantics` label at the call site, in `LiveRowCard`'s `RIGHT NOW ·
+/// <time>` copy, and in the header's own copy.
+///
+/// Two guards died with it, and both are now unreachable rather than
+/// ignored — do NOT reintroduce a chip without re-reading them in git
+/// history: G-01 (26-07-PLAN.md) confined the chip to the gutter so it could
+/// never occlude a `ChunkCard`'s content, and G-03 (26-09-PLAN.md) suppressed
+/// it over the full-bleed live row, where no gutter column exists for it to
+/// occupy. A restored chip re-opens both, and at 40dp the gutter no longer
+/// has room for one.
 ///
 /// Renders in every `NowState` — there is no `Active`-suppression here;
 /// that Phase 24 rule is superseded outright by this overlay's ability to
 /// sit truthfully mid-chunk (26-UI-SPEC.md "The now-line (CAL-02)").
-///
-/// **G-03 (26-UAT.md, fixed 26-09-PLAN.md):** [showChip] suppresses the
-/// chip specifically — the 2dp rule still always renders — while the line
-/// falls inside the live row's span. `LiveRowCard` is full-bleed by design
-/// (26-UI-SPEC.md "let now break the grid", inherited from Phase 22/23), so
-/// there is no gutter column there for a gutter-confined chip (G-01,
-/// 26-07-PLAN.md) to occupy: it would sit directly over `LiveRowCard`'s
-/// title, which is the defect G-01's own fix did not cover. The live row
-/// already states the current time in its own copy (`RIGHT NOW · <time>`),
-/// so the chip is redundant there, not lost — do not "simplify" this
-/// parameter away; without it the chip re-collides with the live row.
 ///
 /// Carries NO `Semantics` node of its own. The call site in
 /// `today_screen.dart` applies one labelled `excludeSemantics` node around
@@ -56,24 +52,18 @@ const double kNowContentEdge = kTimelineRowInset + kGutterWidth;
 /// tree, so putting the label inside it would silently delete the
 /// announcement.
 class NowLineOverlay extends StatelessWidget {
-  const NowLineOverlay({super.key, required this.nowMinutes, this.showChip = true});
+  const NowLineOverlay({super.key, required this.nowMinutes});
 
   /// Minutes-from-midnight of the current moment, injected — never derived
   /// from a clock read inside this file.
+  ///
+  /// Still required with the chip gone: the caller's `Semantics` label reads
+  /// it, and it documents that this widget never touches a clock itself.
   final int nowMinutes;
-
-  /// Whether the time chip renders. The 2dp rule below always renders
-  /// regardless of this flag — only the chip is conditional. The caller
-  /// passes `false` while [nowMinutes] falls inside the live row's span
-  /// (see the G-03 doc comment above); every other call passes `true` (or
-  /// omits the parameter), preserving G-01's gutter-confined chip exactly
-  /// as 26-07 left it.
-  final bool showChip;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     return SizedBox(
       height: kNowLineHeight,
@@ -102,12 +92,9 @@ class NowLineOverlay extends StatelessWidget {
             ),
           ),
           // The calendar-style terminus dot, drawn after the rule so it caps
-          // the rule's starting edge. Its left edge sits on [kNowContentEdge]
-          // — the same offset the rule starts at — so it cannot touch the
-          // gutter-confined chip (which ends there). Do not centre it ON that
-          // offset "to straddle the boundary": the chip and the dot are both
-          // `colorScheme.primary`, so a 5px overlap reads as a lump growing
-          // out of the chip rather than as two elements.
+          // the rule's starting edge. Its left edge sits on [kNowContentEdge],
+          // the same offset the rule starts at, so the two share one edge and
+          // the dot reads as the line's cap rather than a bead on it.
           //
           // This is NOT the vertical rail rejected as D-04 (see
           // `timeline_row_tile.dart`'s constant doc): that rejection covers a
@@ -127,45 +114,6 @@ class NowLineOverlay extends StatelessWidget {
               ),
             ),
           ),
-          if (showChip)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16),
-                // G-01: confined to the gutter column so the chip can never
-                // reach a ChunkCard's content (which begins immediately after
-                // this SizedBox, at 16dp + kGutterWidth).
-                child: SizedBox(
-                  width: kGutterWidth,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary,
-                      borderRadius: BorderRadius.circular(4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.shadow.withValues(alpha: 0.3),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      formatMinutesCompact(nowMinutes),
-                      maxLines: 1,
-                      overflow: TextOverflow.clip,
-                      style: textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );

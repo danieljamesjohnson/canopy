@@ -17,11 +17,20 @@ import 'package:flutter/material.dart';
 /// "12:10p" rendering ~40px in actual Roboto, so 75 reserved ~35dp of dead
 /// space and pushed every card right, which was visible on screen.
 ///
-/// 52.0 = the real-browser ~40px worst case ("12:45p", the compact
-/// time-format's 6-character maximum) plus ~12dp slack for larger
-/// text-scale settings.
+/// **52.0 → 40.0 (2026-08-17, Dan's call during UAT.)** The old 52 was sized
+/// for the now-line's time *chip* ("12:45p", the compact format's 6-character
+/// maximum, ~40px real-browser + padding), NOT for the hour-axis labels that
+/// are the only thing left in this column. Measured in the served debug build:
+/// the chip filled 51 of the 52dp, while "9 AM" renders just 27dp — so "12 PM"
+/// and "10 AM", the widest labels `HourAxisLine` can produce, need ~34dp.
+///
+/// 40.0 = that ~34dp worst case plus ~6dp slack for larger text-scale
+/// settings. The chip was retired (see `now_line.dart`) precisely so this
+/// could shrink and hand the width back to every chunk card, which is the
+/// whole point of the change — **restoring a chip here would need 52 again.**
+///
 /// Verified visually in the served debug build, not just in tests.
-const double kGutterWidth = 52.0;
+const double kGutterWidth = 40.0;
 
 /// The horizontal inset every element on the Today timeline shares — the
 /// header, the hour axis, each row, the now-line, and the live row.

@@ -1374,27 +1374,21 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                                 label: 'Now — ${formatMinutes(nowMinutes)}',
                                 excludeSemantics: true,
                                 child: IgnorePointer(
+                                  // The overlay takes no suppression flag any
+                                  // more: the `showChip` argument that used to
+                                  // sit here existed only to keep the time
+                                  // chip off the live row (G-03,
+                                  // 26-09-PLAN.md), and the chip is gone. The
+                                  // rule and dot are safe over the live row —
+                                  // they carry no text to occlude. If a chip
+                                  // is ever restored, the live-span predicate
+                                  // it needs is in this file's git history;
+                                  // read it off `TimelineGeometry`
+                                  // (`liveStartMinutes`/`liveEndMinutes`,
+                                  // half-open), never from `resolveNowState`
+                                  // or the chunk list.
                                   child: NowLineOverlay(
                                     nowMinutes: nowMinutes,
-                                    // G-03 (26-09-PLAN.md): the live row is
-                                    // full-bleed, so there is no gutter for
-                                    // the chip to occupy there — suppress
-                                    // just the chip while `nowMinutes` falls
-                                    // inside the live span. Read the span
-                                    // off `TimelineGeometry` (the single
-                                    // arithmetic authority for this
-                                    // surface) — never recompute it from
-                                    // `resolveNowState` or the chunk list.
-                                    // Same half-open convention as
-                                    // `liveExtraPx`: `>= liveStart && <
-                                    // liveEnd`.
-                                    showChip:
-                                        !(geometry.liveStartMinutes != null &&
-                                            geometry.liveEndMinutes != null &&
-                                            nowMinutes >=
-                                                geometry.liveStartMinutes! &&
-                                            nowMinutes <
-                                                geometry.liveEndMinutes!),
                                   ),
                                 ),
                               ),

@@ -150,7 +150,12 @@ void main() {
       );
       // G-04: the clip was caused by a MISSING 16dp inset, not by an
       // insufficient width. See kGutterWidth's doc comment before changing.
-      expect(kGutterWidth, 52.0);
+      //
+      // 40, not the old 52: the 52 was sized for the now-line's time chip,
+      // which has been retired. This column now holds only HourAxisLine's
+      // labels ("12 PM" ~34dp measured in-browser). Restoring a chip means
+      // restoring 52 — see now_line.dart.
+      expect(kGutterWidth, 40.0);
     });
 
     testWidgets(
@@ -195,14 +200,24 @@ void main() {
   });
 
   group('NowLineOverlay (CAL-02, UI-SPEC locked)', () {
-    // G-01 (26-UAT.md, fixed 26-07-PLAN.md): the chip's copy is
-    // formatMinutesCompact, not the longer "Now · <time>" string that
-    // could not fit kGutterWidth and shipped the occlusion bug.
-    testWidgets('renders the locked compact chip copy "2:47p"', (
+    // The time chip was retired (2026-08-17) so kGutterWidth could drop 52 →
+    // 40 and hand that width back to every chunk card. The overlay is now
+    // text-free: rule + dot only. This replaces the old test that asserted
+    // the chip's locked "2:47p" copy — kept as an assertion rather than
+    // deleted so a restored chip trips it and its author re-reads the
+    // gutter-width consequence in now_line.dart.
+    testWidgets('renders no text at all — the time chip is retired', (
       tester,
     ) async {
       await pumpWithMood(tester, const NowLineOverlay(nowMinutes: 887));
-      expect(find.text('2:47p'), findsOneWidget);
+      expect(find.text('2:47p'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(NowLineOverlay),
+          matching: find.byType(Text),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('a 2dp-tall Container renders, colored colorScheme.primary '
@@ -300,25 +315,16 @@ void main() {
       );
     });
 
-    // The dot is part of the rule, not the chip: it must survive the
-    // live-row suppression that hides the chip (G-03).
-    testWidgets('the dot still renders when showChip is false', (tester) async {
-      await pumpWithMood(
-        tester,
-        const NowLineOverlay(nowMinutes: 887, showChip: false),
-      );
-      expect(find.text('2:47p'), findsNothing);
-      expect(
-        find.descendant(
-          of: find.byType(NowLineOverlay),
-          matching: find.byWidgetPredicate((w) {
-            if (w is! Container) return false;
-            final d = w.decoration;
-            return d is BoxDecoration && d.shape == BoxShape.circle;
-          }),
-        ),
-        findsOneWidget,
-      );
+    // Replaces 'the dot still renders when showChip is false'. That test
+    // guarded the G-03 live-row chip suppression, which no longer exists —
+    // there is no chip and so no suppression flag. What still needs guarding
+    // is that the overlay takes no such flag: a future agent reaching for one
+    // should read now_line.dart's note on why the chip went instead.
+    testWidgets('the overlay renders from nowMinutes alone, with no '
+        'suppression flag', (tester) async {
+      await pumpWithMood(tester, const NowLineOverlay(nowMinutes: 887));
+      expect(tester.takeException(), isNull);
+      expect(find.byType(NowLineOverlay), findsOneWidget);
     });
   });
 
@@ -326,6 +332,25 @@ void main() {
     testWidgets('renders "9 AM" for hourMinutes 540', (tester) async {
       await pumpWithMood(tester, const HourAxisLine(hourMinutes: 540));
       expect(find.text('9 AM'), findsOneWidget);
+    });
+
+    // The hour labels are the ONLY thing left in the gutter column, so they
+    // are what now bounds kGutterWidth (40dp since the chip was retired).
+    // "12 PM" and "10 AM"/"11 AM" are the widest HourAxisLine can produce.
+    // Do not treat a pass here as a width measurement — this harness draws
+    // every glyph as a fixed fontSize-wide box (see kGutterWidth's doc), so
+    // it over-measures. It is an overflow guard; the real check is visual, in
+    // the served debug build.
+    testWidgets('the widest hour labels render without overflowing the '
+        'gutter', (tester) async {
+      for (final minutes in <int>[600, 660, 720]) {
+        await pumpWithMood(tester, HourAxisLine(hourMinutes: minutes));
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'HourAxisLine overflowed for hourMinutes $minutes',
+        );
+      }
     });
 
     testWidgets('renders "12 PM" for hourMinutes 720', (tester) async {
