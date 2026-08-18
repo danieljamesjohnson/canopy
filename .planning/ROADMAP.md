@@ -123,6 +123,62 @@ now-line, as Google Calendar does — cleanest code, ends the swell; (b) shrink 
 its slot so the exception is small rather than absent — half-measure, grid still not true;
 (c) keep the swell, close this as won't-fix.
 
+### DECIDED — option (a), on spike evidence (2026-08-18)
+
+`/gsd-spike` built all three treatments from one working tree behind a `--dart-define`, served each
+as a debug web build on port 8134, and pixel-measured hour-label spacing in headless Chromium at
+430×930 / DPR 1. Full trail, tooling and 7 screenshots:
+`.planning/spikes/001-live-row-in-a-true-grid/`.
+
+| | Hour spacing 8→9 / 9→10 | Live card, 25-min work chunk | Live card, 5-min break | Complete/Skip reachable while live? |
+|---|---|---|---|---|
+| Baseline (shipped) | **240.0 / 372.0** ✗ | 198px fill, needs a 232dp slot | same 232dp slot | yes |
+| **(a) compact** | **240.0 / 240.0** ✓ | **86px fill + 4px margin** in its 100dp slot | 19px, one legible line | **yes** |
+| (b) delete only | 240.0 / 240.0 ✓ | 88px of 198px — **110px clipped off** | **8px of blank fill, no text** | **no** |
+
+The baseline reproduced the defect to the pixel: 372.0 − 240.0 = **132.0**, exactly
+`kLiveRowReservedHeight − 25 × kPixelsPerMinute`. Option (b) is rejected on evidence, not taste —
+it slices the countdown mid-glyph and deletes both action buttons, making the current activity the
+one row in the day you cannot act on, and it stops telling you you're on a break at the moment you
+are. Option (a) keeps kicker, title, countdown, progress and both actions (as icon buttons) inside
+the duration-exact slot, with prominence carried by `primaryContainer` fill, square corners,
+elevation and the now-line — none of which need extra height. It also shortens the day by 132dp:
+in the baseline the 9:50 chunk falls off the viewport, under (a) the same day fits.
+
+**What (a) means concretely, and what the phase must build:**
+
+1. Delete the `liveExtraPx` term from `TimelineGeometry` — `yFor()` becomes purely linear. This is
+   the one-line part.
+2. Render the live row through the same `Positioned(height: slot)` + `ClipRect`/`OverflowBox` path
+   every other row already uses. The live row stops being a layout special case.
+3. Give `LiveRowCard` **density tiers driven by slot height**, exactly as `kFullTierMinHeight`
+   already works for `ChunkCard`. This is the part the spike proved is required rather than
+   optional: a live 5-minute break has a 20dp slot, and there is no single card layout that serves
+   both 100dp and 20dp. Making the live row obey the rule the rest of the timeline already follows
+   is a *simplification* of the model, not an addition to it.
+4. **Re-derive the compact tier's minimum height in a real browser.** The spike's placeholder
+   (`60.0`) was never validated — the fixture only had 25-min (100dp) and 5-min (20dp) chunks, so
+   nothing exercised the 60–90dp band. The measured natural height is **90dp**, so the threshold is
+   ≥ 90.0 and a live chunk shorter than ~23 minutes falls to the single-line tier. Decide
+   deliberately what happens in that band.
+5. **Consider dropping the progress bar from the compact tier.** Once the card is duration-exact,
+   the now-line's position *within* the card **is** the fraction elapsed — geometrically, not
+   approximately — so the bar is a second rendering of the same fact, and at 9:10 the two literally
+   overlap at the card's bottom edge. Removing it also buys back ~10dp against item 4.
+6. **Resolve the now-line striking through the card's text.** A shorter card has no whitespace for
+   the rule to land in, so the collision goes from occasional to routine (at 8:55 it cuts through
+   "RIGHT NOW · 8:50 AM"; on the single-line break tier it cuts the only line there is). Options:
+   draw the live card above the now-line overlay, suppress the rule where it crosses the live card,
+   or design the card around a line that will cross it.
+
+**Verify in pixels, never in `flutter test`.** 240dp and 372dp both satisfy all 560 existing tests,
+because those tests assert `yFor()` against the same arithmetic the implementation performs,
+`liveExtraPx` included — the grid is verified against itself. Use
+`.planning/spikes/001-live-row-in-a-true-grid/tools/measure_hours.py`, which scans the hour labels
+in the 40dp gutter and prints `UNIFORM` / `NOT UNIFORM`. A new test asserting *equidistance*
+(`yFor(h+60) − yFor(h)` constant across every boundary, with a live chunk present) is what closes
+the hole in the suite, and is worth adding regardless.
+
 **Build vs. buy — settled, revisit only on new evidence.** pub.dev was searched 2026-08-18.
 [`kalender`](https://pub.dev/packages/kalender) is credible (MIT, all six platforms, 160/160 pub
 points, 42.6k downloads, actively maintained, custom event model, uniform hour grid, replaceable
