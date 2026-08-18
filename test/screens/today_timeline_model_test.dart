@@ -486,5 +486,42 @@ void main() {
         kTimelineEdgePadding,
       );
     });
+
+    test(
+        'GRID-01: every hour boundary is equidistant, even with a live '
+        'chunk present', () {
+      // A 25-minute live chunk (540..565) whose end minute falls strictly
+      // inside the 540..600 hour — the exact configuration the defect
+      // corrupts. Ground truth is 60 * kPixelsPerMinute and nothing else:
+      // this must NOT re-derive liveExtraPx or kLiveRowReservedHeight, or
+      // it inherits the same self-referential blindness the other tests in
+      // this group have (27-VALIDATION.md "The load-bearing split").
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: 550,
+        firstStartMinutes: 480,
+        lastEndMinutes: 1020,
+        liveStartMinutes: 540,
+        liveEndMinutes: 565,
+      );
+      final boundaries = geometry.hourBoundaries;
+      expect(
+        boundaries.length,
+        greaterThan(2),
+        reason:
+            'fixture must span multiple hours, or this loop is vacuously '
+            'true and proves nothing',
+      );
+      for (var i = 0; i < boundaries.length - 1; i++) {
+        expect(
+          geometry.yFor(boundaries[i + 1]) - geometry.yFor(boundaries[i]),
+          60 * kPixelsPerMinute,
+          reason:
+              'boundary $i (minute ${boundaries[i]}) -> boundary ${i + 1} '
+              '(minute ${boundaries[i + 1]}) must be exactly one hour apart '
+              'in pixels, including the 540->600 boundary the live chunk '
+              'ends inside',
+        );
+      }
+    });
   });
 }
