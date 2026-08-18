@@ -529,10 +529,17 @@ buttons are truly 36×36, not 48×48 (two 48px buttons plus text would not fit i
 running `flutter --version`, or running the Playwright/Pillow availability checks this session) or
 `[CITED]` (the UI-SPEC/ROADMAP/spike documents, which this phase treats as locked inputs).**
 
-## Open Questions
+## Open Questions (BOTH RESOLVED during planning, 2026-08-18)
 
-1. **Should `kCompactLiveMinHeight` be a distinct constant from `kFullTierMinHeight` if the
-   real-browser measurement lands at or near 88.0?**
+Kept for the record. Both were carried into `27-0*-PLAN.md` as enforced task requirements rather
+than left open — a plan task now owns each, so neither can be silently skipped at execution time.
+
+1. **(RESOLVED — owned by `27-04-PLAN.md` Task 1.)** **Should `kCompactLiveMinHeight` be a distinct
+   constant from `kFullTierMinHeight` if the real-browser measurement lands at or near 88.0?**
+   Resolved exactly as this section recommended: build first, measure in a real browser, THEN
+   decide. `27-04` Task 1 requires an explicit collapse-or-keep-separate decision **after** the
+   measurement, and `27-01` Task 2 requires the cross-reference. The constant ships as an
+   `UNMEASURED PLACEHOLDER (PD-27-05)` only so wave 2 compiles.
    - What we know: `27-UI-SPEC.md` explicitly raises this as a planning-time decision, not a locked
      answer — "worth considering during planning" if the numbers coincide.
    - What's unclear: the actual measured value (not yet taken — it can't be, until the compact
@@ -541,8 +548,11 @@ running `flutter --version`, or running the Playwright/Pillow availability check
      pre-emptively merge the constants before measuring, since UI-SPEC also notes "if it lands
      meaningfully different, keep them separate."
 
-2. **Does deleting `nextLine`/the next-chunk lookup ripple into any other test beyond the one
-   comment noted in Pitfall 4?**
+2. **(RESOLVED — owned by `27-02-PLAN.md` Task 3.)** **Does deleting `nextLine`/the next-chunk
+   lookup ripple into any other test beyond the one comment noted in Pitfall 4?**
+   Resolved exactly as this section recommended: the re-grep is folded into the same task that
+   removes the parameter, not left as a follow-up. Planning also found the ripple is **wider than
+   this research measured** — see the note below.
    - What we know: one test comment (`today_screen_test.dart` near line 502-503) explicitly
      mentions the live row's "Next · Reading at 10:50 AM" text as a disambiguation concern.
    - What's unclear: whether any other test asserts `nextLine`'s content directly (a full grep for
@@ -551,6 +561,31 @@ running `flutter --version`, or running the Playwright/Pillow availability check
      re-grep after the widget change, not rely solely on this pre-change research).
    - Recommendation: grep `test/screens/today_screen_test.dart` for `'Next ·'` and `nextLine` as
      part of the same task that removes the parameter, not as a separate follow-up.
+
+---
+
+### Correction — this research under-counted the blast radius (added 2026-08-18)
+
+Recorded here rather than quietly fixed in the plans, because a future reader who trusts the
+"Blast Radius" section above will be wrong by roughly a factor of two.
+
+This document enumerated **6** affected tests across **two** files. `gsd-planner` found **~15**
+across **four**. What this research missed:
+
+- The entire `'LiveRowCard (D-01, Phase 23 seam)'` group in
+  `test/screens/today_row_widgets_test.dart:654-791` — **12 tests** written against the deleted API.
+  This file was not read during research at all.
+- Six live-row assertions in `test/screens/today_screen_now_state_test.dart`, including two
+  progress-bar tests and two `Next ·` tests.
+- `'live break announces itself as rest'` in that same file, which breaks for a non-obvious reason:
+  its fixture's 5-minute break lands in the **single-line tier**, which drops the
+  `RIGHT NOW — RESTING` kicker by design. That test is the whole of LIVE-01's coverage, so it needs
+  repointing rather than deleting.
+
+**Lesson for the next phase-researcher on this surface:** grepping `lib/` for consumers of a symbol
+finds the production blast radius but systematically under-counts the test blast radius, because
+widget tests exercise a widget's *constructor API* without importing the constant being deleted.
+Grep `test/` for the widget's class name too, not just for the symbol.
 
 ## Environment Availability
 

@@ -237,7 +237,8 @@ Row(
   compact tier's secondary lines — full opacity does that work, so 600 (not a heavier weight) is
   sufficient here too.
 - **Card chrome — explicit exception to the standard Card-seam margin:** `margin: EdgeInsets.zero`
-  (all four sides), `padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0)`, text
+  ~~(all four sides)~~ **VERTICALLY ONLY — corrected 2026-08-18, see PD-27-01 below**,
+  `padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0)`, text
   **vertically centered** in the `Card` via `Row`'s `crossAxisAlignment: CrossAxisAlignment.center`
   rather than pushed away from an edge by padding. This is not a new kind of exception — it is the
   **identical** move `26-UI-SPEC.md` already made for the ordinary break Compact tier ("Vertical
@@ -385,12 +386,34 @@ Reuses `26-UI-SPEC.md`'s declared 8-pt scale (`xs` 4 / `sm` 8 / `md` 16 / `lg` 2
 | (reused, Card-seam standard) | 4px top/bottom | Compact tier's Card margin — the same value every other row already uses, not a new one |
 
 **One declared exception, stated explicitly per this project's spacing-scale discipline:**
-the **single-line tier's Card margin is `0` on all four sides** — a valid point on the 8-pt scale
+the **single-line tier's Card margin is `0` vertically** — a valid point on the 8-pt scale
 (`0` is trivially a multiple of `4`), not a sub-4dp violation, and not a new kind of exception:
 it is the identical move `26-UI-SPEC.md` already made for the ordinary break Compact tier's
 vertical padding, applied here to margin instead because the smallest guaranteed slot (20dp)
 cannot spend any of its height on margin and still fit one legible text line. See "Single-line
 tier" above for the full reasoning and why the visual seam between rows survives anyway.
+
+### PD-27-01 — corrected 2026-08-18: vertical only, NOT all four sides
+
+**This document originally said `EdgeInsets.zero` "(all four sides)". That was wrong, and would
+have re-shipped a regression this project has already fixed once.** Caught by `gsd-planner` during
+Phase 27 planning and confirmed by `gsd-plan-checker`.
+
+Every word of the justification above is about *vertical* budget — a 20dp slot cannot spend height
+on margin. None of it argues for zeroing *horizontal* margin, and zeroing it is actively harmful:
+the live row is positioned `left: 0, right: 0` with **no `TimelineRowTile`**, so unlike the
+ordinary break Compact tier this paragraph analogises to, nothing else supplies its horizontal
+inset. A horizontal `0` bleeds the card to the raw viewport edge — the exact regression recorded
+in `timeline_row_tile.dart`'s own doc comment ("the live row bled to the raw screen edge"), one of
+three attempts that each broke something.
+
+**The contract is:** `EdgeInsets.only(top: 0, bottom: 0, left: kCardLeftInset, right:
+kTimelineRowInset)` — zero vertically, standard row insets horizontally. `27-02-PLAN.md` enforces
+this with a `grep -c "kCardLeftInset"` acceptance criterion.
+
+This is the general rule for both tiers, and `live_row_card.dart`'s own doc comment already states
+it: **every horizontal offset for this row must be stated on the card itself**, because it
+inherits no padding from anything.
 
 **Touch-target exception, stated explicitly:** the compact tier's Complete/Skip `IconButton`s are
 constrained to **36×36dp**, below the 44dp WCAG-recommended minimum. See "Compact tier" above for
