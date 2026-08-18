@@ -254,6 +254,18 @@ class LiveRowCard extends StatelessWidget {
               style: style,
             ),
           ),
+          // Deliberately never truncates (`27-UI-SPEC.md` "Single-line
+          // tier": only the title sacrifices characters, the countdown is
+          // the one piece of information this row can't lose). Known,
+          // accepted risk: if `remainingLabel` itself (plus a zero-width
+          // title) still exceeds the available row width, this overflows
+          // the `Row` instead of clipping gracefully — unlikely at default
+          // text scale with this app's `remainingLabel` lengths, but large
+          // accessibility text scales are explicitly out of this phase's
+          // verification scope (`27-VALIDATION.md`), so this has not been
+          // exercised there. Not a regression to fix now — a documented
+          // trade-off for whoever chases an overflow report later (IN-01,
+          // 2026-08-18).
           Text(' · $remainingLabel', maxLines: 1, style: style),
         ],
       ),
