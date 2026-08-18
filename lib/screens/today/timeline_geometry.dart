@@ -99,7 +99,7 @@ const double kFullBreakMinHeight = 88.0;
 /// `primaryContainer` fill band, contiguous rows 446–521, bridging the
 /// now-line's own ~2px interruption of the fill colour). Plus an **explicit
 /// 8px safety margin** — the upper end of this file's already-established
-/// 4–8dp range ([kLiveRowReservedHeight]'s now-deleted precedent was "224
+/// 4–8dp range (`kLiveRowReservedHeight`'s now-deleted precedent was "224
 /// measured + 8 explicit = 232.0") — chosen because the compact tier's
 /// clearance over a standard 25-minute chunk's 100px slot is generous
 /// (100 − 76 = 24px of natural slack), so the extra 4px of headroom over the
