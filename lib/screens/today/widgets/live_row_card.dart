@@ -2,19 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/schedule_notifier.dart';
+import '../timeline_geometry.dart';
 import 'timeline_row_tile.dart';
 
-/// The swelled in-place current-activity card (D-01, UI-SPEC "The live row").
+/// The live row (D-01, `27-UI-SPEC.md` "The live row's two density tiers").
 ///
 /// [kicker] and [remainingLabel] are INJECTED BY THE SCREEN — Phase 23's
 /// LIVE-01 ("RIGHT NOW — RESTING" for a running break) and LIVE-02 (countdown
 /// granularity) own what goes into them. A future agent extends the caller
 /// that builds this widget, not this widget's layout.
 ///
+/// **Phase 27 (GRID-02).** This row is duration-exact, like every other row
+/// on the timeline — it no longer swells past its clock-implied slot. Its
+/// prominence is carried entirely by `primaryContainer` fill, square
+/// corners, elevation and the now-line, none of which need extra height.
+/// [slotHeight] picks one of exactly two density tiers: `_buildCompact` at
+/// or above [kCompactLiveMinHeight], `_buildSingleLine` below it — the same
+/// slot-height-picks-the-tier rule `26-UI-SPEC.md` already uses for ordinary
+/// `ChunkCard`s.
+///
 /// This card deliberately sits at its own clock position inside the day list
 /// (D-01) and is never lifted into a hero region, a sticky bar (D-03), or a
 /// floating pill. If a future change wants one of those, it is re-opening a
 /// rejected sketch variant.
+///
+/// [kicker]/[remainingLabel] stay screen-injected, and every horizontal
+/// offset must be stated in THIS file — the screen positions this row
+/// `left: 0, right: 0` with no [TimelineRowTile], so it inherits no padding
+/// from anything.
 class LiveRowCard extends StatelessWidget {
   const LiveRowCard({
     super.key,
@@ -22,16 +37,17 @@ class LiveRowCard extends StatelessWidget {
     required this.kicker,
     required this.title,
     required this.remainingLabel,
-    required this.progress,
-    this.nextLine,
+    required this.slotHeight,
     this.showActions = true,
+    this.onTap,
   });
 
   /// The chunk this card acts on — Complete/Skip always target exactly this
   /// id (T-22-04).
   final String chunkId;
 
-  /// Uppercase kicker line, e.g. "RIGHT NOW". Screen-injected.
+  /// Uppercase kicker line, e.g. "RIGHT NOW". Screen-injected. Only the
+  /// compact tier renders it — the single-line tier has no room (GRID-02).
   final String kicker;
 
   final String title;
@@ -39,45 +55,53 @@ class LiveRowCard extends StatelessWidget {
   /// Screen-injected remaining-time copy, rendered with tabular figures.
   final String remainingLabel;
 
-  /// 0..1 fraction of the activity's window elapsed. Values outside 0..1
-  /// (an overdue chunk, a zero-duration chunk) are clamped rather than
-  /// asserted (T-22-05).
-  final double progress;
-
-  /// "Next · <title> at <time>" line. Null renders nothing.
-  final String? nextLine;
+  /// The row's clock-implied slot height in pixels — duration-exact, no
+  /// exception (GRID-01). `>= kCompactLiveMinHeight` renders the compact
+  /// tier; anything below renders the single-line tier. There is no third,
+  /// "squeezed" tier (`27-UI-SPEC.md` "The live row's two density tiers").
+  final double slotHeight;
 
   /// Complete/Skip are for work chunks only (UI-SPEC "Actions row"). False
-  /// hides both buttons entirely.
+  /// hides both buttons entirely. Only the compact tier renders them.
   final bool showActions;
+
+  /// Fires when the single-line tier's row is tapped. Ignored by the compact
+  /// tier, which has its own explicit icon actions instead. Per PD-27-06,
+  /// the screen supplies this only for an unresolved live work chunk; a live
+  /// break gets `null` in both tiers (`27-UI-SPEC.md`: "no tap target at
+  /// all").
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final clampedProgress = progress.clamp(0.0, 1.0);
+    return slotHeight >= kCompactLiveMinHeight
+        ? _buildCompact(context, theme, colorScheme)
+        : _buildSingleLine(context, theme, colorScheme);
+  }
 
-    // "Let now break the grid" (22-UI-SPEC.md "The live row", amended
-    // 2026-08-08 after UAT, then three times more as the now-line landed).
-    // The horizontal half of that treatment is gone: this row is flush with
-    // every list row at [kCardLeftInset]. It reaches further left three times
-    // and each attempt broke something — the raw viewport edge overshot every
-    // other row's right edge; a symmetric row inset still started it left of
-    // the now-line's dot, putting the dot on this card's title; and holding
-    // the cards off the dot instead left an ugly blank strip down the whole
-    // timeline. Google Calendar gives its current event no extra width either.
-    //
-    // What still marks this row: square corners, the content-driven height
-    // that lets it swell past its duration slot, primaryContainer fill, and
-    // the generous vertical margin that gives it air the list rows don't get.
-    //
-    // Every horizontal offset must be stated HERE — the screen positions this
-    // row `left: 0, right: 0` with no TimelineRowTile, so it inherits no
-    // padding. That is what made each of those three regressions possible.
+  /// The compact tier — kicker+title, two icon actions, and the
+  /// remaining-time line. Fits a standard 25-minute work chunk's 100dp slot.
+  ///
+  /// **Declared exception:** the 36×36dp Complete/Skip `IconButton`s fall
+  /// below the 44dp WCAG-recommended touch target. This is a stated trade,
+  /// not an oversight — a 100dp slot carrying a two-line title block plus a
+  /// countdown line cannot also fit two 44dp targets side by side without
+  /// either the title or the countdown losing its line
+  /// (`27-UI-SPEC.md` "Compact tier"). `27-UI-SPEC.md` requires this be
+  /// confirmed on an actual touch device during UAT before being treated as
+  /// closed; if it turns out to be a real usability problem, the fix is more
+  /// slot height (revisit `kPixelsPerMinute`), never smaller text.
+  Widget _buildCompact(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
     return Card(
       margin: const EdgeInsets.only(
-        top: 12,
-        bottom: 12,
+        top: 4,
+        bottom: 4,
         left: kCardLeftInset,
         right: kTimelineRowInset,
       ),
@@ -86,93 +110,143 @@ class LiveRowCard extends StatelessWidget {
       shadowColor: colorScheme.shadow,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              kicker.toUpperCase(),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.onPrimaryContainer.withValues(alpha: 0.72),
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        kicker.toUpperCase(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onPrimaryContainer.withValues(
+                            alpha: 0.72,
+                          ),
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                if (showActions) ...[
+                  IconButton(
+                    icon: const Icon(Icons.check_circle_outline),
+                    color: colorScheme.primary,
+                    tooltip: 'Complete',
+                    constraints: const BoxConstraints.tightFor(
+                      width: 36,
+                      height: 36,
+                    ),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () =>
+                        context.read<ScheduleNotifier>().markComplete(
+                          chunkId,
+                        ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.skip_next_outlined),
+                    color: colorScheme.error,
+                    tooltip: 'Skip',
+                    constraints: const BoxConstraints.tightFor(
+                      width: 36,
+                      height: 36,
+                    ),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () =>
+                        context.read<ScheduleNotifier>().markSkipped(chunkId),
+                  ),
+                ],
+              ],
             ),
             const SizedBox(height: 4),
             Text(
-              title,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onPrimaryContainer,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
               remainingLabel,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.onPrimaryContainer.withValues(alpha: 0.82),
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: clampedProgress,
-                minHeight: 6,
-                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
-                backgroundColor: colorScheme.onPrimaryContainer.withValues(
-                  alpha: 0.16,
-                ),
-              ),
-            ),
-            if (showActions) ...[
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Tooltip(
-                    message: 'Complete',
-                    child: FilledButton.icon(
-                      icon: const Icon(Icons.check_circle_outline),
-                      label: const Text('Complete'),
-                      onPressed: () => context
-                          .read<ScheduleNotifier>()
-                          .markComplete(chunkId),
-                      style: FilledButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Tooltip(
-                    message: 'Skip',
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.skip_next_outlined),
-                      label: const Text('Skip'),
-                      onPressed: () =>
-                          context.read<ScheduleNotifier>().markSkipped(chunkId),
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        foregroundColor: colorScheme.error,
-                        side: BorderSide(color: colorScheme.error),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            if (nextLine != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                nextLine!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onPrimaryContainer.withValues(alpha: 0.72),
-                ),
-              ),
-            ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// The single-line tier — one row of text, nothing else. Fits a 5-minute
+  /// break's 20dp slot, and anything else below [kCompactLiveMinHeight].
+  ///
+  /// Margin is zero VERTICALLY ONLY (PD-27-01) — the smallest guaranteed
+  /// slot cannot spend any of its height on margin and still leave room for
+  /// one legible text line, but zeroing the HORIZONTAL margin would bleed
+  /// this card to the raw viewport edge, since it is positioned
+  /// `left: 0, right: 0` with no [TimelineRowTile] and inherits no inset
+  /// from anything — the exact previously-shipped regression this file's
+  /// class doc comment (and `timeline_row_tile.dart`'s) records.
+  Widget _buildSingleLine(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    final style = theme.textTheme.labelMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: colorScheme.onPrimaryContainer,
+    );
+    final row = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: style,
+            ),
+          ),
+          Text(' · $remainingLabel', maxLines: 1, style: style),
+        ],
+      ),
+    );
+    return Semantics(
+      label: 'Right now: $title, $remainingLabel',
+      excludeSemantics: true,
+      button: onTap != null,
+      onTap: onTap,
+      child: Card(
+        margin: const EdgeInsets.only(
+          top: 0,
+          bottom: 0,
+          left: kCardLeftInset,
+          right: kTimelineRowInset,
+        ),
+        color: colorScheme.primaryContainer,
+        elevation: 4,
+        shadowColor: colorScheme.shadow,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        child: onTap != null ? InkWell(onTap: onTap, child: row) : row,
       ),
     );
   }
