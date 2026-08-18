@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: none
 milestone_name: milestone
 status: v1.5 shipped and archived. Phase 27 added 2026-08-18 out of post-v1.5 UAT on the Today
-stopped_at: Phase 27 planned — 4 plans verified, ready to execute
-last_updated: "2026-08-18T14:28:23.039Z"
+stopped_at: Completed 27-02-PLAN.md
+last_updated: "2026-08-18T14:39:43.116Z"
 last_activity: 2026-08-18
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-18T14:28:23.035Z
+**Last session:** 2026-08-18T14:39:43.111Z
 
 ---
 
 ## Current Position
 
 Phase: 27 — True Grid (standalone, no milestone). Executing.
-Plan: 2 of 4
+Plan: 3 of 4
 Status: v1.5 shipped and archived. Phase 27 added 2026-08-18 out of post-v1.5 UAT on the Today
 timeline; owner's call was a standalone phase rather than opening v1.6.
 Last activity: 2026-08-18
@@ -155,6 +155,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 27-01]: Deleted TimelineGeometry.liveExtraPx and kLiveRowReservedHeight outright rather than zeroing them; yFor() is now unconditionally linear — The defect was the existence of a live-row exception term, not a wrong value -- 240dp/372dp both satisfied every prior test because they all asserted yFor() against the same arithmetic the implementation performed
 - [Phase 27-01]: kCompactLiveMinHeight ships as an explicitly UNMEASURED PLACEHOLDER (88.0, PD-27-05) — Wave 2 needs a constant to compile the density-tier switch against; plan 27-04 measures the real value in a real browser and replaces both the number and the doc comment before the phase closes
 - [Phase 27-01]: Fixed a pre-existing today_screen_test.dart test by invoking ChunkCard.onTap directly instead of a geometric tester.tap() — This plan's own intermediate_state_notice predicts LiveRowCard now overlaps the row beneath it (today_screen.dart's height fix is out of scope, reserved for plan 27-02); a geometric tap on the row below the live row landed on the overlapping live card instead of the intended row
+- [Phase ?]: LiveRowCard's Complete/Skip IconButtons use IconButton.styleFrom(tapTargetSize: shrinkWrap) instead of visualDensity.compact to actually measure 36x36 (Material 3's IconButton always wraps a separate tap-target padding layer that constraints alone can't override)
+- [Phase ?]: PD-27-06's live-row tap gate duplicates _buildChunkCard's goal lookups inline at the _buildLiveRow call site rather than sharing a closure, per the plan's explicit instruction
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -238,7 +240,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-10
-Stopped at: Phase 27 planned — 4 plans verified, ready to execute
+Stopped at: Completed 27-02-PLAN.md
 Resume at: `/gsd-plan-phase 26`
 
 ## Performance Metrics
@@ -287,3 +289,4 @@ Resume at: `/gsd-plan-phase 26`
 | Phase 26-the-day-has-a-shape P09 | ~25min | 3 tasks | 4 files |
 | Phase 26 P10 | 90min | 4 tasks | 7 files |
 | Phase 27-true-grid P01 | ~20min | 2 tasks | 3 files |
+| Phase 27 P02 | ~45min | 3 tasks | 3 files |

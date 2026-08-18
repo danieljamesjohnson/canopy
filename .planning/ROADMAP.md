@@ -197,12 +197,12 @@ work we would otherwise write.
 **Requirements:** GRID-01 (uniform hour spacing), GRID-02 (live-row prominence without variable
 height)
 **Depends on:** Phase 26 (The Day Has a Shape) — owns `TimelineGeometry` and the now-line
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 
 - [x] 27-01-PLAN.md — Geometry: delete the `liveExtraPx` term, add the equidistance test (proven RED first)
-- [ ] 27-02-PLAN.md — `LiveRowCard`'s two density tiers; the live row joins the grid
+- [x] 27-02-PLAN.md — `LiveRowCard`'s two density tiers; the live row joins the grid
 - [ ] 27-03-PLAN.md — Repair the screen-level live-row assertions the compaction breaks
 - [ ] 27-04-PLAN.md — Measure `kCompactLiveMinHeight` in a real browser; prove `UNIFORM`; UAT
 
@@ -229,4 +229,4 @@ Plans:
 | 19. Energy Valence | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21-26 (Right Now) | v1.5 | 28/28 | Complete   | 2026-08-14 |
-| 27. True Grid | — (standalone) | 1/4 | In Progress|  |
+| 27. True Grid | — (standalone) | 2/4 | In Progress|  |
