@@ -499,10 +499,13 @@ void main() {
       (tester) async {
         await pumpDay(tester);
 
-        // Exact match: 'Reading' is also a substring of the live row's
-        // "Next · Reading at 10:50 AM" line, so a containing-text finder
-        // would be ambiguous. Scroll it into view first — the default test
-        // viewport is shorter than the whole day's row list.
+        // Exact match, for stability rather than ambiguity: the live row's
+        // line naming the upcoming chunk — the reason an exact match used to
+        // be required here — was deleted along with the rest of the live
+        // row's inline "next" copy (Phase 27, GRID-02); nothing else in this
+        // fixture renders 'Reading' as a substring today. Scroll it into
+        // view first — the default test viewport is shorter than the whole
+        // day's row list.
         await tester.ensureVisible(find.text('Reading'));
 
         // Phase 27 (GRID-01) intermediate state, per 27-01-PLAN.md's
@@ -720,12 +723,105 @@ void main() {
 
       // GRID-01 (Phase 27, PD-27-07): the live-row swell test that used to
       // live here ("renders taller than its duration-implied slot, capped
-      // at a fixed reserved height") is deleted, not rewritten — that
+      // at a fixed reserved height") was deleted, not rewritten — that
       // behaviour is exactly the defect this phase removes. Its positive
-      // replacement (the live row's rendered slot is duration-exact, same
-      // as every other row) belongs in plan 27-03, once
-      // `_buildLiveRow`/`LiveRowCard` actually get a `slotHeight` to render
-      // duration-exact against; asserting it here would be premature.
+      // replacement lands here, now that `_buildLiveRow`/`LiveRowCard`
+      // actually have a `slotHeight` to render duration-exact against.
+
+      testWidgets(
+        "GRID-02: the live row's rendered slot is duration-exact, not "
+        'swelled (single-line tier)',
+        (tester) async {
+          await pumpDay(tester);
+
+          // c3 (10:45-10:50, live at 10:47 in this fixture) is a 5-minute
+          // chunk — 20dp, below kCompactLiveMinHeight, so it renders the
+          // single-line tier (no kicker text).
+          //
+          // Measure the ClipRect, NOT the LiveRowCard itself: OverflowBox
+          // deliberately lets the card lay out at its natural height, so
+          // getSize(find.byType(LiveRowCard)) would report the card's
+          // content height, not its slot — asserting on that would be
+          // measuring the placeholder font and would be worthless
+          // (27-VALIDATION.md). The ClipRect is the slot, following the same
+          // find.ancestor shape the other slot-measurement tests in this
+          // group already use.
+          final liveClipRect = find
+              .ancestor(
+                of: find.byType(LiveRowCard),
+                matching: find.byType(ClipRect),
+              )
+              .first;
+          expect(tester.getSize(liveClipRect).height, 5 * kPixelsPerMinute);
+          expect(
+            find.descendant(
+              of: find.byType(LiveRowCard),
+              matching: find.textContaining('RIGHT NOW'),
+            ),
+            findsNothing,
+            reason:
+                'below kCompactLiveMinHeight the single-line tier has no '
+                'kicker',
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        "GRID-02: the live row's rendered slot is duration-exact, not "
+        'swelled (compact tier)',
+        (tester) async {
+          // Mirrors CAL-02's twoChunkFixture (w1: 9:00-9:25, 25 minutes)
+          // inline — that fixture is scoped to the sibling CAL-02 group
+          // below and not reachable from here.
+          final schedule = DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'w1',
+                syntheticStartMinutes: 540, // 9:00
+                durationMinutes: 25,
+                rationale: 'Deep work',
+              ),
+              _workChunk(
+                id: 'w2',
+                syntheticStartMinutes: 600, // 10:00
+                durationMinutes: 25,
+                rationale: 'Reading',
+              ),
+            ],
+          );
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+            now: () => DateTime(2026, 8, 7, 9, 12), // inside w1's window
+          );
+
+          // w1 is a 25-minute chunk, live at 9:12 — 100dp, at/above
+          // kCompactLiveMinHeight, so it renders the compact tier (kicker
+          // text present). Together with the single-line case above, this is
+          // the screen-level proof that tier selection is driven by real
+          // geometry rather than a widget-test-only slotHeight argument —
+          // the unit tests in plan 27-02 pass slotHeight directly and
+          // therefore cannot prove the wiring.
+          final liveClipRect = find
+              .ancestor(
+                of: find.byType(LiveRowCard),
+                matching: find.byType(ClipRect),
+              )
+              .first;
+          expect(tester.getSize(liveClipRect).height, 25 * kPixelsPerMinute);
+          expect(
+            find.descendant(
+              of: find.byType(LiveRowCard),
+              matching: find.textContaining('RIGHT NOW'),
+            ),
+            findsOneWidget,
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
 
       testWidgets(
         'a 5-minute short break slot measures exactly 5 * kPixelsPerMinute',
@@ -1138,9 +1234,16 @@ void main() {
           // non-live) also renders its own Complete button in its own
           // ChunkCard further down the day — an unscoped finder would match
           // both.
+          //
+          // byTooltip, not widgetWithText(FilledButton, ...): the live row's
+          // compact tier renders Complete/Skip as bare IconButtons with a
+          // Tooltip, not the shipped card's labelled FilledButton (GRID-02).
+          // w1 is 25 minutes, so at 100dp the compact tier renders and the
+          // icon button exists — this finder now silently depends on the
+          // fixture clearing kCompactLiveMinHeight.
           final completeButton = find.descendant(
             of: find.byType(LiveRowCard),
-            matching: find.widgetWithText(FilledButton, 'Complete'),
+            matching: find.byTooltip('Complete'),
           );
           await tester.ensureVisible(completeButton);
           await tester.tap(completeButton);
