@@ -740,25 +740,49 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
             child: SizedBox.shrink(),
           );
         }
+        // Every row's slot height is geometry.heightFor(...) and nothing
+        // else (D-02/GRID-01) — no floor, no ceiling, no "cap a huge gap"
+        // shortcut, and (Phase 27) no exception for the live row either: it
+        // is duration-exact like every other row now.
+        final slot = geometry.heightFor(start, chunk.durationMinutes);
         if (isLive) {
-          // NO height: the live row swells to its natural size within
-          // TimelineGeometry's reserved liveExtraPx (PD-2/PD-10) — every
-          // other row's slot is duration-exact, but this is CAL-01's one
-          // named exception ("let now break the grid," carried forward
-          // unchanged from Phase 22/23). Deliberately NOT wrapped in
-          // TimelineRowTile — it spans the full content width instead of
-          // reserving the fixed gutter column every other row shares. Its
-          // start time moves into the kicker (see _liveKicker).
+          // PD-10: ClipRect + OverflowBox is the same safety net the
+          // non-live arm below uses (not a min/max clamp) — the card lays
+          // out at its natural height (no RenderFlex overflow even for a
+          // pathological short live chunk), ClipRect guarantees nothing
+          // paints outside the slot. LiveRowCard picks its own density tier
+          // from the slot height it is handed, exactly as ChunkCardDensity
+          // is picked below.
+          //
+          // Deliberately NOT wrapped in TimelineRowTile — it spans the full
+          // content width instead of reserving the fixed gutter column every
+          // other row shares, and restates its own horizontal insets
+          // internally (kCardLeftInset/kTimelineRowInset). Adding
+          // TimelineRowTile here would double that inset — a documented,
+          // previously-shipped regression class (timeline_row_tile.dart doc
+          // comment). This is the one difference from the non-live arm below
+          // that a future reader may otherwise "fix" — don't.
           return Positioned(
             top: geometry.yFor(start),
             left: 0,
             right: 0,
-            child: _buildLiveRow(context, chunk, nowState, secondsRemaining),
+            height: slot,
+            child: ClipRect(
+              child: OverflowBox(
+                alignment: Alignment.topCenter,
+                minHeight: 0,
+                maxHeight: double.infinity,
+                child: _buildLiveRow(
+                  context,
+                  chunk,
+                  nowState,
+                  secondsRemaining,
+                  slot,
+                ),
+              ),
+            ),
           );
         }
-        // Every non-live slot height is geometry.heightFor(...) and nothing
-        // else (D-02) — no floor, no ceiling, no "cap a huge gap" shortcut.
-        final slot = geometry.heightFor(start, chunk.durationMinutes);
         final isBreak =
             chunk.chunkType == ChunkType.shortBreak ||
             chunk.chunkType == ChunkType.longBreak;
@@ -870,28 +894,25 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     return rawSecondsLeft.clamp(0, current.durationMinutes * 60);
   }
 
-  /// Builds the swelled in-place live row (D-01). The kicker names a
-  /// running break as "RIGHT NOW — RESTING" (LIVE-01). [secondsRemaining] is
+  /// Builds the live row (D-01, GRID-02). The kicker names a running break
+  /// as "RIGHT NOW — RESTING" (LIVE-01). [secondsRemaining] is
   /// [_liveSecondsRemaining]'s output, threaded down from build() so the
-  /// countdown is computed exactly once (P-5).
+  /// countdown is computed exactly once (P-5). [slotHeight] is this row's
+  /// duration-exact slot height, threaded straight through to
+  /// [LiveRowCard.slotHeight] so it can pick its own density tier — this row
+  /// no longer swells past it.
   Widget _buildLiveRow(
     BuildContext context,
     ScheduledChunk chunk,
     NowState nowState,
     int? secondsRemaining,
+    double slotHeight,
   ) {
     final title = _liveTitle(context, chunk);
     final start = chunk.displayStartMinutes;
     final end = start != null ? start + chunk.durationMinutes : null;
 
-    final ScheduledChunk? nextChunk = switch (nowState) {
-      Active(:final next) => next,
-      Overdue(:final next) => next,
-      _ => null,
-    };
-
     String remainingLabel;
-    double progress;
     if (nowState is Active &&
         start != null &&
         end != null &&
@@ -903,37 +924,46 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         remainingLabel =
             '${secondsRemaining}s left · until ${formatMinutes(end)}';
       }
-      progress = chunk.durationMinutes == 0
-          ? 1.0
-          : 1 - secondsRemaining / (chunk.durationMinutes * 60);
     } else if (start != null && end != null) {
       // Overdue — the old "now" card's existing plain time-range copy.
       // The Overdue branch deliberately shows the plain window range and no
       // countdown (LIVE-02 does not ask it to); do NOT invent "behind"
       // wording here (Copywriting Contract).
       remainingLabel = formatTimeRange(start, end);
-      progress = 1.0;
     } else {
       remainingLabel = '${chunk.durationMinutes} min';
-      progress = 0.0;
     }
 
-    String? nextLine;
-    if (nextChunk != null && nextChunk.displayStartMinutes != null) {
-      final nextTitle = _chunkTitle(context, nextChunk);
-      nextLine =
-          'Next · $nextTitle at '
-          '${formatMinutes(nextChunk.displayStartMinutes!)}';
-    }
+    // PD-27-06: the tap handler is non-null only for an unresolved live WORK
+    // chunk — mirroring the onTap gate _buildChunkCard applies. Tier
+    // selection lives in LiveRowCard itself, so this screen cannot know
+    // which tier will render; the compact tier has explicit icon buttons and
+    // deliberately ignores onTap, and a live BREAK gets onTap: null in both
+    // tiers (27-UI-SPEC.md: "no tap target at all").
+    final goalColor = _lookupGoalColor(context, chunk);
+    final goalName = _lookupGoalName(context, chunk);
+    final displayRationale = _toDisplayRationale(chunk.rationale);
+    final onTap =
+        chunk.chunkType == ChunkType.work &&
+            !chunk.isCompleted &&
+            !chunk.isSkipped
+        ? () => _openDetailSheet(
+            context,
+            chunk,
+            goalColor,
+            goalName,
+            displayRationale,
+          )
+        : null;
 
     return LiveRowCard(
       chunkId: chunk.id,
       kicker: _liveKicker(chunk),
       title: title,
       remainingLabel: remainingLabel,
-      progress: progress,
-      nextLine: nextLine,
+      slotHeight: slotHeight,
       showActions: chunk.chunkType == ChunkType.work,
+      onTap: onTap,
     );
   }
 
@@ -1153,8 +1183,14 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     // sampled above — never a second clock read (T-26-04). firstStart/
     // lastEnd span every chunk with a clock position; the live chunk's
     // bounds mirror timeline.dart's own liveId derivation (Active and
-    // Overdue both count as "live"), so TimelineGeometry's liveExtraPx
-    // exception applies consistently with ChunkRow.isLive above.
+    // Overdue both count as "live"). liveStartMinutes/liveEndMinutes are
+    // still threaded into TimelineGeometry.forDay below even though GRID-01
+    // (Phase 27) deleted the yFor() exception that used to consume them —
+    // TimelineGeometry retains them as the documented source for a possible
+    // future now-line time chip's live-span predicate (see this file's
+    // NowLineOverlay comment below), and this derivation must keep
+    // mirroring timeline.dart's liveId so the two never disagree about which
+    // chunk is live.
     int? firstStartMinutes;
     int? lastEndMinutes;
     for (final chunk in schedule.chunks) {
