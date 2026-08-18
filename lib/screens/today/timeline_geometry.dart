@@ -55,62 +55,6 @@ import '../../utils/time_format.dart';
 /// this and [kFullTierMinHeight] together.
 const double kPixelsPerMinute = 4.0;
 
-/// Fixed reserved pixel height for the live row's card (CAL-01's one named
-/// exception — "let now break the grid," carried forward unchanged from
-/// `LiveRowCard`, see `26-UI-SPEC.md` "The live row exception").
-///
-/// **G-02 (26-08-PLAN.md) — REAL-BROWSER measurement, 2026-08-11, 430px
-/// viewport.** The prior `240.0` was derived from a `flutter test` pump
-/// (PD-2 below) — a placeholder-font harness measurement, exactly the class
-/// of quantity `26-VALIDATION.md` routes to the manual-only gate. Measured
-/// instead in a real GPU-backed browser (headless Chromium,
-/// `--use-gl=swiftshader`, debug build served via `tools/serve-uat.py`),
-/// screenshot-pixel-counted against `LiveRowCard`'s `primaryContainer` fill:
-///
-/// - **Work variant (the tallest — carries the Complete/Skip action row;
-///   this is what the reservation is sized against)**: 200px of
-///   `primaryContainer` fill + this card's own 24px vertical margin
-///   (`EdgeInsets.symmetric(vertical: 12)`, itself part of the natural size
-///   `Positioned` lays out against since it has no `height:` constraint) =
-///   **224px natural height**.
-/// - **Break variant (for contrast only — Phase 23's LIVE-01 omits the
-///   action row for breaks, so this is shorter)**: 158px fill + 24px margin
-///   = **182px natural height**. Comfortably under the reservation below;
-///   not what the reservation is sized against.
-///
-/// `232.0` = 224 (measured work-variant natural height) + an explicit
-/// **8px margin** (the tight end of the plan's stated 8–16px range) to
-/// absorb minor cross-renderer/DPI anti-aliasing variance. This margin is
-/// NOT enough to fully absorb a goal title wrapping to a second
-/// `headlineSmall` line (~28–32px) — that remains a documented residual
-/// risk, not a claim this constant covers.
-///
-/// **Do NOT re-derive this from `flutter test`.** Its placeholder font has
-/// no real Roboto metrics and inflates/distorts measured glyph geometry —
-/// the same failure mode that took `kGutterWidth` 46 → 75 (harness) → 52
-/// (real-browser correction), and the reason the harness-derived `230.0`
-/// below undershot what a real browser draws by only a little rather than a
-/// lot, which is itself not something to trust without re-measuring.
-///
-/// **What would invalidate this value:** any change to `LiveRowCard`'s
-/// children (kicker/title/remaining/progress/actions/next-line), its
-/// typography (`theme.textTheme.headlineSmall`/`bodyMedium`/`bodySmall`), or
-/// whether the action row renders for work chunks.
-///
-/// ---
-///
-/// **PD-2 (superseded 2026-08-11, kept for history).** `LiveRowCard` (kicker
-/// + title + remaining + progress + actions + next-line) measures 230.0px
-/// (measured 2026-08-10 via a `flutter test` pump — the UI-SPEC's
-/// "200–220px" estimate was low). `240.0` reserved a small margin above
-/// that measurement. This is a fixed estimate, not a two-pass
-/// measure-then-`setState` flow (`26-RESEARCH.md` Pitfall 3, option (a)) —
-/// rejected because a `GlobalKey`/`RenderBox` measure-then-correct flow
-/// buys ~10px of precision at the cost of a correction frame and a whole
-/// class of one-frame-snap bugs. **That mechanism choice still stands** —
-/// only the number changed (G-02, above).
-const double kLiveRowReservedHeight = 232.0;
-
 /// Full-tier density threshold for a work-chunk row, expressed in pixels
 /// (PD-3), not minutes.
 ///
@@ -133,6 +77,32 @@ const double kFullTierMinHeight = 88.0;
 /// slack, expressed in pixel slot height rather than minutes, for the same
 /// rot-resistance reason as [kFullTierMinHeight].
 const double kFullBreakMinHeight = 88.0;
+
+/// **UNMEASURED PLACEHOLDER (PD-27-05).** The slot height at or above which
+/// `LiveRowCard`'s compact tier fits; below it the single-line tier is used
+/// (there is no third tier).
+///
+/// `88.0` is `27-UI-SPEC.md`'s arithmetic estimate — the spike's ~90dp
+/// measurement minus ~10dp of dropped progress bar, plus ~4dp of corrected
+/// margin, plus safety. It is **not a measurement**. Plan 27-04 replaces it
+/// with a real-browser number once the compact tier actually exists to
+/// measure.
+///
+/// **Do not derive this from `flutter test`.** This file already carries a
+/// three-strikes history of constants that were wrong when set from that
+/// harness's placeholder-font measurements: `kGutterWidth` (`timeline_row_
+/// tile.dart`) went 46 → 75 → 52; [kPixelsPerMinute] went 4.0 → 5.5 → 4.0;
+/// the live row's now-deleted reserved-height constant went 240 → 232
+/// before this phase removed it outright. A fourth would be a pattern, not
+/// a one-off.
+///
+/// [kFullTierMinHeight] currently holds the identical `88.0` value. That
+/// coincidence is by construction (both were re-derived from the same
+/// 2026-08-18 card-compaction estimate), not accident — plan 27-04 must
+/// decide explicitly, once the real number is known, whether to keep these
+/// two constants separate or collapse them into one (`27-RESEARCH.md`
+/// Pitfall 6).
+const double kCompactLiveMinHeight = 88.0;
 
 /// The now-line overlay's own box height — the 2dp rule and its time chip
 /// are vertically centred inside a box this tall, so they land exactly on
@@ -195,7 +165,6 @@ class TimelineGeometry {
     required this.rangeEnd,
     this.liveStartMinutes,
     this.liveEndMinutes,
-    this.liveExtraPx = 0.0,
   });
 
   /// The first minute rendered — always a whole-hour boundary at or before
@@ -207,20 +176,29 @@ class TimelineGeometry {
   final int rangeEnd;
 
   /// The live chunk's start minute, or null when there is no live row.
+  ///
+  /// **Phase 27 (GRID-01).** No code reads this field today — it has no
+  /// consumer. It is retained anyway as the documented source a future
+  /// now-line time chip's live-span predicate should read from
+  /// (`today_screen.dart` ~1385-1397 names `liveStartMinutes`/
+  /// `liveEndMinutes` by name as where to find it if that chip is ever
+  /// restored), NOT because the geometry currently does anything with the
+  /// live span. The old justification — "load-bearing for G-03 now-line-chip
+  /// suppression" — is stale: that chip was retired in Phase 26
+  /// (`today_screen.dart` ~1385-1397, "the `showChip` argument ... the chip
+  /// is gone") and `grep -rn "liveStartMinutes" lib/` shows no reader.
   final int? liveStartMinutes;
 
   /// The live chunk's end minute, or null when there is no live row.
+  ///
+  /// See [liveStartMinutes]'s doc comment — same retained-for-a-future-
+  /// consumer rationale, same no-current-reader fact.
   final int? liveEndMinutes;
 
-  /// Extra pixels the live row's card claims beyond its duration-implied
-  /// slot height — folded into every consumer (rows, hour axis, now-line,
-  /// scroll target) at and after [liveEndMinutes], per
-  /// `26-UI-SPEC.md` "The live row exception."
-  final double liveExtraPx;
-
-  /// Builds the day's rendered range and live-row exception from raw
-  /// schedule/clock data, per `26-UI-SPEC.md` "Scroll-on-open & the
-  /// rendered vertical range."
+  /// Builds the day's rendered range from raw schedule/clock data, per
+  /// `26-UI-SPEC.md` "Scroll-on-open & the rendered vertical range." (Phase
+  /// 27, GRID-01: no longer also builds a live-row exception — that
+  /// mechanism is deleted.)
   ///
   /// `rangeStart`/`rangeEnd` are defined so "now" is always inside the
   /// rendered range, by construction: each bound is a `min`/`max` against
@@ -250,20 +228,11 @@ class TimelineGeometry {
       rangeEnd = rangeStart + 60;
     }
 
-    double liveExtraPx = 0.0;
-    if (liveStartMinutes != null && liveEndMinutes != null) {
-      final liveDurationPx =
-          (liveEndMinutes - liveStartMinutes) * kPixelsPerMinute;
-      final extra = kLiveRowReservedHeight - liveDurationPx;
-      liveExtraPx = extra > 0.0 ? extra : 0.0;
-    }
-
     return TimelineGeometry(
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
       liveStartMinutes: liveStartMinutes,
       liveEndMinutes: liveEndMinutes,
-      liveExtraPx: liveExtraPx,
     );
   }
 
@@ -275,20 +244,21 @@ class TimelineGeometry {
   ///
   /// Clamps [minutes] into `[rangeStart, rangeEnd]` first — defensive:
   /// guarantees the pre-padding offset is never negative and never past
-  /// the pre-padding total. Adds [liveExtraPx] once the clamped minute
-  /// reaches or passes [liveEndMinutes]. The `>=` (not `>`) is load-bearing:
-  /// it makes the live chunk's own slot exactly [kLiveRowReservedHeight]
-  /// tall, and makes the row starting at the live chunk's end minute begin
-  /// immediately below the swelled card rather than underneath it.
+  /// the pre-padding total.
+  ///
+  /// **GRID-01 (Phase 27).** The mapping is unconditionally linear — no
+  /// branch, no exception for the live row. It used to add a fixed pixel
+  /// amount once the clamped minute reached or passed [liveEndMinutes], so
+  /// exactly one hour per day (whichever one a chunk was live in) rendered
+  /// far taller than every other hour's plain `60 * kPixelsPerMinute` — a
+  /// defect no existing test could see, because every prior test asserted
+  /// `yFor()` against this same arithmetic. That term is deleted, not
+  /// zeroed; see git history / `27-01-PLAN.md` for the removed mechanism.
   double yFor(int minutes) {
     final clamped = minutes < rangeStart
         ? rangeStart
         : (minutes > rangeEnd ? rangeEnd : minutes);
-    var offset = (clamped - rangeStart) * kPixelsPerMinute;
-    if (liveEndMinutes != null && clamped >= liveEndMinutes!) {
-      offset += liveExtraPx;
-    }
-    return offset + kTimelineEdgePadding;
+    return (clamped - rangeStart) * kPixelsPerMinute + kTimelineEdgePadding;
   }
 
   /// The pixel height of a row spanning `[startMinutes, startMinutes +
@@ -297,8 +267,9 @@ class TimelineGeometry {
   ///
   /// [kTimelineEdgePadding] cancels out of this difference (both [yFor]
   /// calls add the same constant), so a row's height stays exactly
-  /// duration-implied (or [kLiveRowReservedHeight] for the live row) —
-  /// unaffected by the edge padding, as it must be (D-02).
+  /// duration-implied — unaffected by the edge padding, as it must be
+  /// (D-02). This includes the live row (GRID-01, Phase 27): every row is
+  /// duration-exact now, with no exception.
   double heightFor(int startMinutes, int durationMinutes) {
     final height = yFor(startMinutes + durationMinutes) - yFor(startMinutes);
     return height < 0.0 ? 0.0 : height;

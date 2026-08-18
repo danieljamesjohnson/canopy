@@ -407,8 +407,8 @@ void main() {
       );
     });
 
-    test('the live row exception: liveExtraPx == kLiveRowReservedHeight - '
-        '137.5', () {
+    test("a row starting at liveEndMinutes has a duration-exact bottom edge "
+        '(GRID-01: no more live-row swell)', () {
       final geometry = TimelineGeometry.forDay(
         nowMinutes: 550,
         firstStartMinutes: 540,
@@ -417,60 +417,10 @@ void main() {
         liveEndMinutes: 565,
       );
       expect(
-        geometry.liveExtraPx,
-        kLiveRowReservedHeight - 25 * kPixelsPerMinute,
+        geometry.yFor(565),
+        geometry.yFor(540) + geometry.heightFor(540, 25),
       );
-    });
-
-    test('the live row exception: heightFor(liveStart, 25) equals '
-        'kLiveRowReservedHeight', () {
-      final geometry = TimelineGeometry.forDay(
-        nowMinutes: 550,
-        firstStartMinutes: 540,
-        lastEndMinutes: 1020,
-        liveStartMinutes: 540,
-        liveEndMinutes: 565,
-      );
-      expect(geometry.heightFor(540, 25), kLiveRowReservedHeight);
-    });
-
-    test('a row starting at liveEndMinutes has yFor equal to the live row\'s '
-        'bottom edge', () {
-      final geometry = TimelineGeometry.forDay(
-        nowMinutes: 550,
-        firstStartMinutes: 540,
-        lastEndMinutes: 1020,
-        liveStartMinutes: 540,
-        liveEndMinutes: 565,
-      );
-      expect(geometry.yFor(565), geometry.yFor(540) + kLiveRowReservedHeight);
-    });
-
-    test(
-        'G-02: live-row reservation is tight against the real-browser '
-        'measurement', () {
-      // Real-browser (headless Chromium, 430px viewport, 2026-08-11)
-      // work-variant LiveRowCard natural height: 200px primaryContainer
-      // fill + 24px own vertical margin = 224px. See timeline_geometry.dart
-      // kLiveRowReservedHeight's doc comment for the full measurement.
-      const measuredWorkVariantHeight = 224.0;
-      const explicitMargin = 8.0;
-
-      // Never clips: the reservation must be able to hold the tallest
-      // (work) variant as measured.
-      expect(
-        kLiveRowReservedHeight,
-        greaterThanOrEqualTo(measuredWorkVariantHeight),
-      );
-
-      // Stays tight: a future regression back toward a loose 240-style
-      // estimate (i.e. a margin bigger than the plan's stated 8-16px
-      // range) also fails this test.
-      expect(
-        kLiveRowReservedHeight,
-        lessThanOrEqualTo(measuredWorkVariantHeight + 16.0),
-      );
-      expect(kLiveRowReservedHeight, measuredWorkVariantHeight + explicitMargin);
+      expect(geometry.heightFor(540, 25), 25 * kPixelsPerMinute);
     });
 
     test(
@@ -493,9 +443,11 @@ void main() {
       // A 25-minute live chunk (540..565) whose end minute falls strictly
       // inside the 540..600 hour — the exact configuration the defect
       // corrupts. Ground truth is 60 * kPixelsPerMinute and nothing else:
-      // this must NOT re-derive liveExtraPx or kLiveRowReservedHeight, or
-      // it inherits the same self-referential blindness the other tests in
-      // this group have (27-VALIDATION.md "The load-bearing split").
+      // this must NOT re-derive any implementation-internal quantity (the
+      // per-minute-scale offset the live row used to add, or the fixed
+      // height it used to add it toward), or it inherits the same
+      // self-referential blindness the other tests in this group have
+      // (27-VALIDATION.md "The load-bearing split").
       final geometry = TimelineGeometry.forDay(
         nowMinutes: 550,
         firstStartMinutes: 480,
