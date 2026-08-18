@@ -16,6 +16,15 @@ import '../../../utils/time_format.dart';
 /// stretch renders at its true duration-proportional height — a gap row can
 /// be many hundreds of pixels tall — so a label pinned to the very top of
 /// that void would be worse than one sitting where a scrolling eye lands.
+///
+/// **UAT 2026-08-18:** centring the label was not enough. D-05 says free time
+/// is *named*, and it was — but a lone label adrift in 200+dp of background
+/// still read as "a weird long stretch of white space", because nothing
+/// marked where the free region began or ended. It now draws the same dashed
+/// outline a break row uses, filling its whole allocated height, so the free
+/// stretch is a bounded region on the timeline rather than an absence with a
+/// caption. Same visual language as breaks, deliberately: both are "no chunk
+/// scheduled here", and the label distinguishes them.
 class FreeTimeRow extends StatelessWidget {
   const FreeTimeRow.until({super.key, required int untilMinutes})
     : _untilMinutes = untilMinutes,
@@ -38,55 +47,76 @@ class FreeTimeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final ruleColor = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
 
-    return Center(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 2,
-            height: 16,
-            child: CustomPaint(painter: _DottedRulePainter(color: ruleColor)),
-          ),
-          const SizedBox(width: 8),
-          Text(
+    // Fills the parent's allocated height (the gap's true
+    // duration-proportional extent) rather than sizing to the label, so the
+    // outline marks where the free stretch starts and stops. `margin` matches
+    // the break row's so a free region and a break line up on the timeline.
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      width: double.infinity,
+      child: CustomPaint(
+        painter: _DashedRegionPainter(
+          color: theme.colorScheme.outlineVariant,
+        ),
+        child: Center(
+          child: Text(
             _resolveLabel(),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// File-private ~2dp-wide dotted vertical rule for [FreeTimeRow].
-class _DottedRulePainter extends CustomPainter {
-  const _DottedRulePainter({required this.color});
+/// File-private dashed rounded outline for [FreeTimeRow].
+///
+/// Visually matches `_DashedBorderPainter` in `chunk_card.dart` (same dash
+/// rhythm and `outlineVariant` stroke) but is deliberately duplicated rather
+/// than shared, following the `_PriorityChip` / `_ValenceBadge` precedent in
+/// this codebase: that painter is file-private to the schedule widget and
+/// carries break-specific stroke-width switching this row does not want.
+class _DashedRegionPainter extends CustomPainter {
+  const _DashedRegionPainter({required this.color});
 
   final Color color;
+
+  static const double _radius = 8.0;
+  static const double _dashWidth = 2.0;
+  static const double _dashGap = 2.0;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
-      ..strokeWidth = size.width
-      ..strokeCap = StrokeCap.round;
-    const dotSpacing = 4.0;
-    var y = 0.0;
-    while (y < size.height) {
-      canvas.drawLine(
-        Offset(size.width / 2, y),
-        Offset(size.width / 2, y + 2),
-        paint,
-      );
-      y += dotSpacing;
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      const Radius.circular(_radius),
+    );
+    final path = Path()..addRRect(rrect);
+
+    // Walk the outline and stamp dashes along it, so the rhythm stays even
+    // around the corners instead of breaking at each edge.
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = distance + _dashWidth;
+        canvas.drawPath(
+          metric.extractPath(distance, next.clamp(0.0, metric.length)),
+          paint,
+        );
+        distance = next + _dashGap;
+      }
     }
   }
 
   @override
-  bool shouldRepaint(covariant _DottedRulePainter oldDelegate) =>
+  bool shouldRepaint(covariant _DashedRegionPainter oldDelegate) =>
       oldDelegate.color != color;
 }

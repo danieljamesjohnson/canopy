@@ -337,12 +337,26 @@ class _WorkChunkContent extends StatelessWidget {
             side: BorderSide(color: theme.colorScheme.outlineVariant),
           );
 
-    // Compact tier tightens vertical padding (12 -> 4) to fit a single-line
-    // title inside a small duration-sized slot (D-02: the box is never
-    // inflated to make room — only its content's padding changes).
-    final contentPadding = density == ChunkCardDensity.compact
-        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 4)
-        : const EdgeInsets.symmetric(horizontal: 12, vertical: 12);
+    // Vertical padding tightens as the tier gets denser (D-02: the box is
+    // never inflated to make room — only its content's padding changes).
+    // `full` sits at 8 rather than `detailed`'s 12 for the same reason it
+    // puts the time on the title line: it is the tier laid out against a
+    // duration-proportional slot, so every dp here is a dp kPixelsPerMinute
+    // must pay for on every row of the day.
+    final contentPadding = switch (density) {
+      ChunkCardDensity.compact => const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 4,
+      ),
+      ChunkCardDensity.full => const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 8,
+      ),
+      ChunkCardDensity.detailed => const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 12,
+      ),
+    };
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -470,6 +484,32 @@ class _WorkChunkContent extends StatelessWidget {
     bool isResolved, {
     List<Widget> extras = const [],
   }) {
+    // SCHED-01: clock-time range, or a duration fallback — gated on
+    // showStartTime so the time gutter (D-06) doesn't duplicate it.
+    final timeText = chunk.displayStartMinutes != null && showStartTime
+        ? formatTimeRange(
+            chunk.displayStartMinutes!,
+            chunk.displayStartMinutes! + chunk.durationMinutes,
+          )
+        : '${chunk.durationMinutes} min';
+    final titleStyle = theme.textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+      decoration: isResolved ? TextDecoration.lineThrough : null,
+    );
+    final timeStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+
+    // `full` puts the time on the title's own line; `detailed` stacks it
+    // underneath. This is the one place the two tiers may diverge in the
+    // shared shell (WR-02 otherwise routes differences through `extras`),
+    // because it is a height decision, not a content one: `full` is the tier
+    // laid out against a duration-proportional slot, so ~18dp of stacked
+    // second line is 18dp that kPixelsPerMinute has to pay for on EVERY row.
+    // `detailed` is used by the schedule screen, which is a plain list with
+    // no such budget, so it keeps the roomier stack.
+    final isFull = density == ChunkCardDensity.full;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -478,47 +518,36 @@ class _WorkChunkContent extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _titleText,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      decoration: isResolved
-                          ? TextDecoration.lineThrough
-                          : null,
+              child: isFull
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _titleText,
+                            style: titleStyle,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(timeText, style: timeStyle),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _titleText,
+                          style: titleStyle,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(timeText, style: timeStyle),
+                        ...extras,
+                      ],
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  // SCHED-01: Clock-time range or duration
-                  // fallback — gated on showStartTime so the
-                  // 46dp gutter (D-06) doesn't duplicate it.
-                  if (chunk.displayStartMinutes != null &&
-                      showStartTime) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      formatTimeRange(
-                        chunk.displayStartMinutes!,
-                        chunk.displayStartMinutes! + chunk.durationMinutes,
-                      ),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ] else ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      '${chunk.durationMinutes} min',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                  ...extras,
-                ],
-              ),
             ),
             const SizedBox(width: 8),
             _buildTrailingStatus(theme),
@@ -527,7 +556,7 @@ class _WorkChunkContent extends StatelessWidget {
         // SCHED-03: Always-visible action row for unresolved chunks.
         // Resolved chunks show status icon only (no buttons).
         if (!isResolved) ...[
-          const SizedBox(height: 12),
+          SizedBox(height: isFull ? 8 : 12),
           _buildActionRow(context, theme),
         ],
       ],

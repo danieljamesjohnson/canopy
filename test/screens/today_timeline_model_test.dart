@@ -101,17 +101,27 @@ void main() {
       final leading = rows.whereType<LeadingFreeRow>();
       expect(leading, hasLength(1));
       expect(leading.single.untilMinutes, 480);
+      expect(leading.single.windowPassed, isFalse);
     });
 
+    // NOW-02 amended 2026-08-18: the row used to be suppressed here. It is now
+    // built with windowPassed set, so the caller can swap "Free until <time>"
+    // (untruthful once passed — the original concern, still honoured) for the
+    // duration copy. Suppressing it did not reclaim the space: the layout is
+    // duration-proportional, so the region stayed just as tall and went blank,
+    // which is what UAT flagged as an unexplained stretch of background.
     test('NOW-02: nowMinutes past the first chunk start — LeadingFreeRow is '
-        'suppressed', () {
+        'still built, flagged windowPassed', () {
       final chunk = _workChunk(syntheticStartMinutes: 480);
       final rows = buildTimeline(
         chunks: [chunk],
         nowState: GapBeforeNext(chunk),
         nowMinutes: 600,
       );
-      expect(rows.whereType<LeadingFreeRow>(), isEmpty);
+      final leading = rows.whereType<LeadingFreeRow>();
+      expect(leading, hasLength(1));
+      expect(leading.single.untilMinutes, 480);
+      expect(leading.single.windowPassed, isTrue);
     });
 
     test('NOW-02: nowMinutes omitted entirely — LeadingFreeRow is present '
@@ -362,22 +372,23 @@ void main() {
       expect(geometry.yFor(geometry.rangeStart), kTimelineEdgePadding);
     });
 
-    test('a 25-minute chunk heightFor equals 137.5 with no live row', () {
+    test('a 25-minute chunk heightFor equals 25 * kPixelsPerMinute with no '
+        'live row', () {
       final geometry = TimelineGeometry.forDay(
         nowMinutes: 555,
         firstStartMinutes: 540,
         lastEndMinutes: 1020,
       );
-      expect(geometry.heightFor(540, 25), 137.5);
+      expect(geometry.heightFor(540, 25), 25 * kPixelsPerMinute);
     });
 
-    test('a 5-minute break heightFor equals 27.5', () {
+    test('a 5-minute break heightFor equals 5 * kPixelsPerMinute', () {
       final geometry = TimelineGeometry.forDay(
         nowMinutes: 555,
         firstStartMinutes: 540,
         lastEndMinutes: 1020,
       );
-      expect(geometry.heightFor(540, 5), 27.5);
+      expect(geometry.heightFor(540, 5), 5 * kPixelsPerMinute);
     });
 
     test(
@@ -405,7 +416,10 @@ void main() {
         liveStartMinutes: 540,
         liveEndMinutes: 565,
       );
-      expect(geometry.liveExtraPx, kLiveRowReservedHeight - 137.5);
+      expect(
+        geometry.liveExtraPx,
+        kLiveRowReservedHeight - 25 * kPixelsPerMinute,
+      );
     });
 
     test('the live row exception: heightFor(liveStart, 25) equals '

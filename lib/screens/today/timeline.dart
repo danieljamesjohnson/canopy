@@ -25,7 +25,22 @@ class ChunkRow extends TimelineRow {
 /// ("Free until 8:00am").
 class LeadingFreeRow extends TimelineRow {
   final int untilMinutes;
-  LeadingFreeRow(this.untilMinutes);
+
+  /// True once `nowMinutes` has reached or passed [untilMinutes] — the window
+  /// this row describes is over.
+  ///
+  /// **NOW-02, amended 2026-08-18.** This used to suppress the row outright,
+  /// on the sound reasoning that "Free until 9:45 AM" is not truthful copy
+  /// once 9:45 has been and gone. But suppressing the row did not remove the
+  /// time it covered — the day is laid out proportionally, so the region
+  /// stayed exactly as tall and simply went blank, and that unexplained
+  /// stretch of background is what UAT flagged. The row is now always built;
+  /// the caller reads this flag and switches to the duration copy
+  /// ("Free · 45m"), which is true before and after the fact. The original
+  /// concern is honoured — do NOT render `until` copy when this is true.
+  final bool windowPassed;
+
+  LeadingFreeRow(this.untilMinutes, {this.windowPassed = false});
 }
 
 /// Free time between two chunks, named rather than collapsed to whitespace
@@ -78,13 +93,18 @@ List<TimelineRow> buildTimeline({
         // First chunk with a clock position — leading free row if the day
         // doesn't start at minute 0.
         //
-        // NOW-02: suppress once the window has closed (nowMinutes has
-        // reached or passed start) — there is no truthful alternate copy to
-        // show once "Free until <time>" describes a window that's already
-        // passed; the now-line overlay (CAL-02, plan 04) is what tells the
-        // user where they are instead.
-        if (start > 0 && (nowMinutes == null || nowMinutes < start)) {
-          rows.add(LeadingFreeRow(start));
+        // NOW-02 (amended 2026-08-18): the row is always built. It used to be
+        // suppressed once the window had passed, for want of truthful copy —
+        // but the layout is duration-proportional, so suppressing it left the
+        // region just as tall and blank. There IS truthful alternate copy: the
+        // duration form. Flag it and let the caller pick.
+        if (start > 0) {
+          rows.add(
+            LeadingFreeRow(
+              start,
+              windowPassed: nowMinutes != null && nowMinutes >= start,
+            ),
+          );
         }
       } else if (start - prevEnd >= minGapMinutes) {
         // T-22-03: only a positive gap meeting the threshold produces a row,

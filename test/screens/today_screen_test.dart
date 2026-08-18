@@ -604,7 +604,7 @@ void main() {
       }
 
       testWidgets(
-        'a 25-minute work chunk slot measures exactly 137.5px tall',
+        'a 25-minute work chunk slot measures exactly 25 * kPixelsPerMinute',
         (tester) async {
           await pumpDayComplete(tester);
 
@@ -615,13 +615,13 @@ void main() {
                 matching: find.byType(ClipRect),
               )
               .first;
-          expect(tester.getSize(c4ClipRect).height, 137.5);
+          expect(tester.getSize(c4ClipRect).height, 25 * kPixelsPerMinute);
           expect(tester.takeException(), isNull);
         },
       );
 
       testWidgets(
-        'a 105-minute gap renders as a 577.5px GapFreeRow — not compressed, '
+        'a 105-minute gap renders at 105 * kPixelsPerMinute — not compressed, '
         'not clamped (D-02)',
         (tester) async {
           await pumpDayComplete(tester);
@@ -633,7 +633,7 @@ void main() {
                 matching: find.byType(TimelineRowTile),
               )
               .first;
-          expect(tester.getSize(gapTile).height, 577.5);
+          expect(tester.getSize(gapTile).height, 105 * kPixelsPerMinute);
           expect(tester.takeException(), isNull);
         },
       );
@@ -708,7 +708,7 @@ void main() {
       );
 
       testWidgets(
-        'a 5-minute short break slot measures exactly 27.5px tall',
+        'a 5-minute short break slot measures exactly 5 * kPixelsPerMinute',
         (tester) async {
           final schedule = DailySchedule(
             dateYmd: _todayYmd(),
@@ -744,7 +744,7 @@ void main() {
                 matching: find.byType(ClipRect),
               )
               .first;
-          expect(tester.getSize(breakClipRect).height, 27.5);
+          expect(tester.getSize(breakClipRect).height, 5 * kPixelsPerMinute);
           expect(tester.takeException(), isNull);
         },
       );

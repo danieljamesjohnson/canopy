@@ -28,14 +28,32 @@ import '../../utils/time_format.dart';
 /// (`timeline_row_tile.dart`) — a constant justified by an arithmetic claim
 /// gets corrected when the claim is measured.
 ///
-/// **This value is PROVISIONAL.** It is derived from a `flutter test`
-/// measurement of `ChunkCard`'s rendered height, which uses a placeholder
-/// font (no real Roboto metrics — see `kGutterWidth`'s own doc comment for
-/// the precedent of this harness lying about text-driven sizing). A
-/// real-browser check via `tools/serve-uat.py` (planned for Phase 26 Plan
-/// 06) is the actual authority on whether `5.5` holds up, not this
-/// `flutter test` measurement.
-const double kPixelsPerMinute = 5.5;
+/// **5.5 → 4.0 (2026-08-18, UAT: "the elements take up too much vertical
+/// space").** The 5.5 above was correct arithmetic against a 126px card — but
+/// it took the card's height as fixed and solved for the scale. The card was
+/// compacted instead: the `full` tier now puts the clock-time range on the
+/// title's own line and tightens its vertical padding to 8dp, which
+/// **measured 70dp** for a work card in a real browser (headless Chromium,
+/// debug build via `tools/serve-uat.py`, 500dp viewport at DPR 2 —
+/// pixel-counted off the card's coloured accent bar, 2026-08-18).
+///
+/// `4.0` gives 100px for 25 minutes against that ~70dp card plus its 8dp of
+/// Card margin — ~22px of slack, comfortably more than the ~11px the old
+/// pairing ran on. A 12-hour day now renders ~2880px instead of ~3960px,
+/// roughly a screen and a half shorter.
+///
+/// Note this lands back on the `26-UI-SPEC.md` value that PD-1 rejected. The
+/// spec's number was right; its justification ("enough for a trimmed
+/// Full-tier card") was not true of the card as it then existed. It is true
+/// of the card as it exists now — which is the difference between reaching a
+/// number by measurement and by assertion.
+///
+/// **Measure in a real browser, never in `flutter test`.** That harness's
+/// placeholder font has no real Roboto metrics — the failure mode that took
+/// `kGutterWidth` 46 → 75 → 52. Any change to `ChunkCard`'s `full` tier
+/// content or typography invalidates this pairing; re-measure, then re-derive
+/// this and [kFullTierMinHeight] together.
+const double kPixelsPerMinute = 4.0;
 
 /// Fixed reserved pixel height for the live row's card (CAL-01's one named
 /// exception — "let now break the grid," carried forward unchanged from
@@ -98,11 +116,16 @@ const double kLiveRowReservedHeight = 232.0;
 ///
 /// **PD-3.** `26-UI-SPEC.md`'s original "≥ 20 min" threshold was derived
 /// from `kPixelsPerMinute = 4.0`; a minute-based threshold silently rots if
-/// the scale ever changes again (as it just did, PD-1). `132.0` = the
-/// measured 126px Full-tier work card content height plus slack, expressed
-/// in the unit (pixel slot height) that actually decides whether the tier
-/// fits.
-const double kFullTierMinHeight = 132.0;
+/// the scale ever changes again (as it has, twice). Expressing it in pixel
+/// slot height — the unit that actually decides whether the tier fits — is
+/// what makes it survive a scale change.
+///
+/// **132.0 → 88.0 (2026-08-18).** Re-derived alongside [kPixelsPerMinute]
+/// when the `full` tier was compacted: 70dp measured card + 8dp Card margin +
+/// ~10dp slack. At the new 4.0 scale a standard 25-minute chunk gets a 100px
+/// slot and still clears this, so it keeps its title, time, and action row —
+/// the compaction shortens the day without demoting rows to title-only.
+const double kFullTierMinHeight = 88.0;
 
 /// Full-tier density threshold for a break row, expressed in pixels (PD-3).
 ///

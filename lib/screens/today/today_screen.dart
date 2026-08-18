@@ -689,7 +689,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     int? secondsRemaining,
   ) {
     switch (row) {
-      case LeadingFreeRow(:final untilMinutes):
+      case LeadingFreeRow(:final untilMinutes, :final windowPassed):
         return Positioned(
           // geometry.yFor(geometry.rangeStart), not a hard-coded 0 — that
           // literal only ever equaled yFor(rangeStart) because yFor used to
@@ -705,7 +705,15 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
             untilMinutes - geometry.rangeStart,
           ),
           child: TimelineRowTile(
-            child: FreeTimeRow.until(untilMinutes: untilMinutes),
+            // NOW-02: "Free until <time>" is only truthful while that time is
+            // still ahead. Once it has passed, the same region takes the
+            // duration copy, which reads correctly either way — see
+            // LeadingFreeRow.windowPassed.
+            child: windowPassed
+                ? FreeTimeRow.gap(
+                    durationMinutes: untilMinutes - geometry.rangeStart,
+                  )
+                : FreeTimeRow.until(untilMinutes: untilMinutes),
           ),
         );
       case GapFreeRow(:final startMinutes, :final durationMinutes):
