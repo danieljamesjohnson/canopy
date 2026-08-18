@@ -147,53 +147,19 @@ class LiveRowCard extends StatelessWidget {
                   ),
                 ),
                 if (showActions) ...[
-                  IconButton(
-                    icon: const Icon(Icons.check_circle_outline),
+                  _buildActionIcon(
+                    icon: Icons.check_circle_outline,
                     color: colorScheme.primary,
                     tooltip: 'Complete',
-                    constraints: const BoxConstraints.tightFor(
-                      width: 36,
-                      height: 36,
-                    ),
-                    padding: EdgeInsets.zero,
-                    // `constraints:` alone caps the visible Material, but
-                    // Material 3's IconButton always wraps it in an
-                    // invisible `_InputPadding` that separately pads the
-                    // HIT-TEST area out to `kMinInteractiveDimension`
-                    // (48dp) — measured directly (widget test,
-                    // `tester.getSize`), stacking `VisualDensity.compact` on
-                    // top of the tight `constraints:` still measured 40x40,
-                    // not the 36x36 the design and this tier's slot math are
-                    // budgeted against, because visual density only shaves
-                    // the 48dp interactive minimum, it does not remove it.
-                    // `tapTargetSize: shrinkWrap` is what actually removes
-                    // that separate padding layer, so deliberately no
-                    // `visualDensity` override here — stacking one on top of
-                    // `shrinkWrap` instead shrinks the tight constraints'
-                    // OWN minimum (visual density adjusts both layers), which
-                    // undersizes the button to 28x28. `shrinkWrap` alone,
-                    // against the unmodified tight constraints, is the
-                    // combination that actually measures exactly 36x36.
-                    style: IconButton.styleFrom(
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
                     onPressed: () =>
                         context.read<ScheduleNotifier>().markComplete(
                           chunkId,
                         ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.skip_next_outlined),
+                  _buildActionIcon(
+                    icon: Icons.skip_next_outlined,
                     color: colorScheme.error,
                     tooltip: 'Skip',
-                    constraints: const BoxConstraints.tightFor(
-                      width: 36,
-                      height: 36,
-                    ),
-                    padding: EdgeInsets.zero,
-                    style: IconButton.styleFrom(
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
                     onPressed: () =>
                         context.read<ScheduleNotifier>().markSkipped(chunkId),
                   ),
@@ -213,6 +179,46 @@ class LiveRowCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Shared chrome for the compact tier's Complete/Skip icons (IN-02) — one
+  /// place for the sizing/tap-target treatment instead of two independently
+  /// maintained blocks. Icon, color, tooltip, and callback are the only
+  /// things that differ per button; deliberately kept as parameters rather
+  /// than merged, so the two buttons' distinct identities stay explicit at
+  /// each call site.
+  Widget _buildActionIcon({
+    required IconData icon,
+    required Color color,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      icon: Icon(icon),
+      color: color,
+      tooltip: tooltip,
+      constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+      padding: EdgeInsets.zero,
+      // `constraints:` alone caps the visible Material, but Material 3's
+      // IconButton always wraps it in an invisible `_InputPadding` that
+      // separately pads the HIT-TEST area out to `kMinInteractiveDimension`
+      // (48dp) — measured directly (widget test, `tester.getSize`), stacking
+      // `VisualDensity.compact` on top of the tight `constraints:` still
+      // measured 40x40, not the 36x36 the design and this tier's slot math
+      // are budgeted against, because visual density only shaves the 48dp
+      // interactive minimum, it does not remove it. `tapTargetSize:
+      // shrinkWrap` is what actually removes that separate padding layer,
+      // so deliberately no `visualDensity` override here — stacking one on
+      // top of `shrinkWrap` instead shrinks the tight constraints' OWN
+      // minimum (visual density adjusts both layers), which undersizes the
+      // button to 28x28. `shrinkWrap` alone, against the unmodified tight
+      // constraints, is the combination that actually measures exactly
+      // 36x36.
+      style: IconButton.styleFrom(
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      onPressed: onPressed,
     );
   }
 
