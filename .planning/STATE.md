@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: none
-milestone_name: "(next milestone not yet defined)"
-status: "v1.5 \"Right Now\" SHIPPED and archived 2026-08-14. 16/16 requirements satisfied, 560/560 tests green, flutter analyze clean, 0 integration blockers. Run /gsd-new-milestone to define v1.6."
-stopped_at: v1.5 complete — milestone archived
-last_updated: "2026-08-14T00:00:00.000Z"
-last_activity: 2026-08-14
+milestone_name: milestone
+status: v1.5 shipped and archived. Phase 27 added 2026-08-18 out of post-v1.5 UAT on the Today
+stopped_at: Phase 27 planned — 4 plans verified, ready to execute
+last_updated: "2026-08-18T14:28:23.039Z"
+last_activity: 2026-08-18
 progress:
-  total_phases: 0
+  total_phases: 1
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 4
+  completed_plans: 1
   percent: 0
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-14
+**Last session:** 2026-08-18T14:28:23.035Z
 
 ---
 
 ## Current Position
 
-Phase: 27 — True Grid (standalone, no milestone). Not started — needs `/gsd-plan-phase 27`.
-Plan: none
+Phase: 27 — True Grid (standalone, no milestone). Executing.
+Plan: 2 of 4
 Status: v1.5 shipped and archived. Phase 27 added 2026-08-18 out of post-v1.5 UAT on the Today
 timeline; owner's call was a standalone phase rather than opening v1.6.
 Last activity: 2026-08-18
@@ -64,19 +64,24 @@ guards against:
 - **One now-detector.** `resolveNowState` — one definition (`lib/screens/today/now_state.dart`),
   one call site (`lib/screens/today/today_screen.dart`). Doc-comment cross-references elsewhere are
   fine. Phase 22 eliminated parallel detectors; a code review caught a third.
+
 - **One minute→pixel authority.** `TimelineGeometry` — rows, hour axis, now-line and the scroll
   target all derive offsets from it, so they can never disagree about where a minute sits. No
   independent offset arithmetic anywhere.
+
 - **The tick contract (Phase 23).** All-day ticker is 1-minute and survives `paused`; a 1-second
   ticker exists ONLY inside the final minute of the current activity; `_isBackgrounded` guards the
   fast tick; `build()` self-heals a dead timer. Do not add an all-day faster ticker.
+
 - **Clock injection.** Never call `DateTime.now()` in `lib/screens/today/` — use the injectable
   `_nowFn`, sampled once per `build()`. Phase 25's `DevClock` depends on this; bypassing it silently
   breaks time-travel for whatever surface does so.
+
 - **Test-harness caveat.** `flutter test`'s placeholder font inflates glyph widths. Any *text-driven*
   measurement asserted in a widget test is a harness bound, not a device requirement — verify in a
   real browser. `kGutterWidth` went 46 → 75 (harness) → 52 (corrected). Geometric assertions
   (heights and offsets computed from arithmetic) ARE trustworthy.
+
 - **Regression tests must be proven RED.** v1.5 shipped two defects behind green tests, both
   assertions that could not fail — one scoped to the wrong widget type, one counting widgets instead
   of checking painted rects. Observe red against the unfixed code before accepting a regression test.
@@ -147,6 +152,9 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 26-the-day-has-a-shape]: G-03: chip suppressed only inside the live row's span (not the whole overlay); rule unchanged — LiveRowCard already states the current time in its own copy, so the chip is redundant there; the rule alone still marks the position
 - [Phase 26-the-day-has-a-shape]: 26-10: kTimelineEdgePadding = max(kHourAxisHeight, kNowLineHeight) / 2 reserved at both ends of TimelineGeometry's rendered range, applied in yFor()/totalHeight() only — Closes G-04 (sheared first/last hour-axis label) and G-05 (now-line clipped at PreStart/DayComplete) from 26-UI-REVIEW.md; rejected the one-line Clip.none fix because it would let the top label paint into the header block above the Stack
 - [Phase 26-the-day-has-a-shape]: 26-10: formatMinutesCompact gained an 'a' AM suffix, mirroring the existing 'p' for PM — Closes G-06 (26-UI-REVIEW.md) — the now-line chip is the app's most prominent, always-on-screen element and previously showed AM times with no meridiem cue
+- [Phase 27-01]: Deleted TimelineGeometry.liveExtraPx and kLiveRowReservedHeight outright rather than zeroing them; yFor() is now unconditionally linear — The defect was the existence of a live-row exception term, not a wrong value -- 240dp/372dp both satisfied every prior test because they all asserted yFor() against the same arithmetic the implementation performed
+- [Phase 27-01]: kCompactLiveMinHeight ships as an explicitly UNMEASURED PLACEHOLDER (88.0, PD-27-05) — Wave 2 needs a constant to compile the density-tier switch against; plan 27-04 measures the real value in a real browser and replaces both the number and the doc comment before the phase closes
+- [Phase 27-01]: Fixed a pre-existing today_screen_test.dart test by invoking ChunkCard.onTap directly instead of a geometric tester.tap() — This plan's own intermediate_state_notice predicts LiveRowCard now overlaps the row beneath it (today_screen.dart's height fix is out of scope, reserved for plan 27-02); a geometric tap on the row below the live row landed on the overlapping live card instead of the intended row
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -230,7 +238,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-10
-Stopped at: Completed 26-10-PLAN.md
+Stopped at: Phase 27 planned — 4 plans verified, ready to execute
 Resume at: `/gsd-plan-phase 26`
 
 ## Performance Metrics
@@ -278,3 +286,4 @@ Resume at: `/gsd-plan-phase 26`
 | Phase 26-the-day-has-a-shape P08 | ~45min | 3 tasks | 3 files |
 | Phase 26-the-day-has-a-shape P09 | ~25min | 3 tasks | 4 files |
 | Phase 26 P10 | 90min | 4 tasks | 7 files |
+| Phase 27-true-grid P01 | ~20min | 2 tasks | 3 files |

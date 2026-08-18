@@ -149,22 +149,27 @@ in the baseline the 9:50 chunk falls off the viewport, under (a) the same day fi
 
 1. Delete the `liveExtraPx` term from `TimelineGeometry` — `yFor()` becomes purely linear. This is
    the one-line part.
+
 2. Render the live row through the same `Positioned(height: slot)` + `ClipRect`/`OverflowBox` path
    every other row already uses. The live row stops being a layout special case.
+
 3. Give `LiveRowCard` **density tiers driven by slot height**, exactly as `kFullTierMinHeight`
    already works for `ChunkCard`. This is the part the spike proved is required rather than
    optional: a live 5-minute break has a 20dp slot, and there is no single card layout that serves
    both 100dp and 20dp. Making the live row obey the rule the rest of the timeline already follows
    is a *simplification* of the model, not an addition to it.
+
 4. **Re-derive the compact tier's minimum height in a real browser.** The spike's placeholder
    (`60.0`) was never validated — the fixture only had 25-min (100dp) and 5-min (20dp) chunks, so
    nothing exercised the 60–90dp band. The measured natural height is **90dp**, so the threshold is
    ≥ 90.0 and a live chunk shorter than ~23 minutes falls to the single-line tier. Decide
    deliberately what happens in that band.
+
 5. **Consider dropping the progress bar from the compact tier.** Once the card is duration-exact,
    the now-line's position *within* the card **is** the fraction elapsed — geometrically, not
    approximately — so the bar is a second rendering of the same fact, and at 9:10 the two literally
    overlap at the card's bottom edge. Removing it also buys back ~10dp against item 4.
+
 6. **Resolve the now-line striking through the card's text.** A shorter card has no whitespace for
    the rule to land in, so the collision goes from occasional to routine (at 8:55 it cuts through
    "RIGHT NOW · 8:50 AM"; on the single-line break tier it cuts the only line there is). Options:
@@ -192,11 +197,11 @@ work we would otherwise write.
 **Requirements:** GRID-01 (uniform hour spacing), GRID-02 (live-row prominence without variable
 height)
 **Depends on:** Phase 26 (The Day Has a Shape) — owns `TimelineGeometry` and the now-line
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
 
-- [ ] 27-01-PLAN.md — Geometry: delete the `liveExtraPx` term, add the equidistance test (proven RED first)
+- [x] 27-01-PLAN.md — Geometry: delete the `liveExtraPx` term, add the equidistance test (proven RED first)
 - [ ] 27-02-PLAN.md — `LiveRowCard`'s two density tiers; the live row joins the grid
 - [ ] 27-03-PLAN.md — Repair the screen-level live-row assertions the compaction breaks
 - [ ] 27-04-PLAN.md — Measure `kCompactLiveMinHeight` in a real browser; prove `UNIFORM`; UAT
@@ -206,6 +211,7 @@ Plans:
 - The schedule screen's `detailed` tier was never compacted (only Today's `full` tier was).
 - Free regions and break rows now render near-identical dashed outlines, distinguished only by
   label — deliberate, but unreviewed.
+
 - `kGutterWidth` at 40dp leaves ~4dp of text-scale slack ("11 AM" measures 36dp); large
   accessibility text sizes will clip there first.
 
@@ -223,4 +229,4 @@ Plans:
 | 19. Energy Valence | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21-26 (Right Now) | v1.5 | 28/28 | Complete   | 2026-08-14 |
-| 27. True Grid | — (standalone) | 0/4 | Planned | — |
+| 27. True Grid | — (standalone) | 1/4 | In Progress|  |
