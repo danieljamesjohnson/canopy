@@ -97,13 +97,12 @@ browser-verified; 560/560 tests green. See `v1.5-MILESTONE-AUDIT.md`.
 
 </details>
 
-### 🔜 Phase 27: True Grid — IN FLIGHT
+### Phase 27: True Grid
 
 Standalone phase, no milestone. Raised during post-v1.5 UAT of the Today timeline; small enough
 that it did not justify opening v1.6 (owner's call, 2026-08-18).
 
-**Goal:** The Today timeline is a true time grid — every hour occupies the same vertical distance,
-always. An hour is an hour, whatever is happening inside it.
+**Goal:** Every hour on the Today timeline occupies the same vertical distance, always — an hour is an hour, whatever is happening inside it.
 
 **The defect.** `TimelineGeometry.yFor()` is linear except for one term
 (`timeline_geometry.dart`): `offset += liveExtraPx` once the minute passes `liveEndMinutes`.
