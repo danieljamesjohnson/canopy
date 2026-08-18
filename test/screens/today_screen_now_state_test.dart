@@ -630,7 +630,7 @@ void main() {
     });
 
     testWidgets(
-      'between-chunks (overdue): 10am, c1 8:30–9:30, c2 10:30–11:30 → LiveRowCard (c1) + Next (c2)',
+      'between-chunks (overdue): 10am, c1 8:30–9:30, c2 10:30–11:30 → LiveRowCard (c1)',
       (tester) async {
         final sn = _FakeScheduleNotifierWithSchedule(
           DailySchedule(
@@ -680,8 +680,8 @@ void main() {
               'not c2 (10:30 AM start)',
         );
         // The kicker names which chunk is Now, so it is the precise identity
-        // check. (A blanket "10:30 AM must not appear" would be wrong — the
-        // "Next · … at 10:30 AM" line legitimately names c2 as what follows.)
+        // check. c1 is 60 minutes, so at 240dp it renders the compact tier
+        // and the kicker survives (GRID-02).
         expect(
           find.descendant(
             of: find.byType(LiveRowCard),
@@ -691,16 +691,21 @@ void main() {
           reason:
               'WR-02: the live row kicker must identify c1 (8:30 AM) as Now',
         );
+        // Phase 27 (GRID-02) deleted the live row's line naming the upcoming
+        // chunk — the card's only remaining time-identity claim is the
+        // kicker above. With that line gone, the identity check the old
+        // comment here said it "could not make" (a blanket "10:30 AM must
+        // not appear") is now available and is the stronger assertion: c2's
+        // start must not leak into c1's card at all.
         expect(
           find.descendant(
             of: find.byType(LiveRowCard),
-            matching: find.textContaining('Next ·'),
+            matching: find.textContaining('10:30 AM'),
           ),
-          findsOneWidget,
+          findsNothing,
           reason:
-              'NOW-01: the live row\'s "Next · <title> at <time>" line '
-              'shows the upcoming chunk (no separate Next section since '
-              'the merge — UI-SPEC\'s live row carries this inline)',
+              'GRID-02: c1\'s LiveRowCard must not name c2 (10:30 AM) — the '
+              'line that used to legitimately do so is gone',
         );
       },
     );
@@ -955,43 +960,94 @@ void main() {
 
     // ── LIVE-01: a running break is a first-class current activity ─────────
 
-    testWidgets('live short break: kicker and title name the rest', (
-      tester,
-    ) async {
-      final sn = _FakeScheduleNotifierWithSchedule(
-        DailySchedule(
-          dateYmd: _todayYmd(),
-          moodIndex: 3,
-          chunks: [
-            _workChunk(
-              id: 'w1',
-              syntheticStartMinutes: 480,
-              durationMinutes: 25,
-            ),
-            _breakChunk(
-              id: 'b1',
-              syntheticStartMinutes: 505,
-              durationMinutes: 5,
-            ),
-          ],
-        ),
-      );
-      await _pumpTodayScreen(
-        tester,
-        scheduleNotifier: sn,
-        now: () => DateTime(2026, 6, 13, 8, 27),
-      );
-      // The kicker carries the start time since the live row left the gutter
-      // (22-UI-SPEC.md "The live row", amended 2026-08-08). Asserted as a
-      // prefix so the time format is free to change without breaking the
-      // rest-vs-work contract this test actually cares about.
-      expect(
-        find.textContaining('RIGHT NOW — RESTING'),
-        findsOneWidget,
-        reason: 'a running break must announce itself as rest',
-      );
-      expect(find.text('Taking a break'), findsOneWidget);
-    });
+    testWidgets(
+      'live short break, single-line tier: a running break still announces '
+      'itself as rest (PD-27-09)',
+      (tester) async {
+        final sn = _FakeScheduleNotifierWithSchedule(
+          DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'w1',
+                syntheticStartMinutes: 480,
+                durationMinutes: 25,
+              ),
+              _breakChunk(
+                id: 'b1',
+                syntheticStartMinutes: 505,
+                durationMinutes: 5,
+              ),
+            ],
+          ),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: sn,
+          now: () => DateTime(2026, 6, 13, 8, 27),
+        );
+        // b1 is a 5-minute break — 20dp, below kCompactLiveMinHeight, so it
+        // renders the single-line tier, which drops the visible RESTING
+        // kicker entirely (27-UI-SPEC.md "Single-line tier": no room for a
+        // third piece of information on one line). The "this is current,
+        // and it is rest" framing the kicker used to carry now lives in the
+        // row's Semantics label instead (`LiveRowCard`'s
+        // `Semantics(label: 'Right now: $title, $remainingLabel', ...)`).
+        final handle = tester.ensureSemantics();
+        expect(
+          find.bySemanticsLabel(RegExp(r'^Right now: Taking a break,')),
+          findsOneWidget,
+          reason:
+              'a running break in the single-line tier must still announce '
+              'itself as rest, via its semantics label',
+        );
+        handle.dispose();
+        expect(find.text('Taking a break'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'live long break, compact tier: the visible RESTING kicker still '
+      'names the rest (PD-27-09)',
+      (tester) async {
+        // Copies '`live long break: title says long`'s fixture (a 25-minute
+        // long break, live at 8:27) rather than inventing a new one — at
+        // 100dp this clears kCompactLiveMinHeight and renders the compact
+        // tier, the one tier that still shows the visible kicker.
+        final sn = _FakeScheduleNotifierWithSchedule(
+          DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'w1',
+                syntheticStartMinutes: 480,
+                durationMinutes: 25,
+              ),
+              _breakChunk(
+                id: 'b1',
+                chunkTypeIndex: ChunkType.longBreak.index,
+                syntheticStartMinutes: 505,
+                durationMinutes: 25,
+              ),
+            ],
+          ),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: sn,
+          now: () => DateTime(2026, 6, 13, 8, 27),
+        );
+        expect(
+          find.textContaining('RIGHT NOW — RESTING'),
+          findsOneWidget,
+          reason:
+              'a running long break in the compact tier must still show the '
+              'visible RESTING kicker',
+        );
+      },
+    );
 
     testWidgets('live long break: title says long', (tester) async {
       final sn = _FakeScheduleNotifierWithSchedule(
@@ -1054,46 +1110,64 @@ void main() {
         scheduleNotifier: sn,
         now: () => DateTime(2026, 6, 13, 8, 27),
       );
+      // The compact/single-line tiers never produce a FilledButton/
+      // OutlinedButton at all (GRID-02), so these two assertions alone would
+      // now pass trivially regardless of whether the D-02 gate works.
+      // Strengthened below with finders that match what the live row
+      // actually renders in either tier.
       expect(find.widgetWithText(FilledButton, 'Complete'), findsNothing);
       expect(find.widgetWithText(OutlinedButton, 'Skip'), findsNothing);
-    });
-
-    testWidgets('live break still shows a progress bar (D-04)', (tester) async {
-      final sn = _FakeScheduleNotifierWithSchedule(
-        DailySchedule(
-          dateYmd: _todayYmd(),
-          moodIndex: 3,
-          chunks: [
-            _workChunk(
-              id: 'w1',
-              syntheticStartMinutes: 480,
-              durationMinutes: 25,
-            ),
-            _breakChunk(
-              id: 'b1',
-              syntheticStartMinutes: 505,
-              durationMinutes: 5,
-            ),
-          ],
+      expect(
+        find.descendant(
+          of: find.byType(LiveRowCard),
+          matching: find.byTooltip('Complete'),
         ),
-      );
-      await _pumpTodayScreen(
-        tester,
-        scheduleNotifier: sn,
-        now: () => DateTime(2026, 6, 13, 8, 27),
+        findsNothing,
       );
       expect(
         find.descendant(
           of: find.byType(LiveRowCard),
-          matching: find.byType(LinearProgressIndicator),
+          matching: find.byTooltip('Skip'),
         ),
-        findsOneWidget,
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(LiveRowCard),
+          matching: find.byType(IconButton),
+        ),
+        findsNothing,
       );
     });
 
+    // 'live break still shows a progress bar (D-04)' — DELETED (Phase 27,
+    // GRID-02). The bar is gone from both live-row tiers by design: once the
+    // card is duration-exact, the now-line's position within the card's
+    // vertical span IS the fraction elapsed (27-UI-SPEC.md "Compact tier",
+    // point 4). Do not restore a progress-bar widget here.
+
     testWidgets(
-      'next-is-a-break renders the reference name, not "Work block"',
+      'GapBeforeNext "Up next" banner names the reference title, not '
+      '"Work block" (PD-27-10)',
       (tester) async {
+        // PD-27-10: this test's real subject is `_chunkTitle`'s
+        // break-awareness, not the live row's now-deleted line naming the
+        // upcoming chunk.
+        // `_chunkTitle` survives with two callers (today_screen.dart ~460
+        // PreStart, ~507 GapBeforeNext), and today_screen.dart's own comment
+        // at ~494-498 explicitly names break-awareness at the GapBeforeNext
+        // site as load-bearing ("do NOT add a `chunkType` check in this
+        // case; the shared helper already handles it") — repointed here so
+        // that guard can still fail.
+        //
+        // w1 is marked completed (resolved); `now` sits inside w1's own
+        // window but before b1's window opens. resolveNowState's
+        // GapBeforeNext branch fires once the current window's chunk is
+        // resolved and the next chunk's window has not yet opened
+        // (now_state.dart) — b1 has not opened yet (505 > 490 at 8:10),
+        // producing GapBeforeNext(b1), matching the identical fixture shape
+        // in `today_screen_test.dart`'s sibling "gap-before-next targeting a
+        // break names the break" test.
         final sn = _FakeScheduleNotifierWithSchedule(
           DailySchedule(
             dateYmd: _todayYmd(),
@@ -1103,6 +1177,7 @@ void main() {
                 id: 'w1',
                 syntheticStartMinutes: 480,
                 durationMinutes: 25,
+                isCompleted: true,
               ),
               _breakChunk(
                 id: 'b1',
@@ -1117,11 +1192,19 @@ void main() {
           scheduleNotifier: sn,
           now: () => DateTime(2026, 6, 13, 8, 10),
         );
+        expect(find.text('Up next'), findsOneWidget);
+        // 'Short break' legitimately renders twice — once in the edge-state
+        // banner under test, once in b1's own (unresolved, upcoming) row
+        // further down the day list — scope to the banner itself, mirroring
+        // today_screen_test.dart's identical ancestor-scoping pattern.
+        final upNextHeader = find
+            .ancestor(of: find.text('Up next'), matching: find.byType(Padding))
+            .first;
         expect(
-          find.textContaining('Next · Short break at 8:25 AM'),
+          find.descendant(of: upNextHeader, matching: find.text('Short break')),
           findsOneWidget,
         );
-        expect(find.textContaining('Next · Work block'), findsNothing);
+        expect(find.text('Work block'), findsNothing);
       },
     );
 
@@ -1158,7 +1241,26 @@ void main() {
         scheduleNotifier: sn,
         now: () => DateTime(2026, 6, 13, 9, 0),
       );
-      expect(find.widgetWithText(FilledButton, 'Complete'), findsOneWidget);
+      // The 60-minute chunk renders the compact tier (240dp), whose
+      // Complete/Skip are bare IconButtons with a Tooltip, not the shipped
+      // card's labelled FilledButton/OutlinedButton (GRID-02). Scoped to
+      // LiveRowCard: a lone unresolved work chunk also renders its own
+      // non-live ChunkCard row elsewhere in other fixtures, and an unscoped
+      // finder invites a future false pass.
+      expect(
+        find.descendant(
+          of: find.byType(LiveRowCard),
+          matching: find.byTooltip('Complete'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(LiveRowCard),
+          matching: find.byTooltip('Skip'),
+        ),
+        findsOneWidget,
+      );
     });
 
     // ── LIVE-02: second-precision countdown label (D-01, D-04, P-5) ────────
@@ -1331,7 +1433,22 @@ void main() {
         scheduleNotifier: sn,
         now: () => DateTime(2026, 6, 13, 8, 29, 30),
       );
-      expect(find.text('30s left · until 8:30 AM'), findsOneWidget);
+      // b1 is a 5-minute break — the single-line tier (20dp), whose locked
+      // Row/Expanded split (27-UI-SPEC.md "Single-line tier") renders the
+      // countdown as its OWN Text carrying a leading ' · ' prefix
+      // (`' · $remainingLabel'`), never as the bare label alone in a single
+      // Text. This is the same class of fallout as this file's other
+      // now-deleted-concept failures, not a defect — 27-02-SUMMARY.md
+      // investigated this exact failure and confirmed it matches
+      // 27-UI-SPEC.md's locked contract. Repointed to textContaining,
+      // scoped to LiveRowCard so it can't accidentally match elsewhere.
+      expect(
+        find.descendant(
+          of: find.byType(LiveRowCard),
+          matching: find.textContaining('30s left · until 8:30 AM'),
+        ),
+        findsOneWidget,
+      );
     });
 
     // ── WR-01 regression: one clock sample per build, threaded not re-read ──
@@ -1393,35 +1510,13 @@ void main() {
       },
     );
 
-    testWidgets('the progress bar tracks the same value as the label', (
-      tester,
-    ) async {
-      final sn = _FakeScheduleNotifierWithSchedule(
-        DailySchedule(
-          dateYmd: _todayYmd(),
-          moodIndex: 3,
-          chunks: [
-            _workChunk(
-              id: 'w1',
-              syntheticStartMinutes: 480,
-              durationMinutes: 30,
-            ),
-          ],
-        ),
-      );
-      await _pumpTodayScreen(
-        tester,
-        scheduleNotifier: sn,
-        now: () => DateTime(2026, 6, 13, 8, 15, 0),
-      );
-      final progressIndicator = tester.widget<LinearProgressIndicator>(
-        find.descendant(
-          of: find.byType(LiveRowCard),
-          matching: find.byType(LinearProgressIndicator),
-        ),
-      );
-      expect(progressIndicator.value, closeTo(0.5, 0.001));
-    });
+    // 'the progress bar tracks the same value as the label' — DELETED
+    // (Phase 27, GRID-02). Its stated purpose (23-02's D-04: the bar and the
+    // label can never disagree) is now satisfied by construction — the
+    // progress bar is gone, and there is only one renderer of
+    // secondsRemaining left (the label), so nothing remains for it to
+    // disagree with. The surrounding LIVE-02 countdown tests above already
+    // assert the label itself.
   });
 
   // ── LIVE-02: the dual-cadence tick (D-01, P-5a, T-23-04) ─────────────────
