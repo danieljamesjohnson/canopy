@@ -508,25 +508,16 @@ void main() {
         // day's row list.
         await tester.ensureVisible(find.text('Reading'));
 
-        // Phase 27 (GRID-01) intermediate state, per 27-01-PLAN.md's
-        // <intermediate_state_notice>: TimelineGeometry no longer reserves
-        // extra height for the live row (c3, directly above this one), but
-        // today_screen.dart still positions LiveRowCard with no `height:`
-        // constraint — so it now paints over the rows beneath it, including
-        // this one, until plan 27-02 gives it a bounded slot. A geometric
-        // `tester.tap` at 'Reading's on-screen position lands on the
-        // overlapping live card instead. Invoking the row's own `onTap`
-        // callback directly tests the thing this test actually cares about
-        // (tapping a non-live work row opens ChunkDetailSheet) without
-        // depending on pixel reachability that this plan does not fix.
-        final chunkCard = tester.widget<ChunkCard>(
-          find.ancestor(
-            of: find.text('Reading'),
-            matching: find.byType(ChunkCard),
-          ),
-        );
-        expect(chunkCard.onTap, isNotNull);
-        chunkCard.onTap!();
+        // Phase 27 (GRID-01) intermediate state, now resolved: plan 27-01
+        // temporarily left the live row (c3, directly above this one)
+        // unbounded, so it painted over the rows beneath it and a geometric
+        // tap on 'Reading' landed on the overlapping live card instead —
+        // hence the direct `onTap!()` invocation this test used to carry.
+        // Plan 27-02 (commit be64721) put the live row through the same
+        // `Positioned(height: slot)` path every other row uses, so c3 and
+        // c4 no longer overlap; this test now does a real geometric tap
+        // again, which is what actually proves the row is tappable (2026-08-18).
+        await tester.tap(find.text('Reading'));
         await tester.pump();
 
         expect(find.byType(ChunkDetailSheet), findsOneWidget);
