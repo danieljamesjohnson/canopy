@@ -97,6 +97,60 @@ browser-verified; 560/560 tests green. See `v1.5-MILESTONE-AUDIT.md`.
 
 </details>
 
+### 🔜 Phase 27: True Grid — IN FLIGHT
+
+Standalone phase, no milestone. Raised during post-v1.5 UAT of the Today timeline; small enough
+that it did not justify opening v1.6 (owner's call, 2026-08-18).
+
+**Goal:** The Today timeline is a true time grid — every hour occupies the same vertical distance,
+always. An hour is an hour, whatever is happening inside it.
+
+**The defect.** `TimelineGeometry.yFor()` is linear except for one term
+(`timeline_geometry.dart`): `offset += liveExtraPx` once the minute passes `liveEndMinutes`.
+`liveExtraPx = kLiveRowReservedHeight − (liveDuration × kPixelsPerMinute)` = `232 − 100` = **132dp**
+for a standard 25-minute chunk. So the hour containing the live chunk's end renders 240 + 132 =
+**372dp against every other hour's 240dp — 55% taller.** Confirmed against a UAT screenshot
+(2026-08-18): the 9→10 and 10→11 brackets measure 242.5dp and 377.5dp, matching the arithmetic to
+within antialiasing. Exactly one hour per day is wrong, and only while a chunk is live.
+
+**The tension to resolve.** That term exists to let `LiveRowCard` swell — CAL-01's one named
+exception, "let now break the grid" (22-UI-SPEC.md), which the owner asked for in Phase 22 UAT
+("makes it to where I am doesn't just jump off the page"). A 25-minute slot is 100dp; the live card
+needs ~200dp. A true grid and a variable-height live row cannot both hold. **This phase decides
+which, and that decision is the phase — not the deletion, which is one line.**
+
+Options carried in: (a) live card fits its slot, distinguished by fill / square corners / the
+now-line, as Google Calendar does — cleanest code, ends the swell; (b) shrink the live card toward
+its slot so the exception is small rather than absent — half-measure, grid still not true;
+(c) keep the swell, close this as won't-fix.
+
+**Build vs. buy — settled, revisit only on new evidence.** pub.dev was searched 2026-08-18.
+[`kalender`](https://pub.dev/packages/kalender) is credible (MIT, all six platforms, 160/160 pub
+points, 42.6k downloads, actively maintained, custom event model, uniform hour grid, replaceable
+time indicator). Recommendation is still **in-house**: the defect is one term, and Canopy's
+timeline is not an event list — free/gap regions are the *absence* of events, density tiers are
+driven by slot height, and untimed chunks render outside the grid entirely. Adopting a 0.x calendar
+package to fix a one-line special case trades a small defect for a large dependency. **This flips
+if drag-to-reschedule, week/multi-day views, or timezones enter scope** — then `kalender` is doing
+work we would otherwise write.
+
+**Requirements:** GRID-01 (uniform hour spacing), GRID-02 (live-row prominence without variable
+height)
+**Depends on:** Phase 26 (The Day Has a Shape) — owns `TimelineGeometry` and the now-line
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run `/gsd-plan-phase 27` to break down)
+
+**Also open on this surface, fold in or split as planning decides:**
+
+- The schedule screen's `detailed` tier was never compacted (only Today's `full` tier was).
+- Free regions and break rows now render near-identical dashed outlines, distinguished only by
+  label — deliberate, but unreviewed.
+- `kGutterWidth` at 40dp leaves ~4dp of text-scale slack ("11 AM" measures 36dp); large
+  accessibility text sizes will clip there first.
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -111,3 +165,4 @@ browser-verified; 560/560 tests green. See `v1.5-MILESTONE-AUDIT.md`.
 | 19. Energy Valence | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21-26 (Right Now) | v1.5 | 28/28 | Complete   | 2026-08-14 |
+| 27. True Grid | — (standalone) | 0/0 | Not started | — |

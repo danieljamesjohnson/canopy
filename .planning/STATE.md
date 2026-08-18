@@ -24,21 +24,26 @@ progress:
 
 ## Current Position
 
-Phase: none — between milestones
+Phase: 27 — True Grid (standalone, no milestone). Not started — needs `/gsd-plan-phase 27`.
 Plan: none
-Status: v1.5 "Right Now" shipped and archived. No active milestone.
-Last activity: 2026-08-14
+Status: v1.5 shipped and archived. Phase 27 added 2026-08-18 out of post-v1.5 UAT on the Today
+timeline; owner's call was a standalone phase rather than opening v1.6.
+Last activity: 2026-08-18
 
 ```
-v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  v1.6 not yet defined
+v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  Phase 27 (standalone)  →  v1.6 not yet defined
 ```
+
+**Uncommitted-to-a-milestone work is deliberate here.** Phase 27 sits outside any milestone. If a
+v1.6 is opened before it ships, fold it in rather than leaving it orphaned.
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-08-14)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** none — run `/gsd-new-milestone` to define the next milestone.
+**Current focus:** Phase 27 (True Grid) — make every hour on the Today timeline occupy the same
+vertical distance. Run `/gsd-plan-phase 27`.
 
 ## Shipped Milestones
 
@@ -77,6 +82,13 @@ guards against:
   of checking painted rects. Observe red against the unfixed code before accepting a regression test.
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- **Phase 27 added 2026-08-18: True Grid.** Out of post-v1.5 UAT on the Today timeline. Added as a
+  standalone phase, not a milestone — owner judged it too small to open v1.6. Build-vs-buy was
+  settled at add time (searched pub.dev; `kalender` credible but rejected — see the phase entry in
+  ROADMAP.md for the reasoning and the conditions that would flip it).
 
 ### Decisions
 
