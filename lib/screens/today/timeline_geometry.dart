@@ -78,31 +78,64 @@ const double kFullTierMinHeight = 88.0;
 /// rot-resistance reason as [kFullTierMinHeight].
 const double kFullBreakMinHeight = 88.0;
 
-/// **UNMEASURED PLACEHOLDER (PD-27-05).** The slot height at or above which
+/// **MEASURED (2026-08-18, plan 27-04).** The slot height at or above which
 /// `LiveRowCard`'s compact tier fits; below it the single-line tier is used
 /// (there is no third tier).
 ///
-/// `88.0` is `27-UI-SPEC.md`'s arithmetic estimate — the spike's ~90dp
-/// measurement minus ~10dp of dropped progress bar, plus ~4dp of corrected
-/// margin, plus safety. It is **not a measurement**. Plan 27-04 replaces it
-/// with a real-browser number once the compact tier actually exists to
-/// measure.
+/// **Method:** headless Chromium (`--use-gl=swiftshader
+/// --enable-unsafe-swiftshader`), viewport `430`×930 at DPR 1 (screenshot px
+/// = logical px), debug build (`flutter build web --debug --source-maps
+/// --pwa-strategy=none`) served through `tools/serve-uat.py` on port `8137`,
+/// simulated clock parked at 10:00 AM — 5 minutes (20%) into a live
+/// 25-minute Exercise chunk (9:55–10:20 AM). The freshly onboarded profile's
+/// generated day did not match the spike's own 8:50 AM chunk, so this is the
+/// equivalent instant the recipe calls for (20% elapsed), not the literal
+/// clock time; see `27-04-SUMMARY.md` for the day actually generated.
+/// Pixel-counted via `.planning/phases/27-true-grid/tools/
+/// measure_card_fill.py` against `.planning/phases/27-true-grid/shots/
+/// compact-1000-work-live.png`.
+///
+/// **Raw measured natural height: 76px** (the compact tier's
+/// `primaryContainer` fill band, contiguous rows 446–521, bridging the
+/// now-line's own ~2px interruption of the fill colour). Plus an **explicit
+/// 8px safety margin** — the upper end of this file's already-established
+/// 4–8dp range ([kLiveRowReservedHeight]'s now-deleted precedent was "224
+/// measured + 8 explicit = 232.0") — chosen because the compact tier's
+/// clearance over a standard 25-minute chunk's 100px slot is generous
+/// (100 − 76 = 24px of natural slack), so the extra 4px of headroom over the
+/// tighter end of the range costs nothing. `76 + 8 = 84.0`.
+///
+/// **Relationship to [kFullTierMinHeight] (Pitfall 6, `27-RESEARCH.md`).**
+/// `84.0` is 4dp away from [kFullTierMinHeight]'s `88.0` — outside the "within
+/// 2dp, decide explicitly" trigger, but the relationship is still resolved
+/// here rather than left to be inferred: the two constants are **kept
+/// separate**, not collapsed. Their prior identical `88.0` value was
+/// coincidental — both were independently re-derived, before this
+/// measurement, from the same 2026-08-18 card-compaction arithmetic estimate.
+/// They threshold different card layouts ([LiveRowCard]'s compact tier vs.
+/// `ChunkCard`'s full tier) with no shared content, so there is no reason for
+/// a future change to either card to move both numbers together.
+///
+/// **Single-line tier, confirmed separately:** the same profile's live
+/// 5-minute break (10:20–10:25 AM, simulated 10:22 AM) measured a `16px` fill
+/// band via the same script — comfortably under the 20px slot, no tightening
+/// needed.
 ///
 /// **Do not derive this from `flutter test`.** This file already carries a
 /// three-strikes history of constants that were wrong when set from that
 /// harness's placeholder-font measurements: `kGutterWidth` (`timeline_row_
 /// tile.dart`) went 46 → 75 → 52; [kPixelsPerMinute] went 4.0 → 5.5 → 4.0;
 /// the live row's now-deleted reserved-height constant went 240 → 232
-/// before this phase removed it outright. A fourth would be a pattern, not
-/// a one-off.
+/// before this phase removed it outright.
 ///
-/// [kFullTierMinHeight] currently holds the identical `88.0` value. That
-/// coincidence is by construction (both were re-derived from the same
-/// 2026-08-18 card-compaction estimate), not accident — plan 27-04 must
-/// decide explicitly, once the real number is known, whether to keep these
-/// two constants separate or collapse them into one (`27-RESEARCH.md`
-/// Pitfall 6).
-const double kCompactLiveMinHeight = 88.0;
+/// **What would invalidate this value:** any change to the compact tier's
+/// children (kicker, title, actions row, remaining-time line) or how many
+/// there are; any typography change to `labelSmall` / `titleMedium` /
+/// `bodySmall`; any change to the 36×36 icon-button constraints or padding;
+/// any change to the Card's `12`/`8` (horizontal/vertical) padding or its
+/// `4`/`4` margin. Re-measure with `measure_card_fill.py` against a fresh
+/// screenshot — never against `flutter test`.
+const double kCompactLiveMinHeight = 84.0;
 
 /// The now-line overlay's own box height — the 2dp rule and its time chip
 /// are vertically centred inside a box this tall, so they land exactly on
