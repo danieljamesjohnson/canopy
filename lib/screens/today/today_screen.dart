@@ -819,12 +819,13 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   }
 
   /// Builds the *reference* title string for a chunk — used everywhere a
-  /// chunk is named EXCEPT the live row itself (the "Next · …" line, the
-  /// edge-state bodies). A break returns its fixed literal ('Short break' /
-  /// 'Long break'); every other chunk falls through to the existing
-  /// goal-name → rationale → 'Work block' chain, unchanged. The live row
-  /// uses [_liveTitle] instead, which is present-continuous for the current
-  /// activity and delegates back here for everything else.
+  /// chunk is named EXCEPT the live row itself (see [_liveTitle]) and the
+  /// edge-state bodies' break-awareness call sites. A break returns its
+  /// fixed literal ('Short break' / 'Long break'); every other chunk falls
+  /// through to the existing goal-name → rationale → 'Work block' chain,
+  /// unchanged. The live row uses [_liveTitle] instead, which is
+  /// present-continuous for the current activity and delegates back here
+  /// for everything else.
   ///
   /// The two break literals deliberately match the non-live break row in
   /// the schedule chunk card, so the same break reads identically whether
@@ -870,11 +871,14 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   }
 
   /// The single source of "how much of the current activity is left," in
-  /// whole seconds. Feeds the live row's remaining-time label, its progress
-  /// bar, AND the fast-timer decision ([_syncFastTimer]) — because all three
-  /// read this one value, they can never disagree (P-5). Returns `null`
-  /// unless [nowState] is [Active] and its current chunk has a clock
-  /// position (`displayStartMinutes`).
+  /// whole seconds. Feeds the live row's remaining-time label AND the
+  /// fast-timer decision ([_syncFastTimer]) — because both read this one
+  /// value, they can never disagree (P-5). (The live row's progress bar was
+  /// deleted in Phase 27/GRID-02 — the now-line's position within the row's
+  /// duration-exact slot already communicates fraction-elapsed, so a
+  /// second, redundant indicator was removed rather than kept in sync.)
+  /// Returns `null` unless [nowState] is [Active] and its current chunk has
+  /// a clock position (`displayStartMinutes`).
   ///
   /// [nowDt] must be the SAME sample used to produce [nowState] (see the
   /// call site in `build()`) — this function does not read the clock
