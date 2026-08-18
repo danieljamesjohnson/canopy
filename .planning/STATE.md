@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: none
 milestone_name: milestone
 status: v1.5 shipped and archived. Phase 27 added 2026-08-18 out of post-v1.5 UAT on the Today
-stopped_at: Completed 27-02-PLAN.md
-last_updated: "2026-08-18T14:49:28.601Z"
+stopped_at: 27-04-PLAN.md Tasks 1-2 done and committed; Task 3 (human-verify checkpoint) pending
+last_updated: "2026-08-18T15:06:04.000Z"
 last_activity: 2026-08-18
 progress:
   total_phases: 1
@@ -18,14 +18,17 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-18T14:49:28.597Z
+**Last session:** 2026-08-18T15:06:04.000Z
 
 ---
 
 ## Current Position
 
 Phase: 27 — True Grid (standalone, no milestone). Executing.
-Plan: 4 of 4
+Plan: 4 of 4 — Tasks 1-2 (`type="auto"`) done and committed (`1ca4204`, `7d0a1e6`); Task 3
+(`checkpoint:human-verify`, the 36dp touch-target + now-line-legibility + uniform-grid UAT) is
+PENDING. Debug build served at `http://danserver:8137/`, current as of the pause (served-bytes
+check non-zero). Plan and phase are NOT complete until a human returns a verdict on Task 3.
 Status: v1.5 shipped and archived. Phase 27 added 2026-08-18 out of post-v1.5 UAT on the Today
 timeline; owner's call was a standalone phase rather than opening v1.6.
 Last activity: 2026-08-18
@@ -159,6 +162,10 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase ?]: PD-27-06's live-row tap gate duplicates _buildChunkCard's goal lookups inline at the _buildLiveRow call site rather than sharing a closure, per the plan's explicit instruction
 - [Phase ?]: 27-03: Fixed the 8th unforecast failing test (a running break gets the same countdown treatment) rather than deferring it -- 27-02-SUMMARY.md had already investigated and cleared it as the single-line tier's Row/Expanded split rendering the countdown in its own Text with a leading ' . ' prefix, not a regression
 - [Phase ?]: 27-03: Deleted the two progress-bar tests outright (D-04 live-break bar, bar-tracks-label) rather than repointing them -- the bar is gone from both live-row tiers by design, the now-line's position within a duration-exact card IS the fraction elapsed
+- [Phase 27-04]: kCompactLiveMinHeight measured in a real browser and set to 84.0 (76px raw fill + 8px explicit safety margin), replacing the 88.0 UNMEASURED PLACEHOLDER -- kept separate from kFullTierMinHeight (88.0, 4dp apart, different card layouts, Pitfall 6 resolved explicitly in the doc comment)
+- [Phase 27-04]: measure_card_fill.py's fill-colour derivation filters to (saturated AND light/pastel, min channel > 100), not saturated alone -- the naive filter picked the ordinary ChunkCard's darker FilledButton colorScheme.primary background over the live row's lighter primaryContainer fill on the single-line-tier screenshot, since non-live cards outnumber the live row in raw pixel count
+- [Phase 27-04]: measure_hours.py prints UNIFORM (240.0/240.0, no 132.0 spread) against the build containing the measured constant, for both a live work chunk and a live break -- GRID-01 proven end-to-end in pixels, not just arithmetic
+- [Phase 27-04]: Plan 27-04 Task 3 (human-verify checkpoint: 36dp touch targets on a real device, now-line legibility, uniform grid) is PENDING as of 2026-08-18 -- Tasks 1-2 committed (1ca4204, 7d0a1e6), 27-04-SUMMARY.md documents the paused state; do not treat this plan or Phase 27 as complete until a human verdict is recorded
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -241,9 +248,11 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 
 ## Session Continuity
 
-Last session: 2026-08-10
-Stopped at: Completed 27-02-PLAN.md
-Resume at: `/gsd-plan-phase 26`
+Last session: 2026-08-18
+Stopped at: 27-04-PLAN.md Task 3 — `checkpoint:human-verify`, PENDING. Tasks 1-2 committed
+(`1ca4204` measure+set `kCompactLiveMinHeight`, `7d0a1e6` prove GRID-01 `UNIFORM`).
+Resume at: open `http://danserver:8137/` on a phone/tablet, walk `27-04-SUMMARY.md`'s "Task 3"
+section, record the verdict, then finalize the summary and close Phase 27.
 
 ## Performance Metrics
 
@@ -293,3 +302,4 @@ Resume at: `/gsd-plan-phase 26`
 | Phase 27-true-grid P01 | ~20min | 2 tasks | 3 files |
 | Phase 27 P02 | ~45min | 3 tasks | 3 files |
 | Phase 27-true-grid P03 | ~35min | 2 tasks | 2 files |
+| Phase 27-true-grid P04 | ~55min (Tasks 1-2; Task 3 pending) | 2/3 tasks | 1 file modified, 7 created |
