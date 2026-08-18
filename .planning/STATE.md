@@ -4,13 +4,13 @@ milestone: none
 milestone_name: milestone
 status: v1.5 shipped and archived. Phase 27 added 2026-08-18 out of post-v1.5 UAT on the Today
 stopped_at: Completed 27-02-PLAN.md
-last_updated: "2026-08-18T14:39:43.116Z"
+last_updated: "2026-08-18T14:49:28.601Z"
 last_activity: 2026-08-18
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-18T14:39:43.111Z
+**Last session:** 2026-08-18T14:49:28.597Z
 
 ---
 
 ## Current Position
 
 Phase: 27 — True Grid (standalone, no milestone). Executing.
-Plan: 3 of 4
+Plan: 4 of 4
 Status: v1.5 shipped and archived. Phase 27 added 2026-08-18 out of post-v1.5 UAT on the Today
 timeline; owner's call was a standalone phase rather than opening v1.6.
 Last activity: 2026-08-18
@@ -157,6 +157,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 27-01]: Fixed a pre-existing today_screen_test.dart test by invoking ChunkCard.onTap directly instead of a geometric tester.tap() — This plan's own intermediate_state_notice predicts LiveRowCard now overlaps the row beneath it (today_screen.dart's height fix is out of scope, reserved for plan 27-02); a geometric tap on the row below the live row landed on the overlapping live card instead of the intended row
 - [Phase ?]: LiveRowCard's Complete/Skip IconButtons use IconButton.styleFrom(tapTargetSize: shrinkWrap) instead of visualDensity.compact to actually measure 36x36 (Material 3's IconButton always wraps a separate tap-target padding layer that constraints alone can't override)
 - [Phase ?]: PD-27-06's live-row tap gate duplicates _buildChunkCard's goal lookups inline at the _buildLiveRow call site rather than sharing a closure, per the plan's explicit instruction
+- [Phase ?]: 27-03: Fixed the 8th unforecast failing test (a running break gets the same countdown treatment) rather than deferring it -- 27-02-SUMMARY.md had already investigated and cleared it as the single-line tier's Row/Expanded split rendering the countdown in its own Text with a leading ' . ' prefix, not a regression
+- [Phase ?]: 27-03: Deleted the two progress-bar tests outright (D-04 live-break bar, bar-tracks-label) rather than repointing them -- the bar is gone from both live-row tiers by design, the now-line's position within a duration-exact card IS the fraction elapsed
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -290,3 +292,4 @@ Resume at: `/gsd-plan-phase 26`
 | Phase 26 P10 | 90min | 4 tasks | 7 files |
 | Phase 27-true-grid P01 | ~20min | 2 tasks | 3 files |
 | Phase 27 P02 | ~45min | 3 tasks | 3 files |
+| Phase 27-true-grid P03 | ~35min | 2 tasks | 2 files |
