@@ -156,7 +156,27 @@ class LiveRowCard extends StatelessWidget {
                       height: 36,
                     ),
                     padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
+                    // `constraints:` alone caps the visible Material, but
+                    // Material 3's IconButton always wraps it in an
+                    // invisible `_InputPadding` that separately pads the
+                    // HIT-TEST area out to `kMinInteractiveDimension`
+                    // (48dp) — measured directly (widget test,
+                    // `tester.getSize`), stacking `VisualDensity.compact` on
+                    // top of the tight `constraints:` still measured 40x40,
+                    // not the 36x36 the design and this tier's slot math are
+                    // budgeted against, because visual density only shaves
+                    // the 48dp interactive minimum, it does not remove it.
+                    // `tapTargetSize: shrinkWrap` is what actually removes
+                    // that separate padding layer, so deliberately no
+                    // `visualDensity` override here — stacking one on top of
+                    // `shrinkWrap` instead shrinks the tight constraints'
+                    // OWN minimum (visual density adjusts both layers), which
+                    // undersizes the button to 28x28. `shrinkWrap` alone,
+                    // against the unmodified tight constraints, is the
+                    // combination that actually measures exactly 36x36.
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     onPressed: () =>
                         context.read<ScheduleNotifier>().markComplete(
                           chunkId,
@@ -171,7 +191,9 @@ class LiveRowCard extends StatelessWidget {
                       height: 36,
                     ),
                     padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     onPressed: () =>
                         context.read<ScheduleNotifier>().markSkipped(chunkId),
                   ),

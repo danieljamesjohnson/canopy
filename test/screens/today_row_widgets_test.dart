@@ -651,16 +651,16 @@ void main() {
     );
   });
 
-  group('LiveRowCard (D-01, Phase 23 seam)', () {
+  group('LiveRowCard — two density tiers (GRID-02)', () {
     Future<void> pumpLiveRowCard(
       WidgetTester tester, {
       String chunkId = 'chunk-1',
       String kicker = 'RIGHT NOW',
       String title = 'Deep work',
       String remainingLabel = '12 min left · until 10:50',
-      double progress = 0.4,
-      String? nextLine = 'Next · Reading at 10:50am',
+      double slotHeight = 100.0,
       bool showActions = true,
+      VoidCallback? onTap,
       _FakeScheduleNotifier? scheduleNotifier,
     }) async {
       await pumpWithMood(
@@ -670,9 +670,9 @@ void main() {
           kicker: kicker,
           title: title,
           remainingLabel: remainingLabel,
-          progress: progress,
-          nextLine: nextLine,
+          slotHeight: slotHeight,
           showActions: showActions,
+          onTap: onTap,
         ),
         extraProviders: [
           ChangeNotifierProvider<ScheduleNotifier>.value(
@@ -689,27 +689,6 @@ void main() {
       expect(find.text('RIGHT NOW'), findsOneWidget);
     });
 
-    testWidgets('renders title, remainingLabel and nextLine verbatim', (
-      tester,
-    ) async {
-      await pumpLiveRowCard(
-        tester,
-        title: 'Deep work',
-        remainingLabel: '12 min left · until 10:50',
-        nextLine: 'Next · Reading at 10:50am',
-      );
-      expect(find.text('Deep work'), findsOneWidget);
-      expect(find.text('12 min left · until 10:50'), findsOneWidget);
-      expect(find.text('Next · Reading at 10:50am'), findsOneWidget);
-    });
-
-    testWidgets('renders no next-line text when nextLine is null', (
-      tester,
-    ) async {
-      await pumpLiveRowCard(tester, nextLine: null);
-      expect(find.textContaining('Next ·'), findsNothing);
-    });
-
     testWidgets("card background colour equals colorScheme.primaryContainer", (
       tester,
     ) async {
@@ -719,20 +698,164 @@ void main() {
       expect(card.color, Theme.of(context).colorScheme.primaryContainer);
     });
 
+    testWidgets('no arrow_forward icon and no "Now" pill badge', (
+      tester,
+    ) async {
+      await pumpLiveRowCard(tester);
+      expect(find.byIcon(Icons.arrow_forward), findsNothing);
+      expect(find.text('Now'), findsNothing);
+    });
+
+    testWidgets(
+      'compact tier renders title and remainingLabel verbatim, no '
+      'LinearProgressIndicator',
+      (tester) async {
+        await pumpLiveRowCard(
+          tester,
+          slotHeight: 100.0,
+          title: 'Deep work',
+          remainingLabel: '12 min left · until 10:50',
+        );
+        expect(find.text('Deep work'), findsOneWidget);
+        expect(find.text('12 min left · until 10:50'), findsOneWidget);
+        expect(find.byType(LinearProgressIndicator), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'compact tier icon buttons carry the right icons and measure 36x36',
+      (tester) async {
+        await pumpLiveRowCard(tester, slotHeight: 100.0, showActions: true);
+        final completeIcon = find.byIcon(Icons.check_circle_outline);
+        final skipIcon = find.byIcon(Icons.skip_next_outlined);
+        expect(completeIcon, findsOneWidget);
+        expect(skipIcon, findsOneWidget);
+        final completeButton = find.ancestor(
+          of: completeIcon,
+          matching: find.byType(IconButton),
+        );
+        final skipButton = find.ancestor(
+          of: skipIcon,
+          matching: find.byType(IconButton),
+        );
+        expect(tester.getSize(completeButton), const Size(36, 36));
+        expect(tester.getSize(skipButton), const Size(36, 36));
+      },
+    );
+
+    testWidgets(
+      'tier boundary: kCompactLiveMinHeight is compact, one dp below is '
+      'single-line',
+      (tester) async {
+        await pumpLiveRowCard(tester, slotHeight: kCompactLiveMinHeight);
+        expect(find.text('RIGHT NOW'), findsOneWidget);
+
+        await pumpLiveRowCard(
+          tester,
+          slotHeight: kCompactLiveMinHeight - 1,
+        );
+        expect(find.text('RIGHT NOW'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'single-line tier renders title and remaining time, no kicker, no '
+      'icon buttons, no progress bar',
+      (tester) async {
+        await pumpLiveRowCard(
+          tester,
+          slotHeight: 20.0,
+          title: 'Deep work',
+          remainingLabel: '12 min left · until 10:50',
+        );
+        expect(find.text('Deep work'), findsOneWidget);
+        expect(find.text(' · 12 min left · until 10:50'), findsOneWidget);
+        expect(find.textContaining('RIGHT NOW'), findsNothing);
+        expect(find.byType(IconButton), findsNothing);
+        expect(find.byType(LinearProgressIndicator), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'single-line tier exposes the locked "Right now: ..." semantics label',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await pumpLiveRowCard(
+          tester,
+          slotHeight: 20.0,
+          title: 'Deep work',
+          remainingLabel: '12 min left · until 10:50',
+        );
+        expect(
+          find.bySemanticsLabel(
+            'Right now: Deep work, 12 min left · until 10:50',
+          ),
+          findsOneWidget,
+        );
+        handle.dispose();
+      },
+    );
+
+    testWidgets('single-line tap fires onTap exactly once', (tester) async {
+      var tapCount = 0;
+      await pumpLiveRowCard(
+        tester,
+        slotHeight: 20.0,
+        onTap: () => tapCount++,
+      );
+      await tester.tap(find.byType(Card));
+      await tester.pump();
+      expect(tapCount, 1);
+    });
+
+    testWidgets('single-line tier has no InkWell when onTap is null', (
+      tester,
+    ) async {
+      await pumpLiveRowCard(tester, slotHeight: 20.0, onTap: null);
+      expect(find.byType(InkWell), findsNothing);
+    });
+
+    testWidgets(
+      'both tiers restate kCardLeftInset/kTimelineRowInset as Card margin',
+      (tester) async {
+        await pumpLiveRowCard(tester, slotHeight: 100.0);
+        var card = tester.widget<Card>(find.byType(Card));
+        var margin = card.margin! as EdgeInsets;
+        expect(margin.left, kCardLeftInset);
+        expect(margin.right, kTimelineRowInset);
+        expect(
+          card.shape,
+          const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        );
+        expect(card.elevation, 6);
+
+        await pumpLiveRowCard(tester, slotHeight: 20.0);
+        card = tester.widget<Card>(find.byType(Card));
+        margin = card.margin! as EdgeInsets;
+        expect(margin.left, kCardLeftInset);
+        expect(margin.right, kTimelineRowInset);
+        expect(
+          card.shape,
+          const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        );
+        expect(card.elevation, 4);
+      },
+    );
+
     testWidgets('shows Complete/Skip buttons when showActions is true', (
       tester,
     ) async {
       await pumpLiveRowCard(tester, showActions: true);
-      expect(find.byType(FilledButton), findsOneWidget);
-      expect(find.byType(OutlinedButton), findsOneWidget);
+      expect(find.byTooltip('Complete'), findsOneWidget);
+      expect(find.byTooltip('Skip'), findsOneWidget);
     });
 
     testWidgets('hides Complete/Skip buttons when showActions is false', (
       tester,
     ) async {
       await pumpLiveRowCard(tester, showActions: false);
-      expect(find.byType(FilledButton), findsNothing);
-      expect(find.byType(OutlinedButton), findsNothing);
+      expect(find.byTooltip('Complete'), findsNothing);
+      expect(find.byTooltip('Skip'), findsNothing);
     });
 
     testWidgets('tapping Complete calls ScheduleNotifier.markComplete', (
@@ -740,7 +863,7 @@ void main() {
     ) async {
       final sn = _FakeScheduleNotifier();
       await pumpLiveRowCard(tester, chunkId: 'chunk-abc', scheduleNotifier: sn);
-      await tester.tap(find.widgetWithText(FilledButton, 'Complete'));
+      await tester.tap(find.byTooltip('Complete'));
       await tester.pump();
       expect(sn.lastCompletedId, 'chunk-abc');
     });
@@ -750,43 +873,9 @@ void main() {
     ) async {
       final sn = _FakeScheduleNotifier();
       await pumpLiveRowCard(tester, chunkId: 'chunk-xyz', scheduleNotifier: sn);
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Skip'));
+      await tester.tap(find.byTooltip('Skip'));
       await tester.pump();
       expect(sn.lastSkippedId, 'chunk-xyz');
-    });
-
-    testWidgets('LinearProgressIndicator value equals the passed progress', (
-      tester,
-    ) async {
-      await pumpLiveRowCard(tester, progress: 0.4);
-      final indicator = tester.widget<LinearProgressIndicator>(
-        find.byType(LinearProgressIndicator),
-      );
-      expect(indicator.value, 0.4);
-    });
-
-    testWidgets('progress 1.5 is clamped to 1.0', (tester) async {
-      await pumpLiveRowCard(tester, progress: 1.5);
-      final indicator = tester.widget<LinearProgressIndicator>(
-        find.byType(LinearProgressIndicator),
-      );
-      expect(indicator.value, 1.0);
-    });
-
-    testWidgets('progress -0.2 is clamped to 0.0', (tester) async {
-      await pumpLiveRowCard(tester, progress: -0.2);
-      final indicator = tester.widget<LinearProgressIndicator>(
-        find.byType(LinearProgressIndicator),
-      );
-      expect(indicator.value, 0.0);
-    });
-
-    testWidgets('no arrow_forward icon and no "Now" pill badge', (
-      tester,
-    ) async {
-      await pumpLiveRowCard(tester);
-      expect(find.byIcon(Icons.arrow_forward), findsNothing);
-      expect(find.text('Now'), findsNothing);
     });
   });
 }
