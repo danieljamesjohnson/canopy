@@ -97,7 +97,7 @@ browser-verified; 560/560 tests green. See `v1.5-MILESTONE-AUDIT.md`.
 
 </details>
 
-### Standalone phases (post-v1.5)
+### Standalone phases
 
 Neither of these belongs to a milestone — the owner's call (2026-08-18, restated 2026-08-19) was
 standalone phases rather than opening v1.6. Detail for each follows below.
