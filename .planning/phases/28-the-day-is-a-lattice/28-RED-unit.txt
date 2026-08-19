@@ -202,11 +202,71 @@ Try `flutter pub outdated` for more information.
   
 00:00 +50 -10: TONE-01: under-pace time-target rationale reads as working toward, not behind
 00:00 +51 -10: TONE-01: on-track branch is unchanged
-00:00 +52 -10: Some tests failed.
+00:00 +52 -10: LATTICE — the day is a 30-minute lattice LATTICE-01: every cell starts on a 30-minute boundary, at every mood
+00:00 +52 -11: LATTICE — the day is a 30-minute lattice LATTICE-01: every cell starts on a 30-minute boundary, at every mood [E]
+  Expected: <0>
+    Actual: <25>
+  mood=1: longBreak at 535 is off-lattice
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 2314:17  main.<fn>.<fn>
+  
+00:00 +52 -11: LATTICE — the day is a 30-minute lattice LATTICE-01/D-02: work resumes on the lattice after an off-boundary commitment
+00:00 +52 -12: LATTICE — the day is a 30-minute lattice LATTICE-01/D-02: work resumes on the lattice after an off-boundary commitment [E]
+  Expected: <0>
+    Actual: <15>
+  discretionary work chunk at 615 is off-lattice
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 2371:11  main.<fn>.<fn>
+  
+00:00 +52 -12: LATTICE — the day is a 30-minute lattice LATTICE-02: exactly floor(workChunks / N) long breaks of exactly 30 minutes, at every mood
+00:00 +52 -13: LATTICE — the day is a 30-minute lattice LATTICE-02: exactly floor(workChunks / N) long breaks of exactly 30 minutes, at every mood [E]
+  Expected: <2>
+    Actual: <1>
+  mood=1: expected 2 long breaks for 4 work chunks at N=2
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 2425:11  main.<fn>.<fn>
+  
+00:00 +52 -13: LATTICE — the day is a 30-minute lattice LATTICE-02/D-05: the owner's day — mood 3, N=4, 4 work chunks — still gets its long break
+00:00 +52 -14: LATTICE — the day is a 30-minute lattice LATTICE-02/D-05: the owner's day — mood 3, N=4, 4 work chunks — still gets its long break [E]
+  Expected: <9>
+    Actual: <7>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 2465:9   main.<fn>.<fn>
+  
+00:00 +52 -14: LATTICE — the day is a 30-minute lattice LATTICE-02: the Nth chunk closes its own cell AND is followed by a separate 30-minute cell
+00:00 +52 -15: LATTICE — the day is a 30-minute lattice LATTICE-02: the Nth chunk closes its own cell AND is followed by a separate 30-minute cell [E]
+  Expected: ChunkType:<ChunkType.shortBreak>
+    Actual: ChunkType:<ChunkType.work>
+  mood=1: the chunk before a longBreak must be its own shortBreak (D-06)
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 2528:13  main.<fn>.<fn>
+  
+00:00 +52 -15: LATTICE — the day is a 30-minute lattice LATTICE-02/D-05: a slot too narrow for the boundary footprint reserves the short break only — capacity-driven, and it does not fire on a nominal day
+00:00 +52 -16: LATTICE — the day is a 30-minute lattice LATTICE-02/D-05: a slot too narrow for the boundary footprint reserves the short break only — capacity-driven, and it does not fire on a nominal day [E]
+  Expected: <5>
+    Actual: <4>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 2594:9   main.<fn>.<fn>
+  
+00:00 +52 -16: LATTICE — the day is a 30-minute lattice LATTICE-01/D-01: a fixed commitment keeps its own wall-clock start, unrounded
+00:00 +53 -16: LATTICE — the day is a 30-minute lattice D-04: neither _moodCap nor the day end moves — per-mood work-chunk counts are unchanged
+00:00 +54 -16: Some tests failed.
 
 Failing tests:
   /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: BREAK-01: mood=1 places a long break after every 2 work chunks
   /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: BREAK-01: mood=2 places a long break after every 3 work chunks (regression lock — also true under the pre-BREAK-01 formula, does not by itself prove the new table is wired up)
   /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: BREAK-01: mood=3 places a long break after every 4 work chunks (baseline unchanged)
   /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: BREAK-01: mood=4 places a long break after every 4 work chunks (regression lock — also true under the pre-BREAK-01 formula, does not by itself prove the new table is wired up)
-  ... and 6 more
+  ... and 12 more

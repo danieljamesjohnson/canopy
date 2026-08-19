@@ -2243,4 +2243,563 @@ void main() {
     expect(result.length, 1);
     expect(result[0].rationale, 'On track this week');
   });
+
+  // ---------------------------------------------------------------------------
+  // LATTICE-01 / LATTICE-02 (Phase 28: The Day Is a Lattice). Every cell
+  // starts on a 30-minute boundary: 25 minutes of work, 5 minutes of break,
+  // and after every N work chunks (N from the morning mood) a separate
+  // 30-minute long break follows the boundary chunk's own short break —
+  // never replaces it (D-06). Every assertion below runs the real
+  // sut.generate(...); none hand-builds a ScheduledChunk fixture. Each test
+  // is labeled RED-PROOF (must fail against the unfixed engine) or GUARD
+  // (must pass now AND after the fix) so 28-RED-unit.txt reads unambiguously.
+  // ---------------------------------------------------------------------------
+  group('LATTICE — the day is a 30-minute lattice', () {
+    // RED-PROOF 1
+    test(
+      'LATTICE-01: every cell starts on a 30-minute boundary, at every mood',
+      () {
+        final goals = [
+          ...List.generate(6, (i) => makeHabit(name: 'Habit $i')),
+          ...List.generate(
+            2,
+            (i) => makeTimeTarget(name: 'Regular $i', weeklyHourBudget: 5),
+          ),
+        ];
+        for (int mood = 1; mood <= 5; mood++) {
+          final result = sut.generate(
+            goals: goals,
+            blocks: [],
+            moodIndex: mood,
+            date: monday,
+            completionLogs: [],
+            lighterDay: false,
+          );
+          for (final chunk in result) {
+            // D-01 exemption: commitment-anchored chunks are never rounded —
+            // LATTICE-01 governs generated (discretionary) chunks only.
+            if (chunk.anchoredStartMinutes != null) continue;
+            final start = chunk.syntheticStartMinutes;
+            if (start == null) continue;
+            switch (chunk.chunkType) {
+              case ChunkType.work:
+                expect(
+                  start % 30,
+                  0,
+                  reason: 'mood=$mood: work chunk at $start is off-lattice',
+                );
+                expect(
+                  chunk.durationMinutes,
+                  25,
+                  reason:
+                      'mood=$mood: work chunk at $start has the wrong duration',
+                );
+                break;
+              case ChunkType.shortBreak:
+                expect(
+                  start % 30,
+                  25,
+                  reason:
+                      'mood=$mood: shortBreak at $start is off-lattice (a '
+                      'short break is the tail of its cell, not a new one)',
+                );
+                expect(
+                  chunk.durationMinutes,
+                  5,
+                  reason:
+                      'mood=$mood: shortBreak at $start has the wrong duration',
+                );
+                break;
+              case ChunkType.longBreak:
+                expect(
+                  start % 30,
+                  0,
+                  reason: 'mood=$mood: longBreak at $start is off-lattice',
+                );
+                expect(
+                  chunk.durationMinutes,
+                  30,
+                  reason:
+                      'mood=$mood: longBreak at $start has the wrong duration',
+                );
+                break;
+            }
+          }
+        }
+      },
+    );
+
+    // RED-PROOF 2
+    test(
+      'LATTICE-01/D-02: work resumes on the lattice after an off-boundary commitment',
+      () {
+        // Commitment 9:30-10:15 (570-615, a 45-min window) produces one
+        // anchored chunk stretched to cover the whole window: the
+        // block-chunking loop only starts a new 25-min chunk when a full 25
+        // minutes remains before the window's end, so a 45-min window yields
+        // exactly one chunk, not two (verified against the actual
+        // algorithm, not assumed).
+        // Free slot 1 is [480, 570) and holds exactly 3 ordinary cells
+        // (480/510/540); the merged window ends at 615. D-02 rounds the
+        // post-commitment free-slot start up to the next 30-minute boundary:
+        // 630 (10:30), not the commitment's raw, off-lattice end minute.
+        final goals = List.generate(4, (i) => makeHabit(name: 'Habit $i'));
+        final result = sut.generate(
+          goals: goals,
+          blocks: [makeBlock(startMinutes: 570, endMinutes: 615)],
+          moodIndex: 3,
+          date: monday,
+          completionLogs: [],
+          lighterDay: false,
+        );
+
+        final discretionaryWork =
+            result
+                .where(
+                  (c) =>
+                      c.chunkType == ChunkType.work &&
+                      c.anchoredStartMinutes == null,
+                )
+                .toList()
+              ..sort(
+                (a, b) => a.syntheticStartMinutes!.compareTo(
+                  b.syntheticStartMinutes!,
+                ),
+              );
+
+        for (final chunk in discretionaryWork) {
+          expect(
+            chunk.syntheticStartMinutes! % 30,
+            0,
+            reason:
+                'discretionary work chunk at ${chunk.syntheticStartMinutes} '
+                'is off-lattice',
+          );
+        }
+
+        final afterCommitment = discretionaryWork.where(
+          (c) => c.syntheticStartMinutes! >= 615,
+        );
+        expect(
+          afterCommitment.isNotEmpty,
+          isTrue,
+          reason:
+              'expected at least one discretionary chunk after the commitment',
+        );
+        expect(
+          afterCommitment.first.syntheticStartMinutes,
+          630,
+          reason:
+              'the free slot after a 570-615 commitment must resume at 630 '
+              '(10:30), not the commitment\'s raw end minute (615)',
+        );
+      },
+    );
+
+    // RED-PROOF 3
+    test(
+      'LATTICE-02: exactly floor(workChunks / N) long breaks of exactly 30 minutes, at every mood',
+      () {
+        const cadence = {1: 2, 2: 3, 3: 4, 4: 4, 5: 5};
+        final goals = [
+          ...List.generate(6, (i) => makeHabit(name: 'Habit $i')),
+          ...List.generate(
+            2,
+            (i) => makeTimeTarget(name: 'Regular $i', weeklyHourBudget: 5),
+          ),
+        ];
+        for (int mood = 1; mood <= 5; mood++) {
+          final result = sut.generate(
+            goals: goals,
+            blocks: [],
+            moodIndex: mood,
+            date: monday,
+            completionLogs: [],
+            lighterDay: false,
+          );
+          final workCount = workChunksOf(result);
+          final longBreaks = result
+              .where((c) => c.chunkType == ChunkType.longBreak)
+              .toList();
+          final n = cadence[mood]!;
+          expect(
+            longBreaks.length,
+            workCount ~/ n,
+            reason:
+                'mood=$mood: expected ${workCount ~/ n} long breaks for '
+                '$workCount work chunks at N=$n',
+          );
+          for (final lb in longBreaks) {
+            expect(
+              lb.durationMinutes,
+              30,
+              reason: 'mood=$mood: long break must be exactly 30 minutes',
+            );
+          }
+        }
+      },
+    );
+
+    // RED-PROOF 4 — the single most important test in the phase: it
+    // reproduces the exact day the owner was looking at when he said the
+    // schedule "isn't functioning right".
+    test(
+      "LATTICE-02/D-05: the owner's day — mood 3, N=4, 4 work chunks — still gets its long break",
+      () {
+        // 4 habits, mood 3, blocks: [], lighterDay: false. The pre-fix
+        // engine returns 7 chunks ending in work with zero long breaks
+        // anywhere; the guard that caused it was
+        // `discIdx + 1 < discretionaryChunks.length` (defect 3).
+        // Fixed: W@480(25) SB@505(5) W@510(25) SB@535(5) W@540(25) SB@565(5)
+        // W@570(25) SB@595(5) LB@600(30).
+        final goals = List.generate(4, (i) => makeHabit(name: 'Habit $i'));
+        final result = sut.generate(
+          goals: goals,
+          blocks: [],
+          moodIndex: 3,
+          date: monday,
+          completionLogs: [],
+          lighterDay: false,
+        );
+
+        expect(result.length, 9);
+        expect(result[0].chunkType, ChunkType.work);
+        expect(result[0].syntheticStartMinutes, 480);
+        expect(result[0].durationMinutes, 25);
+        expect(result[1].chunkType, ChunkType.shortBreak);
+        expect(result[1].syntheticStartMinutes, 505);
+        expect(result[1].durationMinutes, 5);
+        expect(result[2].chunkType, ChunkType.work);
+        expect(result[2].syntheticStartMinutes, 510);
+        expect(result[2].durationMinutes, 25);
+        expect(result[3].chunkType, ChunkType.shortBreak);
+        expect(result[3].syntheticStartMinutes, 535);
+        expect(result[3].durationMinutes, 5);
+        expect(result[4].chunkType, ChunkType.work);
+        expect(result[4].syntheticStartMinutes, 540);
+        expect(result[4].durationMinutes, 25);
+        expect(result[5].chunkType, ChunkType.shortBreak);
+        expect(result[5].syntheticStartMinutes, 565);
+        expect(result[5].durationMinutes, 5);
+        expect(result[6].chunkType, ChunkType.work);
+        expect(result[6].syntheticStartMinutes, 570);
+        expect(result[6].durationMinutes, 25);
+        expect(result[7].chunkType, ChunkType.shortBreak);
+        expect(result[7].syntheticStartMinutes, 595);
+        expect(result[7].durationMinutes, 5);
+        expect(result[8].chunkType, ChunkType.longBreak);
+        expect(result[8].syntheticStartMinutes, 600);
+        expect(result[8].durationMinutes, 30);
+        expect(result.last.chunkType, ChunkType.longBreak);
+      },
+    );
+
+    // RED-PROOF 5
+    test(
+      'LATTICE-02: the Nth chunk closes its own cell AND is followed by a separate 30-minute cell',
+      () {
+        final goals = [
+          ...List.generate(6, (i) => makeHabit(name: 'Habit $i')),
+          ...List.generate(
+            2,
+            (i) => makeTimeTarget(name: 'Regular $i', weeklyHourBudget: 5),
+          ),
+        ];
+        for (int mood = 1; mood <= 5; mood++) {
+          final result = sut.generate(
+            goals: goals,
+            blocks: [],
+            moodIndex: mood,
+            date: monday,
+            completionLogs: [],
+            lighterDay: false,
+          );
+          for (int i = 0; i < result.length; i++) {
+            if (result[i].chunkType != ChunkType.longBreak) continue;
+            expect(
+              i >= 2,
+              isTrue,
+              reason:
+                  'mood=$mood: longBreak at index $i has no room for its '
+                  'preceding work+shortBreak pair',
+            );
+            final shortBreak = result[i - 1];
+            final work = result[i - 2];
+            expect(
+              shortBreak.chunkType,
+              ChunkType.shortBreak,
+              reason:
+                  'mood=$mood: the chunk before a longBreak must be its own '
+                  'shortBreak (D-06)',
+            );
+            expect(shortBreak.durationMinutes, 5);
+            expect(
+              work.chunkType,
+              ChunkType.work,
+              reason:
+                  'mood=$mood: the chunk two before a longBreak must be the '
+                  'boundary work chunk',
+            );
+            expect(
+              shortBreak.syntheticStartMinutes,
+              work.syntheticStartMinutes! + 25,
+              reason:
+                  'mood=$mood: the short break must start exactly 25 minutes '
+                  'after its work chunk',
+            );
+            expect(
+              result[i].syntheticStartMinutes,
+              work.syntheticStartMinutes! + 30,
+              reason:
+                  'mood=$mood: the long break must start exactly 30 minutes '
+                  'after its work chunk',
+            );
+          }
+        }
+      },
+    );
+
+    // RED-PROOF 6 — this is the partial-reservation fallback that 28-03
+    // Task 1 introduces, held to the same standard as the defect it
+    // replaces: proven by fixture, never defended by a code comment alone.
+    test(
+      'LATTICE-02/D-05: a slot too narrow for the boundary footprint reserves the short break only — capacity-driven, and it does not fire on a nominal day',
+      () {
+        // (a) NARROW — mood 1 (N=2; cap 4, habitCeiling=ceil(4/2)=2, so 3
+        // habits produce exactly 2 discretionary chunks and chunk 2 is the
+        // cadence boundary). lighterDay: false — mood 1 has no lower tier,
+        // so lighterDay cannot change the cap; passed for parity with the
+        // other lattice fixtures, not for effect. blocks: [09:15-10:00]
+        // (555-600, a 45-min window) — this produces exactly one anchored
+        // chunk stretched to cover 555-600 (see RED-PROOF 2's derivation).
+        // Free slot 1 is [480, 555). Chunk 1 is ordinary — W@480(25), cursor
+        // 505, footprint 5 fits (510 <= 555) -> SB@505(5), cursor 510.
+        // Chunk 2 is the boundary — W@510(25), cursor 535: the full 35-min
+        // footprint needs 570 > 555 so it does NOT fit, but the 5-min short
+        // break alone does (540 <= 555) -> the fallback reserves only the
+        // short break; no long break is emitted after chunk 2.
+        final narrowGoals = List.generate(
+          3,
+          (i) => makeHabit(name: 'Habit $i'),
+        );
+        final narrow = sut.generate(
+          goals: narrowGoals,
+          blocks: [makeBlock(startMinutes: 555, endMinutes: 600)],
+          moodIndex: 1,
+          date: monday,
+          completionLogs: [],
+          lighterDay: false,
+        );
+
+        expect(narrow.length, 5);
+        expect(narrow[0].chunkType, ChunkType.work);
+        expect(narrow[0].syntheticStartMinutes, 480);
+        expect(narrow[0].durationMinutes, 25);
+        expect(narrow[1].chunkType, ChunkType.shortBreak);
+        expect(narrow[1].syntheticStartMinutes, 505);
+        expect(narrow[1].durationMinutes, 5);
+        expect(narrow[2].chunkType, ChunkType.work);
+        expect(narrow[2].syntheticStartMinutes, 510);
+        expect(narrow[2].durationMinutes, 25);
+        expect(narrow[3].chunkType, ChunkType.shortBreak);
+        expect(narrow[3].syntheticStartMinutes, 535);
+        expect(narrow[3].durationMinutes, 5);
+        expect(narrow[4].chunkType, ChunkType.work);
+        expect(narrow[4].anchoredStartMinutes, 555);
+        expect(narrow[4].durationMinutes, 45);
+        expect(
+          narrow.where((c) => c.chunkType == ChunkType.longBreak),
+          isEmpty,
+          reason:
+              'the narrow slot must never fabricate room for a long break '
+              'it does not have',
+        );
+
+        // (b) CONTROL, one cell wider — the identical fixture with the block
+        // moved 30 minutes later (585-630), so slot 1 is [480, 585) and the
+        // same boundary chunk's 35-min footprint now fits (535 + 35 = 570
+        // <= 585). The only difference between (a) and (b) is 30 minutes of
+        // slot width — that is what makes the fallback capacity-driven
+        // rather than a suppression rule, and asserting it is what makes
+        // the claim falsifiable.
+        final controlGoals = List.generate(
+          3,
+          (i) => makeHabit(name: 'Habit $i'),
+        );
+        final control = sut.generate(
+          goals: controlGoals,
+          blocks: [makeBlock(startMinutes: 585, endMinutes: 630)],
+          moodIndex: 1,
+          date: monday,
+          completionLogs: [],
+          lighterDay: false,
+        );
+
+        expect(control.length, 6);
+        expect(control[0].chunkType, ChunkType.work);
+        expect(control[0].syntheticStartMinutes, 480);
+        expect(control[0].durationMinutes, 25);
+        expect(control[1].chunkType, ChunkType.shortBreak);
+        expect(control[1].syntheticStartMinutes, 505);
+        expect(control[1].durationMinutes, 5);
+        expect(control[2].chunkType, ChunkType.work);
+        expect(control[2].syntheticStartMinutes, 510);
+        expect(control[2].durationMinutes, 25);
+        expect(control[3].chunkType, ChunkType.shortBreak);
+        expect(control[3].syntheticStartMinutes, 535);
+        expect(control[3].durationMinutes, 5);
+        expect(control[4].chunkType, ChunkType.longBreak);
+        expect(control[4].syntheticStartMinutes, 540);
+        expect(control[4].durationMinutes, 30);
+        expect(control[5].chunkType, ChunkType.work);
+        expect(control[5].anchoredStartMinutes, 585);
+        expect(control[5].durationMinutes, 45);
+        final controlLongBreaks = control
+            .where((c) => c.chunkType == ChunkType.longBreak)
+            .toList();
+        expect(controlLongBreaks.length, 1);
+        expect(controlLongBreaks.first.durationMinutes, 30);
+        expect(controlLongBreaks.first.syntheticStartMinutes, 540);
+
+        // (c) BOUNDED — the fallback must not fire on any day that has
+        // room: comment that defect 3 was also a plausible-looking guard —
+        // if the fallback ever starts firing on a day that has room, this
+        // half is what catches it. Re-run the 4-habit mood-3 fixture (the
+        // RED-PROOF 4 regression, blocks: [], lighterDay: false) and confirm
+        // it still ends in a 30-minute long break, and a mood loop 1-5 over
+        // the BREAK-02 fixture (blocks: []) still emits exactly
+        // floor(discretionaryWorkChunks / N) long breaks, each 30 minutes,
+        // at every mood.
+        final ownersDayGoals = List.generate(
+          4,
+          (i) => makeHabit(name: 'Habit $i'),
+        );
+        final ownersDay = sut.generate(
+          goals: ownersDayGoals,
+          blocks: [],
+          moodIndex: 3,
+          date: monday,
+          completionLogs: [],
+          lighterDay: false,
+        );
+        expect(ownersDay.last.chunkType, ChunkType.longBreak);
+        expect(ownersDay.last.durationMinutes, 30);
+
+        const cadence = {1: 2, 2: 3, 3: 4, 4: 4, 5: 5};
+        final nominalGoals = [
+          ...List.generate(6, (i) => makeHabit(name: 'Habit $i')),
+          ...List.generate(
+            2,
+            (i) => makeTimeTarget(name: 'Regular $i', weeklyHourBudget: 5),
+          ),
+        ];
+        for (int mood = 1; mood <= 5; mood++) {
+          final nominal = sut.generate(
+            goals: nominalGoals,
+            blocks: [],
+            moodIndex: mood,
+            date: monday,
+            completionLogs: [],
+            lighterDay: false,
+          );
+          final workCount = workChunksOf(nominal);
+          final longBreaks = nominal
+              .where((c) => c.chunkType == ChunkType.longBreak)
+              .toList();
+          final n = cadence[mood]!;
+          expect(
+            longBreaks.length,
+            workCount ~/ n,
+            reason:
+                'mood=$mood: the narrow-slot fallback must not change the '
+                'nominal long-break count ($workCount work chunks at N=$n)',
+          );
+          for (final lb in longBreaks) {
+            expect(lb.durationMinutes, 30);
+          }
+        }
+      },
+    );
+
+    // GUARD 7 — must be green now AND after the fix.
+    test(
+      'LATTICE-01/D-01: a fixed commitment keeps its own wall-clock start, unrounded',
+      () {
+        // 4 habits fill habitCeiling=4 at mood 3 (cap=8); blocks:
+        // [makeBlock()] — the house default 540-600, a 60-min window. Per
+        // the existing block-chunking loop (unchanged by this phase —
+        // D-01/D-02 only affect the free-slot start rounding, never the
+        // anchored chunks themselves) this produces exactly 2 anchored
+        // chunks: 540 (25 min, unstretched) and 565 (35 min, stretched to
+        // reach 600). 565 is deliberately off-lattice (565 % 30 == 25) —
+        // rounding a commitment would move the user's actual appointment,
+        // which is the opposite of the product's purpose.
+        final goals = List.generate(4, (i) => makeHabit(name: 'Habit $i'));
+        final result = sut.generate(
+          goals: goals,
+          blocks: [makeBlock()],
+          moodIndex: 3,
+          date: monday,
+          completionLogs: [],
+          lighterDay: false,
+        );
+
+        final anchored =
+            result.where((c) => c.anchoredStartMinutes != null).toList()
+              ..sort(
+                (a, b) => a.anchoredStartMinutes!.compareTo(
+                  b.anchoredStartMinutes!,
+                ),
+              );
+
+        expect(anchored.length, 2);
+        expect(anchored[0].anchoredStartMinutes, 540);
+        expect(anchored[0].durationMinutes, 25);
+        expect(anchored[1].anchoredStartMinutes, 565);
+        expect(
+          anchored[1].anchoredStartMinutes! % 30,
+          25,
+          reason: 'the second anchored chunk is deliberately off-lattice',
+        );
+        expect(anchored[1].durationMinutes, 35);
+      },
+    );
+
+    // GUARD 8 — must be green now AND after the fix.
+    test(
+      'D-04: neither _moodCap nor the day end moves — per-mood work-chunk counts are unchanged',
+      () {
+        // Pins the current engine's per-mood work-chunk count for the
+        // BREAK-02 fixture (6 habits + 2 time-targets, blocks: [],
+        // lighterDay: false) as the deliberate non-change from D-04, backed
+        // by 28-RESEARCH.md's capacity simulation (455-695 minutes of slack
+        // at every mood under the nominal 480-1320 window). A failure here
+        // after the fix means the lattice cost capacity and the plan's
+        // premise was wrong.
+        const expectedWorkCount = {1: 4, 2: 5, 3: 8, 4: 9, 5: 10};
+        final goals = [
+          ...List.generate(6, (i) => makeHabit(name: 'Habit $i')),
+          ...List.generate(
+            2,
+            (i) => makeTimeTarget(name: 'Regular $i', weeklyHourBudget: 5),
+          ),
+        ];
+        for (int mood = 1; mood <= 5; mood++) {
+          final result = sut.generate(
+            goals: goals,
+            blocks: [],
+            moodIndex: mood,
+            date: monday,
+            completionLogs: [],
+            lighterDay: false,
+          );
+          expect(
+            workChunksOf(result),
+            expectedWorkCount[mood],
+            reason: 'mood=$mood: work-chunk count must not change (D-04)',
+          );
+        }
+      },
+    );
+  });
 }
