@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: none
 milestone_name: milestone
 status: v1.5 shipped and archived. Phases 27 and 28 both sit outside any milestone — owner's call
-stopped_at: "27-04-PLAN.md Task 3 — `checkpoint:human-verify`, PENDING. Tasks 1-2 committed"
+stopped_at: "Phase 28 planned — 3 plans in 2 waves, ready to execute"
 last_updated: "2026-08-19T12:17:50.787Z"
 last_activity: 2026-08-19 -- Phase 28 planning complete
 progress:
@@ -33,7 +33,19 @@ edges instead of striking through its text. Both fixes re-verified in a real bro
 because the taller buttons raise the action row. 567 tests green, `flutter analyze` clean.
 
 Next: Phase 28 — The Day Is a Lattice. Raised by the owner in the same UAT ("the schedule still
-isn't functioning right"). Engine-side, not UI. Not started — needs `/gsd-plan-phase 28`.
+isn't functioning right"). Engine-side, not UI. **PLANNED 2026-08-19 — ready to execute.**
+
+Phase 28 planning trail: context (discuss skipped per `workflow.skip_discuss`) → research → pattern
+map → 3 plans in 2 waves → plan-checker VERIFICATION PASSED. Research confirmed all three named
+defects against source with line numbers and found a fourth (STEP E's trailing trim strips *any*
+trailing break, which would silently re-suppress the long break by a second path). The capacity
+question is answered on a simulation of the real packing loop, not an estimate: neither `_moodCap`
+nor the day's end moves — the lattice costs 10-20 extra minutes per day and every mood fits the
+840-minute window with 455-695 minutes of slack (D-04). Six decisions D-01..D-06 recorded in
+CONTEXT.md, all six covered by plans (gate green). Wave 1 is all test-writing (RED-proof is
+structural), wave 2 is the only plan that touches `lib/`. No browser step — this phase is integer
+arithmetic and `28-VALIDATION.md` forbids copying Phase 27's pixel ceremony.
+
 Status: v1.5 shipped and archived. Phases 27 and 28 both sit outside any milestone — owner's call
 was standalone phases rather than opening v1.6.
 Last activity: 2026-08-19 -- Phase 28 planning complete
