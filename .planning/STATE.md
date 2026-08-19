@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: none
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 28-03-PLAN.md -- engine lattice fix landed, 579/579 tests green, flutter analyze clean, Phase 28 gate passed
+status: Phase 28 complete — no active phase
+stopped_at: "Phase 28 closed — verification passed 10/10. Nothing queued."
 last_updated: "2026-08-19T12:54:32.987Z"
-last_activity: 2026-08-19 -- Phase 28 execution started
+last_activity: 2026-08-19 -- Phase 28 complete, verification passed
 progress:
   total_phases: 2
   completed_phases: 2
@@ -24,34 +24,40 @@ progress:
 
 ## Current Position
 
-Phase: 28 (The Day Is a Lattice) — EXECUTING
-Plan: 3 of 3
-shorter day) passed as shipped; items 1 and 2 failed and were fixed in `419aa7b` — Complete/Skip
-raised 36→44dp, and the live row now paints above the now-line so the rule stops at the card's
-edges instead of striking through its text. Both fixes re-verified in a real browser
-(`measure_hours.py` prints UNIFORM at both tiers), `kCompactLiveMinHeight` re-measured 84.0 → 88.0
-because the taller buttons raise the action row. 567 tests green, `flutter analyze` clean.
+Phase: 28 — The Day Is a Lattice (standalone, no milestone). **COMPLETE 2026-08-19.**
+Plan: 3 of 3 complete. `28-VERIFICATION.md` status `passed`, 10/10 must-haves, no human items.
 
-Next: Phase 28 — The Day Is a Lattice. Raised by the owner in the same UAT ("the schedule still
-isn't functioning right"). Engine-side, not UI. **PLANNED 2026-08-19 — ready to execute.**
+The day is now a 30-minute lattice: 25 minutes of work + 5 minutes of break per cell, and after
+every N work cells a full 30-minute break in a cell of its own. N still comes once from the morning
+check-in mood — the engine did not become adaptive, which the owner declined explicitly.
 
-Phase 28 planning trail: context (discuss skipped per `workflow.skip_discuss`) → research → pattern
-map → 3 plans in 2 waves → plan-checker VERIFICATION PASSED. Research confirmed all three named
-defects against source with line numbers and found a fourth (STEP E's trailing trim strips *any*
-trailing break, which would silently re-suppress the long break by a second path). The capacity
-question is answered on a simulation of the real packing loop, not an estimate: neither `_moodCap`
-nor the day's end moves — the lattice costs 10-20 extra minutes per day and every mood fits the
-840-minute window with 455-695 minutes of slack (D-04). Six decisions D-01..D-06 recorded in
-CONTEXT.md, all six covered by plans (gate green). Wave 1 is all test-writing (RED-proof is
-structural), wave 2 is the only plan that touches `lib/`. No browser step — this phase is integer
-arithmetic and `28-VALIDATION.md` forbids copying Phase 27's pixel ceremony.
+**The reported bug ("the schedule still isn't functioning right") is fixed.** At mood 3 with a
+4-chunk day the long break landed last and was silently dropped, so the user had never seen one
+fire. That exact day is now a named regression test, and the verifier reproduced it independently
+by calling `generate()` directly rather than trusting the phase's own assertions.
 
-Status: Phase complete — ready for verification
-was standalone phases rather than opening v1.6.
-Last activity: 2026-08-19 -- Phase 28 execution started
+Research confirmed all three named defects against source with line numbers and found a fourth:
+STEP E's trailing trim stripped *any* trailing break, which would have re-suppressed the long break
+by a second path even after the packing loop was fixed. The capacity question was answered on a
+simulation of the real packing loop rather than an estimate — neither `_moodCap` nor the day's end
+moved (D-04), verified byte-identical by diff.
+
+**RED-proof was structural.** All 20 tests were written in wave 1 and proven failing against the
+unfixed engine (`28-RED-unit.txt`, `28-RED-d06.txt`); wave 2 touched only `lib/`. Git confirms wave
+2 modified no test file — RED→GREEN came from the production change alone. That directly closes the
+v1.5 failure mode recorded in the invariants below.
+
+Final: 579 tests green (567 baseline + 8 unit + 4 D-06, none deleted), `flutter analyze` clean,
+code review 0 critical / 2 warnings (both fixed, suite still green).
+
+Next: nothing queued. Phases 27 and 28 are both closed and both sit outside any milestone — the
+owner's call was standalone phases rather than opening v1.6. v1.6 is not yet defined.
+
+Status: Phase 28 complete. No active phase.
+Last activity: 2026-08-19 -- Phase 28 complete, verification passed
 
 ```
-v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  Phase 27 ✅  →  Phase 28 (standalone)  →  v1.6 not yet defined
+v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  Phase 27 ✅  →  Phase 28 ✅  →  v1.6 not yet defined
 ```
 
 **Uncommitted-to-a-milestone work is deliberate here.** Phases 27 and 28 sit outside any milestone. If a
@@ -62,8 +68,7 @@ v1.6 is opened before it ships, fold it in rather than leaving it orphaned.
 See: `.planning/PROJECT.md` (updated 2026-08-14)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Phase 28 — The Day Is a Lattice
-vertical distance. Run `/gsd-plan-phase 27`.
+**Current focus:** none — Phases 27 and 28 both closed; v1.6 not yet defined
 
 ## Shipped Milestones
 
@@ -115,6 +120,11 @@ guards against:
   settled at add time (searched pub.dev; `kalender` credible but rejected — see the phase entry in
   ROADMAP.md for the reasoning and the conditions that would flip it).
 
+- **Phase 28 added 2026-08-19, completed same day: The Day Is a Lattice.** Out of Phase 27's UAT —
+  the owner said "the schedule still isn't functioning right." Engine-side, not UI. Also standalone
+  rather than opening v1.6. Adaptivity was raised and explicitly declined: N stays set once from the
+  morning check-in mood.
+
 ### Decisions
 
 Key decisions are in PROJECT.md. Decisions relevant to v1.5:
@@ -127,6 +137,10 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase ?]: Align(topCenter)+ConstrainedBox(maxWidth: 720) applied to Home, Goals, Schedule body content for POLISH-01 — relevant precedent for whatever layout Phase 22's merged screen uses.
 - [Phase ?]: Valence colors: tertiaryContainer for gives, secondaryContainer for costs — colorScheme.error excluded per UI-SPEC.
 - [Phase 21-01]: Cadence table locked to {1:2, 2:3, 3:4, 4:4, 5:5}; isLowMood preserved unmodified, cadence lookup keyed on moodIndex directly (BREAK-01/02)
+- [Phase 28 / D-01]: LATTICE-01 governs *generated* chunks only. A user's fixed commitment keeps its own wall-clock time and is never rounded onto :00/:30 — rounding it would move the user's actual appointment.
+- [Phase 28 / D-04]: Neither `_moodCap` nor the day's end moves to pay for the lattice. Decided on a simulation of the real packing loop: the lattice costs 10-20 extra minutes across a whole day and every mood fits the 840-minute window with 455-695 minutes of slack.
+- [Phase 28 / D-05]: The long break is never *silently* suppressed. A capacity-driven partial reservation is allowed (a slot too narrow for the 35-minute footprint reserves the short break only), and it is proven capacity-driven by a paired fixture whose only difference is 30 minutes of slot width — not by a comment.
+- [Phase 28]: N stays set once from the morning check-in mood. Adaptivity (reacting to how the day goes, or carrying over from yesterday) was offered to the owner on 2026-08-19 and declined. It is a different phase, not a smaller version of this one.
 - [Phase 21-02]: Reworded the TONE-01 guard assertion's reason string to keep grep -c "TONE-01:" at exactly 2, matching the plan's acceptance criteria; no behavior/coverage change
 - [Phase 22-01]: active_chunk_card_test.dart's now_state.dart import kept per plan though unused in executable code today; suppressed with ignore comment to satisfy both the plan's verify grep and a clean flutter analyze — Both the plan's automated verify (grep for the import) and its analyze-clean done criterion are explicit gates in the same task; dropping the import fails the former, leaving it unmarked fails the latter
 - [Phase 22-02]: Collapsed chunk_card's _buildShortBreak/_buildLongBreak into one _buildBreak on a single dashed CustomPainter — resolves both D-06's break treatment and the Phase 21 UI review's pill-vs-elevated-Card mismatch, no collapse affordance added

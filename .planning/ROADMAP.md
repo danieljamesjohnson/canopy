@@ -284,6 +284,32 @@ which — do not let it fall out of the packing loop by accident.
 break after every N work chunks, N from morning mood, never silently suppressed)
 **Depends on:** nothing in Phase 27 — this is `schedule_generator.dart`, a different file. Can be
 planned immediately.
+### OUTCOME — COMPLETE 2026-08-19 (`28-VERIFICATION.md`: passed, 10/10 must-haves)
+
+**The capacity question, answered: neither the cap nor the day's end moved.** Research simulated the
+real packing loop at every mood rather than estimating: the lattice costs 10-20 extra minutes across
+a whole day, and every mood's cap still fits the 840-minute window with 455-695 minutes of slack. So
+`_moodCap` and `_moodBreakCadence` are byte-identical to before the phase, verified by diff.
+
+**The reported bug is fixed and proven.** The owner's exact day — mood 3, N=4, four work chunks —
+now emits its 30-minute long break instead of silently dropping it. That day is a named regression
+test, and the verifier reproduced it independently by calling `generate()` directly rather than
+trusting the phase's own assertions.
+
+**Research found a fourth defect the write-up above missed:** STEP E's trailing-chunk trim stripped
+*any* trailing break, so fixing the three named defects alone would have re-suppressed the trailing
+long break by a second path. Narrowed to trim only a trailing short break.
+
+**RED-proof was structural, not aspirational.** All 20 tests were written in wave 1 and proven
+failing against the unfixed engine (raw reporter output committed as `28-RED-unit.txt` and
+`28-RED-d06.txt`); wave 2 changed only `lib/`. Git confirms wave 2 modified **no** test file — the
+tests went RED→GREEN from the production change alone, never adjusted to fit it. That closes the
+v1.5 failure mode where two defects shipped behind assertions that could not fail.
+
+Final state: **579 tests green** (567 baseline + 8 unit + 4 D-06, none deleted), `flutter analyze`
+clean, code review 0 critical / 2 warnings (both fixed). No human checkpoint — by design, per
+`28-VALIDATION.md`.
+
 **Plans:** 3/3 plans complete
 Plans:
 
