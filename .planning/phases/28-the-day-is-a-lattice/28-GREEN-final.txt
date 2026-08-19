@@ -1,0 +1,763 @@
+Resolving dependencies...
+Downloading packages...
+  _fe_analyzer_shared 93.0.0 (105.0.0 available)
+  analyzer 10.0.1 (14.1.0 available)
+  async 2.13.0 (2.13.1 available)
+  build 4.0.4 (4.0.10 available)
+  build_config 1.2.0 (1.3.2 available)
+  build_daemon 4.1.1 (4.1.5 available)
+  build_runner 2.11.1 (2.16.0 available)
+  built_value 8.12.4 (8.12.7 available)
+  code_assets 1.0.0 (1.2.1 available)
+  cross_file 0.3.5+2 (0.3.5+4 available)
+  cupertino_icons 1.0.8 (1.0.9 available)
+  dart_style 3.1.5 (3.1.12 available)
+  dbus 0.7.12 (0.7.14 available)
+  equatable 2.0.8 (2.1.0 available)
+  flutter_local_notifications 21.0.0 (22.3.0 available)
+  flutter_local_notifications_linux 8.0.0 (8.0.1 available)
+  flutter_local_notifications_platform_interface 11.0.0 (12.2.0 available)
+  flutter_local_notifications_windows 3.0.0 (3.1.1 available)
+  flutter_timezone 5.0.2 (5.1.0 available)
+  go_router 17.1.0 (17.5.0 available)
+  hive_ce_generator 1.11.1 (1.11.3 available)
+  hooks 1.0.1 (2.1.0 available)
+  intl 0.20.2 (0.20.3 available)
+  json_annotation 4.11.0 (4.12.0 available)
+  matcher 0.12.19 (0.12.20 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.0 (1.19.0 available)
+  native_toolchain_c 0.17.4 (0.19.3 available)
+  objective_c 9.3.0 (9.5.0 available)
+  package_config 2.2.0 (3.0.0 available)
+  path_provider 2.1.5 (2.1.6 available)
+  path_provider_android 2.2.22 (2.3.1 available)
+  path_provider_linux 2.2.1 (2.2.2 available)
+  path_provider_platform_interface 2.1.2 (2.1.3 available)
+  screen_retriever 0.2.0 (0.2.2 available)
+  screen_retriever_linux 0.2.0 (0.2.2 available)
+  screen_retriever_macos 0.2.0 (0.2.2 available)
+  screen_retriever_platform_interface 0.2.0 (0.2.2 available)
+  screen_retriever_windows 0.2.0 (0.2.2 available)
+  share_plus 12.0.2 (13.3.0 available)
+  share_plus_platform_interface 6.1.0 (7.2.0 available)
+  shared_preferences 2.5.4 (2.5.5 available)
+  shared_preferences_android 2.4.20 (2.4.27 available)
+  shared_preferences_platform_interface 2.4.1 (2.4.2 available)
+  source_gen 4.2.0 (4.2.4 available)
+  source_helper 1.3.10 (1.3.13 available)
+  test_api 0.7.11 (0.7.13 available)
+  timezone 0.11.0 (0.11.1 available)
+  url_launcher_web 2.4.2 (2.4.3 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.2.0 (2.4.2 available)
+  vm_service 15.0.2 (15.2.0 available)
+  win32 5.15.0 (6.4.0 available)
+  window_manager 0.5.1 (0.5.2 available)
+  xml 6.6.1 (7.0.1 available)
+Got dependencies!
+55 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/dan/CodeProjects/canopy/test/commitment_attribution_test.dart
+00:00 +0: /home/dan/CodeProjects/canopy/test/commitment_attribution_test.dart: CLOSE-03 generator: commitmentId set on commitment chunks commitment chunk carries commitmentId == block.id and goalId == null
+00:00 +1: /home/dan/CodeProjects/canopy/test/commitment_attribution_test.dart: CLOSE-03 generator: commitmentId set on commitment chunks discretionary (goal) chunk has null commitmentId and non-null goalId
+00:00 +2: /home/dan/CodeProjects/canopy/test/commitment_attribution_test.dart: CLOSE-03 notifier: commitment chunk logs non-empty CommitmentBlock.id markComplete on a commitment chunk logs commitmentId == block.id (attributionId resolves to it)
+00:00 +3: /home/dan/CodeProjects/canopy/test/commitment_attribution_test.dart: CLOSE-03 notifier: commitment chunk logs non-empty CommitmentBlock.id markSkipped on a commitment chunk logs commitmentId == block.id (attributionId resolves to it)
+00:00 +4: /home/dan/CodeProjects/canopy/test/commitment_attribution_test.dart: CLOSE-03 notifier: commitment chunk logs non-empty CommitmentBlock.id markComplete on a discretionary (goal) chunk still logs the goalId unchanged
+00:00 +5: loading /home/dan/CodeProjects/canopy/test/data/restorative_item_test.dart
+00:00 +5: /home/dan/CodeProjects/canopy/test/data/restorative_item_test.dart: RestorativeItem Hive round-trip (typeId 7) item with emoji survives close/reopen
+00:00 +6: /home/dan/CodeProjects/canopy/test/data/restorative_item_test.dart: RestorativeItem Hive round-trip (typeId 7) item without emoji reads back with null emojiTag
+00:00 +7: /home/dan/CodeProjects/canopy/test/data/restorative_item_test.dart: RestorativesNotifier CRUD starts empty
+00:00 +8: /home/dan/CodeProjects/canopy/test/data/restorative_item_test.dart: RestorativesNotifier CRUD save adds an item and reloads
+00:00 +9: /home/dan/CodeProjects/canopy/test/data/restorative_item_test.dart: RestorativesNotifier CRUD items are returned in sortOrder
+00:00 +10: /home/dan/CodeProjects/canopy/test/data/restorative_item_test.dart: RestorativesNotifier CRUD editing an existing item updates in place, no duplicate
+00:00 +11: /home/dan/CodeProjects/canopy/test/data/restorative_item_test.dart: RestorativesNotifier CRUD delete removes the item
+00:00 +12: /home/dan/CodeProjects/canopy/test/data/restorative_item_test.dart: RestorativesNotifier CRUD notifies listeners on load and save
+00:00 +13: loading /home/dan/CodeProjects/canopy/test/data/migration_schema7_test.dart
+00:00 +13: /home/dan/CodeProjects/canopy/test/data/migration_schema7_test.dart: ScheduledChunk Hive round-trip (field 10) syntheticStartMinutes persists across box close/reopen
+00:00 +14: /home/dan/CodeProjects/canopy/test/data/migration_schema7_test.dart: displayStartMinutes getter returns anchoredStartMinutes when set
+00:00 +15: /home/dan/CodeProjects/canopy/test/data/migration_schema7_test.dart: displayStartMinutes getter returns syntheticStartMinutes when anchoredStartMinutes is null
+00:00 +16: /home/dan/CodeProjects/canopy/test/data/migration_schema7_test.dart: displayStartMinutes getter returns null when both are null
+00:00 +17: loading /home/dan/CodeProjects/canopy/test/data/migration_schema8_test.dart
+00:01 +17: /home/dan/CodeProjects/canopy/test/data/migration_schema8_test.dart: currentSchemaVersion equals 9
+00:01 +18: /home/dan/CodeProjects/canopy/test/data/migration_schema8_test.dart: currentSchemaVersion is consistent with WR-06 migration count
+00:01 +19: /home/dan/CodeProjects/canopy/test/data/migration_schema8_test.dart: Goal Hive round-trip (Phase 19 fields 12 + 13) old Goal record (no energyValenceIndex/emojiTag) loads as neutral, no crash (ENERGY-01a)
+00:01 +20: /home/dan/CodeProjects/canopy/test/data/migration_schema8_test.dart: Goal Hive round-trip (Phase 19 fields 12 + 13) new Goal with energyValenceIndex + emojiTag persists across close/reopen (ENERGY-01b + ENERGY-03a)
+00:01 +21: loading /home/dan/CodeProjects/canopy/test/data/resilient_box_test.dart
+00:01 +21: /home/dan/CodeProjects/canopy/test/data/resilient_box_test.dart: openBoxResilient control flow returns the box directly when the first open succeeds
+00:01 +22: /home/dan/CodeProjects/canopy/test/data/resilient_box_test.dart: openBoxResilient control flow resets the box and reopens when the first open throws
+Hive box "corrupt" failed to open and is being reset — incompatible or corrupt data from an older app version was discarded: HiveError: cannot read, unknown typeId: 0
+#0      main.<anonymous closure>.<anonymous closure>.<anonymous closure> (file:///home/dan/CodeProjects/canopy/test/data/resilient_box_test.dart:50:27)
+#1      openBoxResilient (package:canopy/data/database/resilient_box.dart:27:22)
+#2      main.<anonymous closure>.<anonymous closure> (file:///home/dan/CodeProjects/canopy/test/data/resilient_box_test.dart:46:25)
+#3      Declarer.test.<anonymous closure>.<anonymous closure> (package:test_api/src/backend/declarer.dart:253:25)
+<asynchronous suspension>
+#4      Declarer.test.<anonymous closure> (package:test_api/src/backend/declarer.dart:250:11)
+<asynchronous suspension>
+#5      Invoker._waitForOutstandingCallbacks.<anonymous closure> (package:test_api/src/backend/invoker.dart:318:9)
+<asynchronous suspension>
+
+00:01 +23: /home/dan/CodeProjects/canopy/test/data/resilient_box_test.dart: openBoxResilient control flow rethrows if the box still cannot open after a reset
+Hive box "unrecoverable" failed to open and is being reset — incompatible or corrupt data from an older app version was discarded: HiveError: still broken
+#0      main.<anonymous closure>.<anonymous closure>.<anonymous closure>.<anonymous closure> (file:///home/dan/CodeProjects/canopy/test/data/resilient_box_test.dart:69:24)
+#1      openBoxResilient (package:canopy/data/database/resilient_box.dart:27:22)
+#2      main.<anonymous closure>.<anonymous closure>.<anonymous closure> (file:///home/dan/CodeProjects/canopy/test/data/resilient_box_test.dart:67:15)
+#3      Throws.matchAsync (package:matcher/src/expect/throws_matcher.dart:85:37)
+#4      _expect (package:matcher/src/expect/expect.dart:137:26)
+#5      expect (package:matcher/src/expect/expect.dart:65:3)
+#6      expect (package:flutter_test/src/widget_tester.dart:473:18)
+#7      main.<anonymous closure>.<anonymous closure> (file:///home/dan/CodeProjects/canopy/test/data/resilient_box_test.dart:66:7)
+#8      Declarer.test.<anonymous closure>.<anonymous closure> (package:test_api/src/backend/declarer.dart:253:25)
+<asynchronous suspension>
+#9      Declarer.test.<anonymous closure> (package:test_api/src/backend/declarer.dart:250:11)
+<asynchronous suspension>
+#10     Invoker._waitForOutstandingCallbacks.<anonymous closure> (package:test_api/src/backend/invoker.dart:318:9)
+<asynchronous suspension>
+
+00:01 +24: /home/dan/CodeProjects/canopy/test/data/resilient_box_test.dart: openBoxResilient with real Hive recovers when a box holds a record the app can no longer read
+Hive box "goals" failed to open and is being reset — incompatible or corrupt data from an older app version was discarded: HiveError: Cannot read, unknown typeId: 32. Did you forget to register an adapter?
+
+If you recently migrated to the GenerateAdapters annotation, make sure to follow
+the migration guide:
+https://github.com/IO-Design-Team/hive_ce/blob/main/hive/MIGRATION.md#generate-adapters
+
+If this type ID has never existed in your project, this is box corruption.
+There is no way to automatically recover from this. If you are using Hive in
+multiple isolates, replace all Hive calls in your project with calls to
+IsolatedHive to prevent this in the future. Examples of isolate usage include:
+- Flutter multi-window
+- flutter_workmanager
+- background_fetch
+- Push notification processing (firebase_cloud_messaging, etc.)
+
+#0      BinaryReaderImpl.read (package:hive_ce/src/binary/binary_reader_impl.dart:387:11)
+#1      BinaryReaderImpl.readFrame (package:hive_ce/src/binary/binary_reader_impl.dart:322:26)
+#2      FrameHelper.framesFromBytes (package:hive_ce/src/binary/frame_helper.dart:23:28)
+#3      FrameIoHelper.framesFromFile (package:hive_ce/src/io/frame_io_helper.dart:52:12)
+<asynchronous suspension>
+#4      StorageBackendVm.initialize (package:hive_ce/src/backend/vm/storage_backend_vm.dart:118:24)
+<asynchronous suspension>
+#5      HiveImpl._openBox (package:hive_ce/src/hive_impl.dart:140:9)
+<asynchronous suspension>
+#6      HiveImpl.openBox (package:hive_ce/src/hive_impl.dart:174:12)
+<asynchronous suspension>
+#7      openBoxResilient (package:canopy/data/database/resilient_box.dart:27:12)
+<asynchronous suspension>
+#8      main.<anonymous closure>.<anonymous closure> (file:///home/dan/CodeProjects/canopy/test/data/resilient_box_test.dart:119:25)
+<asynchronous suspension>
+#9      Declarer.test.<anonymous closure>.<anonymous closure> (package:test_api/src/backend/declarer.dart:253:15)
+<asynchronous suspension>
+#10     Declarer.test.<anonymous closure> (package:test_api/src/backend/declarer.dart:250:11)
+<asynchronous suspension>
+#11     Invoker._waitForOutstandingCallbacks.<anonymous closure> (package:test_api/src/backend/invoker.dart:318:9)
+<asynchronous suspension>
+
+Reset of box "goals" reported an error (continuing): PathNotFoundException: Cannot delete file, path = '/tmp/resilient_box_test_XKTTUD/goals.lock' (OS Error: No such file or directory, errno = 2)
+00:01 +25: loading /home/dan/CodeProjects/canopy/test/widgets/goal_type_picker_test.dart
+00:02 +25: /home/dan/CodeProjects/canopy/test/widgets/goal_type_picker_test.dart: GoalTypePicker _TypeCard compaction (GOALFORM-01) _TypeCard height is significantly below the uncompacted ~168dp
+00:02 +26: /home/dan/CodeProjects/canopy/test/widgets/goal_type_picker_test.dart: GoalTypePicker _TypeCard compaction (GOALFORM-01) _TypeCard ListTile has minVerticalPadding == 0 (guards Pitfall 4)
+00:02 +27: /home/dan/CodeProjects/canopy/test/widgets/goal_type_picker_test.dart: GoalTypePicker _TypeCard compaction (GOALFORM-01) selected _TypeCard title uses FontWeight.w600
+00:02 +28: loading /home/dan/CodeProjects/canopy/test/defer_carryover_test.dart
+00:02 +28: /home/dan/CodeProjects/canopy/test/defer_carryover_test.dart: CLOSE-02 markDeferred: logs deferred event (not skipped) markDeferred logs eventIndex == CompletionEvent.deferred.index
+00:02 +29: /home/dan/CodeProjects/canopy/test/defer_carryover_test.dart: CLOSE-02 markDeferred: logs deferred event (not skipped) markDeferred on a commitment chunk logs commitmentId (attributionId resolves to block id)
+00:02 +30: /home/dan/CodeProjects/canopy/test/defer_carryover_test.dart: CLOSE-02 computeStreak: deferred = non-breaking; skip = reset streak survives a deferred due-day
+00:02 +31: /home/dan/CodeProjects/canopy/test/defer_carryover_test.dart: CLOSE-02 computeStreak: deferred = non-breaking; skip = reset streak resets on a skipped due-day (skip != defer)
+00:02 +32: /home/dan/CodeProjects/canopy/test/defer_carryover_test.dart: CLOSE-02 computeStreak: deferred = non-breaking; skip = reset streak survives multiple consecutive deferred due-days
+00:02 +33: /home/dan/CodeProjects/canopy/test/defer_carryover_test.dart: CLOSE-02 generate: deferredGoalIds injects one slot per carried goal a carried goal not already scheduled gets one injected slot
+00:02 +34: /home/dan/CodeProjects/canopy/test/defer_carryover_test.dart: CLOSE-02 generate: deferredGoalIds injects one slot per carried goal a carried goal already scheduled via normal generation is not duplicated
+00:02 +35: /home/dan/CodeProjects/canopy/test/defer_carryover_test.dart: CLOSE-02 generate: deferredGoalIds injects one slot per carried goal injection does not exceed mood cap
+00:02 +36: /home/dan/CodeProjects/canopy/test/defer_carryover_test.dart: CLOSE-02 generateToday: single-hop deferred carry-in deferred discretionary chunk re-appears in next morning schedule
+00:02 +37: /home/dan/CodeProjects/canopy/test/defer_carryover_test.dart: CLOSE-02 generateToday: single-hop deferred carry-in completed-deferred chunk of archived goal is NOT carried
+00:02 +38: /home/dan/CodeProjects/canopy/test/defer_carryover_test.dart: CLOSE-02 generateToday: single-hop deferred carry-in deferred commitment chunk (goalId == null) is NOT carried
+00:02 +39: /home/dan/CodeProjects/canopy/test/defer_carryover_test.dart: CLOSE-02 generateToday: single-hop deferred carry-in two-days-ago deferred chunk does NOT carry (single-hop only)
+00:02 +40: loading /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart
+00:03 +40: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 1: no goals, no blocks → empty list
+00:03 +41: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 2: commitment block on Monday generates 2 anchored chunks
+00:03 +42: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 2b: commitment block NOT generated on Saturday
+00:03 +43: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 3: mood=1 excludes outcome goals
+00:03 +44: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 4: mood=1 includes outcome when deadline==today
+00:03 +45: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 5: mood=5 caps discretionary work chunks at 11
+00:03 +46: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 6: mood=3 break pattern with 4 work chunks (boundary chunk is the last chunk)
+00:03 +47: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 7: mood=1 break pattern with 2 work chunks (boundary chunk is the last chunk)
+00:03 +48: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 8: deadline==today floors daysRemaining at 1 (no exception)
+00:03 +49: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 9: outcome goal with null deadline is scheduled at low urgency
+00:03 +50: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 10: commitment block + discretionary — no breaks between commitment chunks
+00:03 +51: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 11: 2 habits only → trailing break trimmed (last chunk is work)
+00:03 +52: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 12: commitment block + 1 habit → discretionary gets synthetic time; sorted
+00:03 +53: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 13: all-commitment day → commitment chunks only, no breaks
+00:03 +54: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: WR-02: overlapping commitment blocks merge — no discretionary overlaps window
+00:03 +55: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: WR-01: emitted long break matches reserved slot — no overlapping synthetic times
+00:03 +56: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: WR-03: break never sorts between contiguous commitment chunks (narrow pre-gap)
+00:03 +57: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: T-09-01: mood 4, 3 time-target goals → more than 3 discretionary chunks
+00:03 +58: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: T-09-02: most-behind time-target goal gets >= ahead goal chunk count
+00:03 +59: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: T-09-03a: 3x/week habit absent on non-due weekday (Tuesday), present on due day
+00:03 +60: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: T-09-04: near-deadline outcome chunk precedes far-deadline outcome chunk
+00:03 +61: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: T-09-05: lighterDay=true yields strictly fewer chunks than lighterDay=false at mood 5
+00:03 +62: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: T-09-06: high-priority time-target goal wins 1-slot competition over low-priority
+00:03 +63: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: T-09-WR02: missed due day (no log entry) breaks streak to 0
+00:03 +64: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: higher priorityWeight goal appears before lower priorityWeight goal in generated chunks
+00:03 +65: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Step 2: high-priority habit is scheduled before low-priority habit
+00:03 +66: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Step 4: high-priority time-target goal with equal remaining hours gets chunk before low-priority
+00:03 +67: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Step 4: high-priority time-target goal gets strictly more chunks than low-priority under shared cap
+00:03 +68: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: T-09-WR02b: no missed days — consecutive completions count correctly
+00:03 +69: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: computeDueWeekdays is weekday-biased freq=5 is Mon–Fri (no weekend) — the reported bug
+00:03 +70: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: computeDueWeekdays is weekday-biased lower frequencies spread within the work week
+00:03 +71: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: computeDueWeekdays is weekday-biased freq=6 adds Saturday; freq=7 is daily
+00:03 +72: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: computeDueWeekdays is weekday-biased a 5x/week habit is NOT scheduled on Saturday but IS on a weekday
+00:03 +73: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: CAP-01: mood=1, 4 daily habits + 1 outcome → outcome receives ≥1 chunk
+00:03 +74: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: CAP-01: mood=1 total work chunks do not exceed cap
+00:03 +75: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: PRIORITY-02: high-priority habit (0.75) gets more chunks than normal (0.5) at mood=3
+00:03 +76: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: PRIORITY-02: high-priority outcome (0.75) gets more chunks than normal (0.5) at mood=3
+00:03 +77: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: FILL-01: mood=1, open capacity after habits → time-target goal appears in schedule
+00:03 +78: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: FILL-02: 3 time-target goals with limited cap — no single goal swallows all open slots
+00:03 +79: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: startFloorMinutes places discretionary work near "now" null floor keeps the 8:00 AM (480) default start
+00:03 +80: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: startFloorMinutes places discretionary work near "now" a 15:42 floor starts the chunk at 16:00 (rounded up to 30), not 8 AM
+00:03 +81: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: startFloorMinutes places discretionary work near "now" a floor earlier than 8:00 AM is clamped up to 480
+00:03 +82: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: VSCHED-01 time-target: low/stormy day → gives-valence time-target appears
+00:03 +83: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: VSCHED-01-outcome: low day → gives-valence outcome with no deadline appears
+00:03 +84: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: VSCHED-02: low day discretionary count < medium day count
+00:03 +85: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: VSCHED-02-neutral-excluded: neutral/costs time-target gets no restorative floor on low day
+00:03 +86: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: VSCHED-03: high day under heavy backlog reserves a gives-valence slot
+00:03 +87: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: VSCHED-03-highpri-fallback: high day, no gives goal → high-priority goal reserved
+00:03 +88: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: determinism: same inputs produce same schedule
+00:03 +89: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: CR-01 regression: gives+high-priority time-target on low-mood day gets exactly 1 chunk (no double-place)
+00:03 +90: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: one-off dated commitments anchors on its specific date
+00:03 +91: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: one-off dated commitments does NOT anchor on a different date (even same weekday)
+00:03 +92: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: one-off dated commitments date-only equality ignores any time component on the date
+00:03 +93: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: one-off dated commitments recurring and one-off blocks coexist on a matching day
+00:03 +94: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: BREAK-01: mood=1 places a long break after every 2 work chunks
+00:03 +95: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: BREAK-01: mood=2 places a long break after every 3 work chunks (regression lock — also true under the pre-BREAK-01 formula, does not by itself prove the new table is wired up)
+00:03 +96: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: BREAK-01: mood=3 places a long break after every 4 work chunks (baseline unchanged)
+00:03 +97: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: BREAK-01: mood=4 places a long break after every 4 work chunks (regression lock — also true under the pre-BREAK-01 formula, does not by itself prove the new table is wired up)
+00:03 +98: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: BREAK-01: mood=5 places a long break after every 5 work chunks
+00:03 +99: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: BREAK-02: only 5-min short breaks and 30-min long breaks are ever emitted, at every mood
+00:03 +100: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: TONE-01: under-pace time-target rationale reads as working toward, not behind
+00:03 +101: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: TONE-01: on-track branch is unchanged
+00:03 +102: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: LATTICE — the day is a 30-minute lattice LATTICE-01: every cell starts on a 30-minute boundary, at every mood
+00:03 +103: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: LATTICE — the day is a 30-minute lattice LATTICE-01/D-02: work resumes on the lattice after an off-boundary commitment
+00:03 +104: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: LATTICE — the day is a 30-minute lattice LATTICE-02: exactly floor(workChunks / N) long breaks of exactly 30 minutes, at every mood
+00:03 +105: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: LATTICE — the day is a 30-minute lattice LATTICE-02/D-05: the owner's day — mood 3, N=4, 4 work chunks — still gets its long break
+00:03 +106: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: LATTICE — the day is a 30-minute lattice LATTICE-02: the Nth chunk closes its own cell AND is followed by a separate 30-minute cell
+00:03 +107: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: LATTICE — the day is a 30-minute lattice LATTICE-02/D-05: a slot too narrow for the boundary footprint reserves the short break only — capacity-driven, and it does not fire on a nominal day
+00:03 +108: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: LATTICE — the day is a 30-minute lattice LATTICE-01/D-01: a fixed commitment keeps its own wall-clock start, unrounded
+00:03 +109: /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: LATTICE — the day is a 30-minute lattice D-04: neither _moodCap nor the day end moves — per-mood work-chunk counts are unchanged
+00:03 +110: loading /home/dan/CodeProjects/canopy/test/services/notification_service_test.dart
+00:03 +110: /home/dan/CodeProjects/canopy/test/services/notification_service_test.dart: NotificationService.initialize does not throw the macOS-settings ArgumentError on the test host
+00:03 +111: /home/dan/CodeProjects/canopy/test/services/notification_service_test.dart: NotificationService permission helpers requestDarwinPermissions completes (no-op on non-Darwin hosts)
+00:03 +112: /home/dan/CodeProjects/canopy/test/services/notification_service_test.dart: NotificationService permission helpers requestIOSPermissions back-compat alias still completes
+00:03 +113: /home/dan/CodeProjects/canopy/test/services/notification_service_test.dart: InitializationSettings shape has non-null entries for android, iOS, macOS, linux, windows
+00:03 +114: loading /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart
+00:04 +114: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: completedByGoal returns per-goal completed counts in range
+00:04 +115: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: completedByGoal excludes logs outside date range
+00:04 +116: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: completedByGoal returns empty map for empty logs
+00:04 +117: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: completedByWeek returns per-week counts keyed by Monday ISO date
+00:04 +118: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: completedByWeek skipped and deferred logs are not counted in completedByWeek
+00:04 +119: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: notSpentCount counts skipped and deferred in range
+00:04 +120: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: notSpentCount excludes logs outside date range
+00:04 +121: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: totalCompleted returns total completed count in range
+00:04 +122: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: isInReviewWindow returns true when within 7 days before 90-day mark from last snapshot
+00:04 +123: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: isInReviewWindow returns false when outside the 7-day window before 90-day mark
+00:04 +124: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: isInReviewWindow falls back to earliest CompletionLog date when no snapshot exists
+00:04 +125: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: isInReviewWindow returns false when no logs and no snapshot exist
+00:04 +126: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: isInReviewWindow returns true within 30 days after the 90-day mark
+00:04 +127: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: completionRateByGoal returns rate = completed / total events per goal
+00:04 +128: /home/dan/CodeProjects/canopy/test/services/quarterly_aggregation_test.dart: completionRateByGoal returns empty map for empty logs
+00:04 +129: loading /home/dan/CodeProjects/canopy/test/utils/commitment_window_test.dart
+00:04 +129: /home/dan/CodeProjects/canopy/test/utils/commitment_window_test.dart: commitmentWindowTooShort normal daytime window is fine
+00:04 +130: /home/dan/CodeProjects/canopy/test/utils/commitment_window_test.dart: commitmentWindowTooShort exactly one chunk (25 min) is allowed
+00:04 +131: /home/dan/CodeProjects/canopy/test/utils/commitment_window_test.dart: commitmentWindowTooShort shorter than one chunk is rejected
+00:04 +132: /home/dan/CodeProjects/canopy/test/utils/commitment_window_test.dart: commitmentWindowTooShort zero-length window is rejected
+00:04 +133: /home/dan/CodeProjects/canopy/test/utils/commitment_window_test.dart: commitmentWindowTooShort inverted night-shift window (10pm–6am) is rejected
+00:04 +134: loading /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart
+00:04 +134: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatDurationShort 5 minutes gives "5m"
+00:04 +135: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatDurationShort 45 minutes gives "45m"
+00:04 +136: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatDurationShort 60 minutes gives "1h"
+00:04 +137: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatDurationShort 100 minutes gives "1h 40m"
+00:04 +138: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatDurationShort 120 minutes gives "2h"
+00:04 +139: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatDurationShort 195 minutes gives "3h 15m"
+00:04 +140: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatDurationShort 0 minutes gives "0m"
+00:04 +141: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatMinutesCompact 480 gives "8:00a"
+00:04 +142: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatMinutesCompact 645 gives "10:45a"
+00:04 +143: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatMinutesCompact 780 gives "1:00p"
+00:04 +144: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatMinutesCompact 720 (noon) gives "12:00p"
+00:04 +145: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatMinutesCompact 0 (midnight) gives "12:00a"
+00:04 +146: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatMinutesCompact 1350 gives "10:30p"
+00:04 +147: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: floorToHour 545 rounds down to 540
+00:04 +148: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: floorToHour 540 (already aligned) stays 540
+00:04 +149: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: floorToHour 0 (midnight) stays 0
+00:04 +150: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: floorToHour 1439 (end of day) rounds down to 1380
+00:04 +151: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: ceilToHour 545 rounds up to 600
+00:04 +152: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: ceilToHour 540 (already aligned) stays 540
+00:04 +153: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: ceilToHour 0 (midnight) stays 0
+00:04 +154: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: ceilToHour 1439 (end of day) rounds up to 1440
+00:04 +155: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: hourBoundariesIn 480 to 600 gives [480, 540, 600]
+00:04 +156: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: hourBoundariesIn non-hour-aligned start (495) gives [540, 600]
+00:04 +157: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: hourBoundariesIn rangeEnd < rangeStart gives an empty list
+00:04 +158: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: hourBoundariesIn midnight range (0 to 60) gives [0, 60]
+00:04 +159: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: hourBoundariesIn end-of-day range (1380 to 1439) gives [1380]
+00:04 +160: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatHourLabel 540 gives "9 AM"
+00:05 +161: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatHourLabel 720 (noon) gives "12 PM"
+00:05 +162: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatHourLabel 0 (midnight) gives "12 AM"
+00:05 +163: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatHourLabel 1380 gives "11 PM"
+00:05 +164: /home/dan/CodeProjects/canopy/test/utils/time_format_test.dart: formatHourLabel 1439 (end of day, still within the 11 PM hour) gives "11 PM"
+00:05 +165: loading /home/dan/CodeProjects/canopy/test/end_of_day_card_test.dart
+00:05 +165: /home/dan/CodeProjects/canopy/test/end_of_day_card_test.dart: EndOfDayCard widget renders title, computed subtitle, and CTA button
+00:05 +166: /home/dan/CodeProjects/canopy/test/end_of_day_card_test.dart: EndOfDayCard widget close IconButton fires onDismiss
+00:05 +167: /home/dan/CodeProjects/canopy/test/end_of_day_card_test.dart: EndOfDayCard widget Close the day button fires onGoToSummary
+00:05 +168: /home/dan/CodeProjects/canopy/test/end_of_day_card_test.dart: EndOfDayCard widget deferred chunk counts as resolved
+00:05 +169: /home/dan/CodeProjects/canopy/test/end_of_day_card_test.dart: shouldShowEodCard trigger logic returns false when work chunks empty and hour < 18
+00:05 +170: /home/dan/CodeProjects/canopy/test/end_of_day_card_test.dart: shouldShowEodCard trigger logic returns false when <50% resolved and hour < 18
+00:05 +171: /home/dan/CodeProjects/canopy/test/end_of_day_card_test.dart: shouldShowEodCard trigger logic returns true when ≥50% resolved (ratio branch fires regardless of hour)
+00:05 +172: /home/dan/CodeProjects/canopy/test/end_of_day_card_test.dart: shouldShowEodCard trigger logic returns true when exactly 50% resolved
+00:05 +173: /home/dan/CodeProjects/canopy/test/end_of_day_card_test.dart: shouldShowEodCard trigger logic returns true when hour >= 18, even with a resolved ratio below 50%
+00:05 +174: /home/dan/CodeProjects/canopy/test/end_of_day_card_test.dart: shouldShowEodCard trigger logic all chunks deferred counts as 100% resolved → trigger true
+00:05 +175: loading /home/dan/CodeProjects/canopy/test/widget_test.dart
+00:06 +175: /home/dan/CodeProjects/canopy/test/widget_test.dart: placeholder — full app smoke test added in later phases
+00:06 +176: loading /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart
+00:06 +176: /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart: ThemeNotifier construction and persistence setMoodSeed notifies listeners and persists moodSeedArgb to the repository
+00:06 +177: /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart: ThemeNotifier construction and persistence resetToCurious notifies listeners and clears moodSeedArgb in the repository
+00:06 +178: /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart: ThemeNotifier construction and persistence isPreCheckin is true after fresh init (no persisted seed); false after setMoodSeed
+00:06 +179: /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart: ThemeNotifier construction and persistence currentTheme uses curiousSeed (#7A8FA3) when moodSeed is null
+00:06 +180: /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart: ThemeNotifier construction and persistence currentTheme uses the mood seed when moodSeed is set
+00:06 +181: /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart: Time-of-day modulation modulateHsl peaks at noon (+0.05 L, +0.10 S)
+00:06 +182: /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart: Time-of-day modulation modulateHsl troughs at midnight (-0.05 L, -0.10 S)
+00:06 +183: /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart: Time-of-day modulation modulateHsl returns approx base color at sunrise (06:00, t ≈ 0)
+00:06 +184: /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart: Lifecycle ticker didChangeAppLifecycleState(paused) cancels the ticker (no throw)
+00:06 +185: /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart: Lifecycle ticker didChangeAppLifecycleState(resumed) restarts ticker and fires notifyListeners
+00:06 +186: /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart: Daily rollover seam init() with persisted lastMoodSetYmdInt = yesterday clears in-memory mood (D-10), Hive untouched
+00:06 +187: /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart: Daily rollover seam init() with persisted lastMoodSetYmdInt = today preserves the persisted seed
+00:06 +188: /home/dan/CodeProjects/canopy/test/providers/theme_notifier_test.dart: Daily rollover seam didChangeAppLifecycleState(resumed) on a stale day clears in-memory mood, Hive untouched
+00:06 +189: loading /home/dan/CodeProjects/canopy/test/providers/goals_notifier_priority_test.dart
+00:07 +189: /home/dan/CodeProjects/canopy/test/providers/goals_notifier_priority_test.dart: GoalsNotifier.reorderAllWithPriority three goals: persists priorityWeight 0.75 / 0.5 / 0.25 and sortOrder 0 / 1 / 2
+00:07 +190: /home/dan/CodeProjects/canopy/test/providers/goals_notifier_priority_test.dart: GoalsNotifier.reorderAllWithPriority single goal: persists priorityWeight 0.75 and sortOrder 0
+00:07 +191: /home/dan/CodeProjects/canopy/test/providers/goals_notifier_priority_test.dart: GoalsNotifier.reorderAllWithPriority weights are monotonically decreasing (top → bottom)
+00:07 +192: loading /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart
+00:07 +192: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: inserts a same-day one-off, preserving existing progress
+00:07 +193: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: returns false for an event on a different day (does not touch today)
+00:07 +194: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: adding an event reflows overlapping discretionary work (no double-book)
+00:07 +195: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: adding an event leaves NO work-vs-break overlap (breaks re-emitted)
+00:07 +196: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: a 30-min event protects its FULL window from discretionary work
+00:07 +197: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: a 60-min event protects its FULL window from discretionary work
+00:07 +198: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: a 45-min event protects its FULL window from discretionary work
+00:07 +199: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: editing an event re-anchors today (idempotent by commitmentId)
+00:07 +200: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: CR-01: moving a commitment off today trims the now-trailing break (no dangling break survives addEventToday)
+00:07 +201: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: creates a minimal today schedule when none exists (empty-state add)
+00:07 +202: loading /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_defer_test.dart
+00:07 +202: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_defer_test.dart: ScheduleNotifier.markDeferred (READ-03) markDeferred sets isDeferred=true + isSkipped=true and notifies listeners
+00:07 +203: loading /home/dan/CodeProjects/canopy/test/providers/goals_notifier_quick_add_test.dart
+00:08 +203: /home/dan/CodeProjects/canopy/test/providers/goals_notifier_quick_add_test.dart: GoalsNotifier.quickAddGoals adds a single goal with schedulable defaults
+00:08 +204: /home/dan/CodeProjects/canopy/test/providers/goals_notifier_quick_add_test.dart: GoalsNotifier.quickAddGoals lays down a full slate of 8 in one paste
+00:08 +205: /home/dan/CodeProjects/canopy/test/providers/goals_notifier_quick_add_test.dart: GoalsNotifier.quickAddGoals ignores blank and whitespace-only names
+00:08 +206: /home/dan/CodeProjects/canopy/test/providers/goals_notifier_quick_add_test.dart: GoalsNotifier.quickAddGoals appends after existing goals without clobbering order
+00:08 +207: /home/dan/CodeProjects/canopy/test/providers/goals_notifier_quick_add_test.dart: GoalsNotifier.quickAddGoals empty input adds nothing
+00:08 +208: /home/dan/CodeProjects/canopy/test/providers/goals_notifier_quick_add_test.dart: GoalsNotifier.quickAddGoals reports accurate count and does not throw when a save fails
+00:08 +209: loading /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_break_extension_test.dart
+00:08 +209: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_break_extension_test.dart: G-05 happy path G-05: the following break absorbs the reclaimed time
+00:08 +210: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_break_extension_test.dart: G-05 happy path G-05: nothing downstream shifts
+00:08 +211: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_break_extension_test.dart: G-05 happy path G-05: resolveNowState returns Active(break) through the existing unmodified path
+00:08 +212: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_break_extension_test.dart: G-05 happy path G-05: persisted — one save carries both the completion flag and the moved break
+00:08 +213: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_break_extension_test.dart: G-05: long break variant
+00:08 +214: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_break_extension_test.dart: G-05 no-op guards completed at the scheduled end leaves the break untouched
+00:08 +215: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_break_extension_test.dart: G-05 no-op guards completed after the scheduled end leaves the break untouched
+00:08 +216: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_break_extension_test.dart: G-05 no-op guards the following chunk is work, not a break — nothing moves
+00:08 +217: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_break_extension_test.dart: G-05 no-op guards no following chunk — markComplete completes without throwing
+00:08 +218: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_break_extension_test.dart: G-05 no-op guards the break's window has already opened — guard 7, nothing to move
+00:08 +219: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_break_extension_test.dart: G-05 revert on failure — the break, the completion flag and the store never diverge (WR-05)
+00:08 +220: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_break_extension_test.dart: G-05 preserves the Phase 17 invariant — an unmoved, unopened break still reads as a gap (today_screen_now_state_test.dart:470-487)
+00:08 +221: loading /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_engine_test.dart
+00:08 +221: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_engine_test.dart: ENGINE-05: lighterDay plumbing lighterDay=true produces strictly fewer work chunks than lighterDay=false at mood 5
+00:08 +222: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_engine_test.dart: ENGINE-03b: streak write-back markComplete on a due day increments streakCount and persists via GoalRepository
+00:09 +223: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_engine_test.dart: ENGINE-03b: streak write-back markSkipped on a due day resets streakCount to 0 and persists via GoalRepository
+00:09 +224: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_engine_test.dart: STREAK-01: generateToday() syncs goal.streakCount After generateToday(), habit streakCount matches computeStreak — not stale default
+00:09 +225: loading /home/dan/CodeProjects/canopy/test/dev/dev_clock_test.dart
+00:09 +225: /home/dan/CodeProjects/canopy/test/dev/dev_clock_test.dart: DevClock.now equals real time (within tolerance) when no override is set
+00:09 +226: /home/dan/CodeProjects/canopy/test/dev/dev_clock_test.dart: DevClock.setSimulatedNow makes now() return approximately target, and isActive is true
+00:09 +227: /home/dan/CodeProjects/canopy/test/dev/dev_clock_test.dart: DevClock.setSimulatedNow time still ADVANCES while overridden — two reads separated by a real delay differ by approximately that delay
+00:09 +228: /home/dan/CodeProjects/canopy/test/dev/dev_clock_test.dart: DevClock.clear restores real time and isActive is false
+00:09 +229: /home/dan/CodeProjects/canopy/test/dev/dev_clock_test.dart: DevClock.shift composes with an existing offset
+00:09 +230: /home/dan/CodeProjects/canopy/test/dev/dev_clock_test.dart: DevClock.shift shift is cumulative across multiple calls
+00:09 +231: /home/dan/CodeProjects/canopy/test/dev/dev_clock_test.dart: DevClock persistence an offset set, then init() called again, restores it
+00:09 +232: /home/dan/CodeProjects/canopy/test/dev/dev_clock_test.dart: DevClock persistence clear() removes the persisted offset so init() stays off
+00:09 +233: loading /home/dan/CodeProjects/canopy/test/dev/dev_data_loader_test.dart
+00:09 +233: /home/dan/CodeProjects/canopy/test/dev/dev_data_loader_test.dart: DevDataLoader.parseJson happy path — known JSON yields expected entity counts
+00:09 +234: /home/dan/CodeProjects/canopy/test/dev/dev_data_loader_test.dart: DevDataLoader.parseJson sad path — malformed JSON returns failure without throwing
+00:09 +235: /home/dan/CodeProjects/canopy/test/dev/dev_data_loader_test.dart: DevDataLoader.parseJson sad path — wrong shape (goals as string) returns failure
+00:09 +236: /home/dan/CodeProjects/canopy/test/dev/dev_data_loader_test.dart: DevDataLoader.parseJson bundled scenario file — counts match documented range
+00:09 +237: loading /home/dan/CodeProjects/canopy/test/dev/dev_clock_wiring_test.dart
+00:10 +237: /home/dan/CodeProjects/canopy/test/dev/dev_clock_wiring_test.dart: DevClock wiring — HiveDailyScheduleRepository.getTodaysSchedule a simulated day loads THAT day's schedule, not the real day's (DEV-01)
+00:10 +238: /home/dan/CodeProjects/canopy/test/dev/dev_clock_wiring_test.dart: DevClock wiring — HiveDailyScheduleRepository.getTodaysSchedule an overridden clock still moves the day key forward across midnight
+00:10 +239: loading /home/dan/CodeProjects/canopy/test/platform/window_setup_test.dart
+00:10 +239: /home/dan/CodeProjects/canopy/test/platform/window_setup_test.dart: setupDesktopWindow does not throw any unexpected error on the test host (MissingPluginException is acceptable; ArgumentError or TypeError is not)
+00:10 +240: loading /home/dan/CodeProjects/canopy/test/repositories/goal_repository_test.dart
+00:11 +240: /home/dan/CodeProjects/canopy/test/repositories/goal_repository_test.dart: getAll returns empty list when no goals saved
+00:11 +241: /home/dan/CodeProjects/canopy/test/repositories/goal_repository_test.dart: save and getById round-trip
+00:11 +242: /home/dan/CodeProjects/canopy/test/repositories/goal_repository_test.dart: getActive excludes archived goals
+00:11 +243: /home/dan/CodeProjects/canopy/test/repositories/goal_repository_test.dart: delete removes goal from store
+00:11 +244: /home/dan/CodeProjects/canopy/test/repositories/goal_repository_test.dart: Goal IDs are UUID v4 strings (not empty, not integers)
+00:11 +245: loading /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart
+00:11 +245: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: DataSection renders hero stat number
+00:11 +246: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: DataSection renders "chunks completed this quarter" label
+00:11 +247: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: DataSection renders "Next: Reflect" button
+00:12 +248: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: DataSection "Next: Reflect" button invokes onNext callback
+00:12 +249: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: DonutChart renders correct number of legend rows
+00:12 +250: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: DonutChart renders with no goals without crashing
+00:12 +251: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: DonutChart renders Commitments legend row when commitment logs present
+00:12 +252: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: DonutChart renders archived goal legend row with (archived) suffix
+00:12 +253: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: DonutChart legend percentages across all slice types sum to 100 (deterministic mix)
+00:12 +254: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: ReflectionQuestionCard renders the question text
+00:12 +255: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: ReflectionQuestionCard renders suggestion chips
+00:12 +256: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: ReflectionQuestionCard tapping a chip calls onAnswered with chip label
+00:12 +257: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: ReflectionQuestionCard renders "Other..." button
+00:12 +258: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: GoalAdjustmentTile renders goal name
+00:12 +259: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: GoalAdjustmentTile shows archive prompt text when showArchivePrompt is true
+00:12 +260: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: AdjustmentsSection renders "Set your priorities for next quarter" heading
+00:12 +261: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: AdjustmentsSection renders "Finish review" button
+00:12 +262: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: ReflectionSection renders the first question
+00:12 +263: /home/dan/CodeProjects/canopy/test/screens/quarterly_review_test.dart: QuarterlyReviewScreen cold-launch (REVIEW-03) loads active goal, archived goal, and commitment legend rows without prior tab visit
+00:12 +264: loading /home/dan/CodeProjects/canopy/test/screens/goal_card_drag_handle_test.dart
+00:12 +264: /home/dan/CodeProjects/canopy/test/screens/goal_card_drag_handle_test.dart: GoalCard drag handle visibility visible on Android (mobile touch — Phase 14: now always shown)
+00:13 +265: /home/dan/CodeProjects/canopy/test/screens/goal_card_drag_handle_test.dart: GoalCard drag handle visibility visible on iOS (mobile touch — Phase 14: now always shown)
+00:13 +266: /home/dan/CodeProjects/canopy/test/screens/goal_card_drag_handle_test.dart: GoalCard drag handle visibility visible at 0.6 opacity on macOS (desktop)
+00:13 +267: loading /home/dan/CodeProjects/canopy/test/screens/chunk_card_hover_test.dart
+00:13 +267: /home/dan/CodeProjects/canopy/test/screens/chunk_card_hover_test.dart: ChunkCard always-visible action buttons (SCHED-03) unresolved chunk shows FilledButton "Complete" without hover
+00:14 +268: /home/dan/CodeProjects/canopy/test/screens/chunk_card_hover_test.dart: ChunkCard always-visible action buttons (SCHED-03) unresolved chunk shows OutlinedButton "Skip" without hover
+00:14 +269: /home/dan/CodeProjects/canopy/test/screens/chunk_card_hover_test.dart: ChunkCard always-visible action buttons (SCHED-03) completed chunk shows no FilledButton or OutlinedButton
+00:14 +270: /home/dan/CodeProjects/canopy/test/screens/chunk_card_hover_test.dart: ChunkCard always-visible action buttons (SCHED-03) skipped chunk shows no FilledButton or OutlinedButton
+00:14 +271: /home/dan/CodeProjects/canopy/test/screens/chunk_card_hover_test.dart: ChunkCard always-visible action buttons (SCHED-03) tapping Complete calls ScheduleNotifier.markComplete
+00:14 +272: /home/dan/CodeProjects/canopy/test/screens/chunk_card_hover_test.dart: ChunkCard always-visible action buttons (SCHED-03) tapping Skip calls ScheduleNotifier.markSkipped
+00:14 +273: /home/dan/CodeProjects/canopy/test/screens/chunk_card_hover_test.dart: ChunkCard always-visible action buttons (SCHED-03) no AnimatedOpacity hover overlay in tree for unresolved chunk
+00:14 +274: loading /home/dan/CodeProjects/canopy/test/screens/onboarding_flow_test.dart
+00:14 +274: /home/dan/CodeProjects/canopy/test/screens/onboarding_flow_test.dart: beat 1 requires a goal, then reveals it
+00:15 +275: /home/dan/CodeProjects/canopy/test/screens/onboarding_flow_test.dart: tapping a preset chip adds that goal
+00:15 +276: /home/dan/CodeProjects/canopy/test/screens/onboarding_flow_test.dart: full walk-through: goals → recharge → energy → finish
+00:16 +277: /home/dan/CodeProjects/canopy/test/screens/onboarding_flow_test.dart: tapping Continue without pressing Enter still saves the typed goal
+00:16 +278: /home/dan/CodeProjects/canopy/test/screens/onboarding_flow_test.dart: tapping Continue without Enter still saves the typed restorative
+00:16 +279: /home/dan/CodeProjects/canopy/test/screens/onboarding_flow_test.dart: a named job with no days cannot be saved, but can be skipped
+00:17 +280: /home/dan/CodeProjects/canopy/test/screens/onboarding_flow_test.dart: a standard pre-filled job is captured on Add & finish without typing a name
+00:17 +281: /home/dan/CodeProjects/canopy/test/screens/onboarding_flow_test.dart: a failure on the final step is recoverable, not a dead end
+00:17 +282: /home/dan/CodeProjects/canopy/test/screens/onboarding_flow_test.dart: job beat scrolls (not overflows) when the viewport is short (keyboard up)
+00:18 +283: /home/dan/CodeProjects/canopy/test/screens/onboarding_flow_test.dart: large text scale on a small phone does not lock the user on beat 1
+00:18 +284: /home/dan/CodeProjects/canopy/test/screens/onboarding_flow_test.dart: job beat can finish with no commitment
+00:18 +285: loading /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart
+00:18 +285: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 1 — scaffold, AppBar, reconciled empty state empty state renders without throwing when there is no schedule
+00:19 +286: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 1 — scaffold, AppBar, reconciled empty state empty state keeps every affordance from both old screens
+00:19 +287: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 1 — scaffold, AppBar, reconciled empty state tapping Add an event from the empty state opens a modal
+00:19 +288: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 1 — scaffold, AppBar, reconciled empty state at 1024x768 the content is constrained to 720dp (POLISH-01)
+00:19 +289: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 1 — scaffold, AppBar, reconciled empty state AppBar exposes add-event, re-check-in, start-focus and exactly one refresh icon
+00:19 +290: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 1 — scaffold, AppBar, reconciled empty state accepts an injectable now clock function
+00:19 +291: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time exactly one LiveRowCard, for the 10:45 chunk
+00:19 +292: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time completed and skipped chunks still render as rows, inline, no "Skipped today" text
+00:19 +293: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time the leading "Free until" row precedes the first activity while that window is still open
+00:19 +294: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time the leading "Free until" row is gone once its window has closed (NOW-02)
+00:19 +295: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time a named "Free ·" row appears for the 11:15–13:00 gap
+00:20 +296: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time "See full schedule" appears nowhere (D-08 / G4)
+00:20 +297: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time a mood-2 schedule renders the restoratives card
+00:20 +298: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time a mood-4 schedule does not render the restoratives card
+00:20 +299: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time work chunks more than half resolved expose "View your day"
+00:20 +300: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time work chunks below half resolved do NOT expose "View your day"
+00:20 +301: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time tapping an unresolved non-live work row opens ChunkDetailSheet
+00:20 +302: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time gutter column shares a left edge with the "Today" heading (G-04)
+00:20 +303: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time the chunk count appears once, in the progress row, not in the mood chip (G-06)
+00:20 +304: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time the end-of-day card follows the INJECTED clock, not the wall clock (D-01 regression)
+00:20 +305: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape a 25-minute work chunk slot measures exactly 25 * kPixelsPerMinute
+00:20 +306: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape a 105-minute gap renders at 105 * kPixelsPerMinute — not compressed, not clamped (D-02)
+00:20 +307: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape two clock-contiguous chunks: the second slot top equals the first slot top plus the first slot height
+00:20 +308: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape the timeline Stack's SizedBox height equals (rangeEnd - rangeStart) * kPixelsPerMinute plus 2 * kTimelineEdgePadding (G-04/G-05, 26-10-PLAN.md) when no live row is swelling it
+00:20 +309: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape GRID-02: the live row's rendered slot is duration-exact, not swelled (single-line tier)
+00:20 +310: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape GRID-02: the live row's rendered slot is duration-exact, not swelled (compact tier)
+00:20 +311: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape a 5-minute short break slot measures exactly 5 * kPixelsPerMinute
+00:20 +312: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line no suppression — exactly one NowLineOverlay in every NowState (the Active row is the one that used to assert findsNothing)
+00:21 +313: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line mid-chunk truth — the line sits at TimelineGeometry's own computed offset, strictly inside the live chunk's rendered span
+00:21 +314: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line motion — a one-minute tick advances the line by exactly kPixelsPerMinute
+00:21 +315: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line PreStart is representable — the line never renders above the top of the rendered range
+00:21 +316: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line DayComplete is representable — the line never renders below the bottom of the rendered range
+00:21 +317: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line no chip text in a non-live state — the chip is retired, not suppressed
+00:21 +318: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line the now-line dot is centred on the ChunkCard left edge, straddling the gutter boundary
+00:21 +319: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line the LIVE row is flush with an ordinary card on both edges, and the dot is centred on that shared edge
+00:21 +320: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line G-03: no time chip over the live row — the full-bleed card leaves no gutter
+00:21 +321: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line semantics — exactly one "Now — 9:12 AM" node; the chip's own visible text is excluded from the tree
+00:21 +322: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line hit-testing — a Complete tap still lands through the now-line (IgnorePointer proof)
+00:21 +323: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line colour — the now-line rule uses colorScheme.primary and the hour hairline uses colorScheme.outlineVariant
+00:21 +324: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line hour axis coverage — one HourAxisLine per hour boundary, first labelled from rangeStart
+00:21 +325: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line G-04: the first and last hour-axis labels stay inside the Stack's own painted bounds
+00:21 +326: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line G-05: the now-line stays inside the Stack at the EXACT boundary minute — PreStart (nowMinutes == rangeStart) and DayComplete (nowMinutes == rangeEnd), not merely "near" the edge
+00:21 +327: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes centres on open in every NowState, including DayComplete (closes the Phase 24 UAT gap by construction)
+00:21 +328: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes the target is the clamped centred-on-now value
+00:21 +329: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes the past is off-screen — the 8am chunk is not visible without scrolling up
+00:22 +330: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes centres once — a later 1-minute tick does not move the offset again
+00:22 +331: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes a DevClock jump re-arms it exactly once
+00:22 +332: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes a state transition does NOT re-centre on a mounted tree (PD-19) — a fresh open still does
+00:22 +333: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes empty state does not throw (hasClients guard)
+00:22 +334: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy pre-start: "Nothing until" is present, no LiveRowCard
+00:22 +335: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy gap-before-next: "Up next" is present, no LiveRowCard
+00:22 +336: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy day-complete: "That's the day." is present, no LiveRowCard
+00:22 +337: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy no floating recall pill — "Jump to now" appears nowhere (D-03)
+00:22 +338: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy gap-before-next targeting a break names the break, not "Work block"
+00:22 +339: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy edge states are distinct — no state satisfies another state's copy
+00:22 +340: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: Task 3 — scroll-on-open + edge-state copy copywriting guard: "behind" appears only in the DayComplete "behind you" phrase, never in PreStart or GapBeforeNext
+00:22 +341: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: WR-01 — Start focus follows nowState, not a list-order scan Start focus pushes the Active chunk from nowState, not the stale earlier unresolved chunk
+00:22 +342: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: WR-01 — Start focus follows nowState, not a list-order scan Start focus is disabled when nowState is DayComplete (no meaningful target to guess at)
+00:22 +343: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: WR-01 — Start focus follows nowState, not a list-order scan Start focus is disabled while a break is the Active chunk
+00:23 +344: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: WR-01 — Start focus follows nowState, not a list-order scan Start focus is disabled while a break is the GapBeforeNext target
+00:23 +345: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: WR-01 — Start focus follows nowState, not a list-order scan Start focus is disabled while a break is Overdue
+00:23 +346: /home/dan/CodeProjects/canopy/test/screens/today_screen_test.dart: WR-01 — Start focus follows nowState, not a list-order scan Start focus still targets the Active work chunk when a break follows it
+00:23 +347: loading /home/dan/CodeProjects/canopy/test/screens/goals_screen_heading_test.dart
+00:23 +347: /home/dan/CodeProjects/canopy/test/screens/goals_screen_heading_test.dart: GoalsScreen heading shows "Your goals" heading and subhead when goals exist
+00:24 +348: loading /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart
+00:24 +348: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: TimelineRowTile (Phase 26 CAL-01, PD-5: pure inset wrapper) still lays out the child
+00:24 +349: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: TimelineRowTile (Phase 26 CAL-01, PD-5: pure inset wrapper) gutter SizedBox is exactly kGutterWidth wide
+00:25 +350: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: TimelineRowTile (Phase 26 CAL-01, PD-5: pure inset wrapper) the reserved gutter column renders no Text for any row (PD-5)
+00:25 +351: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: FreeTimeRow (D-05, LOCKED copy) leading form renders exactly "Free until 8:00 AM"
+00:25 +352: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: FreeTimeRow (D-05, LOCKED copy) gap form renders exactly "Free · 1h 40m"
+00:25 +353: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: FreeTimeRow (D-05, LOCKED copy) neither form renders a Card
+00:25 +354: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: NowLineOverlay (CAL-02, UI-SPEC locked) renders no text at all — the time chip is retired
+00:25 +355: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: NowLineOverlay (CAL-02, UI-SPEC locked) a 2dp-tall Container renders, colored colorScheme.primary from the pumped theme
+00:25 +356: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: NowLineOverlay (CAL-02, UI-SPEC locked) the widget's own rendered height equals kNowLineHeight
+00:25 +357: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: NowLineOverlay (CAL-02, UI-SPEC locked) renders a circular primary-colored dot centred on the content edge
+00:25 +358: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: NowLineOverlay (CAL-02, UI-SPEC locked) the 2dp rule starts at the content edge, not at x=0
+00:25 +359: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: NowLineOverlay (CAL-02, UI-SPEC locked) the 2dp rule stops at the row inset on the right, not the overlay edge
+00:25 +360: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: NowLineOverlay (CAL-02, UI-SPEC locked) the overlay renders from nowMinutes alone, with no suppression flag
+00:25 +361: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: HourAxisLine (CAL-01 hour axis) renders "9 AM" for hourMinutes 540
+00:25 +362: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: HourAxisLine (CAL-01 hour axis) the widest hour labels render without overflowing the gutter
+00:25 +363: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: HourAxisLine (CAL-01 hour axis) renders "12 PM" for hourMinutes 720
+00:25 +364: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: HourAxisLine (CAL-01 hour axis) the label column is exactly kGutterWidth wide
+00:25 +365: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: HourAxisLine (CAL-01 hour axis) the hairline Container is 1dp tall and colored outlineVariant
+00:25 +366: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCard row vocabulary (D-06, D-07, P10) completed work chunk: struck through + primary check icon
+00:25 +367: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCard row vocabulary (D-06, D-07, P10) skipped work chunk: struck through + literal "skipped" text
+00:25 +368: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCard row vocabulary (D-06, D-07, P10) unresolved work chunk: no strikethrough, unchecked icon, Complete/Skip present
+00:25 +369: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCard row vocabulary (D-06, D-07, P10) showStartTime false renders duration, not the clock-time range
+00:25 +370: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCard row vocabulary (D-06, D-07, P10) showStartTime omitted still renders the clock-time range
+00:25 +371: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCard row vocabulary (D-06, D-07, P10) SwipeableChunkCard forwards showStartTime false and keeps swipe
+00:25 +372: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCard row vocabulary (D-06, D-07, P10) short break: "Short break" label, no Card, dashed outline
+00:25 +373: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCard row vocabulary (D-06, D-07, P10) long break: "Long break" label, same dashed vocabulary at greater weight (G-02)
+00:25 +374: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCard row vocabulary (D-06, D-07, P10) a long break reads substantially heavier than a short break (G-02)
+00:25 +375: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCard row vocabulary (D-06, D-07, P10) no new interaction is added to the break row (G-02 prohibition)
+00:25 +376: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCard row vocabulary (D-06, D-07, P10) completed break also renders the check icon
+00:25 +377: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCard row vocabulary (D-06, D-07, P10) commitment work chunk uses tertiaryContainer, no outline, no left bar
+00:25 +378: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCard row vocabulary (D-06, D-07, P10) no hardcoded Colors literal reaches the widget tree
+00:25 +379: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCardDensity (CAL-01, 26-02-PLAN.md PD-4) detailed (default): rationale, priority chip and valence chip all render
+00:25 +380: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCardDensity (CAL-01, 26-02-PLAN.md PD-4) full: title and time range render; rationale, priority chip, valence chip do not; Complete and Skip render
+00:25 +381: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCardDensity (CAL-01, 26-02-PLAN.md PD-4) compact: only the title renders
+00:25 +382: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCardDensity (CAL-01, 26-02-PLAN.md PD-4) break densities compact short break renders the label but not its duration text
+00:25 +383: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCardDensity (CAL-01, 26-02-PLAN.md PD-4) break densities full short break renders both the label and its duration text
+00:25 +384: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: ChunkCardDensity (CAL-01, 26-02-PLAN.md PD-4) SwipeableChunkCard forwards density on the break early-return path (regression guard for the forgotten-forward failure mode)
+00:25 +385: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) renders the kicker "RIGHT NOW" when passed it
+00:25 +386: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) card background colour equals colorScheme.primaryContainer
+00:25 +387: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) no arrow_forward icon and no "Now" pill badge
+00:25 +388: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) compact tier renders title and remainingLabel verbatim, no LinearProgressIndicator
+00:25 +389: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) compact tier icon buttons carry the right icons and are at least the 44dp WCAG touch target
+00:25 +390: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) tier boundary: kCompactLiveMinHeight is compact, one dp below is single-line
+00:25 +391: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) single-line tier renders title and remaining time, no kicker, no icon buttons, no progress bar
+00:25 +392: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) single-line tier exposes the locked "Right now: ..." semantics label
+00:25 +393: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) single-line tap fires onTap exactly once
+00:25 +394: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) single-line tier has no InkWell when onTap is null
+00:25 +395: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) both tiers restate kCardLeftInset/kTimelineRowInset as Card margin
+00:25 +396: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) shows Complete/Skip buttons when showActions is true
+00:26 +397: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) hides Complete/Skip buttons when showActions is false
+00:26 +398: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) tapping Complete calls ScheduleNotifier.markComplete
+00:26 +399: /home/dan/CodeProjects/canopy/test/screens/today_row_widgets_test.dart: LiveRowCard — two density tiers (GRID-02) tapping Skip calls ScheduleNotifier.markSkipped
+00:26 +400: loading /home/dan/CodeProjects/canopy/test/screens/goal_form_priority_test.dart
+00:26 +400: /home/dan/CodeProjects/canopy/test/screens/goal_form_priority_test.dart: Priority SegmentedButton (ENGINE-06 UI half) Priority label and segment labels Low/Normal/High are present
+00:27 +401: /home/dan/CodeProjects/canopy/test/screens/goal_form_priority_test.dart: Priority SegmentedButton (ENGINE-06 UI half) new goal defaults to Normal selected (null coalesces to 0.5)
+00:27 +402: /home/dan/CodeProjects/canopy/test/screens/goal_form_priority_test.dart: Priority SegmentedButton (ENGINE-06 UI half) existing goal with null priorityWeight renders Normal selected
+00:27 +403: /home/dan/CodeProjects/canopy/test/screens/goal_form_priority_test.dart: Priority SegmentedButton (ENGINE-06 UI half) priority control visible when Habit goal type is selected
+00:27 +404: /home/dan/CodeProjects/canopy/test/screens/goal_form_priority_test.dart: Priority SegmentedButton (ENGINE-06 UI half) priority control visible when Outcome goal type is selected
+00:27 +405: /home/dan/CodeProjects/canopy/test/screens/goal_form_priority_test.dart: Priority SegmentedButton (ENGINE-06 UI half) priority control visible when Time Target goal type is selected
+00:27 +406: /home/dan/CodeProjects/canopy/test/screens/goal_form_priority_test.dart: GOALFORM-02 — true modal height contract time-target goal: Priority selector and Save reachable via scroll at constrained modal height (390x844 / initialChildSize 0.5)
+00:27 +407: /home/dan/CodeProjects/canopy/test/screens/goal_form_priority_test.dart: GOALFORM-02 — true modal height contract outcome goal: Priority selector and Save reachable via scroll at constrained modal height — outcome content exceeds modal (422pt), so real scrolling is required
+00:27 +408: /home/dan/CodeProjects/canopy/test/screens/goal_form_priority_test.dart: GOALFORM-02 — true modal height contract habit goal: Priority selector and Save reachable via scroll at constrained modal height (390x844 / initialChildSize 0.5)
+00:28 +409: /home/dan/CodeProjects/canopy/test/screens/goal_form_priority_test.dart: GOALFORM-02 — true modal height contract tapping High selects it and save persists priorityWeight == 0.75 (folded in from replaced setSurfaceSize test — at true modal height)
+00:28 +410: /home/dan/CodeProjects/canopy/test/screens/goal_form_priority_test.dart: GOALFORM-02 — true modal height contract selecting Regular time defaults the weekly budget to 3 hrs and saves it (folded in from replaced setSurfaceSize test — at true modal height)
+00:28 +411: loading /home/dan/CodeProjects/canopy/test/screens/chunk_detail_sheet_test.dart
+00:28 +411: /home/dan/CodeProjects/canopy/test/screens/chunk_detail_sheet_test.dart: ChunkDetailSheet (READ-03) shows goal name, rationale, and three action buttons
+00:29 +412: /home/dan/CodeProjects/canopy/test/screens/chunk_detail_sheet_test.dart: ChunkDetailSheet (READ-03) resolved chunk shows status badge and no action buttons
+00:29 +413: loading /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart
+00:29 +413: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) pre-start: now before first chunk window (6am, chunk starts 8am)
+00:29 +414: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) active: now within chunk window (9am, chunk 8:30–9:30)
+00:29 +415: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) overdue (between-windows): c1 8:30–9:30, c2 10:30–11:30, now 10:00
+00:29 +416: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) day-complete (time past last window): chunk 8am–9am, now 6pm
+00:29 +417: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) day-complete (all resolved within active window): both completed/skipped
+00:29 +418: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) active advances past resolved chunk: c1 completed, c2 unresolved, both windows started → Active(c2)
+00:29 +419: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) gap: c1 resolved 9:00–9:25, c2 starts 10:00, now=9:30 → GapBeforeNext(c2) — NOT DayComplete or Active
+00:29 +420: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) near-gap: c1 resolved 9:00–9:25, c2 starts 9:25, now=9:10 → GapBeforeNext(c2) — day not complete when next window imminent
+00:29 +421: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) gap with all-resolved future: c1 done, c2 also done, now=9:30 → DayComplete (no unresolved future work)
+00:29 +422: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) degenerate all-null windows: all displayStartMinutes null → DayComplete (documented departure)
+00:29 +423: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) active: a running short break is the current activity
+00:29 +424: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) active: a running long break is the current activity
+00:29 +425: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) active work chunk's next is the contiguous break
+00:29 +426: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) gap-before-next can target a break (KEY INVARIANT: an unopened break window is never promoted to Active)
+00:29 +427: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) overdue: a break window has passed and the next window has not opened
+00:29 +428: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) day-complete still fires past the last window on a work+break day (STEP E keeps the last chunk work-typed)
+00:29 +429: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) CR-01: a trailing break past its own window resolves to DayComplete truthfully instead of throwing
+00:29 +430: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: resolveNowState unit tests (NOW-01/NOW-02) CR-01: the same trailing-break fixture still resolves Active while its own window is current (unaffected by the assert removal)
+00:29 +431: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) pre-start: 6am before 8am chunk → shows "Nothing until"
+00:30 +432: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) active: 9am with chunk 8:30–9:30 → shows LiveRowCard
+00:30 +433: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) between-chunks (overdue): 10am, c1 8:30–9:30, c2 10:30–11:30 → LiveRowCard (c1)
+00:30 +434: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) day-complete (6pm, all windows passed) → shows "That's the day."
+00:30 +435: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) all-resolved → shows "That's the day." regardless of time
+00:30 +436: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) gap state: c1 resolved 9:00–9:25, c2 at 10:00, now=9:30 → shows "Up next" and NOT "That's the day."
+00:30 +437: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) timer/lifecycle: 1-min tick transitions pre-start → active
+00:30 +438: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) live short break, single-line tier: a running break still announces itself as rest (PD-27-09)
+00:30 +439: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) live long break, compact tier: the visible RESTING kicker still names the rest (PD-27-09)
+00:30 +440: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) live long break: title says long
+00:30 +441: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) live break shows no Complete/Skip (D-02)
+00:30 +442: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) GapBeforeNext "Up next" banner names the reference title, not "Work block" (PD-27-10)
+00:30 +443: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) live work chunk keeps the plain kicker
+00:30 +444: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) live work chunk still shows Complete/Skip
+00:30 +445: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) 15 minutes remaining reads whole minutes
+00:30 +446: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) sub-minute remainders round UP, never down (D-01)
+00:30 +447: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) 61 seconds remaining is still the minutes branch
+00:30 +448: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) exactly 60 seconds remaining is the minutes branch boundary
+00:30 +449: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) 59 seconds remaining switches to seconds
+00:30 +450: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) 1 second remaining still reads seconds, never 0 min
+00:30 +451: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) a running break gets the same countdown treatment
+00:31 +452: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) the countdown matches the sample that classified the state, not a later clock read (WR-01)
+00:31 +453: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: LIVE-02 fast tick the label advances every second inside the final minute
+00:31 +454: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: LIVE-02 fast tick no timer fires on a one-second pump outside the final minute
+00:31 +455: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: LIVE-02 fast tick a fast timer starts when the chunk crosses into its final minute and stops when it leaves
+00:31 +456: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: LIVE-02 fast tick the fast timer is not duplicated across a paused/resumed cycle
+00:31 +457: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: LIVE-02 fast tick no timer is pending after the widget tree is disposed
+00:31 +458: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: LIVE-02 fast tick the fast timer does not survive the schedule disappearing
+00:31 +459: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: G-03 timer resilience G-03: the minute tick still fires after a paused with no matching resumed
+00:31 +460: /home/dan/CodeProjects/canopy/test/screens/today_screen_now_state_test.dart: G-03 timer resilience G-03: the fast timer stays off while backgrounded but the minute tick survives
+00:31 +461: loading /home/dan/CodeProjects/canopy/test/screens/goal_card_valence_test.dart
+00:31 +461: /home/dan/CodeProjects/canopy/test/screens/goal_card_valence_test.dart: GoalCard valence badge (ENERGY-04a) shows "Gives" badge + bolt icon when energyValence == gives
+00:32 +462: /home/dan/CodeProjects/canopy/test/screens/goal_card_valence_test.dart: GoalCard valence badge (ENERGY-04a) shows "Costs" badge + hourglass icon when energyValence == costs
+00:32 +463: /home/dan/CodeProjects/canopy/test/screens/goal_card_valence_test.dart: GoalCard valence badge (ENERGY-04a) shows NO valence badge when energyValence == neutral
+00:32 +464: /home/dan/CodeProjects/canopy/test/screens/goal_card_valence_test.dart: GoalCard valence badge (ENERGY-04a) shows NO valence badge when energyValenceIndex is null (old-record default)
+00:32 +465: /home/dan/CodeProjects/canopy/test/screens/goal_card_valence_test.dart: GoalCard emoji tag (ENERGY-03b) emoji appears in title row when emojiTag is set
+00:32 +466: /home/dan/CodeProjects/canopy/test/screens/goal_card_valence_test.dart: GoalCard emoji tag (ENERGY-03b) no emoji appears when emojiTag is null
+00:32 +467: /home/dan/CodeProjects/canopy/test/screens/goal_card_valence_test.dart: GoalCard emoji tag (ENERGY-03b) emoji + gives badge both render together
+00:32 +468: loading /home/dan/CodeProjects/canopy/test/screens/responsive_layout_test.dart
+00:32 +468: /home/dan/CodeProjects/canopy/test/screens/responsive_layout_test.dart: Responsive shell layout shows NavigationBar at 480dp (mobile)
+00:32 +469: /home/dan/CodeProjects/canopy/test/screens/responsive_layout_test.dart: Responsive shell layout switches to NavigationRail at 720dp (inclusive boundary)
+00:33 +470: /home/dan/CodeProjects/canopy/test/screens/responsive_layout_test.dart: Responsive shell layout shows NavigationRail at 1200dp (desktop)
+00:33 +471: /home/dan/CodeProjects/canopy/test/screens/responsive_layout_test.dart: Responsive shell layout re-tapping the active branch destination pops nested routes to root (WR-09)
+00:33 +472: /home/dan/CodeProjects/canopy/test/screens/responsive_layout_test.dart: Responsive shell layout does not throw OverflowError at any breakpoint
+00:33 +473: loading /home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart
+00:33 +473: /home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart: D-06: a cadence boundary emits two consecutive break chunks D-06: the engine emits a 5-minute break immediately followed by a 30-minute break
+00:33 +474: /home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart: D-06: a cadence boundary emits two consecutive break chunks D-06: buildTimeline renders the pair as two adjacent ChunkRows with no gap row between
+00:33 +475: /home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart: D-06: a cadence boundary emits two consecutive break chunks D-06: TimelineGeometry positions the pair abutting exactly — no overlap, no dead space
+00:33 +476: /home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart: D-06: the pair renders D-06: a 5-minute break card and a 30-minute break card render adjacently without throwing
+00:33 +477: loading /home/dan/CodeProjects/canopy/test/screens/goals_screen_quick_add_test.dart
+00:34 +477: /home/dan/CodeProjects/canopy/test/screens/goals_screen_quick_add_test.dart: GoalsScreen quick-add pasting a slate of 8 with NO trailing newline creates all 8
+00:35 +478: /home/dan/CodeProjects/canopy/test/screens/goals_screen_quick_add_test.dart: GoalsScreen quick-add pasting a slate WITH a trailing newline creates all 8
+00:35 +479: /home/dan/CodeProjects/canopy/test/screens/goals_screen_quick_add_test.dart: GoalsScreen quick-add type-and-Enter adds one goal and clears the field
+00:35 +480: /home/dan/CodeProjects/canopy/test/screens/goals_screen_quick_add_test.dart: GoalsScreen quick-add rapid entry faster than saves drops nothing
+00:35 +481: /home/dan/CodeProjects/canopy/test/screens/goals_screen_quick_add_test.dart: GoalsScreen quick-add a failed save recovers the name and does not wedge the worker
+00:35 +482: loading /home/dan/CodeProjects/canopy/test/screens/goal_form_valence_test.dart
+00:35 +482: /home/dan/CodeProjects/canopy/test/screens/goal_form_valence_test.dart: Energy valence SegmentedButton (ENERGY-02) "Energy" section label renders
+00:36 +483: /home/dan/CodeProjects/canopy/test/screens/goal_form_valence_test.dart: Energy valence SegmentedButton (ENERGY-02) segment labels "Gives energy", "Neutral", "Costs energy" all render
+00:36 +484: /home/dan/CodeProjects/canopy/test/screens/goal_form_valence_test.dart: Energy valence SegmentedButton (ENERGY-02) new goal defaults to Neutral selected
+00:36 +485: /home/dan/CodeProjects/canopy/test/screens/goal_form_valence_test.dart: Energy valence SegmentedButton (ENERGY-02) editing an existing goal with gives valence shows "Gives energy" pre-selected
+00:36 +486: /home/dan/CodeProjects/canopy/test/screens/goal_form_valence_test.dart: Energy valence SegmentedButton (ENERGY-02) tapping "Gives energy" then Save persists energyValence == gives (ENERGY-02)
+00:36 +487: loading /home/dan/CodeProjects/canopy/test/screens/chunk_card_valence_test.dart
+00:37 +487: /home/dan/CodeProjects/canopy/test/screens/chunk_card_valence_test.dart: ChunkCard valence chip (ENERGY-04b) shows "Gives" chip when goalValence == gives
+00:37 +488: /home/dan/CodeProjects/canopy/test/screens/chunk_card_valence_test.dart: ChunkCard valence chip (ENERGY-04b) shows "Costs" chip when goalValence == costs
+00:37 +489: /home/dan/CodeProjects/canopy/test/screens/chunk_card_valence_test.dart: ChunkCard valence chip (ENERGY-04b) shows NO valence chip when goalValence == neutral
+00:37 +490: /home/dan/CodeProjects/canopy/test/screens/chunk_card_valence_test.dart: ChunkCard valence chip (ENERGY-04b) shows NO valence chip when goalValence is null
+00:37 +491: /home/dan/CodeProjects/canopy/test/screens/chunk_card_valence_test.dart: ChunkCard emoji prefix (ENERGY-04b) emoji appears prefixed to goal name when goalEmojiTag is set
+00:37 +492: /home/dan/CodeProjects/canopy/test/screens/chunk_card_valence_test.dart: ChunkCard emoji prefix (ENERGY-04b) no emoji prefix when goalEmojiTag is null
+00:37 +493: /home/dan/CodeProjects/canopy/test/screens/chunk_card_valence_test.dart: ChunkCard emoji prefix (ENERGY-04b) emoji + gives chip render together
+00:37 +494: loading /home/dan/CodeProjects/canopy/test/screens/goal_card_priority_chip_rebuild_test.dart
+00:38 +494: /home/dan/CodeProjects/canopy/test/screens/goal_card_priority_chip_rebuild_test.dart: GoalCard priority chip rebuild after reorderAllWithPriority (PRIORITY-03) before reorder: exactly one High chip (g0) and one Low chip (g2)
+00:38 +495: /home/dan/CodeProjects/canopy/test/screens/goal_card_priority_chip_rebuild_test.dart: GoalCard priority chip rebuild after reorderAllWithPriority (PRIORITY-03) after reorderAllWithPriority([g1,g0,g2]): chip follows new priorityWeight — g0 drops High, g1 gains High, no stale chip
+00:38 +496: loading /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart
+00:39 +496: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — structural cases empty chunks returns an empty list
+00:39 +497: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — structural cases first chunk starts at minute 480: LeadingFreeRow(480) then its ChunkRow
+00:39 +498: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — structural cases first chunk starts at minute 0: no LeadingFreeRow
+00:39 +499: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — structural cases all chunks untimed: no LeadingFreeRow, one ChunkRow each, order preserved
+00:39 +500: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — structural cases NOW-02: nowMinutes before the first chunk start — LeadingFreeRow is present
+00:39 +501: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — structural cases NOW-02: nowMinutes past the first chunk start — LeadingFreeRow is still built, flagged windowPassed
+00:39 +502: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — structural cases NOW-02: nowMinutes omitted entirely — LeadingFreeRow is present (back-compat, null is a no-op)
+00:39 +503: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — gap arithmetic (D-05) chunk A at 8:00 for 25min, chunk B at 10:45: GapFreeRow(505, 140) between them
+00:39 +504: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — gap arithmetic (D-05) gap of exactly 10 minutes: a GapFreeRow IS emitted (inclusive threshold)
+00:39 +505: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — gap arithmetic (D-05) gap of 9 minutes: suppressed (no free row)
+00:39 +506: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — gap arithmetic (D-05) gap of 0 (back-to-back): no free row
+00:39 +507: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — gap arithmetic (D-05) an untimed chunk between two timed chunks neither opens nor closes a gap and keeps its position in the output order
+00:39 +508: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — isLive derivation (single-detector guarantee) nowState Active(c2, ...): exactly one ChunkRow has isLive true, and it is c2's
+00:39 +509: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — isLive derivation (single-detector guarantee) nowState Overdue(c1, ...): exactly one ChunkRow has isLive true, and it is c1's
+00:39 +510: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — isLive derivation (single-detector guarantee) nowState PreStart, GapBeforeNext, or DayComplete: no row has isLive true
+00:39 +511: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — isLive derivation (single-detector guarantee) Phase 17 regression guard: 8am unresolved chunk + in-window 5:30pm chunk, clock frozen around 18:00 — live row is the 5:30pm chunk, NOT the 8am one
+00:39 +512: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — completed/skipped rows never filtered (D-01/D-06) completed and skipped chunks still appear as ChunkRows in clock order
+00:39 +513: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: buildTimeline — live break (LIVE-01) a live break renders as a ChunkRow with isLive true
+00:39 +514: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: TimelineGeometry — CAL-01 minute→pixel mapping Active: now inside [firstStart, lastEnd] reduces to the plain day span
+00:39 +515: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: TimelineGeometry — CAL-01 minute→pixel mapping PreStart: now precedes firstStart extends rangeStart back to now
+00:39 +516: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: TimelineGeometry — CAL-01 minute→pixel mapping DayComplete: now follows lastEnd extends rangeEnd forward to now
+00:39 +517: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: TimelineGeometry — CAL-01 minute→pixel mapping yFor(rangeStart) is always kTimelineEdgePadding (G-04/G-05, 26-10-PLAN.md)
+00:39 +518: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: TimelineGeometry — CAL-01 minute→pixel mapping a 25-minute chunk heightFor equals 25 * kPixelsPerMinute with no live row
+00:39 +519: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: TimelineGeometry — CAL-01 minute→pixel mapping a 5-minute break heightFor equals 5 * kPixelsPerMinute
+00:39 +520: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: TimelineGeometry — CAL-01 minute→pixel mapping totalHeight equals (rangeEnd - rangeStart) * 5.5 plus 2 * kTimelineEdgePadding with no live row (G-04/G-05, 26-10-PLAN.md)
+00:39 +521: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: TimelineGeometry — CAL-01 minute→pixel mapping a row starting at liveEndMinutes has a duration-exact bottom edge (GRID-01: no more live-row swell)
+00:39 +522: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: TimelineGeometry — CAL-01 minute→pixel mapping yFor clamps rather than returning a negative-before-padding offset for an out-of-range minute
+00:39 +523: /home/dan/CodeProjects/canopy/test/screens/today_timeline_model_test.dart: TimelineGeometry — CAL-01 minute→pixel mapping GRID-01: every hour boundary is equidistant, even with a live chunk present
+00:39 +524: loading /home/dan/CodeProjects/canopy/test/screens/commitment_form_oneoff_test.dart
+00:39 +524: /home/dan/CodeProjects/canopy/test/screens/commitment_form_oneoff_test.dart: new commitment defaults to recurring mode with day chips
+00:39 +525: /home/dan/CodeProjects/canopy/test/screens/commitment_form_oneoff_test.dart: switching to One-off date swaps day chips for a date picker
+00:40 +526: /home/dan/CodeProjects/canopy/test/screens/commitment_form_oneoff_test.dart: picking a date and saving persists a dated block
+00:40 +527: /home/dan/CodeProjects/canopy/test/screens/commitment_form_oneoff_test.dart: editing a dated block opens in one-off mode
+00:40 +528: /home/dan/CodeProjects/canopy/test/screens/commitment_form_oneoff_test.dart: a sub-25-minute window blocks save and shows a warning
+00:40 +529: /home/dan/CodeProjects/canopy/test/screens/commitment_form_oneoff_test.dart: re-editing a PAST-dated one-off does not crash the date picker
+00:40 +530: loading /home/dan/CodeProjects/canopy/test/screens/chunk_card_priority_badge_test.dart
+00:41 +530: /home/dan/CodeProjects/canopy/test/screens/chunk_card_priority_badge_test.dart: ChunkCard priority badge shows High badge when goalPriorityWeight is 0.75
+00:41 +531: /home/dan/CodeProjects/canopy/test/screens/chunk_card_priority_badge_test.dart: ChunkCard priority badge shows Low badge when goalPriorityWeight is 0.25
+00:41 +532: /home/dan/CodeProjects/canopy/test/screens/chunk_card_priority_badge_test.dart: ChunkCard priority badge shows no badge when goalPriorityWeight is null
+00:41 +533: /home/dan/CodeProjects/canopy/test/screens/chunk_card_priority_badge_test.dart: ChunkCard priority badge shows no badge when goalPriorityWeight is 0.5 (Normal)
+00:41 +534: loading /home/dan/CodeProjects/canopy/test/screens/checkin_screen_widget_test.dart
+00:41 +534: /home/dan/CodeProjects/canopy/test/screens/checkin_screen_widget_test.dart: CheckinScreen mood → acknowledgment flow Test 1: "Let's go" goes straight to the acknowledgment (no pace prompt)
+00:42 +535: /home/dan/CodeProjects/canopy/test/screens/checkin_screen_widget_test.dart: CheckinScreen mood → acknowledgment flow Test 2: selecting a mood states its consequence before committing (G-07)
+00:42 +536: loading /home/dan/CodeProjects/canopy/test/screens/goal_card_priority_chip_test.dart
+00:42 +536: /home/dan/CodeProjects/canopy/test/screens/goal_card_priority_chip_test.dart: GoalCard priority chip shows High chip for priorityWeight 0.75
+00:43 +537: /home/dan/CodeProjects/canopy/test/screens/goal_card_priority_chip_test.dart: GoalCard priority chip shows no chip for priorityWeight 0.5 (Normal)
+00:43 +538: /home/dan/CodeProjects/canopy/test/screens/goal_card_priority_chip_test.dart: GoalCard priority chip shows Low chip for priorityWeight 0.25
+00:43 +539: /home/dan/CodeProjects/canopy/test/screens/goal_card_priority_chip_test.dart: GoalCard priority chip shows no chip when priorityWeight is null (defaults Normal)
+00:43 +540: loading /home/dan/CodeProjects/canopy/test/screens/content_width_constraint_test.dart
+00:43 +540: /home/dan/CodeProjects/canopy/test/screens/content_width_constraint_test.dart: POLISH-01 — content-width constraint (720dp) on primary screens Goals screen body contains ConstrainedBox with maxWidth == 720.0 at 1024dp
+00:44 +541: /home/dan/CodeProjects/canopy/test/screens/content_width_constraint_test.dart: POLISH-01 — content-width constraint (720dp) on primary screens Today screen body contains ConstrainedBox with maxWidth == 720.0 at 1024dp
+00:44 +542: loading /home/dan/CodeProjects/canopy/test/screens/goal_form_copy_test.dart
+00:44 +542: /home/dan/CodeProjects/canopy/test/screens/goal_form_copy_test.dart: POLISH-02 — goal form copy labels add mode: title "Add Goal" and primary CTA "Add Goal" are present
+00:45 +543: /home/dan/CodeProjects/canopy/test/screens/goal_form_copy_test.dart: POLISH-02 — goal form copy labels edit mode: title "Edit Goal", CTA "Save Goal", "Discard", "Archive goal" present
+00:45 +544: /home/dan/CodeProjects/canopy/test/screens/goal_form_copy_test.dart: POLISH-02 — commitment delete dialog copy labels "Delete commitment" and "Keep commitment" are present in the delete confirm dialog
+00:45 +545: loading /home/dan/CodeProjects/canopy/test/screens/focus_screen_test.dart
+00:45 +545: /home/dan/CodeProjects/canopy/test/screens/focus_screen_test.dart: FocusScreen (READ-04) renders timer label or start button for 25-minute countdown
+00:46 +546: /home/dan/CodeProjects/canopy/test/screens/focus_screen_test.dart: FocusScreen (READ-04) Timer.cancel called on dispose — no setState-after-dispose exception
+00:46 +547: loading /home/dan/CodeProjects/canopy/test/screens/chunk_card_goal_name_test.dart
+00:46 +547: /home/dan/CodeProjects/canopy/test/screens/chunk_card_goal_name_test.dart: ChunkCard goal name display (READ-01) goalName appears as primary text and displayRationale as secondary text
+00:46 +548: /home/dan/CodeProjects/canopy/test/screens/chunk_card_goal_name_test.dart: ChunkCard goal name display (READ-01) falls back to chunk.rationale when goalName is null
+00:47 +549: /home/dan/CodeProjects/canopy/test/screens/chunk_card_goal_name_test.dart: ChunkCard clock-time range display (SCHED-01) shows START–END range string when displayStartMinutes is set
+00:47 +550: /home/dan/CodeProjects/canopy/test/screens/chunk_card_goal_name_test.dart: ChunkCard clock-time range display (SCHED-01) shows duration fallback when displayStartMinutes is null
+00:47 +551: loading /home/dan/CodeProjects/canopy/test/screens/cold_launch_morning_loop_test.dart
+00:47 +551: /home/dan/CodeProjects/canopy/test/screens/cold_launch_morning_loop_test.dart: cold launch check-in generates schedule from real saved goals without visiting Goals tab
+00:47 +552: loading /home/dan/CodeProjects/canopy/test/screens/router_redirect_test.dart
+00:48 +552: /home/dan/CodeProjects/canopy/test/screens/router_redirect_test.dart: go_router redirect honoring onboardingComplete onboardingComplete=false → /schedule deep link redirects to /onboarding
+00:48 +553: /home/dan/CodeProjects/canopy/test/screens/router_redirect_test.dart: go_router redirect honoring onboardingComplete onboardingComplete=false → /goals deep link redirects to /onboarding
+00:49 +554: /home/dan/CodeProjects/canopy/test/screens/router_redirect_test.dart: go_router redirect honoring onboardingComplete onboardingComplete=true → /schedule deep link resolves to /today (UNIFY-02, D-08)
+00:49 +555: /home/dan/CodeProjects/canopy/test/screens/router_redirect_test.dart: go_router redirect honoring onboardingComplete onboardingComplete=true → /goals deep link loads /goals
+00:49 +556: /home/dan/CodeProjects/canopy/test/screens/router_redirect_test.dart: go_router redirect honoring onboardingComplete onboardingComplete=true → /onboarding deep link redirects to /today
+00:49 +557: /home/dan/CodeProjects/canopy/test/screens/router_redirect_test.dart: go_router redirect honoring onboardingComplete cold launch with onboardingComplete=true lands on /today
+00:49 +558: /home/dan/CodeProjects/canopy/test/screens/router_redirect_test.dart: go_router redirect honoring onboardingComplete onboardingComplete=true → /today deep link loads /today
+00:49 +559: /home/dan/CodeProjects/canopy/test/screens/router_redirect_test.dart: go_router redirect honoring onboardingComplete onboardingComplete=true → router.go('/schedule') (the literal notification-tap call from main.dart:86) resolves to /today (G3, D-08)
+00:49 +560: /home/dan/CodeProjects/canopy/test/screens/router_redirect_test.dart: go_router redirect honoring onboardingComplete onboardingComplete=true → /schedule/checkin resolves to itself, NOT swallowed by the /schedule redirect (T-22-15)
+00:49 +561: /home/dan/CodeProjects/canopy/test/screens/router_redirect_test.dart: go_router redirect honoring onboardingComplete onboardingComplete=false → /schedule/checkin still redirects to /onboarding — the gate runs before the /schedule normalisation (T-22-13)
+00:49 +562: /home/dan/CodeProjects/canopy/test/screens/router_redirect_test.dart: ResponsiveShell destinations after the 4-to-3 collapse (UNIFY-02, G2) at a 1200dp viewport, the NavigationRail has exactly three destinations, none labelled Home or Schedule, one labelled Today
+00:49 +563: loading /home/dan/CodeProjects/canopy/test/screens/adaptive_form_modal_test.dart
+00:49 +563: /home/dan/CodeProjects/canopy/test/screens/adaptive_form_modal_test.dart: RESP-01 — Dialog vs BottomSheet routing at 720dp (>= breakpoint): goal form opens as Dialog, not BottomSheet
+00:50 +564: /home/dan/CodeProjects/canopy/test/screens/adaptive_form_modal_test.dart: RESP-01 — Dialog vs BottomSheet routing at 719dp (< breakpoint): goal form opens as BottomSheet, not Dialog
+00:50 +565: /home/dan/CodeProjects/canopy/test/screens/adaptive_form_modal_test.dart: RESP-02 — Dialog content and sizing at 720dp: goal form dialog — type picker, Priority, Save present; drag-handle Container (40×4) absent inside Dialog
+00:50 +566: /home/dan/CodeProjects/canopy/test/screens/adaptive_form_modal_test.dart: RESP-02 — Dialog content and sizing at 720dp: Dialog contains a ConstrainedBox with maxWidth == 560.0
+00:50 +567: /home/dan/CodeProjects/canopy/test/screens/adaptive_form_modal_test.dart: RESP-03 — Commitment form routes through same helper at 720dp: commitment form opens as Dialog via showAdaptiveFormModal
+00:50 +568: loading /home/dan/CodeProjects/canopy/test/screens/breathing_pulse_cta_test.dart
+00:51 +568: /home/dan/CodeProjects/canopy/test/screens/breathing_pulse_cta_test.dart: BreathingPulseCta animates when enabled=true (blur changes across frames)
+00:51 +569: /home/dan/CodeProjects/canopy/test/screens/breathing_pulse_cta_test.dart: BreathingPulseCta does NOT animate when enabled=false (blur static at midpoint)
+00:51 +570: /home/dan/CodeProjects/canopy/test/screens/breathing_pulse_cta_test.dart: BreathingPulseCta respects reduced-motion (controller pinned at midpoint, blur=12)
+00:51 +571: loading /home/dan/CodeProjects/canopy/test/screens/checkin_screen_test.dart
+00:51 +571: /home/dan/CodeProjects/canopy/test/screens/checkin_screen_test.dart: _onBgColor luminance threshold (CHECKIN-01) mood 1 (#4A6275, slate-blue) luminance is <= 0.35 → white foreground
+00:51 +572: /home/dan/CodeProjects/canopy/test/screens/checkin_screen_test.dart: _onBgColor luminance threshold (CHECKIN-01) mood 2 (#5C7A8A, steel-blue) luminance is <= 0.35 → white foreground
+00:51 +573: /home/dan/CodeProjects/canopy/test/screens/checkin_screen_test.dart: _onBgColor luminance threshold (CHECKIN-01) mood 3 (#4A8C7A, teal-green) luminance is <= 0.35 → white foreground
+00:51 +574: /home/dan/CodeProjects/canopy/test/screens/checkin_screen_test.dart: _onBgColor luminance threshold (CHECKIN-01) mood 4 (#7AAF6A, sage-green) luminance — boundary case: measured luminance is > 0.35 → dark foreground
+00:51 +575: /home/dan/CodeProjects/canopy/test/screens/checkin_screen_test.dart: _onBgColor luminance threshold (CHECKIN-01) mood 5 (#E8C547, amber-yellow) luminance is > 0.35 → dark foreground (CHECKIN-01 fix)
+00:52 +576: loading /home/dan/CodeProjects/canopy/test/screens/goal_card_hover_test.dart
+00:52 +576: /home/dan/CodeProjects/canopy/test/screens/goal_card_hover_test.dart: GoalCard hover behavior (no trailing supplied) InkWell.onHover(true) reveals edit_outlined + archive_outlined
+00:52 +577: /home/dan/CodeProjects/canopy/test/screens/goal_card_hover_test.dart: GoalCard hover behavior (no trailing supplied) InkWell.onHover(false) returns hover icons to opacity 0
+00:52 +578: /home/dan/CodeProjects/canopy/test/screens/goal_card_hover_test.dart: GoalCard hover behavior (trailing non-null guard) when trailing is supplied, hover icons are NOT shown (suppressed)
+00:52 +579: All tests passed!

@@ -1,9 +1,9 @@
 ---
 phase: 28
 slug: the-day-is-a-lattice
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-08-19
 ---
 
@@ -54,17 +54,17 @@ must satisfy. Every row is automatable — there are no exceptions in this phase
 
 | Requirement / Decision | Behavior to prove | Test Type | Automated Command | File Exists | Status |
 |---|---|---|---|---|---|
-| LATTICE-01 | Every generated chunk's start minute ≡ 0 (mod 30), across all 5 moods | unit | `flutter test test/services/schedule_generator_test.dart` | ✅ file / ❌ new assertion group — W0 | ⬜ pending |
-| LATTICE-01 / D-02 | The invariant still holds for chunks scheduled *after* a fixed commitment ends off-boundary | unit | same | ❌ new — W0 | ⬜ pending |
-| LATTICE-01 / D-03 | The invariant still holds on a mid-day start (`startFloorMinutes` rounds to 30, not 5) | unit | same | ⚠️ existing test pins the WRONG value — must be rewritten, proven RED first | ⬜ pending |
-| LATTICE-01 / D-01 | A fixed commitment's own start time is NOT rounded — it keeps its wall-clock minute | unit | same | ❌ new — W0 | ⬜ pending |
-| LATTICE-02 | Exactly the expected number of 30-minute long breaks emitted, each exactly 30 min, all 5 moods | unit | same | ❌ new — W0 | ⬜ pending |
-| LATTICE-02 / D-05 | A long break landing on the day's LAST chunk is still emitted — the owner's exact day (mood 3, N=4, 4 chunks) produces a long break, not zero | unit | same | ❌ new — W0; **this is the regression that reproduces the reported bug** | ⬜ pending |
-| LATTICE-02 | The Nth work chunk still closes its own 30-min cell with a 5-min break, AND the 30-min break follows as its own cell (not instead of it) | unit | same | ❌ new — W0 | ⬜ pending |
-| D-04 | Chunk counts per mood are unchanged — `_moodCap` and day end did not move | unit | same | ⚠️ existing count assertions serve as the guard | ⬜ pending |
-| D-06 | Two consecutive break chunks at a cadence boundary render without breaking any downstream consumer | widget | `flutter test` | ❌ new — W0 | ⬜ pending |
-| Regression | Full suite still green, no test deleted | suite | `flutter test` | ✅ | ⬜ pending |
-| Regression | Static analysis clean | lint | `flutter analyze` | ✅ | ⬜ pending |
+| LATTICE-01 | Every generated chunk's start minute ≡ 0 (mod 30), across all 5 moods | unit | `flutter test test/services/schedule_generator_test.dart` | ✅ | ✅ green |
+| LATTICE-01 / D-02 | The invariant still holds for chunks scheduled *after* a fixed commitment ends off-boundary | unit | same | ✅ | ✅ green |
+| LATTICE-01 / D-03 | The invariant still holds on a mid-day start (`startFloorMinutes` rounds to 30, not 5) | unit | same | ✅ rewritten, proven RED in 28-01, GREEN in 28-03 Task 2 | ✅ green |
+| LATTICE-01 / D-01 | A fixed commitment's own start time is NOT rounded — it keeps its wall-clock minute | unit | same | ✅ | ✅ green |
+| LATTICE-02 | Exactly the expected number of 30-minute long breaks emitted, each exactly 30 min, all 5 moods | unit | same | ✅ | ✅ green |
+| LATTICE-02 / D-05 | A long break landing on the day's LAST chunk is still emitted — the owner's exact day (mood 3, N=4, 4 chunks) produces a long break, not zero | unit | same | ✅; **the regression that reproduces the reported bug, now GREEN** | ✅ green |
+| LATTICE-02 | The Nth work chunk still closes its own 30-min cell with a 5-min break, AND the 30-min break follows as its own cell (not instead of it) | unit | same | ✅ | ✅ green |
+| D-04 | Chunk counts per mood are unchanged — `_moodCap` and day end did not move | unit | same | ✅ guard test pinned in 28-01, confirmed unchanged post-fix | ✅ green |
+| D-06 | Two consecutive break chunks at a cadence boundary render without breaking any downstream consumer | widget | `flutter test` | ✅ `test/screens/lattice_break_pair_test.dart` | ✅ green |
+| Regression | Full suite still green, no test deleted | suite | `flutter test` | ✅ | ✅ green — 579 tests, 0 failures |
+| Regression | Static analysis clean | lint | `flutter analyze` | ✅ | ✅ clean |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -72,16 +72,17 @@ must satisfy. Every row is automatable — there are no exceptions in this phase
 
 ## Wave 0 Requirements
 
-- [ ] New assertion group in `test/services/schedule_generator_test.dart` for the mod-30 invariant
-      across all 5 moods (LATTICE-01) — no such test exists today.
-- [ ] New assertion group for long-break count and duration across all 5 moods (LATTICE-02),
-      **including a fixture where the cadence boundary is the day's literal last chunk.**
-- [ ] Rewrite (do not delete) the ~10 existing tests named in `28-RESEARCH.md` § Blast Radius:
+- [x] New assertion group in `test/services/schedule_generator_test.dart` for the mod-30 invariant
+      across all 5 moods (LATTICE-01) — added in plan 28-01.
+- [x] New assertion group for long-break count and duration across all 5 moods (LATTICE-02),
+      **including a fixture where the cadence boundary is the day's literal last chunk.** —
+      added in plan 28-01 (the owner's-day regression).
+- [x] Rewrite (do not delete) the ~10 existing tests named in `28-RESEARCH.md` § Blast Radius:
       Test 6, Test 7, all five `BREAK-01` mood tests, `BREAK-02`, and the `startFloorMinutes`
-      rounding test. **Each must be proven RED against the unfixed code before the fix lands** —
-      this project's carried-forward convention, and the only thing that distinguishes a real
-      regression test from one that was written to match whatever the code already did.
-- [ ] A widget-level test for the two-consecutive-break-chunks shape (D-06).
+      rounding test. **Each was proven RED against the unfixed code before the fix landed** —
+      `28-RED-unit.txt` (plan 28-01), GREEN in plan 28-03.
+- [x] A widget-level test for the two-consecutive-break-chunks shape (D-06) — added in plan 28-02
+      (`test/screens/lattice_break_pair_test.dart`), proven RED in `28-RED-d06.txt`, GREEN in 28-03.
 
 *Existing infrastructure otherwise covers this phase — no framework install needed.*
 
@@ -99,12 +100,14 @@ phase; if one seems necessary, the plan has drifted into UI work that belongs el
 
 ## Validation Sign-Off
 
-- [ ] All tasks have automated verify or a Wave 0 dependency
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references above
-- [ ] No watch-mode flags (`flutter test` runs once and exits)
-- [ ] Feedback latency < 20s
-- [ ] Rewritten regression tests were each proven RED before the fix
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have automated verify or a Wave 0 dependency
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references above
+- [x] No watch-mode flags (`flutter test` runs once and exits)
+- [x] Feedback latency < 20s (full suite ~16-52s depending on concurrency; well under the phase's own budget)
+- [x] Rewritten regression tests were each proven RED before the fix (`28-RED-unit.txt`, `28-RED-d06.txt`)
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** Phase gate passed 2026-08-19 — 579 tests green (567 baseline + 8 unit + 4 D-06),
+`flutter analyze` clean, all 20 wave-1 RED tests confirmed GREEN by name against
+`28-GREEN-final.txt`, no test deleted or weakened. See `28-03-SUMMARY.md`.
