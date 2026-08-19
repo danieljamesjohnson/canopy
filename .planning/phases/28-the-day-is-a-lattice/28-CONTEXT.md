@@ -42,18 +42,39 @@ His illustration used N=3, which is the mood-2 value. That was an example of the
 request to retune the table. **If planning believes the table should move, ask — do not infer it
 from the example.**
 
+### Resolved after research (2026-08-19)
+
+`28-RESEARCH.md` confirmed all three named defects against the literal source, surfaced a fourth,
+and closed the capacity question with a simulation of the real packing loop rather than an estimate.
+These are the resulting calls. Every one must be visible in a plan.
+
+- **D-01:** LATTICE-01 governs **generated (discretionary) chunks only.** A user's fixed commitment
+  keeps its own wall-clock time and is never rounded onto :00/:30 — rounding it would move the
+  user's actual appointment, which is the opposite of giving them control over their own time.
+- **D-02:** The post-commitment free-slot start is rounded up to the next 30-minute boundary
+  (`schedule_generator.dart` ~710-722, research gap #2). Today it starts at the commitment's raw end
+  minute and that off-lattice offset cascades through the rest of the slot. **In scope** — it is the
+  mechanism by which LATTICE-01 actually fails after a commitment, and it lives in the method
+  already being changed.
+- **D-03:** `startFloorMinutes` rounds up to the next 30-minute boundary, not to 5 minutes
+  (~672-679, research gap #1). The existing test that pins the 5-minute value is rewritten, proven
+  RED against the unfixed code first, per this project's carried-forward convention.
+- **D-04:** **Neither `_moodCap` nor the day's end moves.** This is the deliberate answer to the
+  capacity question, on simulated evidence: the lattice costs only 10-20 extra minutes across a
+  whole day, and every mood's cap fits the nominal 8am-10pm (840-minute) window with 455-695 minutes
+  of slack. The squeeze only bites on commitment-heavy or late-start days, where dropping trailing
+  chunks is a pre-existing behavior, marginally worsened — not a new failure introduced here.
+- **D-05:** STEP E's trailing-chunk trim (~652-655) is narrowed to trim only a trailing **short**
+  break. Left as-is it strips *any* trailing break, so it would silently re-suppress the trailing
+  long break by a second path and re-create defect 3 even after the packing loop is fixed.
+- **D-06:** The new "two consecutive break chunks at a cadence boundary" cardinality (a 5-minute
+  break immediately followed by a 30-minute break) gets a real automated test, not a one-off manual
+  smoke check. Nothing downstream has ever seen that shape.
+
 ### Claude's Discretion
 
 All remaining implementation choices are at Claude's discretion. Use the ROADMAP phase description,
-the three named defects below, and existing codebase conventions to guide them.
-
-### One decision that must be made deliberately, not by accident
-
-`_moodCap` sets how many work chunks a day gets `{1:4, 2:6, 3:8, 4:9, 5:11}`. The lattice makes each
-cycle longer than it is today — a 30-minute long break in its own cell costs 30 minutes where a
-replaced 25-minute one cost 25. Fewer chunks will fit in the same window. **Decide deliberately
-whether the cap moves or the day's end moves, and state which in the plan.** Do not let it fall out
-of the packing loop as a side effect.
+the named defects below, `28-RESEARCH.md`, and existing codebase conventions to guide them.
 
 </decisions>
 
