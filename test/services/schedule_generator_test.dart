@@ -184,14 +184,20 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // Test 6: 4 work chunks, mood=3 → shortBreak after 1,2,3; trailing break trimmed
-  // READ-02: no dangling trailing break on the final work chunk.
+  // Test 6: 4 work chunks, mood=3 → shortBreak after every chunk, plus a
+  // surviving trailing long break at the cadence boundary (D-05/LATTICE-02:
+  // never silently suppressed, even when the boundary chunk is the day's
+  // last chunk).
   // ---------------------------------------------------------------------------
   test(
-    'Test 6: mood=3 break pattern with 4 work chunks (trailing break trimmed)',
+    'Test 6: mood=3 break pattern with 4 work chunks (boundary chunk is the last chunk)',
     () {
       // Use 4 habits to generate exactly 4 work chunks.
       // lighterDay: false → cap=8, habitCeiling=4 (CAP-01), so all 4 habits fit.
+      // N=4 (mood 3): chunk 4 is the cadence boundary AND the day's last
+      // chunk — under the lattice each cell starts on a 30-min boundary:
+      // W@480(25) SB@505(5) W@510(25) SB@535(5) W@540(25) SB@565(5)
+      // W@570(25) SB@595(5) LB@600(30).
       final goals = List.generate(4, (i) => makeHabit(name: 'Habit $i'));
       final result = sut.generate(
         goals: goals,
@@ -201,8 +207,8 @@ void main() {
         completionLogs: [],
         lighterDay: false,
       );
-      // Verify chunk order: W SB W SB W SB W (trailing long break trimmed)
-      expect(result.length, 7);
+      // Verify chunk order: W SB W SB W SB W SB LB (trailing long break survives)
+      expect(result.length, 9);
       expect(result[0].chunkType, ChunkType.work);
       expect(result[1].chunkType, ChunkType.shortBreak);
       expect(result[2].chunkType, ChunkType.work);
@@ -210,20 +216,25 @@ void main() {
       expect(result[4].chunkType, ChunkType.work);
       expect(result[5].chunkType, ChunkType.shortBreak);
       expect(result[6].chunkType, ChunkType.work);
-      // Trailing break was trimmed (READ-02)
-      expect(result.last.chunkType, ChunkType.work);
+      expect(result[7].chunkType, ChunkType.shortBreak);
+      expect(result[8].chunkType, ChunkType.longBreak);
+      expect(result[7].durationMinutes, 5);
+      expect(result[8].durationMinutes, 30);
+      // Trailing long break survives (D-05) — no longer trimmed.
+      expect(result.last.chunkType, ChunkType.longBreak);
     },
   );
 
   // ---------------------------------------------------------------------------
-  // Test 7: 3 work chunks, mood=1 → shortBreak after 1,2; trailing break trimmed
-  // READ-02: no dangling trailing break on the final work chunk.
+  // Test 7: 2 work chunks, mood=1 → shortBreak after chunk 1, plus a
+  // surviving trailing long break at the cadence boundary (D-05).
   // ---------------------------------------------------------------------------
   test(
-    'Test 7: mood=1 break pattern with 2 work chunks (trailing break trimmed)',
+    'Test 7: mood=1 break pattern with 2 work chunks (boundary chunk is the last chunk)',
     () {
       // At mood=1, habitCeiling=ceil(4/2)=2 (CAP-01), so 3 habits produces 2 chunks.
-      // Verify chunk order: W SB W (trailing short break trimmed — READ-02).
+      // N=2 (mood 1): chunk 2 is the cadence boundary AND the day's last
+      // chunk: W@480(25) SB@505(5) W@510(25) SB@535(5) LB@540(30).
       final goals = List.generate(3, (i) => makeHabit(name: 'Habit $i'));
       final result = sut.generate(
         goals: goals,
@@ -232,13 +243,17 @@ void main() {
         date: monday,
         completionLogs: [],
       );
-      // With CAP-01 ceiling=2: only 2 habit chunks placed. Pattern: W SB W.
-      expect(result.length, 3);
+      // With CAP-01 ceiling=2: only 2 habit chunks placed. Pattern: W SB W SB LB.
+      expect(result.length, 5);
       expect(result[0].chunkType, ChunkType.work);
       expect(result[1].chunkType, ChunkType.shortBreak);
       expect(result[2].chunkType, ChunkType.work);
-      // Trailing break was trimmed (READ-02)
-      expect(result.last.chunkType, ChunkType.work);
+      expect(result[3].chunkType, ChunkType.shortBreak);
+      expect(result[4].chunkType, ChunkType.longBreak);
+      expect(result[3].durationMinutes, 5);
+      expect(result[4].durationMinutes, 30);
+      // Trailing long break survives (D-05) — no longer trimmed.
+      expect(result.last.chunkType, ChunkType.longBreak);
     },
   );
 
@@ -490,9 +505,10 @@ void main() {
   // ---------------------------------------------------------------------------
   // Test WR-01: the break duration reserved during packing must match the
   // break duration emitted. With longBreakEvery=4 (mood 3-5), the 4th
-  // discretionary break is a long (25-min) break; the synthetic times must
-  // leave 25 minutes of room before the next chunk so no two chunks overlap
-  // after the sort (the packing/emit cadence counters cannot diverge).
+  // discretionary chunk's own 5-min short break is followed by a separate
+  // 30-min long break (D-06); the synthetic times must leave that footprint's
+  // full room before the next chunk so no two chunks overlap after the sort
+  // (the packing/emit cadence counters cannot diverge).
   // ---------------------------------------------------------------------------
   test(
     'WR-01: emitted long break matches reserved slot — no overlapping synthetic times',
@@ -542,7 +558,7 @@ void main() {
         reason:
             'longBreakEvery=4 with 6 chunks must emit at least one long break',
       );
-      expect(longBreaks.first.durationMinutes, 25);
+      expect(longBreaks.first.durationMinutes, 30);
     },
   );
 
@@ -1397,7 +1413,7 @@ void main() {
     });
 
     test(
-      'a 15:42 floor starts the chunk at 15:45 (rounded up to 5), not 8 AM',
+      'a 15:42 floor starts the chunk at 16:00 (rounded up to 30), not 8 AM',
       () {
         final chunks = sut.generate(
           goals: [habit],
@@ -1407,7 +1423,8 @@ void main() {
           startFloorMinutes: 942, // 15:42
         );
         final work = chunks.firstWhere((c) => c.chunkType == ChunkType.work);
-        expect(work.syntheticStartMinutes, 945); // 15:45
+        // D-03: round up to the next 30-minute boundary, not 5.
+        expect(work.syntheticStartMinutes, 960); // 16:00
       },
     );
 
@@ -1844,6 +1861,11 @@ void main() {
     // 2 habits fill the habitCeiling exactly (2 chunks). mood=1 is low-mood,
     // so FILL-01 clamps each time-target to 1 chunk: 2 time-targets -> 2
     // chunks. Total discretionary = 2 + 2 = 4 work chunks (== cap).
+    // N=2: chunks 2 and 4 are both cadence boundaries (floor(4/2)=2 long
+    // breaks). Each boundary chunk keeps its own 5-min short break AND is
+    // followed by a separate 30-min long break (D-06), not replaced by it:
+    // W@480(25) SB@505(5) W@510(25) SB@535(5) LB@540(30)
+    // W@570(25) SB@595(5) W@600(25) SB@625(5) LB@630(30)
     final goals = [
       ...List.generate(2, (i) => makeHabit(name: 'Habit $i')),
       ...List.generate(
@@ -1859,20 +1881,27 @@ void main() {
       completionLogs: [],
       lighterDay: false,
     );
-    expect(result.length, 7);
+    expect(result.length, 10);
     expect(result[0].chunkType, ChunkType.work);
     expect(result[1].chunkType, ChunkType.shortBreak);
     expect(result[2].chunkType, ChunkType.work);
-    expect(result[3].chunkType, ChunkType.longBreak);
-    expect(result[4].chunkType, ChunkType.work);
-    expect(result[5].chunkType, ChunkType.shortBreak);
-    expect(result[6].chunkType, ChunkType.work);
+    expect(result[3].chunkType, ChunkType.shortBreak);
+    expect(result[4].chunkType, ChunkType.longBreak);
+    expect(result[5].chunkType, ChunkType.work);
+    expect(result[6].chunkType, ChunkType.shortBreak);
+    expect(result[7].chunkType, ChunkType.work);
+    expect(result[8].chunkType, ChunkType.shortBreak);
+    expect(result[9].chunkType, ChunkType.longBreak);
     expect(
-      result[3].durationMinutes,
-      25,
+      result[4].durationMinutes,
+      30,
       reason: 'mood=1 must reach a long break after 2 work chunks (BREAK-01)',
     );
+    expect(result[3].chunkType, ChunkType.shortBreak,
+        reason: 'the boundary chunk keeps its own short break (D-06)');
+    expect(result[3].durationMinutes, 5);
     expect(result[1].durationMinutes, 5);
+    expect(result[9].durationMinutes, 30);
   });
 
   test(
@@ -1885,6 +1914,12 @@ void main() {
       // low-mood, so FILL-01 clamps each time-target to 1 chunk: 2
       // time-targets -> 2 chunks. Total discretionary = 3 + 2 = 5 work chunks
       // (cap=6 is not reached — that's expected, not a bug).
+      // N=3: chunk 3 is the only cadence boundary (floor(5/3)=1 long break);
+      // it keeps its own short break AND is followed by a separate 30-min
+      // long break (D-06): W@480(25) SB@505(5) W@510(25) SB@535(5) W@540(25)
+      // SB@565(5) LB@570(30) W@600(25) SB@625(5) W@630(25). Chunk 5 (ordinary,
+      // last) gets its own trailing short break trimmed by STEP E (D-05
+      // trims only trailing short breaks, so this is unaffected by the fix).
       final goals = [
         ...List.generate(3, (i) => makeHabit(name: 'Habit $i')),
         ...List.generate(
@@ -1900,22 +1935,26 @@ void main() {
         completionLogs: [],
         lighterDay: false,
       );
-      expect(result.length, 9);
+      expect(result.length, 10);
       expect(result[0].chunkType, ChunkType.work);
       expect(result[1].chunkType, ChunkType.shortBreak);
       expect(result[2].chunkType, ChunkType.work);
       expect(result[3].chunkType, ChunkType.shortBreak);
       expect(result[4].chunkType, ChunkType.work);
-      expect(result[5].chunkType, ChunkType.longBreak);
-      expect(result[6].chunkType, ChunkType.work);
-      expect(result[7].chunkType, ChunkType.shortBreak);
-      expect(result[8].chunkType, ChunkType.work);
+      expect(result[5].chunkType, ChunkType.shortBreak);
+      expect(result[6].chunkType, ChunkType.longBreak);
+      expect(result[7].chunkType, ChunkType.work);
+      expect(result[8].chunkType, ChunkType.shortBreak);
+      expect(result[9].chunkType, ChunkType.work);
       expect(
-        result[5].durationMinutes,
-        25,
+        result[6].durationMinutes,
+        30,
         reason:
             'mood=2 must reach a long break after 3 work chunks (BREAK-01)',
       );
+      expect(result[5].chunkType, ChunkType.shortBreak,
+          reason: 'the boundary chunk keeps its own short break (D-06)');
+      expect(result[5].durationMinutes, 5);
       expect(result[1].durationMinutes, 5);
     },
   );
@@ -1928,6 +1967,11 @@ void main() {
       // low-mood, so a weeklyHourBudget: 5 time-target has demand 2 (not
       // clamped to 1): 1 time-target -> 2 chunks. Total discretionary =
       // 4 + 2 = 6 work chunks (cap=8 is not reached).
+      // N=4: chunk 4 is the only cadence boundary (floor(6/4)=1 long break);
+      // it keeps its own short break AND is followed by a separate 30-min
+      // long break (D-06): W@480(25) SB@505(5) W@510(25) SB@535(5) W@540(25)
+      // SB@565(5) W@570(25) SB@595(5) LB@600(30) W@630(25) SB@655(5)
+      // W@660(25). Chunk 6's trailing short break is trimmed by STEP E.
       final goals = [
         ...List.generate(4, (i) => makeHabit(name: 'Habit $i')),
         makeTimeTarget(name: 'Regular', weeklyHourBudget: 5),
@@ -1940,7 +1984,7 @@ void main() {
         completionLogs: [],
         lighterDay: false,
       );
-      expect(result.length, 11);
+      expect(result.length, 12);
       expect(result[0].chunkType, ChunkType.work);
       expect(result[1].chunkType, ChunkType.shortBreak);
       expect(result[2].chunkType, ChunkType.work);
@@ -1948,16 +1992,20 @@ void main() {
       expect(result[4].chunkType, ChunkType.work);
       expect(result[5].chunkType, ChunkType.shortBreak);
       expect(result[6].chunkType, ChunkType.work);
-      expect(result[7].chunkType, ChunkType.longBreak);
-      expect(result[8].chunkType, ChunkType.work);
-      expect(result[9].chunkType, ChunkType.shortBreak);
-      expect(result[10].chunkType, ChunkType.work);
+      expect(result[7].chunkType, ChunkType.shortBreak);
+      expect(result[8].chunkType, ChunkType.longBreak);
+      expect(result[9].chunkType, ChunkType.work);
+      expect(result[10].chunkType, ChunkType.shortBreak);
+      expect(result[11].chunkType, ChunkType.work);
       expect(
-        result[7].durationMinutes,
-        25,
+        result[8].durationMinutes,
+        30,
         reason:
             'mood=3 must reach a long break after 4 work chunks (BREAK-01 baseline)',
       );
+      expect(result[7].chunkType, ChunkType.shortBreak,
+          reason: 'the boundary chunk keeps its own short break (D-06)');
+      expect(result[7].durationMinutes, 5);
       expect(result[1].durationMinutes, 5);
     },
   );
@@ -1970,6 +2018,11 @@ void main() {
       // lighterDay: false -> cap=9, habitCeiling=ceil(9/2)=5 (CAP-01).
       // 5 habits fill the habitCeiling exactly (5 chunks, no time-targets
       // needed). Total discretionary = 5 work chunks (cap=9 is not reached).
+      // N=4: chunk 4 is the only cadence boundary (floor(5/4)=1 long break);
+      // it keeps its own short break AND is followed by a separate 30-min
+      // long break (D-06): W@480(25) SB@505(5) W@510(25) SB@535(5) W@540(25)
+      // SB@565(5) W@570(25) SB@595(5) LB@600(30) W@630(25). Chunk 5's
+      // trailing short break is trimmed by STEP E.
       final goals = List.generate(5, (i) => makeHabit(name: 'Habit $i'));
       final result = sut.generate(
         goals: goals,
@@ -1979,7 +2032,7 @@ void main() {
         completionLogs: [],
         lighterDay: false,
       );
-      expect(result.length, 9);
+      expect(result.length, 10);
       expect(result[0].chunkType, ChunkType.work);
       expect(result[1].chunkType, ChunkType.shortBreak);
       expect(result[2].chunkType, ChunkType.work);
@@ -1987,14 +2040,18 @@ void main() {
       expect(result[4].chunkType, ChunkType.work);
       expect(result[5].chunkType, ChunkType.shortBreak);
       expect(result[6].chunkType, ChunkType.work);
-      expect(result[7].chunkType, ChunkType.longBreak);
-      expect(result[8].chunkType, ChunkType.work);
+      expect(result[7].chunkType, ChunkType.shortBreak);
+      expect(result[8].chunkType, ChunkType.longBreak);
+      expect(result[9].chunkType, ChunkType.work);
       expect(
-        result[7].durationMinutes,
-        25,
+        result[8].durationMinutes,
+        30,
         reason:
             'mood=4 must reach a long break after 4 work chunks (BREAK-01)',
       );
+      expect(result[7].chunkType, ChunkType.shortBreak,
+          reason: 'the boundary chunk keeps its own short break (D-06)');
+      expect(result[7].durationMinutes, 5);
       expect(result[1].durationMinutes, 5);
     },
   );
@@ -2003,6 +2060,11 @@ void main() {
     // lighterDay: false -> cap=11, habitCeiling=ceil(11/2)=6 (CAP-01).
     // 6 habits fill the habitCeiling exactly (6 chunks, no time-targets
     // needed). Total discretionary = 6 work chunks (cap=11 is not reached).
+    // N=5: chunk 5 is the only cadence boundary (floor(6/5)=1 long break);
+    // it keeps its own short break AND is followed by a separate 30-min
+    // long break (D-06): W@480(25) SB@505(5) W@510(25) SB@535(5) W@540(25)
+    // SB@565(5) W@570(25) SB@595(5) W@600(25) SB@625(5) LB@630(30)
+    // W@660(25). Chunk 6's trailing short break is trimmed by STEP E.
     final goals = List.generate(6, (i) => makeHabit(name: 'Habit $i'));
     final result = sut.generate(
       goals: goals,
@@ -2012,7 +2074,7 @@ void main() {
       completionLogs: [],
       lighterDay: false,
     );
-    expect(result.length, 11);
+    expect(result.length, 12);
     expect(result[0].chunkType, ChunkType.work);
     expect(result[1].chunkType, ChunkType.shortBreak);
     expect(result[2].chunkType, ChunkType.work);
@@ -2022,25 +2084,32 @@ void main() {
     expect(result[6].chunkType, ChunkType.work);
     expect(result[7].chunkType, ChunkType.shortBreak);
     expect(result[8].chunkType, ChunkType.work);
-    expect(result[9].chunkType, ChunkType.longBreak);
-    expect(result[10].chunkType, ChunkType.work);
+    expect(result[9].chunkType, ChunkType.shortBreak);
+    expect(result[10].chunkType, ChunkType.longBreak);
+    expect(result[11].chunkType, ChunkType.work);
     expect(
-      result[9].durationMinutes,
-      25,
+      result[10].durationMinutes,
+      30,
       reason: 'mood=5 must reach a long break after 5 work chunks (BREAK-01)',
     );
+    expect(result[9].chunkType, ChunkType.shortBreak,
+        reason: 'the boundary chunk keeps its own short break (D-06)');
+    expect(result[9].durationMinutes, 5);
     expect(result[1].durationMinutes, 5);
   });
 
   // ---------------------------------------------------------------------------
   // Break-structure preservation (requirement BREAK-02): the 25-min work /
-  // 5-min short-break / 25-min long-break structure must survive the cadence
+  // 5-min short-break / 30-min long-break structure must survive the cadence
   // change at every mood. Cadence-independent — does not assert lengths or
-  // long-break positions.
+  // long-break positions. Per D-06, a cadence-boundary chunk now emits BOTH
+  // its own short break and a separate long break, so exactly one adjacent
+  // non-work pair (shortBreak -> longBreak) is legal; every other adjacent
+  // non-work pair remains forbidden.
   // ---------------------------------------------------------------------------
 
   test(
-    'BREAK-02: only 5-min short breaks and 25-min long breaks are ever emitted, at every mood',
+    'BREAK-02: only 5-min short breaks and 30-min long breaks are ever emitted, at every mood',
     () {
       final goals = [
         ...List.generate(6, (i) => makeHabit(name: 'Habit $i')),
@@ -2075,28 +2144,40 @@ void main() {
           if (chunk.chunkType == ChunkType.longBreak) {
             expect(
               chunk.durationMinutes,
-              25,
-              reason: 'mood=$mood: long break must always be 25 minutes',
+              30,
+              reason: 'mood=$mood: long break must always be 30 minutes',
             );
           }
         }
 
+        // D-06: the only legal adjacent non-work pair is shortBreak ->
+        // longBreak (a cadence-boundary chunk's own break, followed by the
+        // separate long-break cell). shortBreak->shortBreak,
+        // longBreak->longBreak and longBreak->shortBreak all remain
+        // forbidden — this loop still fails on any of those.
         for (int i = 0; i + 1 < result.length; i++) {
-          final aIsBreak = result[i].chunkType != ChunkType.work;
-          final bIsBreak = result[i + 1].chunkType != ChunkType.work;
+          final aType = result[i].chunkType;
+          final bType = result[i + 1].chunkType;
+          final aIsBreak = aType != ChunkType.work;
+          final bIsBreak = bType != ChunkType.work;
+          final isCadenceBoundaryPair =
+              aType == ChunkType.shortBreak && bType == ChunkType.longBreak;
           expect(
-            aIsBreak && bIsBreak,
+            aIsBreak && bIsBreak && !isCadenceBoundaryPair,
             isFalse,
             reason:
-                'mood=$mood: two adjacent non-work chunks at index $i/${i + 1} '
-                '— every break must be preceded by a work chunk',
+                'mood=$mood: unexpected adjacent non-work chunks at index '
+                '$i/${i + 1} ($aType -> $bType) — only a shortBreak '
+                'immediately followed by a longBreak is permitted (D-06)',
           );
         }
 
+        // D-05: a trailing long break may now survive (never silently
+        // suppressed); only a dangling trailing short break is trimmed.
         expect(
           result.last.chunkType,
-          ChunkType.work,
-          reason: 'mood=$mood: schedule must never end on a break chunk',
+          isNot(ChunkType.shortBreak),
+          reason: 'mood=$mood: schedule must never end on a short break',
         );
       }
     },
