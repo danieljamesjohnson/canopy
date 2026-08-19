@@ -220,6 +220,71 @@ Plans:
 - `kGutterWidth` at 40dp leaves ~4dp of text-scale slack ("11 AM" measures 36dp); large
   accessibility text sizes will clip there first.
 
+### Phase 28: The Day Is a Lattice
+
+Standalone phase, no milestone. Raised by the owner during Phase 27 UAT (2026-08-19): "the schedule
+still isn't functioning right." Engine-side, not UI — Phase 27's grid is now honest about *rendering*
+time, and this is about the times it is rendering.
+
+**Goal:** The day is built on a 30-minute lattice — 25 minutes of work, 5 minutes of break — and
+after every N of those, a full 30-minute break. Every chunk starts on :00 or :30, always.
+
+**The owner's model, verbatim (2026-08-19):**
+
+> The way it works is that the day is split up by 30 minutes. Where you do 25 minutes of work and 5
+> minutes of break. After 3 chunks of 25/5, you take an entire 30 minute break.
+
+So one cycle is `N × 30 + 30` minutes. At N=3: `3 × (25+5) + 30` = **120 minutes**, landing back on
+a clean two-hour boundary. That lattice property is the point — it is what makes the day predictable
+without the user doing arithmetic, and it is the acceptance test.
+
+**What the engine does today** (`lib/services/schedule_generator.dart`), and the three ways it
+misses:
+
+1. **The long break is 25 minutes, not 30.** `_assignSyntheticStartTimes` sets
+   `breakDur = isLong ? 25 : 5`.
+2. **The long break REPLACES the short break instead of following it.** Each work chunk carries one
+   `reservedBreakMinutes` — either 5 or 25, never both. So a cycle at N=4 is
+   `4×25 + 3×5 + 25` = **140 minutes**, which is off-lattice and drifts the whole rest of the day
+   off :00/:30. Under the owner's model the Nth chunk still closes its own 30-minute cell with a
+   5-minute break, and the 30-minute break is a cell of its own.
+3. **The long break is silently suppressed when it would land last.** The reservation is only
+   recorded when `discIdx + 1 < discretionaryChunks.length`. At mood 3 (N=4) with a 4-chunk day —
+   the exact day the owner was looking at — the long break falls after chunk 4, is dropped, and
+   **no long break is ever emitted.** This is very likely the whole of "isn't functioning right":
+   the cadence code is there and correct-ish, and the user has simply never seen it fire.
+   Suppressing a *trailing* break is defensible; suppressing the one long break in the day is not.
+
+**Settled — do not re-litigate.** The owner was asked directly (2026-08-19) whether N should react
+to how the day actually goes, or carry over from yesterday. **He chose neither: N stays set once,
+from the morning check-in mood.** The existing `_moodBreakCadence` table `{1:2, 2:3, 3:4, 4:4, 5:5}`
+stays as the source of N. This phase does not make the engine adaptive, and adaptivity is not a
+smaller version of this phase — it is a different one. (His illustration used N=3, which is the
+mood-2 value; that was an example of the shape, not a request to retune the table. If planning
+believes the table should move, ask — don't infer it from the example.)
+
+**Watch the capacity interaction.** `_moodCap` sets how many work chunks a day gets
+`{1:4, 2:6, 3:8, 4:9, 5:11}`, and the lattice makes each cycle longer than it is today (a 30-minute
+long break in its own cell costs 30 minutes where a replaced 25-minute one cost 25). Fewer chunks
+will fit in the same window. Decide deliberately whether the cap or the day's end moves, and say
+which — do not let it fall out of the packing loop by accident.
+
+**Requirements:** LATTICE-01 (every chunk starts on a 30-minute boundary), LATTICE-02 (a 30-minute
+break after every N work chunks, N from morning mood, never silently suppressed)
+**Depends on:** nothing in Phase 27 — this is `schedule_generator.dart`, a different file. Can be
+planned immediately.
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run `/gsd-plan-phase 28` to break down)
+
+**Verification note.** Unlike Phase 27, this one *is* fully testable in `flutter test` — it is
+integer arithmetic over minutes with no glyph metrics anywhere near it. The assertion that matters:
+generate a day at each mood, and check every chunk's start minute is `≡ 0 (mod 30)` and that exactly
+`floor(chunks / N)` long breaks of exactly 30 minutes are emitted. No real-browser step is required,
+which is a genuine difference from Phase 27 and worth stating so nobody copies that ceremony over.
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |

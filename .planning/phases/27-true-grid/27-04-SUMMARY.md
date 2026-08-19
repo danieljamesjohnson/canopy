@@ -345,3 +345,69 @@ commit.
 ## Self-Check: PASSED
 
 All 8 referenced files (`lib/screens/today/timeline_geometry.dart`, `.planning/phases/27-true-grid/tools/measure_card_fill.py`, and the six screenshots under `.planning/phases/27-true-grid/shots/`) confirmed present on disk. Both task commit hashes (`1ca4204`, `7d0a1e6`) confirmed present in `git log`. Task 3's checkpoint has not been answered and is not claimed as passed anywhere in this summary.
+
+---
+
+## Task 3 — UAT verdict (2026-08-19, recorded verbatim)
+
+The owner ran this on a real device. Verdict per item, in his words:
+
+> **1 — agreed. complete / skip with a thumb when you're active might be hard.**
+> **2 — try it underneath. it does cut some stuff off. may have to adjust to ensure it's still readable.**
+> **3 — i scrolled looks good.**
+
+**Item 3 — PASSED as shipped.** The grid reads uniform in the hand and the day being 132dp
+shorter is an improvement. No change.
+
+**Item 1 — FAILED, fixed in `419aa7b`.** The 36×36dp targets are too small to hit reliably with a
+thumb while a chunk is running. Raised to 44dp via a new `kLiveActionTouchTarget`, closing the
+declared WCAG exception rather than carrying it forward.
+
+**The recorded remedy was deliberately not taken.** `27-UI-SPEC.md` said the fix, if this failed,
+was "more slot height (revisit `kPixelsPerMinute`)" — because it claimed a 100dp slot "cannot also
+fit two 44dp targets side by side without either the title or the countdown losing its line." That
+claim was never checked and is false: the compact tier's action row is sized by the kicker+title
+stack (~37dp), not by the buttons, so 44dp costs 7dp against ~24dp of measured slack. Raising
+`kPixelsPerMinute` would have made the entire day taller to buy something the existing slack
+already covered — and would have undone the 5.5→4.0 compaction made for the exact opposite
+complaint ("the elements take up too much vertical space", 2026-08-18). Following the spec here
+would have been the wrong call.
+
+**Item 2 — FAILED, fixed in `419aa7b`.** The now-line struck through the live card's text — through
+the word "Exercise" on the compact tier, and through the single line of the break tier. This was
+already flagged before UAT, in `27-UI-REVIEW.md`'s addendum with screenshots, after the UI audit
+correctly spotted that the phase's own evidence never actually tested the spec's "the crossing is
+harmless" claim.
+
+Fixed by the cheapest of the three options offered: the live row is now painted **after** the
+now-line overlay in the Stack, so the rule stops at the card's edges (what Google Calendar does).
+Nothing is suppressed and the overlay gained no new flag, so this cannot rot the way the old
+`showChip` predicate did. The now-marker stays discoverable because the dot is centred on
+`kNowContentEdge`, which is exactly `kCardLeftInset` — its left half sits outside the card.
+
+The owner's "may have to adjust to ensure it's still readable" was checked rather than assumed:
+both tiers re-captured in a real browser after the fix (`crop-uat-nowline-under-card.png`,
+`crop-uat-nowline-under-single-line.png`) — text is clean on both, and the dot is still visible.
+
+### Re-verification after the fixes
+
+Both fixes changed rendered layout, so everything that could be invalidated was re-measured rather
+than assumed to survive:
+
+| Check | Result |
+|---|---|
+| `measure_hours.py`, live work chunk (8:10) | **UNIFORM** — 240.0 / 240.0, spread 0.0 |
+| `measure_hours.py`, live break (8:27) | **UNIFORM** — 240.0 / 240.0, spread 0.0 |
+| `measure_card_fill.py`, compact tier | 80px raw (was 76px — the taller buttons) |
+| `kCompactLiveMinHeight` | re-measured 84.0 → **88.0** (80 + 8 margin) |
+| `flutter test` | 567 green |
+| `flutter analyze` | clean |
+
+**One honest note on process:** the first re-measurement run came back `NOT UNIFORM`, which looked
+alarming. It was not a regression — the date had rolled to 2026-08-19 overnight, so the persistent
+Chromium profile held the previous day's schedule with nothing live, and the scan picked up
+day-complete header text as extra label bands. A fresh profile generating today's schedule measured
+`UNIFORM` immediately. Recorded because a future reader running this harness across a date boundary
+will hit the same thing, and the failure mode looks exactly like a real regression.
+
+**Task 3: CLOSED.** All three items resolved — one passed as shipped, two fixed and re-verified.

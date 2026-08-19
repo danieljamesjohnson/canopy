@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: none
 milestone_name: milestone
-status: v1.5 shipped and archived. Phase 27 added 2026-08-18 out of post-v1.5 UAT on the Today
-stopped_at: 27-04-PLAN.md Tasks 1-2 done and committed; Task 3 (human-verify checkpoint) pending
-last_updated: "2026-08-18T15:06:04.000Z"
-last_activity: 2026-08-18
+status: v1.5 shipped and archived. Phase 27 (True Grid) COMPLETE 2026-08-19, UAT closed. Phase 28
+stopped_at: Phase 27 closed; Phase 28 (The Day Is a Lattice) added, needs /gsd-plan-phase 28
+last_updated: "2026-08-19T12:00:00.000Z"
+last_activity: 2026-08-19
 progress:
-  total_phases: 1
-  completed_phases: 0
+  total_phases: 2
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
-  percent: 0
+  completed_plans: 4
+  percent: 50
 ---
 
 # Execution State
@@ -24,20 +24,25 @@ progress:
 
 ## Current Position
 
-Phase: 27 — True Grid (standalone, no milestone). Executing.
-Plan: 4 of 4 — Tasks 1-2 (`type="auto"`) done and committed (`1ca4204`, `7d0a1e6`); Task 3
-(`checkpoint:human-verify`, the 36dp touch-target + now-line-legibility + uniform-grid UAT) is
-PENDING. Debug build served at `http://danserver:8137/`, current as of the pause (served-bytes
-check non-zero). Plan and phase are NOT complete until a human returns a verdict on Task 3.
-Status: v1.5 shipped and archived. Phase 27 added 2026-08-18 out of post-v1.5 UAT on the Today
-timeline; owner's call was a standalone phase rather than opening v1.6.
-Last activity: 2026-08-18
+Phase: 27 — True Grid (standalone, no milestone). **COMPLETE 2026-08-19.**
+Plan: 4 of 4 complete. Task 3's human UAT returned a verdict on 2026-08-19: item 3 (uniform grid,
+shorter day) passed as shipped; items 1 and 2 failed and were fixed in `419aa7b` — Complete/Skip
+raised 36→44dp, and the live row now paints above the now-line so the rule stops at the card's
+edges instead of striking through its text. Both fixes re-verified in a real browser
+(`measure_hours.py` prints UNIFORM at both tiers), `kCompactLiveMinHeight` re-measured 84.0 → 88.0
+because the taller buttons raise the action row. 567 tests green, `flutter analyze` clean.
+
+Next: Phase 28 — The Day Is a Lattice. Raised by the owner in the same UAT ("the schedule still
+isn't functioning right"). Engine-side, not UI. Not started — needs `/gsd-plan-phase 28`.
+Status: v1.5 shipped and archived. Phases 27 and 28 both sit outside any milestone — owner's call
+was standalone phases rather than opening v1.6.
+Last activity: 2026-08-19
 
 ```
-v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  Phase 27 (standalone)  →  v1.6 not yet defined
+v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  Phase 27 ✅  →  Phase 28 (standalone)  →  v1.6 not yet defined
 ```
 
-**Uncommitted-to-a-milestone work is deliberate here.** Phase 27 sits outside any milestone. If a
+**Uncommitted-to-a-milestone work is deliberate here.** Phases 27 and 28 sit outside any milestone. If a
 v1.6 is opened before it ships, fold it in rather than leaving it orphaned.
 
 ## Project Reference

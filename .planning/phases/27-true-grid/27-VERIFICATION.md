@@ -1,8 +1,9 @@
 ---
 phase: 27-true-grid
 verified: 2026-08-18T16:45:00Z
-status: human_needed
-score: 16/17 must-haves verified (1 pending human sign-off, not failed)
+human_verified: 2026-08-19
+status: passed
+score: 17/17 must-haves verified (human checkpoint closed 2026-08-19)
 overrides_applied: 0
 human_verification:
   - test: "36×36dp Complete/Skip icon-button tap targets, on an actual touch device (thumb, not mouse), including at a larger system text scale"
@@ -212,3 +213,26 @@ back to a planner.
 
 _Verified: 2026-08-18_
 _Verifier: Claude (gsd-verifier)_
+
+
+---
+
+## Human checkpoint CLOSED — 2026-08-19
+
+Status moved `human_needed` → `passed`. The owner ran plan 27-04 Task 3 on a real touch device.
+
+| Item | Verdict | Outcome |
+|---|---|---|
+| 1 — 36×36dp Complete/Skip with a thumb | **failed** | Raised to 44dp (`kLiveActionTouchTarget`), `419aa7b`. The WCAG exception is closed, not carried. The spec's recorded remedy (raise `kPixelsPerMinute`) was deliberately not taken — see `27-04-SUMMARY.md` for why it was the wrong fix. |
+| 2 — now-line crossing the card's text | **failed** | Live row now paints above the now-line overlay, so the rule stops at the card's edges, `419aa7b`. |
+| 3 — grid reads uniform, day is shorter | **passed** | No change. |
+
+Both fixes were re-verified in a real browser rather than assumed: `measure_hours.py` prints
+`UNIFORM` (240.0/240.0) at both tiers on the rebuilt bundle, `kCompactLiveMinHeight` re-measured
+84.0 → 88.0 because the taller buttons raise the action row, 567 tests green, `flutter analyze`
+clean.
+
+GRID-01 and GRID-02 are both satisfied, in arithmetic and in pixels. **Phase 27 is complete.**
+
+Carried forward unmeasured, unchanged from the spike's own scope note: dark theme, desktop widths,
+large accessibility text scales, and the `Overdue` live state.
