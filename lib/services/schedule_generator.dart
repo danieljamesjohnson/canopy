@@ -20,10 +20,15 @@ import 'package:intl/intl.dart';
 ///
 /// After allocation, a break insertion pass interleaves shortBreak / longBreak
 /// chunks between every work chunk on a 30-minute lattice: every discretionary
-/// work chunk closes its own cell with a 5-minute short break, and every
-/// longBreakEvery-th chunk's cell is followed by a separate 30-minute long
-/// break cell. longBreakEvery is mood-scaled: 2 / 3 / 4 / 4 / 5 for moods 1
-/// through 5 — see the break-cadence table below.
+/// work chunk *tries to close* its own cell with a 5-minute short break, and
+/// every longBreakEvery-th chunk's cell is *normally* followed by a separate
+/// 30-minute long break cell — except when the enclosing free slot is too
+/// narrow to hold that footprint (bounded by an off-lattice commitment start
+/// or the 10:00 PM day end), in which case the break is genuinely omitted
+/// rather than silently suppressed by a position-based guard. See
+/// _assignSyntheticStartTimes for the exact fallback rules. longBreakEvery is
+/// mood-scaled: 2 / 3 / 4 / 4 / 5 for moods 1 through 5 — see the
+/// break-cadence table below.
 class ScheduleGeneratorService {
   /// Capacity table: maps moodIndex → max discretionary work chunks at 80%.
   ///
