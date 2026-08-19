@@ -831,6 +831,10 @@ class ScheduleGeneratorService {
           discretionaryChunks[discIdx].reservedBreakMinutes = breakFootprint;
           cursor += breakFootprint;
         } else if (cursor + _shortBreakMinutes <= slot.end) {
+          // IN-01: for a non-boundary chunk, breakFootprint already equals
+          // _shortBreakMinutes, so this elif is unreachable there — it only
+          // has effect when isBoundary is true and the full 35-minute
+          // footprint didn't fit.
           // Partial-reservation fallback: the full footprint doesn't fit,
           // but the chunk's own short break does. The Nth chunk still
           // closes its own cell even when the slot has no room left for a
