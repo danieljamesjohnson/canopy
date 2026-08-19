@@ -19,8 +19,11 @@ import 'package:intl/intl.dart';
 ///   4. Time-target goals (mood 3-5 only; multi-chunk demand, most-behind first)
 ///
 /// After allocation, a break insertion pass interleaves shortBreak / longBreak
-/// chunks between every work chunk. longBreakEvery is mood-scaled: 2 / 3 / 4 /
-/// 4 / 5 for moods 1 through 5 — see the break-cadence table below.
+/// chunks between every work chunk on a 30-minute lattice: every discretionary
+/// work chunk closes its own cell with a 5-minute short break, and every
+/// longBreakEvery-th chunk's cell is followed by a separate 30-minute long
+/// break cell. longBreakEvery is mood-scaled: 2 / 3 / 4 / 4 / 5 for moods 1
+/// through 5 — see the break-cadence table below.
 class ScheduleGeneratorService {
   /// Capacity table: maps moodIndex → max discretionary work chunks at 80%.
   ///
@@ -47,6 +50,25 @@ class ScheduleGeneratorService {
     final lowerMood = (moodIndex - 1).clamp(1, 5);
     return _moodCap[lowerMood] ?? _moodCap[moodIndex]!;
   }
+
+  /// The size, in minutes, of one lattice cell. Every discretionary chunk's
+  /// start (and every free slot's start) is realigned to a multiple of this.
+  static const int _latticeMinutes = 30;
+
+  /// The short break that closes every discretionary work chunk's own cell.
+  static const int _shortBreakMinutes = 5;
+
+  /// The separate cell reserved after every longBreakEvery-th chunk, in
+  /// addition to (never replacing) that chunk's own short break.
+  static const int _longBreakMinutes = 30;
+
+  /// Rounds [minutes] up to the next multiple of [_latticeMinutes] — the
+  /// file's existing round-up-to-N idiom, generalized from the old 5-minute
+  /// version. Used at three call sites: the packing-loop realignment, the
+  /// mid-day dayStart derivation (D-03), and the post-commitment free-slot
+  /// start (D-02).
+  int _roundUpToLattice(int minutes) =>
+      ((minutes + _latticeMinutes - 1) ~/ _latticeMinutes) * _latticeMinutes;
 
   // ---------------------------------------------------------------------------
   // Public static helpers — exposed for Plan 03 (ScheduleNotifier streak write-back).
@@ -612,34 +634,63 @@ class ScheduleGeneratorService {
     // STEP C: Build result — commitment chunks (no breaks between them),
     // then interleave breaks for discretionary chunks only.
     //
-    // WR-01: the break for each discretionary chunk is driven entirely by the
-    // reservedBreakMinutes recorded during packing — the single source of truth
-    // for the cadence. We do NOT recompute the long-break cadence here with an
-    // independent counter (which could diverge from the reserved slot and emit
-    // a 25-min long break where only 5 minutes were reserved, overlapping the
-    // next chunk after the sort). A null reservation means the packing pass
-    // reserved no break room after this chunk, so no break is emitted.
+    // WR-01: the break(s) for each discretionary chunk are driven entirely by
+    // the reservedBreakMinutes footprint recorded during packing — the single
+    // source of truth for the cadence. We do NOT recompute the long-break
+    // cadence here with an independent counter (which could diverge from the
+    // reserved slot and emit a break where only partial room was reserved,
+    // overlapping the next chunk after the sort). A null reservation means
+    // the packing pass reserved no break room after this chunk, so no break
+    // is emitted.
     final List<ScheduledChunk> result = [...commitmentChunks];
     for (final chunk in discretionaryChunks) {
       result.add(chunk);
       final reserved = chunk.reservedBreakMinutes;
       if (reserved == null) continue; // no break room was reserved
-      final isLong = reserved >= 25;
-      final breakChunk = ScheduledChunk(
-        chunkTypeIndex: isLong
-            ? ChunkType.longBreak.index
-            : ChunkType.shortBreak.index,
-        goalId: null,
-        durationMinutes: reserved,
-        rationale: '',
-      );
-      // Position the break immediately after its preceding work chunk so the
-      // Step D sort keeps it adjacent (and within the reserved footprint).
-      if (chunk.syntheticStartMinutes != null) {
-        breakChunk.syntheticStartMinutes =
-            chunk.syntheticStartMinutes! + chunk.durationMinutes;
+      // Decode the footprint: an ordinary cell reserves only the chunk's own
+      // short break (5); a cadence-boundary cell reserves that same short
+      // break PLUS a separate 30-minute long-break cell after it (35 total).
+      // Never treat `reserved` itself as a single break duration — see
+      // RESEARCH.md Pitfall 4.
+      if (reserved > _shortBreakMinutes) {
+        final shortBreak = ScheduledChunk(
+          chunkTypeIndex: ChunkType.shortBreak.index,
+          goalId: null,
+          durationMinutes: _shortBreakMinutes,
+          rationale: '',
+        );
+        if (chunk.syntheticStartMinutes != null) {
+          shortBreak.syntheticStartMinutes =
+              chunk.syntheticStartMinutes! + chunk.durationMinutes;
+        }
+        result.add(shortBreak);
+
+        final longBreak = ScheduledChunk(
+          chunkTypeIndex: ChunkType.longBreak.index,
+          goalId: null,
+          durationMinutes: reserved - _shortBreakMinutes,
+          rationale: '',
+        );
+        if (chunk.syntheticStartMinutes != null) {
+          longBreak.syntheticStartMinutes =
+              chunk.syntheticStartMinutes! +
+              chunk.durationMinutes +
+              _shortBreakMinutes;
+        }
+        result.add(longBreak);
+      } else {
+        final shortBreak = ScheduledChunk(
+          chunkTypeIndex: ChunkType.shortBreak.index,
+          goalId: null,
+          durationMinutes: reserved,
+          rationale: '',
+        );
+        if (chunk.syntheticStartMinutes != null) {
+          shortBreak.syntheticStartMinutes =
+              chunk.syntheticStartMinutes! + chunk.durationMinutes;
+        }
+        result.add(shortBreak);
       }
-      result.add(breakChunk);
     }
 
     // STEP D: Sort flat list by effective start time.
@@ -649,8 +700,13 @@ class ScheduleGeneratorService {
       return aStart.compareTo(bStart);
     });
 
-    // STEP E: Trim trailing non-work chunks (no dangling break at end).
-    while (result.isNotEmpty && result.last.chunkType != ChunkType.work) {
+    // STEP E: Trim a trailing dangling SHORT break only (D-05). A trailing
+    // long break deliberately survives — LATTICE-02's "never silently
+    // suppressed" means a day can now end with an explicit "take a
+    // 30-minute break" card with nothing after it. Trimming any trailing
+    // non-work chunk here (the old behavior) would re-create defect 3 by a
+    // second path even after the packing loop no longer suppresses it.
+    while (result.isNotEmpty && result.last.chunkType == ChunkType.shortBreak) {
       result.removeLast();
     }
 
@@ -661,8 +717,11 @@ class ScheduleGeneratorService {
   /// the free time slots around anchored commitment windows.
   ///
   /// Day runs from [dayStart] (480 = 8:00 AM) to 1320 (22:00 / 10:00 PM).
-  /// Each discretionary work chunk is 25 minutes; breaks (short 5 min,
-  /// long 25 min) are accounted for when deciding whether a slot has room.
+  /// Each discretionary work chunk is 25 minutes; breaks are accounted for
+  /// on a 30-minute lattice — every chunk reserves at least its own 5-minute
+  /// short break, and every longBreakEvery-th chunk additionally reserves a
+  /// separate 30-minute long-break cell — when deciding whether a slot has
+  /// room.
   void _assignSyntheticStartTimes({
     required List<ScheduledChunk> discretionaryChunks,
     required List<ScheduledChunk> commitmentChunks,
@@ -725,9 +784,17 @@ class ScheduleGeneratorService {
     //
     // WR-01: this packing pass is the SINGLE source of truth for the long-break
     // cadence. For each placed chunk we record, on the chunk itself, the exact
-    // break duration reserved after it (reservedBreakMinutes) so STEP C emits
-    // that same break instead of recomputing the cadence with an independent
-    // counter that could diverge.
+    // break footprint reserved after it (reservedBreakMinutes — 5 for an
+    // ordinary cell, 35 for a cadence-boundary cell) so STEP C decodes that
+    // same footprint into the matching break chunk(s) instead of recomputing
+    // the cadence with an independent counter that could diverge.
+    //
+    // INVARIANT (LATTICE-01): every cursor a discretionary chunk is placed
+    // from is ≡ 0 (mod 30). A full or partial footprint reservation already
+    // lands the cursor on a 30-minute boundary (25 + 5, or 25 + 35), so the
+    // realignment below is a no-op in those cases; it exists for the one
+    // remaining case — the chunk's break didn't fit at all — which would
+    // otherwise leave the cursor at S+25 and put the next chunk off-lattice.
     int discIdx = 0;
     int breakCount = 0;
     for (final slot in slots) {
@@ -736,16 +803,33 @@ class ScheduleGeneratorService {
         discretionaryChunks[discIdx].syntheticStartMinutes = cursor;
         cursor += 25;
         breakCount++;
-        final isLong = breakCount % longBreakEvery == 0;
-        final breakDur = isLong ? 25 : 5;
-        // Reserve the break footprint only when it fits AND more discretionary
-        // chunks remain to be placed. Record the reserved duration so STEP C
-        // emits the matching break; leaving it null means STEP C emits none.
-        if (cursor + breakDur <= slot.end &&
-            discIdx + 1 < discretionaryChunks.length) {
-          discretionaryChunks[discIdx].reservedBreakMinutes = breakDur;
-          cursor += breakDur;
+        // isBoundary selects a footprint, not a duration: an ordinary chunk
+        // reserves only its own 5-minute short break; a cadence-boundary
+        // chunk additively reserves that same short break PLUS a separate
+        // 30-minute long-break cell (never replacing the short break).
+        final isBoundary = breakCount % longBreakEvery == 0;
+        final breakFootprint =
+            _shortBreakMinutes + (isBoundary ? _longBreakMinutes : 0);
+        // Reserve the break footprint whenever it fits — reservation no
+        // longer depends on whether more discretionary chunks remain (D-05):
+        // the long break must never be silently suppressed just because it
+        // would land last.
+        if (cursor + breakFootprint <= slot.end) {
+          discretionaryChunks[discIdx].reservedBreakMinutes = breakFootprint;
+          cursor += breakFootprint;
+        } else if (cursor + _shortBreakMinutes <= slot.end) {
+          // Partial-reservation fallback: the full footprint doesn't fit,
+          // but the chunk's own short break does. The Nth chunk still
+          // closes its own cell even when the slot has no room left for a
+          // separate long-break cell. This is the one remaining,
+          // capacity-driven case where a long break does not appear — a
+          // genuine "no room before the slot ends", not a suppression rule.
+          // Proven bounded by RED-PROOF 6 (NARROW vs CONTROL fixtures).
+          discretionaryChunks[discIdx].reservedBreakMinutes =
+              _shortBreakMinutes;
+          cursor += _shortBreakMinutes;
         }
+        cursor = _roundUpToLattice(cursor);
         discIdx++;
       }
     }
