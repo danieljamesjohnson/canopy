@@ -284,10 +284,10 @@ which — do not let it fall out of the packing loop by accident.
 break after every N work chunks, N from morning mood, never silently suppressed)
 **Depends on:** nothing in Phase 27 — this is `schedule_generator.dart`, a different file. Can be
 planned immediately.
-**Plans:** 3 plans in 2 waves
+**Plans:** 1/3 plans executed
 Plans:
 
-- [ ] 28-01-PLAN.md — Rewrite the 10 blast-radius tests and add the LATTICE-01/LATTICE-02/D-04
+- [x] 28-01-PLAN.md — Rewrite the 10 blast-radius tests and add the LATTICE-01/LATTICE-02/D-04
       assertion groups (incl. the owner's-day regression); prove every one RED against the unfixed
       engine (wave 1, test file only)
 
@@ -318,4 +318,4 @@ which is a genuine difference from Phase 27 and worth stating so nobody copies t
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21-26 (Right Now) | v1.5 | 28/28 | Complete   | 2026-08-14 |
 | 27. True Grid | — (standalone) | 4/4 | Complete | 2026-08-19 |
-| 28. The Day Is a Lattice | — (standalone) | 0/? | Not Started |  |
+| 28. The Day Is a Lattice | — (standalone) | 1/3 | In Progress|  |

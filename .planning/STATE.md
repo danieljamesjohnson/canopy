@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: none
 milestone_name: milestone
-status: v1.5 shipped and archived. Phases 27 and 28 both sit outside any milestone — owner's call
-stopped_at: "Phase 28 planned — 3 plans in 2 waves, ready to execute"
-last_updated: "2026-08-19T12:17:50.787Z"
-last_activity: 2026-08-19 -- Phase 28 planning complete
+status: executing
+stopped_at: Completed 28-01-PLAN.md — 16/16 pinned RED failures proven, 2 guards green, zero lib/ touched
+last_updated: "2026-08-19T12:35:49.103Z"
+last_activity: 2026-08-19 -- Phase 28 execution started
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 7
+  completed_plans: 5
   percent: 50
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-18T15:06:04.000Z
+**Last session:** 2026-08-19T12:35:49.098Z
 
 ---
 
 ## Current Position
 
-Phase: 27 — True Grid (standalone, no milestone). **COMPLETE 2026-08-19.**
-Plan: 4 of 4 complete. Task 3's human UAT returned a verdict on 2026-08-19: item 3 (uniform grid,
+Phase: 28 (The Day Is a Lattice) — EXECUTING
+Plan: 2 of 3
 shorter day) passed as shipped; items 1 and 2 failed and were fixed in `419aa7b` — Complete/Skip
 raised 36→44dp, and the live row now paints above the now-line so the rule stops at the card's
 edges instead of striking through its text. Both fixes re-verified in a real browser
@@ -46,9 +46,9 @@ CONTEXT.md, all six covered by plans (gate green). Wave 1 is all test-writing (R
 structural), wave 2 is the only plan that touches `lib/`. No browser step — this phase is integer
 arithmetic and `28-VALIDATION.md` forbids copying Phase 27's pixel ceremony.
 
-Status: v1.5 shipped and archived. Phases 27 and 28 both sit outside any milestone — owner's call
+Status: Ready to execute
 was standalone phases rather than opening v1.6.
-Last activity: 2026-08-19 -- Phase 28 planning complete
+Last activity: 2026-08-19 -- Phase 28 execution started
 
 ```
 v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  Phase 27 ✅  →  Phase 28 (standalone)  →  v1.6 not yet defined
@@ -62,7 +62,7 @@ v1.6 is opened before it ships, fold it in rather than leaving it orphaned.
 See: `.planning/PROJECT.md` (updated 2026-08-14)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Phase 27 (True Grid) — make every hour on the Today timeline occupy the same
+**Current focus:** Phase 28 — The Day Is a Lattice
 vertical distance. Run `/gsd-plan-phase 27`.
 
 ## Shipped Milestones
@@ -183,6 +183,7 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 27-04]: measure_card_fill.py's fill-colour derivation filters to (saturated AND light/pastel, min channel > 100), not saturated alone -- the naive filter picked the ordinary ChunkCard's darker FilledButton colorScheme.primary background over the live row's lighter primaryContainer fill on the single-line-tier screenshot, since non-live cards outnumber the live row in raw pixel count
 - [Phase 27-04]: measure_hours.py prints UNIFORM (240.0/240.0, no 132.0 spread) against the build containing the measured constant, for both a live work chunk and a live break -- GRID-01 proven end-to-end in pixels, not just arithmetic
 - [Phase 27-04]: Plan 27-04 Task 3 (human-verify checkpoint: 36dp touch targets on a real device, now-line legibility, uniform grid) is PENDING as of 2026-08-18 -- Tasks 1-2 committed (1ca4204, 7d0a1e6), 27-04-SUMMARY.md documents the paused state; do not treat this plan or Phase 27 as complete until a human verdict is recorded
+- [Phase 28-01]: Corrected the plan's commitment-block-chunking assumption (45-min window emits ONE anchored chunk stretched over the window, not two of 25+20) via empirical verification; re-derived the D-01 GUARD and narrow-slot fallback fixtures accordingly
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -266,7 +267,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-18
-Stopped at: 27-04-PLAN.md Task 3 — `checkpoint:human-verify`, PENDING. Tasks 1-2 committed
+Stopped at: Completed 28-01-PLAN.md — 16/16 pinned RED failures proven, 2 guards green, zero lib/ touched
 (`1ca4204` measure+set `kCompactLiveMinHeight`, `7d0a1e6` prove GRID-01 `UNIFORM`).
 Resume at: open `http://danserver:8137/` on a phone/tablet, walk `27-04-SUMMARY.md`'s "Task 3"
 section, record the verdict, then finalize the summary and close Phase 27.
@@ -320,3 +321,4 @@ section, record the verdict, then finalize the summary and close Phase 27.
 | Phase 27 P02 | ~45min | 3 tasks | 3 files |
 | Phase 27-true-grid P03 | ~35min | 2 tasks | 2 files |
 | Phase 27-true-grid P04 | ~55min (Tasks 1-2; Task 3 pending) | 2/3 tasks | 1 file modified, 7 created |
+| Phase 28-the-day-is-a-lattice P01 | ~15min | 2 tasks | 2 files |
