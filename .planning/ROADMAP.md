@@ -197,19 +197,20 @@ work we would otherwise write.
 **Requirements:** GRID-01 (uniform hour spacing), GRID-02 (live-row prominence without variable
 height)
 **Depends on:** Phase 26 (The Day Has a Shape) — owns `TimelineGeometry` and the now-line
-**Plans:** 3/4 plans executed; 27-04 in progress (Tasks 1-2 of 3 done and committed, Task 3 is a
-pending human-verify checkpoint — see `27-04-SUMMARY.md`)
+**Plans:** 4/4 plans executed — phase COMPLETE 2026-08-19 (`27-VERIFICATION.md`: 17/17 must-haves,
+human checkpoint closed)
 
 Plans:
 
 - [x] 27-01-PLAN.md — Geometry: delete the `liveExtraPx` term, add the equidistance test (proven RED first)
 - [x] 27-02-PLAN.md — `LiveRowCard`'s two density tiers; the live row joins the grid
 - [x] 27-03-PLAN.md — Repair the screen-level live-row assertions the compaction breaks
-- [ ] 27-04-PLAN.md — Measure `kCompactLiveMinHeight` in a real browser; prove `UNIFORM`; UAT —
-      **Tasks 1-2 done** (constant measured and set to `84.0`; `measure_hours.py` prints `UNIFORM`
-      against the measured build). **Task 3 (human touch-device checkpoint) PENDING** — open
-      `http://danserver:8137/` on a phone/tablet and answer `27-04-SUMMARY.md`'s three questions
-      before this plan and the phase can close.
+- [x] 27-04-PLAN.md — Measure `kCompactLiveMinHeight` in a real browser; prove `UNIFORM`; UAT —
+      constant measured in a real browser and set to `88.0` (84.0 first, re-measured after the
+      touch-target fix raised the action row); `measure_hours.py` prints `UNIFORM` at both tiers.
+      Task 3's human UAT returned its verdict 2026-08-19: item 3 passed as shipped, items 1 and 2
+      failed and were fixed in `419aa7b` (Complete/Skip raised 36→44dp; the live row now paints
+      above the now-line, so the rule stops at the card's edges).
 
 **Also open on this surface, fold in or split as planning decides:**
 
@@ -299,4 +300,5 @@ which is a genuine difference from Phase 27 and worth stating so nobody copies t
 | 19. Energy Valence | v1.4 | 5/5 | Complete   | 2026-06-15 |
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21-26 (Right Now) | v1.5 | 28/28 | Complete   | 2026-08-14 |
-| 27. True Grid | — (standalone) | 3/4 | In Progress (27-04 Task 3 pending) |  |
+| 27. True Grid | — (standalone) | 4/4 | Complete | 2026-08-19 |
+| 28. The Day Is a Lattice | — (standalone) | 0/? | Not Started |  |
