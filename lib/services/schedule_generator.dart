@@ -732,10 +732,12 @@ class ScheduleGeneratorService {
     const int dayEnd = 1320; // 10:00 PM
     // Start packing at "now" when generating mid-day so the plan doesn't lay
     // chunks down in already-passed morning hours. Never earlier than 8:00 AM,
-    // and round up to the next 5-minute boundary for tidy start times.
+    // and round up to the next 30-minute boundary (D-03) so a mid-day
+    // regeneration lands its first discretionary chunk on the lattice, not
+    // just at a "tidy" 5-minute mark.
     final int dayStart = startFloorMinutes == null
         ? defaultDayStart
-        : (((startFloorMinutes + 4) ~/ 5) * 5).clamp(defaultDayStart, dayEnd);
+        : _roundUpToLattice(startFloorMinutes).clamp(defaultDayStart, dayEnd);
 
     // Build merged commitment windows.
     //
@@ -770,13 +772,21 @@ class ScheduleGeneratorService {
     // Clamp the cursor so it never moves backward (WR-02): with merged windows
     // this is already monotonic, but the clamp is defensive against any future
     // window source and guarantees no negative-width slot is ever emitted.
+    // D-02: round the post-window cursor up to the next 30-minute boundary —
+    // a commitment's own anchoredStartMinutes/endMinutes are never rounded
+    // (D-01), but the FREE SLOT it opens is, so the off-lattice offset does
+    // not cascade through every discretionary chunk placed in that slot for
+    // the rest of the day. Trade-off: up to 29 idle minutes can now sit
+    // between a commitment's end and the next work chunk. This wrap is a
+    // no-op on the defensive `cursor > w.end` clamp branch — that cursor is
+    // already lattice-aligned.
     final slots = <({int start, int end})>[];
     int cursor = dayStart;
     for (final w in windows) {
       if (cursor < w.start) {
         slots.add((start: cursor, end: w.start));
       }
-      cursor = cursor > w.end ? cursor : w.end;
+      cursor = _roundUpToLattice(cursor > w.end ? cursor : w.end);
     }
     slots.add((start: cursor, end: dayEnd));
 
