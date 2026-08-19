@@ -658,17 +658,7 @@ class ScheduleGeneratorService {
       // Never treat `reserved` itself as a single break duration — see
       // RESEARCH.md Pitfall 4.
       if (reserved > _shortBreakMinutes) {
-        final shortBreak = ScheduledChunk(
-          chunkTypeIndex: ChunkType.shortBreak.index,
-          goalId: null,
-          durationMinutes: _shortBreakMinutes,
-          rationale: '',
-        );
-        if (chunk.syntheticStartMinutes != null) {
-          shortBreak.syntheticStartMinutes =
-              chunk.syntheticStartMinutes! + chunk.durationMinutes;
-        }
-        result.add(shortBreak);
+        result.add(_shortBreakChunk(chunk));
 
         final longBreak = ScheduledChunk(
           chunkTypeIndex: ChunkType.longBreak.index,
@@ -684,17 +674,7 @@ class ScheduleGeneratorService {
         }
         result.add(longBreak);
       } else {
-        final shortBreak = ScheduledChunk(
-          chunkTypeIndex: ChunkType.shortBreak.index,
-          goalId: null,
-          durationMinutes: reserved,
-          rationale: '',
-        );
-        if (chunk.syntheticStartMinutes != null) {
-          shortBreak.syntheticStartMinutes =
-              chunk.syntheticStartMinutes! + chunk.durationMinutes;
-        }
-        result.add(shortBreak);
+        result.add(_shortBreakChunk(chunk));
       }
     }
 
@@ -716,6 +696,24 @@ class ScheduleGeneratorService {
     }
 
     return result;
+  }
+
+  /// Builds the 5-minute short-break [ScheduledChunk] that closes
+  /// [afterChunk]'s cell, positioned immediately after it. Shared by both
+  /// STEP C branches (ordinary cell and cadence-boundary cell) so the break
+  /// chunk's fields can't drift out of sync between them (WR-02).
+  ScheduledChunk _shortBreakChunk(ScheduledChunk afterChunk) {
+    final shortBreak = ScheduledChunk(
+      chunkTypeIndex: ChunkType.shortBreak.index,
+      goalId: null,
+      durationMinutes: _shortBreakMinutes,
+      rationale: '',
+    );
+    if (afterChunk.syntheticStartMinutes != null) {
+      shortBreak.syntheticStartMinutes =
+          afterChunk.syntheticStartMinutes! + afterChunk.durationMinutes;
+    }
+    return shortBreak;
   }
 
   /// Assigns [syntheticStartMinutes] to each discretionary chunk by filling
