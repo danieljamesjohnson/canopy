@@ -723,7 +723,8 @@ void main() {
     );
 
     testWidgets(
-      'compact tier icon buttons carry the right icons and measure 36x36',
+      'compact tier icon buttons carry the right icons and are at least the '
+      '44dp WCAG touch target',
       (tester) async {
         await pumpLiveRowCard(tester, slotHeight: 100.0, showActions: true);
         final completeIcon = find.byIcon(Icons.check_circle_outline);
@@ -738,8 +739,20 @@ void main() {
           of: skipIcon,
           matching: find.byType(IconButton),
         );
-        expect(tester.getSize(completeButton), const Size(36, 36));
-        expect(tester.getSize(skipButton), const Size(36, 36));
+        // Asserted against the named constant, not a literal, so the button
+        // and the slot-height measurement derived from it cannot drift apart.
+        expect(
+          tester.getSize(completeButton),
+          const Size(kLiveActionTouchTarget, kLiveActionTouchTarget),
+        );
+        expect(
+          tester.getSize(skipButton),
+          const Size(kLiveActionTouchTarget, kLiveActionTouchTarget),
+        );
+        // The floor is what actually matters to a thumb, and it is why these
+        // grew from 36dp after UAT (2026-08-19) — this half of the assertion
+        // stays meaningful even if the constant is retuned upward later.
+        expect(kLiveActionTouchTarget, greaterThanOrEqualTo(44.0));
       },
     );
 

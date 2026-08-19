@@ -1385,15 +1385,10 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                                   nowState,
                                   liveSecondsLeft,
                                 ),
-                            for (final row in timelineRows)
-                              if (row is ChunkRow && row.isLive)
-                                _buildPositionedRow(
-                                  context,
-                                  row,
-                                  geometry,
-                                  nowState,
-                                  liveSecondsLeft,
-                                ),
+                            // The live row is NOT emitted here any more — it
+                            // moved below the now-line overlay (UAT,
+                            // 2026-08-19). See the comment at its new
+                            // position for why the order is load-bearing.
                             // Layer 3 — the now-line (CAL-02), topmost in the
                             // Stack, above every card's elevation/shadow.
                             // This overlay replaces Phase 24's
@@ -1441,6 +1436,46 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                                 ),
                               ),
                             ),
+                            // The live row, painted LAST — above the now-line
+                            // rule (UAT, 2026-08-19). Order is the whole fix.
+                            //
+                            // Phase 27 shortened this card from ~200dp to
+                            // ~90dp, and a card that short has no whitespace
+                            // for the rule to land in: it struck clean through
+                            // "Exercise" on the compact tier and through the
+                            // single line of the break tier, which reads as
+                            // strikethrough — "done"/"cancelled" — on the one
+                            // row that is emphatically neither
+                            // (`27-UI-REVIEW.md` addendum, with screenshots).
+                            // `27-UI-SPEC.md` had reasoned the crossing would
+                            // be harmless; it is not, and it only looked
+                            // harmless because the evidence screenshots
+                            // happened to catch the rule at a card edge.
+                            //
+                            // Painting the card over the rule stops the line
+                            // at the card's edges, which is what Google
+                            // Calendar does with its current event. The rule
+                            // is NOT suppressed and the overlay takes no new
+                            // flag — nothing is conditional, so this cannot
+                            // rot the way the old `showChip` predicate did.
+                            //
+                            // The now-marker stays discoverable because the
+                            // dot is centred on `kNowContentEdge`, which is
+                            // exactly `kCardLeftInset` — so its left half sits
+                            // outside the card and remains visible, along with
+                            // the gutter time. Do not inset this card further
+                            // left to "fix" that; three prior attempts to move
+                            // this row horizontally each broke something
+                            // (see `LiveRowCard`'s own doc comment).
+                            for (final row in timelineRows)
+                              if (row is ChunkRow && row.isLive)
+                                _buildPositionedRow(
+                                  context,
+                                  row,
+                                  geometry,
+                                  nowState,
+                                  liveSecondsLeft,
+                                ),
                           ],
                         ),
                       ),

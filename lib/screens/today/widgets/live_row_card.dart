@@ -5,6 +5,22 @@ import '../../../providers/schedule_notifier.dart';
 import '../timeline_geometry.dart';
 import 'timeline_row_tile.dart';
 
+/// Edge length of the compact tier's Complete/Skip touch targets.
+///
+/// **44.0, raised from 36.0 (UAT, 2026-08-19).** 44dp is the WCAG-recommended
+/// minimum, and these are the two most time-sensitive buttons in the app —
+/// they are tapped while a chunk is running, often one-handed. The original
+/// 36dp shipped as a documented exception on the claim that a 100dp slot could
+/// not fit two 44dp targets; UAT found them hard to hit with a thumb, and the
+/// claim was wrong: the row's height comes from the kicker+title stack, not
+/// the buttons.
+///
+/// Named rather than inlined because it is load-bearing in two places that
+/// must not drift apart — this constant sizes the button, and
+/// [kCompactLiveMinHeight] is measured against the row height it produces.
+/// Changing it invalidates that measurement; re-measure in a real browser.
+const double kLiveActionTouchTarget = 44.0;
+
 /// The live row (D-01, `27-UI-SPEC.md` "The live row's two density tiers").
 ///
 /// [kicker] and [remainingLabel] are INJECTED BY THE SCREEN — Phase 23's
@@ -84,15 +100,20 @@ class LiveRowCard extends StatelessWidget {
   /// The compact tier — kicker+title, two icon actions, and the
   /// remaining-time line. Fits a standard 25-minute work chunk's 100dp slot.
   ///
-  /// **Declared exception:** the 36×36dp Complete/Skip `IconButton`s fall
-  /// below the 44dp WCAG-recommended touch target. This is a stated trade,
-  /// not an oversight — a 100dp slot carrying a two-line title block plus a
-  /// countdown line cannot also fit two 44dp targets side by side without
-  /// either the title or the countdown losing its line
-  /// (`27-UI-SPEC.md` "Compact tier"). `27-UI-SPEC.md` requires this be
-  /// confirmed on an actual touch device during UAT before being treated as
-  /// closed; if it turns out to be a real usability problem, the fix is more
-  /// slot height (revisit `kPixelsPerMinute`), never smaller text.
+  /// **The Complete/Skip targets are [kLiveActionTouchTarget] — no longer a
+  /// declared exception (UAT, 2026-08-19).** They shipped at 36×36dp with a
+  /// documented WCAG shortfall and a claim that a 100dp slot "cannot also fit
+  /// two 44dp targets side by side without either the title or the countdown
+  /// losing its line." UAT on a real touch device found them hard to hit with
+  /// a thumb, and the claim did not survive being checked: the row's height is
+  /// set by the kicker+title stack (~37dp), not by the buttons, so widening
+  /// them to 44dp costs 7dp against the compact tier's ~24dp of slack inside a
+  /// 100dp slot. Nothing lost a line.
+  ///
+  /// This is why the stated remedy — "more slot height, revisit
+  /// `kPixelsPerMinute`" — was NOT taken: it would have made the whole day
+  /// taller to buy something the existing slack already covered, undoing the
+  /// 5.5→4.0 compaction done for the opposite complaint.
   Widget _buildCompact(
     BuildContext context,
     ThemeData theme,
@@ -198,23 +219,25 @@ class LiveRowCard extends StatelessWidget {
       icon: Icon(icon),
       color: color,
       tooltip: tooltip,
-      constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+      constraints: const BoxConstraints.tightFor(
+        width: kLiveActionTouchTarget,
+        height: kLiveActionTouchTarget,
+      ),
       padding: EdgeInsets.zero,
       // `constraints:` alone caps the visible Material, but Material 3's
       // IconButton always wraps it in an invisible `_InputPadding` that
       // separately pads the HIT-TEST area out to `kMinInteractiveDimension`
       // (48dp) — measured directly (widget test, `tester.getSize`), stacking
       // `VisualDensity.compact` on top of the tight `constraints:` still
-      // measured 40x40, not the 36x36 the design and this tier's slot math
-      // are budgeted against, because visual density only shaves the 48dp
-      // interactive minimum, it does not remove it. `tapTargetSize:
-      // shrinkWrap` is what actually removes that separate padding layer,
-      // so deliberately no `visualDensity` override here — stacking one on
-      // top of `shrinkWrap` instead shrinks the tight constraints' OWN
-      // minimum (visual density adjusts both layers), which undersizes the
-      // button to 28x28. `shrinkWrap` alone, against the unmodified tight
-      // constraints, is the combination that actually measures exactly
-      // 36x36.
+      // measured 40x40 rather than the constraints' own value, because visual
+      // density only shaves the 48dp interactive minimum, it does not remove
+      // it. `tapTargetSize: shrinkWrap` is what actually removes that separate
+      // padding layer, so deliberately no `visualDensity` override here —
+      // stacking one on top of `shrinkWrap` instead shrinks the tight
+      // constraints' OWN minimum (visual density adjusts both layers), which
+      // undersizes the button. `shrinkWrap` alone, against the unmodified
+      // tight constraints, is the combination that measures exactly
+      // [kLiveActionTouchTarget].
       style: IconButton.styleFrom(
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),

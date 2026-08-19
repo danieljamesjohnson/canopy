@@ -86,40 +86,51 @@ const double kFullBreakMinHeight = 88.0;
 /// --enable-unsafe-swiftshader`), viewport `430`×930 at DPR 1 (screenshot px
 /// = logical px), debug build (`flutter build web --debug --source-maps
 /// --pwa-strategy=none`) served through `tools/serve-uat.py` on port `8137`,
-/// simulated clock parked at 10:00 AM — 5 minutes (20%) into a live
-/// 25-minute Exercise chunk (9:55–10:20 AM). The freshly onboarded profile's
-/// generated day did not match the spike's own 8:50 AM chunk, so this is the
-/// equivalent instant the recipe calls for (20% elapsed), not the literal
-/// clock time; see `27-04-SUMMARY.md` for the day actually generated.
+/// simulated clock parked 10 minutes (40%) into a live 25-minute Exercise
+/// chunk (8:00–8:25 AM). A freshly onboarded profile generates its own day, so
+/// the instant is chosen by position within the live chunk rather than by
+/// literal clock time — the recipe's requirement is that a chunk is live and
+/// the now-line sits inside the card, not that it is any particular hour.
 /// Pixel-counted via `.planning/phases/27-true-grid/tools/
 /// measure_card_fill.py` against `.planning/phases/27-true-grid/shots/
-/// compact-1000-work-live.png`.
+/// compact-uat-0810-work-live.png`.
 ///
-/// **Raw measured natural height: 76px** (the compact tier's
-/// `primaryContainer` fill band, contiguous rows 446–521, bridging the
-/// now-line's own ~2px interruption of the fill colour). Plus an **explicit
-/// 8px safety margin** — the upper end of this file's already-established
-/// 4–8dp range (`kLiveRowReservedHeight`'s now-deleted precedent was "224
-/// measured + 8 explicit = 232.0") — chosen because the compact tier's
-/// clearance over a standard 25-minute chunk's 100px slot is generous
-/// (100 − 76 = 24px of natural slack), so the extra 4px of headroom over the
-/// tighter end of the range costs nothing. `76 + 8 = 84.0`.
+/// **84.0 → 88.0 (re-measured 2026-08-19, after UAT).** The first measurement
+/// (76px raw) was taken against 36×36dp Complete/Skip buttons. UAT on a real
+/// touch device found those too small to hit reliably with a thumb, so
+/// `kLiveActionTouchTarget` rose to 44dp — which raises the compact tier's
+/// action row and therefore this measurement. **Re-measured raw natural
+/// height: 80px** (fill band rows 226–305), taken the same way against a live
+/// 8:00–8:25 AM chunk at a simulated 8:10 AM. `80 + 8 = 88.0`.
+///
+/// The `+8px` is an **explicit safety margin** — the upper end of this file's
+/// already-established 4–8dp range (`kLiveRowReservedHeight`'s now-deleted
+/// precedent was "224 measured + 8 explicit = 232.0") — affordable because the
+/// clearance over a standard 25-minute chunk's 100px slot is still generous
+/// (100 − 80 = 20px of natural slack).
 ///
 /// **Relationship to [kFullTierMinHeight] (Pitfall 6, `27-RESEARCH.md`).**
-/// `84.0` is 4dp away from [kFullTierMinHeight]'s `88.0` — outside the "within
-/// 2dp, decide explicitly" trigger, but the relationship is still resolved
-/// here rather than left to be inferred: the two constants are **kept
-/// separate**, not collapsed. Their prior identical `88.0` value was
-/// coincidental — both were independently re-derived, before this
-/// measurement, from the same 2026-08-18 card-compaction arithmetic estimate.
-/// They threshold different card layouts ([LiveRowCard]'s compact tier vs.
-/// `ChunkCard`'s full tier) with no shared content, so there is no reason for
-/// a future change to either card to move both numbers together.
+/// This measurement lands on `88.0`, **numerically identical** to
+/// [kFullTierMinHeight]. That triggers the "decide explicitly" rule, and the
+/// decision is: **keep them separate, do not collapse them.**
+///
+/// The equality is a coincidence of two independent measurements, not a shared
+/// cause. They threshold different card layouts with no shared content —
+/// [LiveRowCard]'s compact tier (kicker, title, action icons, countdown) vs.
+/// `ChunkCard`'s full tier (title, time range, action row) — so nothing makes
+/// them move together. Note the history: they were *also* both `88.0` before
+/// this phase, then this one measured to `84.0`, and now it has measured back
+/// to `88.0`. Twice-coincidental is still coincidental.
+///
+/// **Do not "simplify" these into one constant.** Collapsing them would couple
+/// two widgets that change independently, and the next content change to
+/// either card would silently retune the other card's density tier — a bug
+/// with no obvious cause at the call site.
 ///
 /// **Single-line tier, confirmed separately:** the same profile's live
-/// 5-minute break (10:20–10:25 AM, simulated 10:22 AM) measured a `16px` fill
-/// band via the same script — comfortably under the 20px slot, no tightening
-/// needed.
+/// 5-minute break (8:25–8:30 AM, simulated 8:27 AM) renders one legible line
+/// inside its 20px slot — unaffected by the touch-target change, since that
+/// tier carries no buttons. See `single-line-uat-0827-break-live.png`.
 ///
 /// **Do not derive this from `flutter test`.** This file already carries a
 /// three-strikes history of constants that were wrong when set from that
@@ -131,11 +142,12 @@ const double kFullBreakMinHeight = 88.0;
 /// **What would invalidate this value:** any change to the compact tier's
 /// children (kicker, title, actions row, remaining-time line) or how many
 /// there are; any typography change to `labelSmall` / `titleMedium` /
-/// `bodySmall`; any change to the 36×36 icon-button constraints or padding;
+/// `bodySmall`; any change to `kLiveActionTouchTarget` or the icon-button
+/// padding (that is exactly what invalidated the first measurement);
 /// any change to the Card's `12`/`8` (horizontal/vertical) padding or its
 /// `4`/`4` margin. Re-measure with `measure_card_fill.py` against a fresh
 /// screenshot — never against `flutter test`.
-const double kCompactLiveMinHeight = 84.0;
+const double kCompactLiveMinHeight = 88.0;
 
 /// The now-line overlay's own box height — the 2dp rule and its time chip
 /// are vertically centred inside a box this tall, so they land exactly on
