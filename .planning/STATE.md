@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: none
 milestone_name: milestone
 status: executing
-stopped_at: Completed 28-01-PLAN.md — 16/16 pinned RED failures proven, 2 guards green, zero lib/ touched
-last_updated: "2026-08-19T12:35:49.103Z"
+stopped_at: Completed 28-02-PLAN.md -- D-06 break-pair proven RED (4/4 tests), zero lib/ touched
+last_updated: "2026-08-19T12:43:39.710Z"
 last_activity: 2026-08-19 -- Phase 28 execution started
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
   percent: 50
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-19T12:35:49.098Z
+**Last session:** 2026-08-19T12:43:39.704Z
 
 ---
 
 ## Current Position
 
 Phase: 28 (The Day Is a Lattice) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 shorter day) passed as shipped; items 1 and 2 failed and were fixed in `419aa7b` — Complete/Skip
 raised 36→44dp, and the live row now paints above the now-line so the rule stops at the card's
 edges instead of striking through its text. Both fixes re-verified in a real browser
@@ -184,6 +184,7 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 27-04]: measure_hours.py prints UNIFORM (240.0/240.0, no 132.0 spread) against the build containing the measured constant, for both a live work chunk and a live break -- GRID-01 proven end-to-end in pixels, not just arithmetic
 - [Phase 27-04]: Plan 27-04 Task 3 (human-verify checkpoint: 36dp touch targets on a real device, now-line legibility, uniform grid) is PENDING as of 2026-08-18 -- Tasks 1-2 committed (1ca4204, 7d0a1e6), 27-04-SUMMARY.md documents the paused state; do not treat this plan or Phase 27 as complete until a human verdict is recorded
 - [Phase 28-01]: Corrected the plan's commitment-block-chunking assumption (45-min window emits ONE anchored chunk stretched over the window, not two of 25+20) via empirical verification; re-derived the D-01 GUARD and narrow-slot fallback fixtures accordingly
+- [Phase 28-02]: Task 2's render test uses testWidgets(), not test() -- required for tester.pumpWidget(); this makes the plan's own grep-based acceptance criterion (expects 4 'test(' lines) structurally unsatisfiable while remaining correct, documented as a plan-authoring inconsistency rather than distorted to fit
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -267,7 +268,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-18
-Stopped at: Completed 28-01-PLAN.md — 16/16 pinned RED failures proven, 2 guards green, zero lib/ touched
+Stopped at: Completed 28-02-PLAN.md -- D-06 break-pair proven RED (4/4 tests), zero lib/ touched
 (`1ca4204` measure+set `kCompactLiveMinHeight`, `7d0a1e6` prove GRID-01 `UNIFORM`).
 Resume at: open `http://danserver:8137/` on a phone/tablet, walk `27-04-SUMMARY.md`'s "Task 3"
 section, record the verdict, then finalize the summary and close Phase 27.
@@ -322,3 +323,4 @@ section, record the verdict, then finalize the summary and close Phase 27.
 | Phase 27-true-grid P03 | ~35min | 2 tasks | 2 files |
 | Phase 27-true-grid P04 | ~55min (Tasks 1-2; Task 3 pending) | 2/3 tasks | 1 file modified, 7 created |
 | Phase 28-the-day-is-a-lattice P01 | ~15min | 2 tasks | 2 files |
+| Phase 28-the-day-is-a-lattice P02 | ~8min | 2 tasks | 2 files |

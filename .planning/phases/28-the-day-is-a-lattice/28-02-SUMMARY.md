@@ -132,6 +132,7 @@ None - no external service configuration required.
 
 - FOUND: `test/screens/lattice_break_pair_test.dart`
 - FOUND: `.planning/phases/28-the-day-is-a-lattice/28-RED-d06.txt`
+- FOUND: `.planning/phases/28-the-day-is-a-lattice/28-02-SUMMARY.md`
 - FOUND: commit `8731d0f` (Task 1)
 - FOUND: commit `1478580` (Task 2)
 
