@@ -282,11 +282,17 @@ which — do not let it fall out of the packing loop by accident.
 break after every N work chunks, N from morning mood, never silently suppressed)
 **Depends on:** nothing in Phase 27 — this is `schedule_generator.dart`, a different file. Can be
 planned immediately.
-**Plans:** 0 plans
+**Plans:** 3 plans in 2 waves
 
 Plans:
 
-- [ ] TBD (run `/gsd-plan-phase 28` to break down)
+- [ ] 28-01-PLAN.md — Rewrite the 10 blast-radius tests and add the LATTICE-01/LATTICE-02/D-04
+      assertion groups (incl. the owner's-day regression); prove every one RED against the unfixed
+      engine (wave 1, test file only)
+- [ ] 28-02-PLAN.md — D-06 downstream cardinality proof: the short+long break pair through
+      `buildTimeline`, `TimelineGeometry` and the row widgets; also proven RED (wave 1, new test file)
+- [ ] 28-03-PLAN.md — The engine fix: footprint-encoded break reservation, one-or-two break decode,
+      short-break-only trim, lattice-aligned slot starts; then the phase gate (wave 2)
 
 **Verification note.** Unlike Phase 27, this one *is* fully testable in `flutter test` — it is
 integer arithmetic over minutes with no glyph metrics anywhere near it. The assertion that matters:
