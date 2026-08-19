@@ -17,11 +17,28 @@
 
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
+import 'package:canopy/providers/schedule_notifier.dart';
+import 'package:canopy/screens/schedule/widgets/chunk_card.dart';
 import 'package:canopy/screens/today/now_state.dart';
 import 'package:canopy/screens/today/timeline.dart';
 import 'package:canopy/screens/today/timeline_geometry.dart';
+import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
 import 'package:canopy/services/schedule_generator.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+
+import '../test_helpers/mood_pump.dart';
+
+// ─── Fakes (per-file convention — see today_row_widgets_test.dart) ─────────
+
+/// Stubs `init()` to avoid Hive I/O — this file never touches persistence,
+/// it only needs a `ScheduleNotifier` instance to satisfy `ChunkCard`'s
+/// `context.read<ScheduleNotifier>()` call inside its action row.
+class _FakeScheduleNotifier extends ScheduleNotifier {
+  @override
+  Future<void> init() async {}
+}
 
 // ─── Fixture ────────────────────────────────────────────────────────────
 
@@ -210,6 +227,76 @@ void main() {
           reason: 'a 30-minute break row must render taller than a '
               '5-minute one',
         );
+      },
+    );
+  });
+
+  group('D-06: the pair renders', () {
+    testWidgets(
+      'D-06: a 5-minute break card and a 30-minute break card render '
+      'adjacently without throwing',
+      (tester) async {
+        final day = _latticeDay();
+        final pairIndex = _firstBreakPairIndex(day);
+        expect(
+          pairIndex,
+          greaterThanOrEqualTo(0),
+          reason:
+              'no shortBreak->longBreak adjacency found in the generated '
+              'day — cannot render a pair that does not exist. This is a '
+              '30-minute longBreak size no downstream widget has ever been '
+              'handed.',
+        );
+
+        final shortBreak = day[pairIndex];
+        final longBreak = day[pairIndex + 1];
+
+        final firstStart = day.first.displayStartMinutes!;
+        final lastChunk = day.last;
+        final lastEnd =
+            lastChunk.displayStartMinutes! + lastChunk.durationMinutes;
+        final geometry = TimelineGeometry.forDay(
+          nowMinutes: firstStart,
+          firstStartMinutes: firstStart,
+          lastEndMinutes: lastEnd,
+        );
+
+        await pumpWithMood(
+          tester,
+          Column(
+            children: [
+              SizedBox(
+                height: geometry.heightFor(
+                  shortBreak.displayStartMinutes!,
+                  shortBreak.durationMinutes,
+                ),
+                child: TimelineRowTile(child: ChunkCard(chunk: shortBreak)),
+              ),
+              SizedBox(
+                height: geometry.heightFor(
+                  longBreak.displayStartMinutes!,
+                  longBreak.durationMinutes,
+                ),
+                child: TimelineRowTile(child: ChunkCard(chunk: longBreak)),
+              ),
+            ],
+          ),
+          extraProviders: [
+            ChangeNotifierProvider<ScheduleNotifier>.value(
+              value: _FakeScheduleNotifier(),
+            ),
+          ],
+        );
+        await tester.pump();
+
+        // "Renders fine" is unverifiable unless checked: no thrown
+        // exception (a RenderFlex overflow surfaces through
+        // takeException()), and exactly two ChunkCards present. No
+        // assertion on text width, glyph metric, or label layout — the
+        // harness's placeholder font inflates those (STATE.md carry-forward
+        // invariant).
+        expect(tester.takeException(), isNull);
+        expect(find.byType(ChunkCard), findsNWidgets(2));
       },
     );
   });
