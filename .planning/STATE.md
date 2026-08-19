@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: none
 milestone_name: milestone
-status: v1.5 shipped and archived. Phase 27 (True Grid) COMPLETE 2026-08-19, UAT closed. Phase 28
-stopped_at: Phase 27 closed; Phase 28 (The Day Is a Lattice) added, needs /gsd-plan-phase 28
-last_updated: "2026-08-19T12:00:00.000Z"
-last_activity: 2026-08-19
+status: v1.5 shipped and archived. Phases 27 and 28 both sit outside any milestone — owner's call
+stopped_at: "27-04-PLAN.md Task 3 — `checkpoint:human-verify`, PENDING. Tasks 1-2 committed"
+last_updated: "2026-08-19T12:17:50.787Z"
+last_activity: 2026-08-19 -- Phase 28 planning complete
 progress:
   total_phases: 2
   completed_phases: 1
@@ -36,7 +36,7 @@ Next: Phase 28 — The Day Is a Lattice. Raised by the owner in the same UAT ("t
 isn't functioning right"). Engine-side, not UI. Not started — needs `/gsd-plan-phase 28`.
 Status: v1.5 shipped and archived. Phases 27 and 28 both sit outside any milestone — owner's call
 was standalone phases rather than opening v1.6.
-Last activity: 2026-08-19
+Last activity: 2026-08-19 -- Phase 28 planning complete
 
 ```
 v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  Phase 27 ✅  →  Phase 28 (standalone)  →  v1.6 not yet defined

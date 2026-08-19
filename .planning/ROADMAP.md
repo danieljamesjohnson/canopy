@@ -252,11 +252,13 @@ misses:
 
 1. **The long break is 25 minutes, not 30.** `_assignSyntheticStartTimes` sets
    `breakDur = isLong ? 25 : 5`.
+
 2. **The long break REPLACES the short break instead of following it.** Each work chunk carries one
    `reservedBreakMinutes` — either 5 or 25, never both. So a cycle at N=4 is
    `4×25 + 3×5 + 25` = **140 minutes**, which is off-lattice and drifts the whole rest of the day
    off :00/:30. Under the owner's model the Nth chunk still closes its own 30-minute cell with a
    5-minute break, and the 30-minute break is a cell of its own.
+
 3. **The long break is silently suppressed when it would land last.** The reservation is only
    recorded when `discIdx + 1 < discretionaryChunks.length`. At mood 3 (N=4) with a 4-chunk day —
    the exact day the owner was looking at — the long break falls after chunk 4, is dropped, and
@@ -283,14 +285,15 @@ break after every N work chunks, N from morning mood, never silently suppressed)
 **Depends on:** nothing in Phase 27 — this is `schedule_generator.dart`, a different file. Can be
 planned immediately.
 **Plans:** 3 plans in 2 waves
-
 Plans:
 
 - [ ] 28-01-PLAN.md — Rewrite the 10 blast-radius tests and add the LATTICE-01/LATTICE-02/D-04
       assertion groups (incl. the owner's-day regression); prove every one RED against the unfixed
       engine (wave 1, test file only)
+
 - [ ] 28-02-PLAN.md — D-06 downstream cardinality proof: the short+long break pair through
       `buildTimeline`, `TimelineGeometry` and the row widgets; also proven RED (wave 1, new test file)
+
 - [ ] 28-03-PLAN.md — The engine fix: footprint-encoded break reservation, one-or-two break decode,
       short-break-only trim, lattice-aligned slot starts; then the phase gate (wave 2)
 
