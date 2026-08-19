@@ -103,7 +103,7 @@ Neither of these belongs to a milestone — the owner's call (2026-08-18, restat
 standalone phases rather than opening v1.6. Detail for each follows below.
 
 - [x] Phase 27: True Grid (4/4 plans) — GRID-01, GRID-02 — complete 2026-08-19
-- [ ] Phase 28: The Day Is a Lattice — LATTICE-01, LATTICE-02
+- [x] Phase 28: The Day Is a Lattice — LATTICE-01, LATTICE-02 (completed 2026-08-19)
 
 ### Phase 27: True Grid
 
@@ -284,7 +284,7 @@ which — do not let it fall out of the packing loop by accident.
 break after every N work chunks, N from morning mood, never silently suppressed)
 **Depends on:** nothing in Phase 27 — this is `schedule_generator.dart`, a different file. Can be
 planned immediately.
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 
 - [x] 28-01-PLAN.md — Rewrite the 10 blast-radius tests and add the LATTICE-01/LATTICE-02/D-04
@@ -294,7 +294,7 @@ Plans:
 - [x] 28-02-PLAN.md — D-06 downstream cardinality proof: the short+long break pair through
       `buildTimeline`, `TimelineGeometry` and the row widgets; also proven RED (wave 1, new test file)
 
-- [ ] 28-03-PLAN.md — The engine fix: footprint-encoded break reservation, one-or-two break decode,
+- [x] 28-03-PLAN.md — The engine fix: footprint-encoded break reservation, one-or-two break decode,
       short-break-only trim, lattice-aligned slot starts; then the phase gate (wave 2)
 
 **Verification note.** Unlike Phase 27, this one *is* fully testable in `flutter test` — it is
@@ -318,4 +318,4 @@ which is a genuine difference from Phase 27 and worth stating so nobody copies t
 | 20. Valence-Aware Engine | v1.4 | 2/2 | Complete   | 2026-06-15 |
 | 21-26 (Right Now) | v1.5 | 28/28 | Complete   | 2026-08-14 |
 | 27. True Grid | — (standalone) | 4/4 | Complete | 2026-08-19 |
-| 28. The Day Is a Lattice | — (standalone) | 2/3 | In Progress|  |
+| 28. The Day Is a Lattice | — (standalone) | 3/3 | Complete   | 2026-08-19 |
