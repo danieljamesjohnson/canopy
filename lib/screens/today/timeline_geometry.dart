@@ -76,43 +76,82 @@ const double kFullTierMinHeight = 88.0;
 /// **PD-3.** `88.0` = the measured 80px long-break content height plus
 /// slack, expressed in pixel slot height rather than minutes, for the same
 /// rot-resistance reason as [kFullTierMinHeight].
-const double kFullBreakMinHeight =
-    999.0; // THROWAWAY — 29-03 measurement only, reverted in Task 2
+const double kFullBreakMinHeight = 88.0;
 
-/// **UNMEASURED PLACEHOLDER (PD-29-02).** The slot height at or above which
+/// **MEASURED (2026-08-20, plan 29-03).** The slot height at or above which
 /// the *existing, unchanged* `compact` break tier's own natural height fits
-/// without clipping; below it, the new `subCompact` tier (Phase 29,
-/// SEEBREAK-01) renders instead. This is **not** a measurement of the
-/// `subCompact` tier's own height — that tier is designed to fit comfortably
-/// under any plausible break slot, including the smallest, 20dp — it is a
-/// measurement of where `compact` (margin 8dp + padding 0dp + one
-/// `bodySmall` line, unchanged by this phase) stops fitting.
-/// (`29-UI-SPEC.md` § "The threshold constant and where it lives".)
+/// without clipping; below it, the `subCompact` tier (Phase 29, SEEBREAK-01)
+/// renders instead. This is **not** a measurement of the `subCompact` tier's
+/// own height — that tier is designed to fit comfortably under any plausible
+/// break slot, including the smallest, 20dp — it is a measurement of where
+/// `compact` (margin 8dp + padding 0dp + one `bodySmall` line, unchanged by
+/// this phase) stops fitting.
 ///
-/// `24.0` is the ROADMAP's own estimate ("below a measured threshold
-/// (~24dp)"), corroborated by `29-UI-SPEC.md`'s root-cause arithmetic (the
-/// `compact` tier's own 8dp vertical margin it never zeroed, plus one
-/// real-device `bodySmall` line, which typically runs ~14–18dp at default
-/// text scale) — **it is not a measurement.** Plan `29-03` replaces both
-/// this number and this entire comment with a real-browser measurement,
-/// following the same recipe class [kCompactLiveMinHeight] used in
-/// plan 27-04.
+/// **Method:** headless Chromium (`--use-gl=swiftshader
+/// --enable-unsafe-swiftshader`), viewport `430`×930 at DPR 1 (screenshot px
+/// = logical px), debug build (`flutter build web --debug --source-maps
+/// --pwa-strategy=none`) served through `tools/serve-uat.py` on port `8143`,
+/// pixel-counted via `.planning/phases/29-breaks-you-can-see/tools/
+/// measure_card_extent.py` against `.planning/phases/29-breaks-you-can-see/
+/// shots/compact-long-break-forced.png`.
+///
+/// **How the compact tier was made to render at all.** It is unreachable
+/// under Phase 28's lattice — a 5-minute break's slot is 20dp, a 30-minute
+/// break's slot is 120dp, nothing lands in between — so it was forced by
+/// temporarily raising [kFullBreakMinHeight] to `999.0` (a one-line labelled
+/// forcing edit, reverted before this comment was written) and measuring a
+/// **long** break in its 120dp slot. That works because the
+/// compact break card's height does not depend on which break it is:
+/// `_buildBreak`'s compact branch renders one `bodySmall` line inside a
+/// dashed box with zero vertical padding, and `'Long break'`/`'Short break'`
+/// are both single lines in the same style — nothing that differs between
+/// them occupies vertical space. A short break's 20dp slot would have
+/// clipped the very card being measured, which is the phase's whole defect,
+/// so only the long break's 120dp slot makes the measurement possible at
+/// all. A future reader reproducing this measurement needs the same trick.
+///
+/// **Arithmetic:** raw measured ink extent **22px** (band rows 595..616,
+/// isolated from the neighbouring "Short break" divider by a bounded scan
+/// window) **+ 8.0px** explicit margin for the compact card's own
+/// `margin: EdgeInsets.symmetric(vertical: 4)` (invisible to a pixel scan —
+/// margin paints nothing — but real vertical space the slot must still
+/// reserve; omitting it would reproduce, under a new name, the exact "8dp of
+/// margin nobody zeroed" miss `29-UI-SPEC.md` § "Root cause" already
+/// diagnosed for why the compact tier never fit) **= 30.0**, then **rounded
+/// UP** to the nearest 4dp (a "does it fit" threshold rounds toward the
+/// safer larger value, per `29-UI-SPEC.md` step 8, rather than stacking a
+/// second safety margin on top of a rounding step) **= 32.0**.
+///
+/// **Relationship to numerically-close siblings (Pitfall 3,
+/// `29-RESEARCH.md`).** `32.0` is 56dp from [kFullTierMinHeight] /
+/// [kFullBreakMinHeight] / [kCompactLiveMinHeight] (all `88.0`) — not close.
+/// It is **4dp from [kNowLineHeight] (`28.0`)** — inside the "within ~4dp,
+/// decide explicitly" trigger. Decision: **kept separate, not collapsed.**
+/// [kNowLineHeight] is the now-line overlay's own fixed box height (an
+/// always-present UI chrome element, unrelated to any chunk's content); this
+/// constant is a break-card density-selection threshold compared against a
+/// chunk's *slot* height. They share no widget, no content, and no reason to
+/// move together — the 4dp gap is coincidence between two independently
+/// derived numbers, not a shared cause. It is 12dp from [kHourAxisHeight]
+/// (`20.0`) — not close.
 ///
 /// **Do not derive this from `flutter test`.** This file already carries a
 /// three-strikes history of constants that were wrong when set from that
 /// harness's placeholder-font measurements: `kGutterWidth`
 /// (`timeline_row_tile.dart`) went 46 → 75 → 52; [kPixelsPerMinute] went
-/// 4.0 → 5.5 → 4.0; [kCompactLiveMinHeight] went 88.0 (its own UNMEASURED
-/// PLACEHOLDER) → 84.0 (first real-browser measurement) → 88.0 (re-measured
-/// after a touch-target UAT finding raised its action row) — see that
-/// constant's own doc comment below for the full history. A fourth would be
-/// a pattern, not a one-off.
+/// 4.0 → 5.5 → 4.0; [kCompactLiveMinHeight] went 88.0 (its own initial
+/// unmeasured estimate) → 84.0 (first real-browser measurement) → 88.0
+/// (re-measured after a touch-target UAT finding raised its action row) —
+/// see that constant's own doc comment below for the full history. This is
+/// the fourth measurement taken by this recipe class, not the first, and the
+/// method is unchanged.
 ///
 /// **What would invalidate this value:** any change to the `compact` break
-/// tier's own margin, padding, border stroke, or `bodySmall` typography; any
-/// global text-scale change. Re-measure with the real-browser recipe
-/// `29-UI-SPEC.md` documents — never from `flutter test`.
-const double kSubCompactBreakMinHeight = 24.0;
+/// tier's own margin, padding, dashed-border stroke, or `bodySmall`
+/// typography; any global text-scale change. Re-measure with
+/// `measure_card_extent.py` against a fresh screenshot — never from
+/// `flutter test`.
+const double kSubCompactBreakMinHeight = 32.0;
 
 /// **MEASURED (2026-08-18, plan 27-04).** The slot height at or above which
 /// `LiveRowCard`'s compact tier fits; below it the single-line tier is used
