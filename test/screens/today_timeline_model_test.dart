@@ -475,5 +475,29 @@ void main() {
         );
       }
     });
+
+    test(
+        'SEEBREAK-02: heightFor returns the ground-truth pixel height for '
+        'every break duration the lattice emits', () {
+      // GUARD — green before and after the wiring (heightFor is pure
+      // arithmetic on already-known ints; it has no idea what density a
+      // widget renders at, so it cannot see a widget that overflows its box
+      // and gets clipped). Not sufficient alone: the paired proofs are the
+      // rendered-ClipRect assertion in today_screen_test.dart and 29-04's
+      // measure_hours.py UNIFORM run against a real screenshot (the painted
+      // grid). Expected values are bare double literals, per this file's
+      // own GRID-01 test's discipline: they must NOT re-derive any
+      // implementation-internal quantity (kPixelsPerMinute included), or
+      // this test inherits the same self-referential blindness.
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: 550,
+        firstStartMinutes: 480,
+        lastEndMinutes: 1020,
+      );
+      // Phase 28's lattice emits exactly two break durations: a 5-minute
+      // short break and a 30-minute long break.
+      expect(geometry.heightFor(540, 5), 20.0);
+      expect(geometry.heightFor(600, 30), 120.0);
+    });
   });
 }

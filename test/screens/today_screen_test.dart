@@ -2224,4 +2224,153 @@ void main() {
       },
     );
   });
+
+  group('Phase 29 — SEEBREAK: breaks you can see', () {
+    // Fixture shape mirrors the CAL-01 group's day-complete pattern above: a
+    // completed 8:00 work chunk, a short break at 8:25 whose duration is the
+    // parameter under test, and a following unresolved work chunk — pumped
+    // at 18:00 (DayComplete) so nothing is live and the break renders
+    // through ChunkCard, not LiveRowCard.
+    DailySchedule breakBoundaryFixture(int breakDurationMinutes) {
+      return DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: [
+          _workChunk(id: 'w1', syntheticStartMinutes: 480, isCompleted: true),
+          _breakChunk(
+            id: 'b1',
+            syntheticStartMinutes: 505,
+            durationMinutes: breakDurationMinutes,
+          ),
+          _workChunk(id: 'w2', syntheticStartMinutes: 505 + breakDurationMinutes),
+        ],
+      );
+    }
+
+    testWidgets(
+      'SEEBREAK-01 tier boundary: a break slot below '
+      'kSubCompactBreakMinHeight renders sub-compact; at the threshold it '
+      'renders compact',
+      (tester) async {
+        // Derived from the constant, not hardcoded, so this test survives
+        // 29-03's real-browser measurement instead of being invalidated by
+        // it. At today's UNMEASURED PLACEHOLDER (24.0 / 4.0 px-per-minute)
+        // this is 6 and 5.
+        final atMinutes = (kSubCompactBreakMinHeight / kPixelsPerMinute)
+            .ceil();
+        final belowMinutes = atMinutes - 1;
+
+        // Vacuity guards: announce it rather than pass hollowly if a future
+        // measurement moves kSubCompactBreakMinHeight out from under this
+        // fixture's assumptions.
+        expect(
+          belowMinutes,
+          greaterThanOrEqualTo(1),
+          reason:
+              'belowMinutes must be a real, positive break duration — a '
+              'derived value below 1 means kSubCompactBreakMinHeight moved '
+              'below one minute worth of pixels and this fixture is no '
+              'longer constructible',
+        );
+        expect(
+          belowMinutes * kPixelsPerMinute,
+          lessThan(kSubCompactBreakMinHeight),
+          reason:
+              'belowMinutes must actually land below the threshold, or this '
+              'test compares two densities that are both sub-compact — '
+              'vacuously true',
+        );
+        expect(
+          atMinutes * kPixelsPerMinute,
+          greaterThanOrEqualTo(kSubCompactBreakMinHeight),
+          reason:
+              'atMinutes must actually land at/above the threshold, or this '
+              'test compares two densities that are both sub-compact — '
+              'vacuously true',
+        );
+        expect(
+          atMinutes * kPixelsPerMinute,
+          lessThan(kFullBreakMinHeight),
+          reason:
+              'atMinutes must stay below kFullBreakMinHeight, or the "at '
+              'threshold" case renders full (not compact) and this test '
+              'asserts the wrong flip',
+        );
+
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(
+            breakBoundaryFixture(belowMinutes),
+          ),
+          now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
+        );
+        // grep -rn "Divider" lib/screens/today/
+        // lib/screens/schedule/widgets/chunk_card.dart returned nothing
+        // before this phase's scaffold, so any Divider a pumped TodayScreen
+        // renders comes from _SubCompactRow.
+        expect(
+          find.byType(Divider),
+          findsNWidgets(2),
+          reason: 'below the threshold the break must render sub-compact — '
+              'two Dividers',
+        );
+
+        // TodayScreenState._nowFn is late final, set once in initState — a
+        // second pumpWidget with a different clock is silently ignored
+        // without a full unmount first. Both pumps in this test use the
+        // same clock (18:00), so this unmount is not load-bearing here, but
+        // stated per the plan's own note.
+        await tester.pumpWidget(const SizedBox.shrink());
+
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(
+            breakBoundaryFixture(atMinutes),
+          ),
+          now: () => DateTime(2026, 8, 7, 18, 0),
+        );
+        expect(
+          find.byType(Divider),
+          findsNothing,
+          reason: 'at the threshold the break must render compact — no '
+              'Divider',
+        );
+      },
+    );
+
+    testWidgets(
+      'SEEBREAK-02: a 5-minute break occupies exactly 20.0dp of slot at '
+      'sub-compact density',
+      (tester) async {
+        // Canary: if this fails, the measured threshold has dropped below a
+        // 5-minute break's own slot, the short break renders compact again,
+        // and the phase's premise ("breaks you can see") is broken.
+        expect(
+          5 * kPixelsPerMinute,
+          lessThan(kSubCompactBreakMinHeight),
+          reason:
+              'a 5-minute break must still land below '
+              'kSubCompactBreakMinHeight for this GUARD to mean anything',
+        );
+
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(
+            breakBoundaryFixture(5),
+          ),
+          now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
+        );
+
+        // D-05 in its most direct form: five minutes is twenty pixels. A
+        // literal, not 5 * kPixelsPerMinute re-derived.
+        final breakClipRect = find
+            .ancestor(
+              of: find.text('Short break'),
+              matching: find.byType(ClipRect),
+            )
+            .first;
+        expect(tester.getSize(breakClipRect).height, 20.0);
+      },
+    );
+  });
 }
