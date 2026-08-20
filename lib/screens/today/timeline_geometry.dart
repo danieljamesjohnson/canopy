@@ -53,6 +53,22 @@ import '../../utils/time_format.dart';
 /// `kGutterWidth` 46 → 75 → 52. Any change to `ChunkCard`'s `full` tier
 /// content or typography invalidates this pairing; re-measure, then re-derive
 /// this and [kFullTierMinHeight] together.
+///
+/// **Re-confirmed 2026-08-20 (plan 29-04, ROADMAP item 4 / D-06).** SEED-005
+/// had flagged a 25-minute work chunk clipping 26dp inside its 100dp slot
+/// (126dp natural vs. 100dp slot) — that figure came from `flutter test`'s
+/// placeholder font. Re-measured in a real browser, same recipe as above: a
+/// non-live "Side project, 9:00 AM – 9:25 AM" `full`-tier card, headless
+/// Chromium, debug build on port `8143`, pixel-counted with
+/// `.planning/phases/29-breaks-you-can-see/tools/measure_card_extent.py`
+/// against `.planning/phases/29-breaks-you-can-see/shots/work-chunk-fit.png`.
+/// **Measured ink extent: 90px** (band rows 513..602, the card's own outline
+/// border top-to-bottom), inside its 100px slot (screenshot rows ~517..617)
+/// with the bottom border band ending at row 602 — comfortably above the
+/// slot's last row, not clipped. **Verdict: DISMISSED (harness artifact)** —
+/// SEED-005's 126dp was the `flutter test` placeholder-font bound its own
+/// caveat said it was, not a real on-device defect. No code change made;
+/// this constant and the slot height are unchanged (D-03).
 const double kPixelsPerMinute = 4.0;
 
 /// Full-tier density threshold for a work-chunk row, expressed in pixels
