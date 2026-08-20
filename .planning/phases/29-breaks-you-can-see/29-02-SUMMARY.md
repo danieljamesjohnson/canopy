@@ -134,3 +134,12 @@ Wave 3 (plan `29-03`) can now replace `kSubCompactBreakMinHeight`'s UNMEASURED P
 ---
 *Phase: 29-breaks-you-can-see*
 *Completed: 2026-08-20*
+
+## Self-Check: PASSED
+
+- FOUND: `lib/screens/schedule/widgets/chunk_card.dart`
+- FOUND: `lib/screens/today/today_screen.dart`
+- FOUND: `.planning/phases/29-breaks-you-can-see/29-GREEN-final.txt`
+- FOUND: `.planning/phases/29-breaks-you-can-see/29-02-SUMMARY.md`
+- FOUND commit: `9a6ae15` (Task 1)
+- FOUND commit: `585b95c` (Task 2)
