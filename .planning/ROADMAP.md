@@ -426,11 +426,14 @@ with no clipped content), SEEBREAK-02 (the true grid is preserved — rendered h
 from `durationMinutes × kPixelsPerMinute`)
 **Depends on:** Phase 27 (owns `TimelineGeometry`, the density-tier pattern, and GRID-01, which
 SEEBREAK-02 exists to protect). Nothing in Phase 28.
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
 
-- [ ] TBD (run `/gsd-plan-phase 29` to break down)
+- [ ] 29-01-PLAN.md — The tests, proven RED, plus the inert `subCompact` scaffold that lets them compile
+- [ ] 29-02-PLAN.md — Wire the tier (`_buildBreak` branch + three-band ternary); RED→GREEN from `lib/` alone
+- [ ] 29-03-PLAN.md — Measure `kSubCompactBreakMinHeight` in a real browser on port 8143; commit the pixel-count script
+- [ ] 29-04-PLAN.md — Prove `UNIFORM` in pixels, settle the work card's 26dp overflow, and the closing human UAT checkpoint
 
 ## Progress
 
@@ -448,4 +451,4 @@ Plans:
 | 21-26 (Right Now) | v1.5 | 28/28 | Complete   | 2026-08-14 |
 | 27. True Grid | — (standalone) | 4/4 | Complete | 2026-08-19 |
 | 28. The Day Is a Lattice | — (standalone) | 3/3 | Complete   | 2026-08-19 |
-| 29. Breaks You Can See | — (standalone) | 0/? | Not Started |  |
+| 29. Breaks You Can See | — (standalone) | 0/4 | Planned | |
