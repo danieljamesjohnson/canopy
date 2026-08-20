@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: none
 milestone_name: milestone
 status: executing
-stopped_at: Completed 29-02-PLAN.md — sub-compact tier wired, 5 RED-PROOF tests confirmed GREEN by name, 587 total green, analyze clean
-last_updated: "2026-08-20T13:36:20.453Z"
+stopped_at: Completed 29-03-PLAN.md — kSubCompactBreakMinHeight measured in a real browser (32.0), port 8143 claimed, measure_card_extent.py committed, 587 tests green
+last_updated: "2026-08-20T13:47:48.548Z"
 last_activity: 2026-08-20 -- Phase 29 execution started
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
   percent: 67
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-20T13:36:20.448Z
+**Last session:** 2026-08-20T13:47:48.543Z
 
 ---
 
 ## Current Position
 
 Phase: 29 (Breaks You Can See) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 The day is now a 30-minute lattice: 25 minutes of work + 5 minutes of break per cell, and after
 every N work cells a full 30-minute break in a cell of its own. N still comes once from the morning
@@ -213,6 +213,7 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 29-01]: Corrected kCompactLiveMinHeight's cited three-strikes history from an unverifiable 60→84→88 to the git-verified 88.0 (UNMEASURED PLACEHOLDER) → 84.0 (first measurement) → 88.0 (re-measured after UAT) in kSubCompactBreakMinHeight's new doc comment
 - [Phase 29-01]: _SubCompactRow's two Dividers written as separate inline literals (not a shared variable) so both the plan's height:1/thickness:1 grep criteria and 29-UI-SPEC.md's widget tree are matched exactly
 - [Phase 29-02]: Task 1's kFullTierMinHeight-in-diff acceptance criterion needed correction, not the code — default git diff context pulls the unchanged work-branch line into the same hunk as the edit; git diff -U0 confirms the work branch is byte-identical
+- [Phase 29-03]: kSubCompactBreakMinHeight measured in a real browser and set to 32.0 (22px raw ink extent + 8.0px explicit margin, rounded up to nearest 4dp), replacing the 24.0 estimate; kept separate from kNowLineHeight (28.0, 4dp apart) as an explicit coincidental-proximity decision
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -296,7 +297,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-18
-Stopped at: Completed 29-02-PLAN.md — sub-compact tier wired, 5 RED-PROOF tests confirmed GREEN by name, 587 total green, analyze clean
+Stopped at: Completed 29-03-PLAN.md — kSubCompactBreakMinHeight measured in a real browser (32.0), port 8143 claimed, measure_card_extent.py committed, 587 tests green
 (`1ca4204` measure+set `kCompactLiveMinHeight`, `7d0a1e6` prove GRID-01 `UNIFORM`).
 Resume at: open `http://danserver:8137/` on a phone/tablet, walk `27-04-SUMMARY.md`'s "Task 3"
 section, record the verdict, then finalize the summary and close Phase 27.
@@ -355,3 +356,4 @@ section, record the verdict, then finalize the summary and close Phase 27.
 | Phase 28-the-day-is-a-lattice PP03 | ~8min | 3 tasks | 2 files |
 | Phase 29-breaks-you-can-see P01 | ~20min | 3 tasks | 5 files |
 | Phase 29-breaks-you-can-see P02 | ~15min | 2 tasks | 3 files |
+| Phase 29-breaks-you-can-see P03 | ~35min | 2 tasks | 3 files |

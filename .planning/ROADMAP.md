@@ -432,7 +432,7 @@ with no clipped content), SEEBREAK-02 (the true grid is preserved — rendered h
 from `durationMinutes × kPixelsPerMinute`)
 **Depends on:** Phase 27 (owns `TimelineGeometry`, the density-tier pattern, and GRID-01, which
 SEEBREAK-02 exists to protect). Nothing in Phase 28.
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 Plans:
 **Wave 1**
 
@@ -444,7 +444,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 29-03-PLAN.md — Measure `kSubCompactBreakMinHeight` in a real browser on port 8143; commit the pixel-count script
+- [x] 29-03-PLAN.md — Measure `kSubCompactBreakMinHeight` in a real browser on port 8143; commit the pixel-count script
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -466,4 +466,4 @@ Plans:
 | 21-26 (Right Now) | v1.5 | 28/28 | Complete   | 2026-08-14 |
 | 27. True Grid | — (standalone) | 4/4 | Complete | 2026-08-19 |
 | 28. The Day Is a Lattice | — (standalone) | 3/3 | Complete   | 2026-08-19 |
-| 29. Breaks You Can See | — (standalone) | 2/4 | In Progress|  |
+| 29. Breaks You Can See | — (standalone) | 3/4 | In Progress|  |
