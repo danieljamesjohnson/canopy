@@ -151,11 +151,16 @@ class ChunkCard extends StatelessWidget {
     // Phase 29 (SEEBREAK-01): this `if`-chain gets NO compiler exhaustiveness
     // protection (unlike the two density-keyed switch expressions in
     // `_WorkChunkContent` below), so a missing `subCompact` branch here fails
-    // silently rather than at compile time (RESEARCH.md Pitfall 1). Plan
-    // `29-01` deliberately leaves this branch chain untouched — no case here
-    // checks `ChunkCardDensity.subCompact` yet, so a break card built at that
-    // density falls through to the detailed/full treatment below unchanged.
-    // Plan `29-02` adds the `subCompact` branch, checked before `compact`.
+    // silently rather than at compile time (RESEARCH.md Pitfall 1). This
+    // branch MUST stay above the `compact` check below — reordering them (or
+    // deleting this branch) makes `subCompact` silently fall through to the
+    // detailed/full treatment with no compiler warning.
+    if (density == ChunkCardDensity.subCompact) {
+      return _SubCompactRow(
+        label: title,
+        semanticsLabel: '$title, ${chunk.durationMinutes} min',
+      );
+    }
 
     // Compact tier (density-driven, CAL-01): label only, no leading icon,
     // no duration text, no completed check icon — D-02 forbids inflating the

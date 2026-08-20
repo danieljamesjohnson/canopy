@@ -786,10 +786,20 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         final isBreak =
             chunk.chunkType == ChunkType.shortBreak ||
             chunk.chunkType == ChunkType.longBreak;
+        // Phase 29 (SEEBREAK-01): break rows get a third, lower density band.
+        // Under Phase 28's lattice this is slot-height-driven, not
+        // chunk-type-driven: a 5-minute break (20dp) always lands in
+        // `subCompact`, a 30-minute long break (120dp) always lands in
+        // `full`, and the `compact` band is unreachable at today's two
+        // generated durations — kept because a future cadence change could
+        // reach it. The work branch below is UNCHANGED (byte-identical) —
+        // this phase changes breaks only (29-UI-SPEC.md § Scope boundary).
         final density = isBreak
             ? (slot >= kFullBreakMinHeight
                   ? ChunkCardDensity.full
-                  : ChunkCardDensity.compact)
+                  : slot >= kSubCompactBreakMinHeight
+                  ? ChunkCardDensity.compact
+                  : ChunkCardDensity.subCompact)
             : (slot >= kFullTierMinHeight
                   ? ChunkCardDensity.full
                   : ChunkCardDensity.compact);
