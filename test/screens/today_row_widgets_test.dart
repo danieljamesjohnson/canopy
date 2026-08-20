@@ -127,6 +127,35 @@ Future<void> _pumpChunkCard(
   );
 }
 
+/// Phase 29 (SEEBREAK-01). Pumps [ChunkCard] wrapped in an unbounded-height
+/// `OverflowBox`, mirroring `today_screen.dart`'s production wrapper (lines
+/// ~807-811: `ClipRect` -> `OverflowBox(minHeight: 0, maxHeight:
+/// double.infinity, alignment: topCenter)` -> `TimelineRowTile`).
+///
+/// Required for any height COMPARISON between densities: `pumpWithMood`
+/// alone puts the card in `Scaffold(body:)`, which hands it a **bounded**
+/// maxHeight — the compact tier's `Center` then expands to fill the whole
+/// viewport, so `tester.getSize(find.byType(ChunkCard))` returns the screen
+/// height at every density and any height comparison is silently
+/// meaningless. Unbounded vertical constraints are also what production
+/// actually gives the card, so this helper is the faithful harness, not a
+/// workaround.
+Future<void> _pumpBreakCardUnbounded(
+  WidgetTester tester, {
+  required ChunkCardDensity density,
+  ChunkType type = ChunkType.shortBreak,
+}) async {
+  await pumpWithMood(
+    tester,
+    OverflowBox(
+      minHeight: 0,
+      maxHeight: double.infinity,
+      alignment: Alignment.topCenter,
+      child: ChunkCard(chunk: _breakChunk(type: type), density: density),
+    ),
+  );
+}
+
 void main() {
   group('TimelineRowTile (Phase 26 CAL-01, PD-5: pure inset wrapper)', () {
     testWidgets('still lays out the child', (tester) async {
@@ -627,6 +656,131 @@ void main() {
           expect(find.text('5 min'), findsOneWidget);
         },
       );
+
+      testWidgets(
+        'SEEBREAK-01: sub-compact short break renders two Dividers and the '
+        'label, no dashed border, no duration text',
+        (tester) async {
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak),
+              density: ChunkCardDensity.subCompact,
+            ),
+          );
+          expect(find.text('Short break'), findsOneWidget);
+          expect(find.text('5 min'), findsNothing);
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: find.byType(Divider),
+            ),
+            findsNWidgets(2),
+          );
+          // PD-29-08: do NOT also assert find.byType(Card), findsNothing —
+          // breaks never build a Card at any density, so that assertion
+          // could not fail (STATE.md's "assertion that could not fail"
+          // class).
+          expect(
+            find.byWidgetPredicate(
+              (w) =>
+                  w is CustomPaint &&
+                  w.painter != null &&
+                  w.painter.runtimeType.toString().contains('DashedBorder'),
+            ),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        'SEEBREAK-01: sub-compact short break restates the duration in its '
+        'semantics label',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak),
+              density: ChunkCardDensity.subCompact,
+            ),
+          );
+          expect(
+            find.bySemanticsLabel('Short break, 5 min'),
+            findsOneWidget,
+          );
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'SEEBREAK-01: sub-compact renders shorter than compact for the same '
+        'break',
+        (tester) async {
+          // Relative claim, deliberately (PD-29-06): both numbers come from
+          // the same placeholder-font harness so the bias cancels, whereas
+          // an absolute "fits in 20dp" assertion here would be optimistic —
+          // the harness's line box is fontSize-tall with no real Roboto
+          // ascent/descent, so it would pass while a real device clips.
+          // Absolute fit is 29-04's real-browser job.
+          await _pumpBreakCardUnbounded(
+            tester,
+            density: ChunkCardDensity.compact,
+          );
+          final compactHeight = tester
+              .getSize(find.byType(ChunkCard))
+              .height;
+
+          await _pumpBreakCardUnbounded(
+            tester,
+            density: ChunkCardDensity.subCompact,
+          );
+          final subCompactHeight = tester
+              .getSize(find.byType(ChunkCard))
+              .height;
+
+          expect(
+            subCompactHeight,
+            lessThan(compactHeight),
+            reason:
+                'harness bounds (placeholder font, NOT a device requirement): '
+                'compact=$compactHeight subCompact=$subCompactHeight',
+          );
+        },
+      );
+
+      testWidgets(
+        'SEEBREAK-01 non-vacuity: compact short break still renders the '
+        'dashed painter and no Divider',
+        (tester) async {
+          // GUARD — proves Test 1's finders are not vacuous (a predicate
+          // that matches nothing anywhere would make that test pass for the
+          // wrong reason). Must stay GREEN before and after the wiring.
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak),
+              density: ChunkCardDensity.compact,
+            ),
+          );
+          expect(
+            find.byWidgetPredicate(
+              (w) =>
+                  w is CustomPaint &&
+                  w.painter != null &&
+                  w.painter.runtimeType.toString().contains('DashedBorder'),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: find.byType(Divider),
+            ),
+            findsNothing,
+          );
+        },
+      );
     });
 
     testWidgets(
@@ -647,6 +801,42 @@ void main() {
         );
         expect(find.text('Short break'), findsOneWidget);
         expect(find.text('5 min'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'SEEBREAK-01: SwipeableChunkCard forwards subCompact on the break '
+      'early-return path',
+      (tester) async {
+        // RESEARCH assumption A2 (full-file re-grep, not targeted): `grep -n
+        // "ChunkCardDensity\|density"
+        // lib/screens/schedule/widgets/swipeable_chunk_card.dart` over the
+        // WHOLE file shows two forwarding sites (the break early-return at
+        // ~line 79-81, and the Dismissible's `child: ChunkCard(...)` at
+        // ~line 123-132) — neither branches on a specific density value,
+        // both just forward the `density:` parameter through unmodified.
+        // Confirmed: no source change is needed in that file.
+        await pumpWithMood(
+          tester,
+          SwipeableChunkCard(
+            chunk: _breakChunk(type: ChunkType.shortBreak),
+            density: ChunkCardDensity.subCompact,
+          ),
+          extraProviders: [
+            ChangeNotifierProvider<ScheduleNotifier>.value(
+              value: _FakeScheduleNotifier(),
+            ),
+          ],
+        );
+        expect(find.text('Short break'), findsOneWidget);
+        expect(find.text('5 min'), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(SwipeableChunkCard),
+            matching: find.byType(Divider),
+          ),
+          findsNWidgets(2),
+        );
       },
     );
   });
