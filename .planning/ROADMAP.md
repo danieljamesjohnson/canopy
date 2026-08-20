@@ -381,8 +381,10 @@ Options carried in, cheapest first:
 1. **A sub-compact tier for short chunks** — below a measured threshold (~24dp), render the break as
    a single hairline-with-label rather than a card. Follows Phase 27's own precedent exactly (tiers
    driven by slot height) and keeps the grid exact. **This is the chosen approach.**
+
 2. **Render short breaks as the gap** between work cards, label on tap — cheapest, but loses the
    "you're on a break" affordance the Phase 27 spike explicitly valued when it rejected option (b).
+
 3. **Raise `kPixelsPerMinute`** — at 8.0 a break is 40dp, but this doubles the day's scroll length.
    Phase 27 worked specifically to make the day *shorter* (it bought back 132dp). **Rejected; do not
    revisit without new evidence.**
@@ -391,12 +393,15 @@ Options carried in, cheapest first:
 
 1. A sub-compact density tier for chunks whose slot cannot hold the compact card, applied to the
    **non-live** break/chunk card — the live row already has its own tiers and is out of scope.
+
 2. **Measure the threshold in a real browser, not in `flutter test`.** Decide deliberately what the
    cutoff is and what renders below it, and record the raw number, the method, and the conditions
    that would invalidate it — the doc-comment house style `kCompactLiveMinHeight` already uses.
+
 3. A regression test asserting the grid is still true — no chunk's rendered height deviates from
    `durationMinutes × kPixelsPerMinute`. **This phase must not buy legibility with grid accuracy;
    that trade is what Phase 27 existed to eliminate.**
+
 4. Decide whether the work card's own 26dp overflow (table above) is real on-device or a harness
    artifact, and fix or explicitly dismiss it — do not leave it unexamined.
 
@@ -413,6 +418,7 @@ judgement no assertion settles. Two independent reasons automation will lie here
 
 - `flutter test`'s placeholder font inflates glyph metrics (STATE.md carry-forward invariant), so a
   widget test can call a break legible when it is not.
+
 - Headless Chromium hits `CONTEXT_LOST_WEBGL` on this project (CLAUDE.md trap #2), so a screenshot
   can come back blank or mis-rendered and be read as either a pass or a false failure.
 
@@ -427,12 +433,21 @@ from `durationMinutes × kPixelsPerMinute`)
 **Depends on:** Phase 27 (owns `TimelineGeometry`, the density-tier pattern, and GRID-01, which
 SEEBREAK-02 exists to protect). Nothing in Phase 28.
 **Plans:** 4 plans
-
 Plans:
+**Wave 1**
 
 - [ ] 29-01-PLAN.md — The tests, proven RED, plus the inert `subCompact` scaffold that lets them compile
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 29-02-PLAN.md — Wire the tier (`_buildBreak` branch + three-band ternary); RED→GREEN from `lib/` alone
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 29-03-PLAN.md — Measure `kSubCompactBreakMinHeight` in a real browser on port 8143; commit the pixel-count script
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 29-04-PLAN.md — Prove `UNIFORM` in pixels, settle the work card's 26dp overflow, and the closing human UAT checkpoint
 
 ## Progress

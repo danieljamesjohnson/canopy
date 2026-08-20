@@ -1,10 +1,11 @@
 ---
 phase: 29
 slug: breaks-you-can-see
-status: draft
-nyquist_compliant: false
+status: approved
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-08-20
+updated: 2026-08-20
 ---
 
 # Phase 29 — Validation Strategy
@@ -45,18 +46,21 @@ this phase.
 
 ## Per-Task Verification Map
 
-> Task IDs are assigned by the planner. This map is keyed on requirement + behavior; the planner
-> fills the Task ID column as plans are written.
+> Filled from the finalized plan set (29-01 … 29-04), verified by gsd-plan-checker on 2026-08-20.
+> All `flutter` commands require `export PATH="$PATH:/home/dan/development/flutter/bin"` first.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD | TBD | 1 | SEEBREAK-01 | — | N/A (pure layout, no I/O) | widget | `flutter test test/screens/today_screen_test.dart` | ✅ existing file, new group | ⬜ pending |
-| TBD | TBD | 1 | SEEBREAK-01 (tier boundary: `subCompact` below threshold, `compact` at/above) | — | N/A | widget | `flutter test test/screens/today_screen_test.dart` | ✅ existing file, new test | ⬜ pending |
-| TBD | TBD | 1 | SEEBREAK-01 (a11y label restates duration) | — | N/A | widget | `flutter test test/screens/today_screen_test.dart` | ✅ existing file, new test | ⬜ pending |
-| TBD | TBD | 1 | SEEBREAK-02 (`heightFor()` equals ground-truth literals, not self-referential arithmetic) | — | N/A | unit | `flutter test test/screens/today_timeline_model_test.dart` | ✅ existing file, new test | ⬜ pending |
-| TBD | TBD | 2 | SEEBREAK-02 (rendered grid `UNIFORM` in pixels with a sub-compact break present) | — | N/A | manual-assisted (scripted, real browser) | `python3 .planning/phases/29-breaks-you-can-see/tools/measure_hours.py <shot>` | ❌ W0 | ⬜ pending |
-| TBD | TBD | 2 | ROADMAP item 4 — 25-min work chunk stays inside its 100dp slot, no visible clipping | — | N/A | manual-assisted (real-browser screenshot) | screenshot via `drive.cjs`, inspected with Read | ❌ W0 | ⬜ pending |
-| TBD | TBD | final | Human UAT — a 5-minute break reads as *a break*, not a divider | — | N/A | manual | `checkpoint:human-verify` on the served debug build | N/A | ⬜ pending |
+| 29-01-01 | 01 | 1 | SEEBREAK-01 (inert `subCompact` scaffold: enum value, placeholder constant, shared row widget, both `_WorkChunkContent` switch arms — renders nothing new) | — | N/A (pure layout, no I/O) | regression | `flutter test` (must stay 579 green) + `flutter analyze` | ✅ existing files | ⬜ pending |
+| 29-01-02 | 01 | 1 | SEEBREAK-01 (five ChunkCard-level assertions about what a sub-compact break IS — proven RED) | — | N/A | widget | `flutter test test/screens/today_row_widgets_test.dart` | ✅ existing file, new group | ⬜ pending |
+| 29-01-03 | 01 | 1 | SEEBREAK-02 (screen-level tier boundary + `heightFor()` ground-truth literals; RED evidence file) | — | N/A | widget + unit | `flutter test --concurrency=1 test/screens/today_screen_test.dart test/screens/today_timeline_model_test.dart` | ✅ existing files, new tests | ⬜ pending |
+| 29-02-01 | 02 | 2 | SEEBREAK-01, SEEBREAK-02 (wire `_buildBreak`'s branch + the screen's three-band ternary — `lib/` only) | — | N/A | widget + unit | `flutter test` (587 expected) + `flutter analyze` | ✅ existing files | ⬜ pending |
+| 29-02-02 | 02 | 2 | SEEBREAK-02 (by-name RED→GREEN cross-check; `git diff --stat` proves no test file moved) | — | N/A | evidence capture | `flutter test --concurrency=1` → `29-GREEN-final.txt` | ✅ produced by task | ⬜ pending |
+| 29-03-01 | 03 | 3 | SEEBREAK-01 (real-browser measurement: port 8143, sha256 served-vs-built check, forced-compact screenshot, `measure_card_extent.py`) | — | N/A | manual-assisted (scripted, real browser) | `python3 .planning/phases/29-breaks-you-can-see/tools/measure_card_extent.py <shot>` | ❌ W0 — script written by this task | ⬜ pending |
+| 29-03-02 | 03 | 3 | SEEBREAK-01 (set `kSubCompactBreakMinHeight` from the measurement, rewrite the doc comment, tear out the forcing edit) | — | N/A | unit + source assertion | `flutter test` + `grep -c UNMEASURED lib/screens/today/timeline_geometry.dart` → 0 for this constant | ✅ existing file | ⬜ pending |
+| 29-04-01 | 04 | 4 | SEEBREAK-02 (grid `UNIFORM` in painted pixels with a sub-compact break present) | — | N/A | manual-assisted (scripted, real browser) | `python3 .../measure_hours.py shots/uniform-subcompact-break.png` | ❌ W0 — harness cribbed from Phase 27 | ⬜ pending |
+| 29-04-02 | 04 | 4 | ROADMAP item 4 — 25-min work chunk's fit inside its 100dp slot; binary DISMISSED / REAL-DEFECT disposition | — | N/A | manual-assisted (real-browser screenshot) | `python3 .../measure_card_extent.py shots/work-chunk-fit.png` | ❌ W0 | ⬜ pending |
+| 29-04-03 | 04 | 4 | Human UAT — a 5-minute break reads as *a break*, not a divider | — | N/A | manual (**blocking gate**) | `checkpoint:human-verify` on `http://danserver:8143/`, verdict recorded in `29-UAT.md`, pre-flight sha256 so no stale bundle is judged | N/A | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -86,11 +90,15 @@ this phase.
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 30s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references — the `tools/` script and `shots/` directory are created
+      inline by 29-03 Task 1 before any measurement is trusted
+- [x] No watch-mode flags
+- [x] Feedback latency < 30s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-08-20 (gsd-plan-checker, `## VERIFICATION PASSED`, 4 plans, 0 blockers)
+
+`wave_0_complete` stays `false` deliberately — the measurement harness does not exist on disk yet;
+29-03 Task 1 builds it. Flip it when that task lands.
