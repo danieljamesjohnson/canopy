@@ -406,6 +406,21 @@ Phase 27's `.planning/spikes/001-live-row-in-a-true-grid/tools/` has a pixel-mea
 crib from. Geometric assertions (heights computed from arithmetic) stay trustworthy in the widget
 test and belong there; legibility does not.
 
+**This phase MUST end in a human UAT checkpoint — it cannot close on automated verification alone.**
+This is the deliberate inverse of Phase 28's no-checkpoint contract, and it is not ceremony. The
+phase's whole success criterion is "can a person see that this is a break," which is a perceptual
+judgement no assertion settles. Two independent reasons automation will lie here:
+
+- `flutter test`'s placeholder font inflates glyph metrics (STATE.md carry-forward invariant), so a
+  widget test can call a break legible when it is not.
+- Headless Chromium hits `CONTEXT_LOST_WEBGL` on this project (CLAUDE.md trap #2), so a screenshot
+  can come back blank or mis-rendered and be read as either a pass or a false failure.
+
+Precedent, and the reason this is written down: **Phase 27 scored 16/17 on automated verification and
+then failed 2 of 3 items on the human check** (36dp touch targets, and the now-line striking through
+the card's text). Both had passed everything automated. Plan a `checkpoint:human-verify` task
+accordingly, and do not let a green suite substitute for it.
+
 **Requirements:** SEEBREAK-01 (every break is identifiable as a break at its duration-exact height,
 with no clipped content), SEEBREAK-02 (the true grid is preserved — rendered height never deviates
 from `durationMinutes × kPixelsPerMinute`)
