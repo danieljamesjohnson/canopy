@@ -76,7 +76,8 @@ const double kFullTierMinHeight = 88.0;
 /// **PD-3.** `88.0` = the measured 80px long-break content height plus
 /// slack, expressed in pixel slot height rather than minutes, for the same
 /// rot-resistance reason as [kFullTierMinHeight].
-const double kFullBreakMinHeight = 88.0;
+const double kFullBreakMinHeight =
+    999.0; // THROWAWAY — 29-03 measurement only, reverted in Task 2
 
 /// **UNMEASURED PLACEHOLDER (PD-29-02).** The slot height at or above which
 /// the *existing, unchanged* `compact` break tier's own natural height fits
