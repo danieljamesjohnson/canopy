@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: none
 milestone_name: milestone
-status: Phase 28 complete — no active phase
-stopped_at: "Phase 28 closed — verification passed 10/10. Nothing queued."
+status: Phase 29 added, not yet planned
+stopped_at: "Phase 29 (Breaks You Can See) added and scoped — needs /gsd-plan-phase 29"
 last_updated: "2026-08-19T12:54:32.987Z"
-last_activity: 2026-08-19 -- Phase 28 complete, verification passed
+last_activity: 2026-08-20 -- Phase 29 added from SEED-005
 progress:
-  total_phases: 2
+  total_phases: 3
   completed_phases: 2
   total_plans: 7
   completed_plans: 7
-  percent: 100
+  percent: 67
 ---
 
 # Execution State
@@ -50,17 +50,18 @@ v1.5 failure mode recorded in the invariants below.
 Final: 579 tests green (567 baseline + 8 unit + 4 D-06, none deleted), `flutter analyze` clean,
 code review 0 critical / 2 warnings (both fixed, suite still green).
 
-Next: nothing queued. Phases 27 and 28 are both closed and both sit outside any milestone — the
-owner's call was standalone phases rather than opening v1.6. v1.6 is not yet defined.
+Next: **Phase 29 — Breaks You Can See.** Added 2026-08-20 from Phase 28's UAT and scoped in the
+ROADMAP (approach decided: a sub-compact density tier). Not started — needs `/gsd-plan-phase 29`.
+Phases 27, 28 and 29 all sit outside any milestone; v1.6 is not yet defined.
 
-Status: Phase 28 complete. No active phase.
-Last activity: 2026-08-19 -- Phase 28 complete, verification passed
+Status: Phase 29 added and scoped, not yet planned.
+Last activity: 2026-08-20 -- Phase 29 added from SEED-005
 
 ```
-v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  Phase 27 ✅  →  Phase 28 ✅  →  v1.6 not yet defined
+v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  Phase 27 ✅  →  Phase 28 ✅  →  Phase 29 (next)  →  v1.6 not yet defined
 ```
 
-**Uncommitted-to-a-milestone work is deliberate here.** Phases 27 and 28 sit outside any milestone. If a
+**Uncommitted-to-a-milestone work is deliberate here.** Phases 27, 28 and 29 sit outside any milestone. If a
 v1.6 is opened before it ships, fold it in rather than leaving it orphaned.
 
 ## Project Reference
@@ -68,7 +69,7 @@ v1.6 is opened before it ships, fold it in rather than leaving it orphaned.
 See: `.planning/PROJECT.md` (updated 2026-08-14)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** none — Phases 27 and 28 both closed; v1.6 not yet defined
+**Current focus:** Phase 29 — Breaks You Can See (scoped, awaiting planning)
 
 ## Shipped Milestones
 
@@ -124,6 +125,14 @@ guards against:
   the owner said "the schedule still isn't functioning right." Engine-side, not UI. Also standalone
   rather than opening v1.6. Adaptivity was raised and explicitly declined: N stays set once from the
   morning check-in mood.
+
+- **Phase 29 added 2026-08-20: Breaks You Can See.** Out of Phase 28's UAT — the owner reported "no
+  5 minute breaks in between." Diagnosed before adding: the engine is correct, the breaks are
+  emitted on the lattice, but a 5-minute break's slot is 20dp (`5 × kPixelsPerMinute`) while its card
+  needs more, so `ClipRect` silently clips it to a divider-like sliver. **Pre-existing, from Phase
+  27's duration-exact slots — not a Phase 28 regression.** Approach decided at add time (option 1, a
+  sub-compact density tier); options 2 and 3 recorded with the reasons they lost. Evidence:
+  `.planning/seeds/SEED-005-five-minute-breaks-clip-to-a-sliver.md`.
 
 ### Decisions
 

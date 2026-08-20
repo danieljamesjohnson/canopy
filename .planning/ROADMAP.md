@@ -99,11 +99,12 @@ browser-verified; 560/560 tests green. See `v1.5-MILESTONE-AUDIT.md`.
 
 ### Standalone phases
 
-Neither of these belongs to a milestone — the owner's call (2026-08-18, restated 2026-08-19) was
+None of these belongs to a milestone — the owner's call (2026-08-18, restated 2026-08-19) was
 standalone phases rather than opening v1.6. Detail for each follows below.
 
 - [x] Phase 27: True Grid (4/4 plans) — GRID-01, GRID-02 — complete 2026-08-19
 - [x] Phase 28: The Day Is a Lattice — LATTICE-01, LATTICE-02 (completed 2026-08-19)
+- [ ] Phase 29: Breaks You Can See — SEEBREAK-01, SEEBREAK-02
 
 ### Phase 27: True Grid
 
@@ -284,6 +285,7 @@ which — do not let it fall out of the packing loop by accident.
 break after every N work chunks, N from morning mood, never silently suppressed)
 **Depends on:** nothing in Phase 27 — this is `schedule_generator.dart`, a different file. Can be
 planned immediately.
+
 ### OUTCOME — COMPLETE 2026-08-19 (`28-VERIFICATION.md`: passed, 10/10 must-haves)
 
 **The capacity question, answered: neither the cap nor the day's end moved.** Research simulated the
@@ -329,6 +331,92 @@ generate a day at each mood, and check every chunk's start minute is `≡ 0 (mod
 `floor(chunks / N)` long breaks of exactly 30 minutes are emitted. No real-browser step is required,
 which is a genuine difference from Phase 27 and worth stating so nobody copies that ceremony over.
 
+### Phase 29: Breaks You Can See
+
+Standalone phase, no milestone. Raised by the owner during Phase 28 UAT (2026-08-20) on a fresh
+origin with a newly generated day: **"there's no 5 minute breaks in between."** Full evidence trail:
+`.planning/seeds/SEED-005-five-minute-breaks-clip-to-a-sliver.md`.
+
+**Goal:** Every break in the day is visible *as a break* — including a 5-minute one — without the
+timeline ever lying about how long anything takes.
+
+**The engine is not at fault, and this is not a Phase 28 regression.** Phase 28 changed exactly one
+file (`schedule_generator.dart`); `timeline_geometry.dart` and `chunk_card.dart` were last touched in
+Phase 27. Probing the real generator confirms the short breaks are emitted correctly and on the
+lattice — a mood-4 day yields `W@08:00 SB@08:25 W@08:30 SB@08:55 W@09:00 SB@09:25 W@09:30 SB@09:55
+LB@10:00`. The defect is downstream of that.
+
+**The defect, measured.** Rendering that day through the real `ChunkCard` / `TimelineRowTile` /
+`TimelineGeometry` with today_screen's own PD-10 `ClipRect` + `OverflowBox` wrapper:
+
+| chunk | slot | natural height | result |
+|---|---|---|---|
+| work 25min | 100dp | 126dp | clipped 26dp |
+| **shortBreak 5min** | **20dp** | **52dp** | **clipped 32dp — only 38% survives** |
+| longBreak 30min | 120dp | 80dp | fits |
+
+A 5-minute break gets `5 × kPixelsPerMinute` = **20dp**, but its card needs more, so only the top
+edge of the dashed outline paints. Between two 100dp work cards that reads as a *divider*, not a
+break — which is exactly what the owner reported. Remove the `ClipRect` and the same render throws
+**four** RenderFlex overflow errors, one per short break; in production the ClipRect swallows the
+error and clips silently, which is why this has never surfaced as a crash or a log line.
+
+**Trust the slot column, discount the natural column.** Slot heights are pure arithmetic
+(`durationMinutes × kPixelsPerMinute`, `kPixelsPerMinute = 4.0`) and are exact. The natural heights
+come from `flutter test`, whose placeholder font inflates glyph metrics — a harness bound, not a
+device requirement (STATE.md carry-forward invariant). Planning should **re-measure natural height in
+a real browser** before fixing a threshold to a number. This is the same trap Phase 27 hit with
+`kCompactLiveMinHeight` (placeholder `60.0`, measured `84.0`, re-measured `88.0`).
+
+**The tension.** This is the direct, foreseeable cost of Phase 27's GRID-01: slots are
+duration-exact, so an hour is always an hour — and therefore 5 minutes is *always* 20dp. Phase 27
+solved this for the live row by giving `LiveRowCard` density tiers driven by slot height. The
+**non-live break card never got the equivalent**: `kFullBreakMinHeight = 88.0` selects `compact` for
+a 20dp break, and compact still needs far more than 20dp. There is no tier below it.
+
+### DECIDED — option (1), sub-compact tier (owner's call, 2026-08-20)
+
+Options carried in, cheapest first:
+
+1. **A sub-compact tier for short chunks** — below a measured threshold (~24dp), render the break as
+   a single hairline-with-label rather than a card. Follows Phase 27's own precedent exactly (tiers
+   driven by slot height) and keeps the grid exact. **This is the chosen approach.**
+2. **Render short breaks as the gap** between work cards, label on tap — cheapest, but loses the
+   "you're on a break" affordance the Phase 27 spike explicitly valued when it rejected option (b).
+3. **Raise `kPixelsPerMinute`** — at 8.0 a break is 40dp, but this doubles the day's scroll length.
+   Phase 27 worked specifically to make the day *shorter* (it bought back 132dp). **Rejected; do not
+   revisit without new evidence.**
+
+**What the phase must build:**
+
+1. A sub-compact density tier for chunks whose slot cannot hold the compact card, applied to the
+   **non-live** break/chunk card — the live row already has its own tiers and is out of scope.
+2. **Measure the threshold in a real browser, not in `flutter test`.** Decide deliberately what the
+   cutoff is and what renders below it, and record the raw number, the method, and the conditions
+   that would invalidate it — the doc-comment house style `kCompactLiveMinHeight` already uses.
+3. A regression test asserting the grid is still true — no chunk's rendered height deviates from
+   `durationMinutes × kPixelsPerMinute`. **This phase must not buy legibility with grid accuracy;
+   that trade is what Phase 27 existed to eliminate.**
+4. Decide whether the work card's own 26dp overflow (table above) is real on-device or a harness
+   artifact, and fix or explicitly dismiss it — do not leave it unexamined.
+
+**Verification note.** Unlike Phase 28, this one **does** need a real-browser step — it is glyph
+metrics and painted rects, which is precisely the class of thing `flutter test` cannot settle here.
+Phase 27's `.planning/spikes/001-live-row-in-a-true-grid/tools/` has a pixel-measurement harness to
+crib from. Geometric assertions (heights computed from arithmetic) stay trustworthy in the widget
+test and belong there; legibility does not.
+
+**Requirements:** SEEBREAK-01 (every break is identifiable as a break at its duration-exact height,
+with no clipped content), SEEBREAK-02 (the true grid is preserved — rendered height never deviates
+from `durationMinutes × kPixelsPerMinute`)
+**Depends on:** Phase 27 (owns `TimelineGeometry`, the density-tier pattern, and GRID-01, which
+SEEBREAK-02 exists to protect). Nothing in Phase 28.
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run `/gsd-plan-phase 29` to break down)
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -345,3 +433,4 @@ which is a genuine difference from Phase 27 and worth stating so nobody copies t
 | 21-26 (Right Now) | v1.5 | 28/28 | Complete   | 2026-08-14 |
 | 27. True Grid | — (standalone) | 4/4 | Complete | 2026-08-19 |
 | 28. The Day Is a Lattice | — (standalone) | 3/3 | Complete   | 2026-08-19 |
+| 29. Breaks You Can See | — (standalone) | 0/? | Not Started |  |
