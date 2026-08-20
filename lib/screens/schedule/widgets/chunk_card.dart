@@ -30,6 +30,23 @@ enum ChunkCardDensity {
   /// reached via the row's own tap into `ChunkDetailSheet`. Asked for by
   /// `today_screen.dart` starting in plan 04, not this plan.
   compact,
+
+  /// Phase 29 (SEEBREAK-01, `29-UI-SPEC.md`). Triggers when a row's slot
+  /// height falls below `kSubCompactBreakMinHeight` — **break rows only**.
+  /// Renders a single hairline-with-label (`_SubCompactRow`: two `Divider`s
+  /// flanking a centered label) instead of a card — no dashed border, no
+  /// duration text, non-interactive like every other break tier.
+  ///
+  /// The work-chunk arm that handles this value below is a documented dead
+  /// path: `today_screen.dart`'s work-chunk density ternary never selects
+  /// `subCompact` (it stays a 2-way `full`/`compact` split, per
+  /// `29-UI-SPEC.md` § "Scope boundary"). No call site selects this value
+  /// for a break yet either — `_buildBreak`'s density `if`-chain doesn't
+  /// check it until plan `29-02` wires the branch and `today_screen.dart`'s
+  /// break density ternary. Until then this value exists purely so the two
+  /// density-keyed switch expressions in `_WorkChunkContent` below stay
+  /// exhaustive.
+  subCompact,
 }
 
 /// A card widget that renders one of three visual variants depending on
@@ -130,6 +147,15 @@ class ChunkCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isLong = chunk.chunkType == ChunkType.longBreak;
     final title = isLong ? 'Long break' : 'Short break';
+
+    // Phase 29 (SEEBREAK-01): this `if`-chain gets NO compiler exhaustiveness
+    // protection (unlike the two density-keyed switch expressions in
+    // `_WorkChunkContent` below), so a missing `subCompact` branch here fails
+    // silently rather than at compile time (RESEARCH.md Pitfall 1). Plan
+    // `29-01` deliberately leaves this branch chain untouched — no case here
+    // checks `ChunkCardDensity.subCompact` yet, so a break card built at that
+    // density falls through to the detailed/full treatment below unchanged.
+    // Plan `29-02` adds the `subCompact` branch, checked before `compact`.
 
     // Compact tier (density-driven, CAL-01): label only, no leading icon,
     // no duration text, no completed check icon — D-02 forbids inflating the
@@ -272,6 +298,100 @@ class _DashedBorderPainter extends CustomPainter {
       oldDelegate.radius != radius;
 }
 
+/// Phase 29 (SEEBREAK-01) — the sub-compact tier's shared row: a hairline
+/// `Divider` on each side of a centered label, no card, no dashed border.
+///
+/// Shared by `_buildBreak`'s sub-compact branch (wired in plan `29-02`) and
+/// `_WorkChunkContent`'s documented dead-path fallback below — both need
+/// the identical widget tree, so it lives once, file-private, rather than
+/// duplicated per call site. Not reachable from any call site as of this
+/// plan (PD-29-01): see the `subCompact` enum value's doc comment above.
+///
+/// `29-UI-SPEC.md` "Horizontal insets": this row renders through the
+/// existing `TimelineRowTile` wrapper (unlike `LiveRowCard`, which has no
+/// such wrapper and must restate its own horizontal offsets) — it
+/// therefore inherits `kGutterWidth` + the row inset automatically. Do
+/// **not** add a second horizontal inset here; the `Padding(horizontal: 8)`
+/// below is only the label's own breathing room from the divider lines.
+///
+/// There is no margin and no vertical padding anywhere in this widget, on
+/// any of the four sides. This is deliberate, not an oversight: the
+/// smallest guaranteed break slot (20dp, a 5-minute break) cannot spend any
+/// of its height on margin and still leave room for one legible text line
+/// — `29-UI-SPEC.md` "Root cause" traces the old *compact* tier's own
+/// clipping defect to exactly this (an outer `Container`'s
+/// `margin: EdgeInsets.symmetric(vertical: 4)` the spec forgot to zero).
+/// This is also the one deliberate divergence from `LiveRowCard.
+/// _buildSingleLine`'s zero-margin precedent (PD-27-01): that widget zeroes
+/// margin *vertically only* because it renders with no `TimelineRowTile`
+/// wrapper and would otherwise bleed to the raw viewport edge; this widget
+/// zeroes *all four sides* because it DOES render through `TimelineRowTile`
+/// and would double-inset horizontally if it restated any of its own.
+///
+/// No `GestureDetector`, no `InkWell`, no `onTap` — breaks are
+/// non-interactive at every density today and this phase does not change
+/// that.
+class _SubCompactRow extends StatelessWidget {
+  const _SubCompactRow({required this.label, required this.semanticsLabel});
+
+  /// The visible label (e.g. `'Short break'`) — deliberately drops the
+  /// duration; [semanticsLabel] restates it for screen readers.
+  final String label;
+
+  /// The full accessibility label (e.g. `'Short break, 5 min'`) — the
+  /// UI-SPEC's locked copywriting contract for this tier.
+  final String semanticsLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // `height: 1` on BOTH dividers below is load-bearing and the single
+    // easiest thing to get wrong here: `Divider.height` is the widget's own
+    // BOX height and defaults to Material 3's `DividerThemeData.space`
+    // (16.0), while `thickness` is only the drawn stroke. Omitting `height`
+    // would inflate this row's cross-axis extent by 16dp of invisible box —
+    // the same class of miss ("margin nobody zeroed") `29-UI-SPEC.md` §
+    // "Root cause" blames for why the *compact* tier never fit its slot. Do
+    // not "simplify" either occurrence below to a bare `Divider(color:
+    // ...)`.
+    return Semantics(
+      label: semanticsLabel,
+      excludeSemantics: true,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: theme.colorScheme.outlineVariant,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: theme.colorScheme.outlineVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Internal widget for the work-variant chunk card.
 ///
 /// SCHED-03: Action buttons (Complete/Skip) are always visible — no hover
@@ -356,6 +476,16 @@ class _WorkChunkContent extends StatelessWidget {
         horizontal: 12,
         vertical: 12,
       ),
+      // Documented, unreachable defensive fallback (29-UI-SPEC.md § "Scope
+      // boundary" point 3): today_screen.dart's work-chunk density ternary
+      // never selects subCompact — it stays a 2-way full/compact split.
+      // This arm exists only so the switch stays exhaustive (Dart's
+      // enum-switch-expression exhaustiveness is a compile error, not a
+      // lint, RESEARCH.md Pitfall 1).
+      ChunkCardDensity.subCompact => const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 0,
+      ),
     };
 
     return MouseRegion(
@@ -409,6 +539,19 @@ class _WorkChunkContent extends StatelessWidget {
                         context,
                         theme,
                         isResolved,
+                      ),
+                      // Documented, unreachable defensive fallback
+                      // (29-UI-SPEC.md § "Scope boundary" point 3): no
+                      // current call site selects subCompact for a work
+                      // chunk. Visually identical to the break sub-compact
+                      // treatment, using _titleText in place of the break's
+                      // title. Do not build a measured
+                      // kSubCompactWorkMinHeight constant for this — it has
+                      // no reported defect and no measurement evidence.
+                      ChunkCardDensity.subCompact => _SubCompactRow(
+                        label: _titleText,
+                        semanticsLabel:
+                            '$_titleText, ${chunk.durationMinutes} min',
                       ),
                     },
                   ),
@@ -508,6 +651,13 @@ class _WorkChunkContent extends StatelessWidget {
     // second line is 18dp that kPixelsPerMinute has to pay for on EVERY row.
     // `detailed` is used by the schedule screen, which is a plain list with
     // no such budget, so it keeps the roomier stack.
+    //
+    // Phase 29: this `if`-based (not switch) density check gets no compiler
+    // exhaustiveness protection either, but `subCompact` cannot silently fall
+    // through it wrong — `_WorkChunkContent`'s content-builder switch above
+    // routes `subCompact` to `_SubCompactRow` instead of this shared shell,
+    // so `_buildContentShell` (and this line) is never reached at that
+    // density.
     final isFull = density == ChunkCardDensity.full;
 
     return Column(

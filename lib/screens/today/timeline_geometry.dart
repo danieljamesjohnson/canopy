@@ -78,6 +78,41 @@ const double kFullTierMinHeight = 88.0;
 /// rot-resistance reason as [kFullTierMinHeight].
 const double kFullBreakMinHeight = 88.0;
 
+/// **UNMEASURED PLACEHOLDER (PD-29-02).** The slot height at or above which
+/// the *existing, unchanged* `compact` break tier's own natural height fits
+/// without clipping; below it, the new `subCompact` tier (Phase 29,
+/// SEEBREAK-01) renders instead. This is **not** a measurement of the
+/// `subCompact` tier's own height — that tier is designed to fit comfortably
+/// under any plausible break slot, including the smallest, 20dp — it is a
+/// measurement of where `compact` (margin 8dp + padding 0dp + one
+/// `bodySmall` line, unchanged by this phase) stops fitting.
+/// (`29-UI-SPEC.md` § "The threshold constant and where it lives".)
+///
+/// `24.0` is the ROADMAP's own estimate ("below a measured threshold
+/// (~24dp)"), corroborated by `29-UI-SPEC.md`'s root-cause arithmetic (the
+/// `compact` tier's own 8dp vertical margin it never zeroed, plus one
+/// real-device `bodySmall` line, which typically runs ~14–18dp at default
+/// text scale) — **it is not a measurement.** Plan `29-03` replaces both
+/// this number and this entire comment with a real-browser measurement,
+/// following the same recipe class [kCompactLiveMinHeight] used in
+/// plan 27-04.
+///
+/// **Do not derive this from `flutter test`.** This file already carries a
+/// three-strikes history of constants that were wrong when set from that
+/// harness's placeholder-font measurements: `kGutterWidth`
+/// (`timeline_row_tile.dart`) went 46 → 75 → 52; [kPixelsPerMinute] went
+/// 4.0 → 5.5 → 4.0; [kCompactLiveMinHeight] went 88.0 (its own UNMEASURED
+/// PLACEHOLDER) → 84.0 (first real-browser measurement) → 88.0 (re-measured
+/// after a touch-target UAT finding raised its action row) — see that
+/// constant's own doc comment below for the full history. A fourth would be
+/// a pattern, not a one-off.
+///
+/// **What would invalidate this value:** any change to the `compact` break
+/// tier's own margin, padding, border stroke, or `bodySmall` typography; any
+/// global text-scale change. Re-measure with the real-browser recipe
+/// `29-UI-SPEC.md` documents — never from `flutter test`.
+const double kSubCompactBreakMinHeight = 24.0;
+
 /// **MEASURED (2026-08-18, plan 27-04).** The slot height at or above which
 /// `LiveRowCard`'s compact tier fits; below it the single-line tier is used
 /// (there is no third tier).
