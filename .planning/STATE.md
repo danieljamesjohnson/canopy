@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: none
 milestone_name: milestone
-status: Phase 29 added, not yet planned
-stopped_at: "Phase 29 (Breaks You Can See) added and scoped — needs /gsd-plan-phase 29"
-last_updated: "2026-08-19T12:54:32.987Z"
+status: Phase 29 added and scoped, not yet planned.
+stopped_at: Phase 29 UI-SPEC approved
+last_updated: "2026-08-20T12:40:10.237Z"
 last_activity: 2026-08-20 -- Phase 29 added from SEED-005
 progress:
   total_phases: 3
@@ -18,7 +18,7 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-19T12:54:32.981Z
+**Last session:** 2026-08-20T12:40:10.232Z
 
 ---
 
@@ -293,7 +293,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-18
-Stopped at: Completed 28-03-PLAN.md -- engine lattice fix landed, 579/579 tests green, flutter analyze clean, Phase 28 gate passed
+Stopped at: Phase 29 UI-SPEC approved
 (`1ca4204` measure+set `kCompactLiveMinHeight`, `7d0a1e6` prove GRID-01 `UNIFORM`).
 Resume at: open `http://danserver:8137/` on a phone/tablet, walk `27-04-SUMMARY.md`'s "Task 3"
 section, record the verdict, then finalize the summary and close Phase 27.
