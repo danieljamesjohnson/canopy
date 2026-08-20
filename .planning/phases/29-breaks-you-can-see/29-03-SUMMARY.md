@@ -191,3 +191,13 @@ Plan `29-04` can now rebuild the debug bundle with the measured `kSubCompactBrea
 ---
 *Phase: 29-breaks-you-can-see*
 *Completed: 2026-08-20*
+
+## Self-Check: PASSED
+
+- FOUND: `lib/screens/today/timeline_geometry.dart`
+- FOUND: `.planning/phases/29-breaks-you-can-see/tools/measure_card_extent.py`
+- FOUND: `.planning/phases/29-breaks-you-can-see/shots/compact-long-break-forced.png`
+- FOUND: `.planning/phases/29-breaks-you-can-see/29-03-SUMMARY.md`
+- FOUND commit: `1c44c67` (Task 1)
+- FOUND commit: `354dd0c` (Task 2)
+- FOUND commit: `52c3e2b` (Summary)
