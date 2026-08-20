@@ -432,11 +432,11 @@ with no clipped content), SEEBREAK-02 (the true grid is preserved — rendered h
 from `durationMinutes × kPixelsPerMinute`)
 **Depends on:** Phase 27 (owns `TimelineGeometry`, the density-tier pattern, and GRID-01, which
 SEEBREAK-02 exists to protect). Nothing in Phase 28.
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 Plans:
 **Wave 1**
 
-- [ ] 29-01-PLAN.md — The tests, proven RED, plus the inert `subCompact` scaffold that lets them compile
+- [x] 29-01-PLAN.md — The tests, proven RED, plus the inert `subCompact` scaffold that lets them compile
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -466,4 +466,4 @@ Plans:
 | 21-26 (Right Now) | v1.5 | 28/28 | Complete   | 2026-08-14 |
 | 27. True Grid | — (standalone) | 4/4 | Complete | 2026-08-19 |
 | 28. The Day Is a Lattice | — (standalone) | 3/3 | Complete   | 2026-08-19 |
-| 29. Breaks You Can See | — (standalone) | 0/4 | Planned | |
+| 29. Breaks You Can See | — (standalone) | 1/4 | In Progress|  |

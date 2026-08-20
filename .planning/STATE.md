@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: none
 milestone_name: milestone
-status: Phase 29 added and scoped, not yet planned.
-stopped_at: Phase 29 UI-SPEC approved
-last_updated: "2026-08-20T13:14:37.840Z"
-last_activity: 2026-08-20 -- Phase 29 added from SEED-005
+status: executing
+stopped_at: Completed 29-01-PLAN.md — scaffold inert, 5 RED-PROOF tests proven RED, 3 GUARDs green
+last_updated: "2026-08-20T13:31:09.004Z"
+last_activity: 2026-08-20 -- Phase 29 execution started
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 11
+  completed_plans: 8
   percent: 67
 ---
 
@@ -18,14 +18,14 @@ progress:
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-20T12:40:10.232Z
+**Last session:** 2026-08-20T13:31:08.998Z
 
 ---
 
 ## Current Position
 
-Phase: 28 — The Day Is a Lattice (standalone, no milestone). **COMPLETE 2026-08-19.**
-Plan: 3 of 3 complete. `28-VERIFICATION.md` status `passed`, 10/10 must-haves, no human items.
+Phase: 29 (Breaks You Can See) — EXECUTING
+Plan: 2 of 4
 
 The day is now a 30-minute lattice: 25 minutes of work + 5 minutes of break per cell, and after
 every N work cells a full 30-minute break in a cell of its own. N still comes once from the morning
@@ -54,8 +54,8 @@ Next: **Phase 29 — Breaks You Can See.** Added 2026-08-20 from Phase 28's UAT 
 ROADMAP (approach decided: a sub-compact density tier). Not started — needs `/gsd-plan-phase 29`.
 Phases 27, 28 and 29 all sit outside any milestone; v1.6 is not yet defined.
 
-Status: Phase 29 added and scoped, not yet planned.
-Last activity: 2026-08-20 -- Phase 29 added from SEED-005
+Status: Ready to execute
+Last activity: 2026-08-20 -- Phase 29 execution started
 
 ```
 v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  Phase 27 ✅  →  Phase 28 ✅  →  Phase 29 (next)  →  v1.6 not yet defined
@@ -69,7 +69,7 @@ v1.6 is opened before it ships, fold it in rather than leaving it orphaned.
 See: `.planning/PROJECT.md` (updated 2026-08-14)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Phase 29 — Breaks You Can See (scoped, awaiting planning)
+**Current focus:** Phase 29 — Breaks You Can See
 
 ## Shipped Milestones
 
@@ -210,6 +210,8 @@ Key decisions are in PROJECT.md. Decisions relevant to v1.5:
 - [Phase 28-02]: Task 2's render test uses testWidgets(), not test() -- required for tester.pumpWidget(); this makes the plan's own grep-based acceptance criterion (expects 4 'test(' lines) structurally unsatisfiable while remaining correct, documented as a plan-authoring inconsistency rather than distorted to fit
 - [Phase 28-03]: No wave-1 test correction needed -- all 20 RED tests and 50 pre-existing tests passed on first verification of both engine tasks, a direct consequence of 28-01/28-02's simulation-derived (not hand-derived) fixtures
 - [Phase 28-03]: Captured 28-GREEN-final.txt with flutter test --concurrency=1 rather than default concurrency -- default concurrency's expanded reporter drops/duplicates per-test-name lines at scale (schedule_generator_test.dart never appeared by name despite passing), making the required by-name RED-to-GREEN cross-check unverifiable without it
+- [Phase 29-01]: Corrected kCompactLiveMinHeight's cited three-strikes history from an unverifiable 60→84→88 to the git-verified 88.0 (UNMEASURED PLACEHOLDER) → 84.0 (first measurement) → 88.0 (re-measured after UAT) in kSubCompactBreakMinHeight's new doc comment
+- [Phase 29-01]: _SubCompactRow's two Dividers written as separate inline literals (not a shared variable) so both the plan's height:1/thickness:1 grep criteria and 29-UI-SPEC.md's widget tree are matched exactly
 
 ### Engine Constraints (carry-forward for Phase 21)
 
@@ -293,7 +295,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-18
-Stopped at: Phase 29 UI-SPEC approved
+Stopped at: Completed 29-01-PLAN.md — scaffold inert, 5 RED-PROOF tests proven RED, 3 GUARDs green
 (`1ca4204` measure+set `kCompactLiveMinHeight`, `7d0a1e6` prove GRID-01 `UNIFORM`).
 Resume at: open `http://danserver:8137/` on a phone/tablet, walk `27-04-SUMMARY.md`'s "Task 3"
 section, record the verdict, then finalize the summary and close Phase 27.
@@ -350,3 +352,4 @@ section, record the verdict, then finalize the summary and close Phase 27.
 | Phase 28-the-day-is-a-lattice P01 | ~15min | 2 tasks | 2 files |
 | Phase 28-the-day-is-a-lattice P02 | ~8min | 2 tasks | 2 files |
 | Phase 28-the-day-is-a-lattice PP03 | ~8min | 3 tasks | 2 files |
+| Phase 29-breaks-you-can-see P01 | ~20min | 3 tasks | 5 files |
