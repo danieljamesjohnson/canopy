@@ -39,7 +39,58 @@ exactly this kind of look.
 
 ---
 
+## ATTEMPT 1 — VOID (stale Hive day). 2026-08-21.
+
+The first UAT attempt could not be judged, and the reason is worth recording because it will
+recur.
+
+The owner opened `http://danserver:8143/`, saw work chunks running back-to-back with no breaks at
+all, and reported it via feedback-drop (`~/feedback-drop/canopy/inbox/2026-08-21_13-03-39/`):
+*"for work sections there are no 5 minute breaks."* The annotated screenshot circles the gap
+between `Work 9:00–9:25` and `Work 9:25–9:50` — contiguous, no break — with the same pattern
+continuing at 9:50 / 10:15 / 10:40.
+
+**This was not a defect in Phase 29 or Phase 28.** The current generator is structurally incapable
+of producing that layout. Probed directly across all five moods and both goal types
+(outcome / time-target), every single output is on the 30-minute lattice:
+
+```
+WORK 09:00-09:25 (25m)      <- reported screenshot: 09:00-09:25
+  SB 09:25-09:30 (5m)       <- reported screenshot: nothing
+WORK 09:30-09:55 (25m)      <- reported screenshot: 09:25-09:50
+```
+
+Back-to-back 25s with no break is the **pre-Phase-28** packing. `ScheduleNotifier._loadToday()`
+(`schedule_notifier.dart:83`) reads today's schedule from Hive; `generate()` runs only at check-in
+with silent-replace. So the browser was showing a day generated before the lattice fix landed and
+persisted in IndexedDB ever since. **Resolution: re-check-in (the ⟳ action) to regenerate today.**
+
+**Why the phase's own automated evidence did not catch it, and could not have.** Every screenshot
+this phase measured came from a freshly generated day, so the stale-day case never entered the
+sample. `measure_hours.py` legitimately printed `UNIFORM` and the sub-compact tier legitimately
+rendered — against a day that was not the day the owner was looking at. The build was correct and
+the measurement was correct; the *data* was old. This is the third time this project has been
+bitten by a stale artifact masquerading as a missing feature (CLAUDE.md traps #1 and #3 are the
+other two, both build-layer). **Trap #4, data layer: an already-generated day is never
+regenerated on load — a schedule-shape change is invisible until re-check-in.** Any future UAT
+that tests generator output must re-check-in first, and say so in its own instructions.
+
+Items 1–3 below are unchanged and still pending; attempt 2 begins after a re-check-in.
+
+**Also raised in the same drop, and routed out of this phase:** *"Breaks are fully functional
+features, with timers, etc."* — followed by the scope call *"don't add tappable then. Just make it
+skippable like the other ones."* This is a genuine gap (breaks are excluded from swipe-to-skip by
+an explicit early return at `swipeable_chunk_card.dart:75`) but it is an *interactivity*
+requirement, not a visibility one, and it applies to every break tier rather than only the
+sub-compact one. Opened as **Phase 30 — Breaks You Can Skip** rather than widened into this phase.
+
+---
+
 ## Item 1 — Does a 5-minute break read as a break?
+
+**First: tap ⟳ (Re-check-in) and regenerate the day.** See ATTEMPT 1 above — without this you are
+judging a pre-Phase-28 schedule that has no short breaks in it at all, and item 1 fails for a
+reason that has nothing to do with what this phase built.
 
 Scroll through the morning. Between two work cards there should be a thin line with "Short break"
 sitting on it. The question is not "can I find it" — it is: glancing at the day, does that row say
