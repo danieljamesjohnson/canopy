@@ -450,6 +450,88 @@ Plans:
 
 - [ ] 29-04-PLAN.md — Prove `UNIFORM` in pixels, settle the work card's 26dp overflow, and the closing human UAT checkpoint
 
+### Phase 30: Breaks You Can Skip
+
+Standalone phase, no milestone. Raised by the owner during Phase 29 UAT (2026-08-21): **"Breaks are
+fully functional features, with timers, etc."** followed by the explicit scope call **"don't add
+tappable then. Just make it skippable like the other ones."**
+
+**Goal:** A break can be skipped the same way a work chunk can — at every density, including the
+5-minute one — without the timeline lying about how long anything takes.
+
+**This is not a Phase 29 gap, and the boundary is deliberate.** Phase 29's requirements
+(SEEBREAK-01/02) are about *visibility*; skippability makes nothing more or less visible. More
+importantly, this applies to **every** break tier, not just the sub-compact one Phase 29 touched —
+scoping it inside Phase 29 would ship a skippable 5-minute break next to a non-skippable 30-minute
+one. Phase 29's approved UI-SPEC also locks "non-interactive at every density," so this phase
+supersedes that clause explicitly rather than silently.
+
+**Tappable is OUT of scope, by the owner's direct instruction (2026-08-21).** Do not add
+`onTap`/detail-sheet access to break cards. Skip only.
+
+**The mechanism is already 95% built.** `SwipeableChunkCard` (`lib/screens/schedule/widgets/
+swipeable_chunk_card.dart`) already wraps *every* chunk row — `today_screen.dart`'s
+`_buildChunkCard` has no per-type branch. Breaks are excluded by one explicit early return:
+
+```
+// swipeable_chunk_card.dart:74-75
+// Break cards are not swipeable and do not receive goal name or tap.
+if (chunk.chunkType != ChunkType.work) { ... return plain ChunkCard ... }
+```
+
+`ScheduleNotifier.markSkipped` (`schedule_notifier.dart:637`) is already type-agnostic: it sets
+`isSkipped`, saves, and appends a `CompletionLog`. Its streak write-back is already guarded by
+`chunk.goalId != null && isNotEmpty`, and a break's `goalId` is null — so the habit-streak path is
+already correctly inert for breaks. **Verify that guard rather than assuming it**; a break that
+resets a habit streak would be a serious regression.
+
+**What the phase must build:**
+
+1. Swipe-to-skip on break chunks at every density. The complete (right-swipe) direction is a
+   separate question — decide it deliberately and record the reasoning; "complete a break" may not
+   be a meaningful action, in which case breaks get a one-directional Dismissible.
+2. **Resolve the 20dp grab-target problem.** A 5-minute break's row is 20dp
+   (`5 × kPixelsPerMinute`), well under any usable drag target, and Phase 29's sub-compact tier
+   renders it as a bare hairline with no card behind it. This is the same duration-exact-slot
+   tension Phase 27 created and Phase 29 met on the legibility axis — meet it here on the gesture
+   axis. **The grid is not negotiable**: SEEBREAK-02 (rendered height never deviates from
+   `durationMinutes × kPixelsPerMinute`) still holds, and raising `kPixelsPerMinute` remains
+   rejected (Phase 29 D-03).
+3. **Decide and document what skipping a break MEANS**, because the honest default is
+   counter-intuitive. The timeline is duration-exact and time-anchored, so skipping a 5-minute
+   break does **not** hand those 5 minutes back — the next work chunk still starts when it always
+   did. The cheap, consistent reading is "mark it skipped and move on." Pulling the day forward is
+   an engine change of a completely different size and is **out of scope** unless the owner asks
+   for it; if planning concludes otherwise, stop and ask rather than widening scope unilaterally.
+   Note that `_absorbReclaimedTimeIntoNextBreak` (Phase 23 G-05) already moves a break when work
+   finishes early — read it before designing, so the two behaviours do not contradict each other.
+4. A skipped break must render as skipped at every density, including sub-compact. Phase 29's
+   `_SubCompactRow` has no completed/skipped visual state at all — check before assuming.
+
+**Verification note.** Like Phase 29, this needs a real-browser step: a drag gesture on a 20dp row
+is exactly the class of thing `flutter test` will report as working while a thumb cannot actually
+do it. `flutter test` fires synthetic drags at exact coordinates and does not model finger size.
+Reuse Phase 29's harness (`.planning/phases/29-breaks-you-can-see/tools/`, port 8143 is already
+claimed and safe to reuse for this project's debug builds).
+
+**This phase MUST end in a human UAT checkpoint**, for the same reason Phase 29 did and with the
+same precedent behind it: Phase 27 scored 16/17 automated and then failed 2 of 3 human items, and
+Phase 29's own automated suite went 587-green and three pixel measurements deep while the owner was
+looking at a screen that showed no breaks at all. "Can a thumb skip this break" is a physical
+question no assertion settles.
+
+**Requirements:** SKIPBREAK-01 (a break can be skipped at every density, by the same gesture that
+skips a work chunk), SKIPBREAK-02 (the true grid is preserved — no break grows to accommodate its
+own gesture target)
+**Depends on:** Phase 29 (owns the sub-compact tier this phase must make skippable, and
+`kSubCompactBreakMinHeight`). Do not start until Phase 29's UAT verdict is recorded — if that
+verdict changes the sub-compact layout, it changes what this phase attaches a gesture to.
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run `/gsd-plan-phase 30` to break down)
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -467,3 +549,4 @@ Plans:
 | 27. True Grid | — (standalone) | 4/4 | Complete | 2026-08-19 |
 | 28. The Day Is a Lattice | — (standalone) | 3/3 | Complete   | 2026-08-19 |
 | 29. Breaks You Can See | — (standalone) | 3/4 | In Progress|  |
+| 30. Breaks You Can Skip | — (standalone) | 0/? | Not Started |  |
