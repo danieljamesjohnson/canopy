@@ -46,3 +46,6 @@ app.*.map.json
 
 # Mission Control: Backlog board is a regenerable cache (projection of .planning/ROADMAP.md)
 backlog/
+
+# GSD run-scoped harness state (dispatch-isolation sentinel)
+.gsd/
