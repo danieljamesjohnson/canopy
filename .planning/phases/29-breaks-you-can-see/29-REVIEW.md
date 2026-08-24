@@ -23,6 +23,14 @@ status: issues_found
 **Reviewed:** 2026-08-24
 **Depth:** standard
 **Files Reviewed:** 6
+
+## Dispositions (added 2026-08-24, autonomous run)
+
+| ID | Disposition |
+|----|-------------|
+| WR-01 | **FIXED** — `440462a`. Both doc comments corrected; the enum comment now distinguishes the live break arm from the still-dead work-chunk arm rather than flipping both. `flutter analyze` clean. |
+| IN-01 | **ACCEPTED** — inherited from the pre-existing `compact` tier; a completed/skipped indicator on a 20dp hairline is a design question for the skip work in Phase 31, not a Phase 29 defect. |
+| IN-02 | **ACCEPTED** — the source already documents the unreachable `[32,88)` band deliberately; leaving the band in place keeps the tier ladder total if break durations ever change. |
 **Status:** issues_found
 
 ## Summary
