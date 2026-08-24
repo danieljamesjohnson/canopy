@@ -80,9 +80,9 @@ Reach it at `http://danserver:<port>/`. Use a port that has NEVER served a diffe
 build type (see trap #1). Switch to `flutter build web --release` only once the basics
 are solid.
 
-### Three traps that fake a broken build (none of them means the build is broken)
+### Four traps that fake a broken build (none of them means the build is broken)
 
-Traps #1 and #2 fake a *blank page*; trap #3 fakes a *missing feature*. Rule them
+Traps #1 and #2 fake a *blank page*; traps #3 and #4 fake a *missing feature*. Rule them
 out before concluding the build is broken:
 
 1. **Service-worker cache collision — never swap build types on one origin/port.**
@@ -117,6 +117,24 @@ out before concluding the build is broken:
    `curl -s http://danserver:<port>/main.dart.js | grep -c '<a new string>'`.
    Non-zero means the server is serving the right bytes and it's a client-side
    cache — not a broken build, and not a missing feature.
+4. **Stale Hive data — the served bytes are correct, so trap #3's own check will not
+   catch this one.** `ScheduleNotifier._loadToday()` reads today's schedule straight
+   from Hive, and `ScheduleGeneratorService.generate()` only runs at check-in with
+   silent-replace. An already-generated day is **never regenerated on load**, so a
+   change to the scheduling engine is invisible in the running app until the user
+   taps **⟳ Re-check-in** — even though `curl | grep` on `main.dart.js` will happily
+   confirm the new code shipped, because it did. The served bytes being right is
+   exactly what makes this trap convincing: an agent who has just run trap #3's
+   diagnosis and gotten a clean, non-zero grep will reasonably but wrongly treat
+   that as proof the feature is present, when all it proved is that the *code*
+   shipped, not that the *data on screen* was produced by it.
+   **This is not hypothetical.** On 2026-08-21 a UAT of an engine change omitted
+   Re-check-in, judged a pre-fix day, and reported a false failure — costing the
+   owner a round trip and letting the real defect survive three more days until he
+   reported the identical symptom again on 2026-08-24.
+   **The rule, not a suggestion:** any UAT that judges scheduling-engine output
+   must ⟳ Re-check-in first, and any plan that writes such a UAT must put that step
+   — first, marked mandatory — in the UAT's own instructions.
 
 ## Architecture
 
