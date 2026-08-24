@@ -18,17 +18,20 @@ import 'package:intl/intl.dart';
 ///   3. Outcome goals (mood 3-5 only, or deadline pressure; sorted by urgency)
 ///   4. Time-target goals (mood 3-5 only; multi-chunk demand, most-behind first)
 ///
-/// After allocation, a break insertion pass interleaves shortBreak / longBreak
-/// chunks between every work chunk on a 30-minute lattice: every discretionary
-/// work chunk *tries to close* its own cell with a 5-minute short break, and
-/// every longBreakEvery-th chunk's cell is *normally* followed by a separate
-/// 30-minute long break cell — except when the enclosing free slot is too
-/// narrow to hold that footprint (bounded by an off-lattice commitment start
-/// or the 10:00 PM day end), in which case the break is genuinely omitted
-/// rather than silently suppressed by a position-based guard. See
-/// _assignSyntheticStartTimes for the exact fallback rules. longBreakEvery is
-/// mood-scaled: 2 / 3 / 4 / 4 / 5 for moods 1 through 5 — see the
-/// break-cadence table below.
+/// Every work chunk — commitment AND discretionary alike — gets breaks on
+/// the same 30-minute lattice (COMMITBREAK-01, Phase 30): every work chunk
+/// *tries to close* its own cell with a 5-minute short break, and every
+/// longBreakEvery-th chunk's cell is *normally* followed by a separate
+/// 30-minute long break cell — except when the enclosing window is too
+/// narrow to hold that footprint (bounded by an off-lattice commitment start,
+/// the block's own end, or the 10:00 PM day end), in which case the break is
+/// genuinely omitted rather than silently suppressed by a position-based
+/// guard. A commitment block's window runs this insertion pass through
+/// [buildCommitmentChunks], on the block's OWN independent cadence counter
+/// (D-30-01); discretionary chunks run it through
+/// [_assignSyntheticStartTimes] — see either for its exact fallback rules.
+/// longBreakEvery is mood-scaled: 2 / 3 / 4 / 4 / 5 for moods 1 through 5 —
+/// see the break-cadence table below.
 class ScheduleGeneratorService {
   /// Capacity table: maps moodIndex → max discretionary work chunks at 80%.
   ///
@@ -152,6 +155,103 @@ class ScheduleGeneratorService {
     return streak;
   }
 
+  /// Returns the long-break cadence (work chunks between long breaks) for
+  /// [moodIndex] — the single external reader of the `_moodBreakCadence`
+  /// table, replacing the inline `_moodBreakCadence[moodIndex] ?? 4` lookup
+  /// that used to live at the `generate()` call site. Falls back to 4 for an
+  /// out-of-range value, matching that inline fallback exactly.
+  static int breakCadenceForMood(int moodIndex) =>
+      _moodBreakCadence[moodIndex] ?? 4;
+
+  /// Builds the ordered list of anchored chunks — work AND break alike — for
+  /// one commitment [block]'s own window (COMMITBREAK-01), mirroring
+  /// [_assignSyntheticStartTimes]'s footprint-reservation pattern instead of
+  /// a second, independently invented algorithm (30-RESEARCH.md "Recommended
+  /// approach — mirror, don't reinvent"). This helper owns the whole window
+  /// walk and nothing else: it does not decide whether [block] anchors
+  /// today — callers keep their own anchoring check (`generate()`'s
+  /// `anchoredToday`; `addEventToday` keeps its own equivalent).
+  ///
+  /// D-30-01: [longBreakEvery] drives a cadence counter that is LOCAL to
+  /// this call — fresh for every block instance, never shared with
+  /// [_assignSyntheticStartTimes]'s discretionary `breakCount`. A shared
+  /// counter would count in code-execution order (this loop runs, and
+  /// finishes, before Steps 2-4 collect discretionary demand) rather than
+  /// wall-clock order (a discretionary chunk can land chronologically
+  /// *before* a 09:00 commitment) — breaking the "Nth chunk of your day"
+  /// cadence model unpredictably, which directly contradicts CLAUDE.md's
+  /// product position that a schedule the user can't predict is one they
+  /// won't trust. Settled by simulation, not estimate: a 6-hour block at
+  /// mood 3 yields exactly 2 long breaks — the same density 6 hours of
+  /// discretionary work already gets at that mood (30-RESEARCH.md "Cadence
+  /// Decision", captured RED as COMMITBREAK-01/CADENCE).
+  ///
+  /// [block.startMinutes]/[block.endMinutes] are read-only throughout (Phase
+  /// 28 D-01) — only the chunk *composition* inside the window changes.
+  // TASK 1 (tracer): this helper reserves the short break only — no cadence
+  // boundary, no long break yet. `longBreakEvery` is threaded through the
+  // signature now so the public API doesn't change shape between Task 1 and
+  // Task 2; Task 2 wires it into a boundary check. Four wave-1 tests stay
+  // RED after Task 1 alone by design: COMMITBREAK-01/PRIMARY,
+  // COMMITBREAK-01/CADENCE, COMMITBREAK-02/D-01 (schedule_generator_test.dart)
+  // and COMMITBREAK-01/RENDER (lattice_break_pair_test.dart) — all four need
+  // the cadence boundary Task 2 adds.
+  static List<ScheduledChunk> buildCommitmentChunks(
+    CommitmentBlock block, {
+    required int longBreakEvery,
+  }) {
+    final List<ScheduledChunk> chunks = [];
+    int cursor = block.startMinutes;
+    // Last chunk actually added for THIS block — work or break — tracked as
+    // a single mutable reference so the tail-stretch below always extends
+    // whichever unit is genuinely last, never re-deriving it from position
+    // (30-RESEARCH.md Pitfall 3: that is the defect path where the stretch
+    // grows a work chunk backward over a break already placed).
+    ScheduledChunk? lastForBlock;
+    while (cursor + 25 <= block.endMinutes) {
+      final work = ScheduledChunk(
+        chunkTypeIndex: ChunkType.work.index,
+        goalId: null,
+        commitmentId: block.id,
+        durationMinutes: 25,
+        anchoredStartMinutes: cursor,
+        rationale: block.name,
+      );
+      chunks.add(work);
+      lastForBlock = work;
+      cursor += 25;
+
+      if (cursor + _shortBreakMinutes <= block.endMinutes) {
+        final sb = ScheduledChunk(
+          chunkTypeIndex: ChunkType.shortBreak.index,
+          goalId: null,
+          // D-30-04: commitment breaks carry commitmentId too — the exact
+          // discriminator D-30-02's narrowed STEP E trim depends on, and
+          // visually inert on a break (ChunkCard routes on chunkType before
+          // ever reading isCommitment — COMMITBREAK-01/RENDER, 30-02).
+          commitmentId: block.id,
+          durationMinutes: _shortBreakMinutes,
+          anchoredStartMinutes: cursor,
+          rationale: '',
+        );
+        chunks.add(sb);
+        lastForBlock = sb;
+        cursor += _shortBreakMinutes;
+      }
+      // else: no break reserved — the window has no room even for the
+      // chunk's own short break (a genuine capacity-driven omission).
+    }
+    // Honor the full committed window: stretch whichever chunk was
+    // genuinely last (work OR break) to reach block.endMinutes, so a
+    // sub-lattice remainder is covered without ever growing a work chunk
+    // backward over a break that was already reserved.
+    if (lastForBlock != null && cursor < block.endMinutes) {
+      lastForBlock.durationMinutes =
+          lastForBlock.durationMinutes + (block.endMinutes - cursor);
+    }
+    return chunks;
+  }
+
   // ---------------------------------------------------------------------------
   // Private budget helpers.
   // ---------------------------------------------------------------------------
@@ -261,7 +361,7 @@ class ScheduleGeneratorService {
     assert(moodIndex >= 1 && moodIndex <= 5);
     final int cap = _effectiveCap(moodIndex, lighterDay);
     final bool isLowMood = moodIndex <= 2;
-    final int longBreakEvery = _moodBreakCadence[moodIndex] ?? 4;
+    final int longBreakEvery = breakCadenceForMood(moodIndex);
 
     // Collect work chunks in allocation order.
     final List<ScheduledChunk> workChunks = [];
@@ -284,28 +384,12 @@ class ScheduleGeneratorService {
         anchoredToday = block.daysOfWeek.contains(date.weekday);
       }
       if (!anchoredToday) continue;
-      int cursor = block.startMinutes;
-      ScheduledChunk? lastForBlock;
-      while (cursor + 25 <= block.endMinutes) {
-        final chunk = ScheduledChunk(
-          chunkTypeIndex: ChunkType.work.index,
-          goalId: null,
-          commitmentId: block.id, // CLOSE-03: real block id for attribution
-          durationMinutes: 25,
-          anchoredStartMinutes: cursor,
-          rationale: block.name,
-        );
-        workChunks.add(chunk);
-        lastForBlock = chunk;
-        cursor += 25;
-      }
-      // Honor the full committed window: stretch the last chunk to reach
-      // endMinutes so a sub-25-min tail is covered (and discretionary packing
-      // treats the whole window as occupied, never booking work into the tail).
-      if (lastForBlock != null) {
-        lastForBlock.durationMinutes =
-            block.endMinutes - lastForBlock.anchoredStartMinutes!;
-      }
+      // COMMITBREAK-01: the block's own window gets breaks on the same
+      // 25+5(+30) lattice as discretionary time, via buildCommitmentChunks —
+      // CLOSE-03's real block-id attribution now flows through that helper.
+      workChunks.addAll(
+        buildCommitmentChunks(block, longBreakEvery: longBreakEvery),
+      );
     }
 
     // -------------------------------------------------------------------------
@@ -636,8 +720,10 @@ class ScheduleGeneratorService {
       startFloorMinutes: startFloorMinutes,
     );
 
-    // STEP C: Build result — commitment chunks (no breaks between them),
-    // then interleave breaks for discretionary chunks only.
+    // STEP C: Build result — commitment chunks first (COMMITBREAK-01: these
+    // now include the block's OWN internal breaks, fully formed by
+    // buildCommitmentChunks at emission time), then interleave breaks for
+    // discretionary chunks.
     //
     // WR-01: the break(s) for each discretionary chunk are driven entirely by
     // the reservedBreakMinutes footprint recorded during packing — the single
@@ -685,13 +771,24 @@ class ScheduleGeneratorService {
       return aStart.compareTo(bStart);
     });
 
-    // STEP E: Trim a trailing dangling SHORT break only (D-05). A trailing
-    // long break deliberately survives — LATTICE-02's "never silently
-    // suppressed" means a day can now end with an explicit "take a
-    // 30-minute break" card with nothing after it. Trimming any trailing
-    // non-work chunk here (the old behavior) would re-create defect 3 by a
-    // second path even after the packing loop no longer suppresses it.
-    while (result.isNotEmpty && result.last.chunkType == ChunkType.shortBreak) {
+    // STEP E: Trim a trailing dangling SHORT break only (D-05), and only a
+    // DISCRETIONARY one (D-30-02). A trailing long break deliberately
+    // survives — LATTICE-02's "never silently suppressed" means a day can
+    // now end with an explicit "take a 30-minute break" card with nothing
+    // after it. Trimming any trailing non-work chunk here (the old
+    // behavior) would re-create defect 3 by a second path even after the
+    // packing loop no longer suppresses it.
+    //
+    // commitmentId == null narrows the trim to discretionary-origin breaks
+    // only (D-30-02): a trailing discretionary short break is 5 idle
+    // minutes and reads as noise, but a trailing COMMITMENT break
+    // (COMMITBREAK-01) may have been tail-stretched by buildCommitmentChunks
+    // to cover a sub-lattice remainder — trimming it would silently erase
+    // however many real committed minutes the stretch absorbed from inside
+    // the user's own committed window, not just drop 5 idle minutes.
+    while (result.isNotEmpty &&
+        result.last.chunkType == ChunkType.shortBreak &&
+        result.last.commitmentId == null) {
       result.removeLast();
     }
 
