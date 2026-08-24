@@ -1,0 +1,136 @@
+Phase 30 Plan 04 — GREEN evidence, phase-closing full-suite gate (wave 3 boundary)
+====================================================================================
+
+Captured command (exact, --concurrency=1 is not optional — see 30-VALIDATION.md
+"Test Infrastructure"; default concurrency's expanded reporter drops/duplicates
+per-test-name lines at this suite's scale, Phase 28 precedent 28-03-SUMMARY.md,
+re-used identically by 30-GREEN-wave2.txt in this phase):
+
+  export PATH="$PATH:/home/dan/development/flutter/bin" && \
+    flutter test --concurrency=1 --reporter expanded
+
+Captured: 2026-08-24, against the FIXED notifier — lib/providers/schedule_notifier.dart
+now delegates addEventToday's commitment-window walk to
+ScheduleGeneratorService.buildCommitmentChunks/breakCadenceForMood (D-30-03), and
+_trimTrailingNonWork is narrowed to commitmentId == null (D-30-02, notifier half).
+Proven below by git diff --stat that this plan's one lib-touching commit changes
+only that one file.
+
+RESULT: 597 tests total, 597 passed, 0 failed. Total unchanged from 30-GREEN-wave2.txt
+(597) — this wave turns the remaining 5 RED failures GREEN without adding or deleting
+any test. No test was deleted anywhere in the phase (587 baseline + 10 added across
+30-01/30-02 = 597, matching exactly, same arithmetic as 30-GREEN-wave2.txt).
+
+PHASE-CLOSING RED -> GREEN CROSS-CHECK — every wave-1 test named RED or GUARD, by
+name, across BOTH RED evidence files, with the wave that cleared each one
+--------------------------------------------------------------------------------
+
+Part A — from 30-RED-generator.txt (30-01, generator-only tests). Cleared in wave 2
+(30-03); re-confirmed GREEN here, unaffected by this wave's notifier-only change.
+
+| Test                                                              | Wave-1 class | Clearing wave | Status now |
+|----------------------------------------------------------------------|--------------|----------------|------------|
+| COMMITBREAK-01/PRIMARY                                               | RED          | wave 2 (30-03) | GREEN      |
+| COMMITBREAK-02/D-01                                                   | RED          | wave 2 (30-03) | GREEN      |
+| COMMITBREAK-01/CADENCE                                                | RED          | wave 2 (30-03) | GREEN      |
+| COMMITBREAK-01/TAIL                                                   | RED          | wave 2 (30-03) | GREEN      |
+| COMMITBREAK-01/STEP-E                                                 | RED          | wave 2 (30-03) | GREEN      |
+| COMMITBREAK-01/NO-DOUBLE-BOOK                                         | GUARD        | (was GREEN)    | GREEN      |
+| Test 2 (commitment block on Monday generates 2 anchored chunks)       | RED          | wave 2 (30-03) | GREEN      |
+| Test 10 (commitment block + discretionary)                            | RED          | wave 2 (30-03) | GREEN      |
+| Test 13 (all-commitment day)                                          | RED          | wave 2 (30-03) | GREEN      |
+| WR-03 (narrow pre-gap)                                                | RED          | wave 2 (30-03) | GREEN      |
+| LATTICE-02/D-05 (narrow + control halves)                             | RED          | wave 2 (30-03) | GREEN      |
+| LATTICE-01/D-01 / GUARD 7                                             | RED          | wave 2 (30-03) | GREEN      |
+
+All 12 tests in Part A pass in THIS run — this wave touches
+lib/providers/schedule_notifier.dart only, so schedule_generator_test.dart's own
+result cannot have moved; re-confirmed here for completeness of the phase-closing
+proof, not because this wave changed anything on that path.
+
+Part B — from 30-RED-secondpath.txt (30-02, addEventToday + render tests). The
+render test cleared in wave 2 (30-03); the 5 notifier tests clear HERE, in wave 3
+(30-04) — this plan.
+
+| Test                                                                       | Wave-1 class | Clearing wave  | Status now |
+|--------------------------------------------------------------------------------|--------------|-----------------|------------|
+| COMMITBREAK-01/RENDER (lattice_break_pair_test.dart)                           | RED          | wave 2 (30-03)  | GREEN      |
+| inserts a same-day one-off, preserving existing progress (re-pointed)          | RED          | wave 3 (30-04)  | GREEN      |
+| COMMITBREAK-01/ADD-EVENT: an event added mid-day gets the same 25+5 lattice ... (new) | RED    | wave 3 (30-04)  | GREEN      |
+| COMMITBREAK-01/ADD-EVENT-TRIM: the trailing trim must not delete a commitment break (D-30-02) (new) | RED | wave 3 (30-04) | GREEN |
+| editing an event re-anchors today (idempotent by commitmentId) (re-pointed)    | RED          | wave 3 (30-04)  | GREEN      |
+| creates a minimal today schedule when none exists (empty-state add) (re-pointed) | RED        | wave 3 (30-04)  | GREEN      |
+| COMMITBREAK-02/ADD-EVENT: the added event's own window never moves (new)       | GUARD        | (was GREEN)     | GREEN      |
+
+grep -c "COMMITBREAK-01/ADD-EVENT-TRIM" (this file): the row above matches by
+name and reads GREEN — see the line search below for the literal capture.
+
+Every row in Part A and Part B now reads GREEN. Every wave-1 RED test is
+accounted for by name across both RED evidence files; nothing was silently
+dropped or renamed to force a match.
+
+FULL BY-NAME LINE CAPTURE — the 6 addEventToday tests, verbatim from this
+session's --concurrency=1 --reporter expanded run (proves no drop/duplicate at
+this suite's scale, and that the concurrency=1 requirement is being honored)
+--------------------------------------------------------------------------------
+00:07 +198: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: inserts a same-day one-off, preserving existing progress
+00:07 +199: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: COMMITBREAK-01/ADD-EVENT: an event added mid-day gets the same 25+5 lattice as a generated day
+00:07 +200: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: COMMITBREAK-02/ADD-EVENT: the added event's own window never moves
+00:07 +201: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: COMMITBREAK-01/ADD-EVENT-TRIM: the trailing trim must not delete a commitment break (D-30-02)
+00:07 +208: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: editing an event re-anchors today (idempotent by commitmentId)
+00:07 +210: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: creates a minimal today schedule when none exists (empty-state add)
+
+FULL RUN SUMMARY (final line of the captured session)
+--------------------------------------------------------------------------------
+00:54 +597: All tests passed!
+
+597 tests: 597 passed, 0 failed.
+
+`flutter analyze`: No issues found!
+
+WAVE BOUNDARY PROOF — git diff --stat, this plan's one lib-touching commit
+--------------------------------------------------------------------------------
+Command: git diff --stat HEAD~1 HEAD  (spans Task 1's commit, i.e. the commit
+before this evidence-capture commit)
+
+ lib/providers/schedule_notifier.dart | 76 +++++++++++++++++++-----------------
+ 1 file changed, 40 insertions(+), 36 deletions(-)
+
+Command: git diff --name-only HEAD~1 HEAD
+
+lib/providers/schedule_notifier.dart
+
+Command: git diff --name-only HEAD~1 HEAD | grep -c '^test/'
+
+0
+
+Zero paths under test/ — the only changed path is lib/providers/schedule_notifier.dart
+alone. Combined with 30-GREEN-wave2.txt's own boundary proof (lib/services/
+schedule_generator.dart only, wave 2), the phase's two lib/-touching waves together
+changed exactly two files, neither of them a test file — no test file was modified
+in ANY lib/-touching wave of this phase. `git diff --stat <wave-3 base>..HEAD -- test/`
+is empty by the same proof: neither this commit nor the wave-2 commits touched test/.
+
+D-01 / COMMITBREAK-02 STATIC CHECK (second path)
+--------------------------------------------------------------------------------
+`block.startMinutes` / `block.endMinutes` inside the new addEventToday body
+appear only on the right-hand side of expressions passed into
+ScheduleGeneratorService.buildCommitmentChunks(block, ...) — the block object
+itself is never mutated by addEventToday, matching buildCommitmentChunks' own
+read-only contract for those two fields (Phase 28 D-01, restated in its doc
+comment). The test COMMITBREAK-02/ADD-EVENT additionally proves this at
+runtime by reading block.startMinutes/block.endMinutes back after
+addEventToday returns and asserting they are unchanged (840/900) — GREEN
+above.
+
+CADENCE-SOURCE NOTE (not in the plan's original acceptance criteria list, but
+directly supports the "same lattice as a generated day" truth claim)
+--------------------------------------------------------------------------------
+addEventToday now sources longBreakEvery from `_todaySchedule?.moodIndex ?? 3`
+rather than a hardcoded constant, so a mid-day add onto an already-generated
+day uses that day's REAL mood cadence rather than always assuming mood 3. All
+of this wave's test fixtures use mood 3 (matching both the plan's acceptance
+criteria and the minimal-schedule branch's own pre-existing default), so this
+does not change any test's expected numbers — it closes a latent drift vector
+where a mood-5 day's cadence (N=5) would otherwise silently disagree between
+the generated chunks and any mid-day add on top of them.

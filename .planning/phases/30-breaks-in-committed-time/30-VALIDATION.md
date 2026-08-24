@@ -3,7 +3,7 @@ phase: 30
 slug: breaks-in-committed-time
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-08-24
 ---
@@ -57,10 +57,14 @@ carry-forward invariant).
 
 | Req | Behavior | Test Type | Automated Command | File Exists | Status |
 |-----|----------|-----------|-------------------|-------------|--------|
-| COMMITBREAK-01 | A break is emitted between consecutive work chunks inside a commitment block, on the 25+5 lattice | unit | `flutter test test/services/schedule_generator_test.dart --concurrency=1` | ✅ needs new assertions | ⬜ pending |
-| COMMITBREAK-02 | The commitment's own start and end times are unchanged (D-01 preserved) | unit | same file — assert `block.startMinutes`/`endMinutes` unchanged across every fixture in the research's tail-arithmetic table | ✅ extend existing `LATTICE-01/D-01` GUARD 7 | ⬜ pending |
+| COMMITBREAK-01 | A break is emitted between consecutive work chunks inside a commitment block, on the 25+5 lattice | unit | `flutter test test/services/schedule_generator_test.dart --concurrency=1` | ✅ extended with the COMMITBREAK-01 group (30-01) | ✅ green — both entry points: generator (wave 2, 30-03) and `addEventToday` (wave 3, 30-04, `COMMITBREAK-01/ADD-EVENT`) |
+| COMMITBREAK-02 | The commitment's own start and end times are unchanged (D-01 preserved) | unit | same file — assert `block.startMinutes`/`endMinutes` unchanged across every fixture in the research's tail-arithmetic table | ✅ extended existing `LATTICE-01/D-01` GUARD 7, plus `COMMITBREAK-02/D-01` (30-01) and `COMMITBREAK-02/ADD-EVENT` (30-02) | ✅ green — both entry points |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+
+Full evidence: `.planning/phases/30-breaks-in-committed-time/30-GREEN-wave2.txt` (generator
+path, wave 2) and `30-GREEN-final.txt` (notifier path + phase-closing full-suite
+cross-check, wave 3). 597 tests, 597 passed, 0 failed; `flutter analyze` clean.
 
 ---
 
@@ -97,13 +101,16 @@ trip and letting the real defect survive three more days.
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references (n/a — none)
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 60s
-- [ ] Primary regression fixture is a **commitment block**, not a goal
-- [ ] UAT instructions include the ⟳ re-check-in step (trap #4)
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (n/a — none)
+- [x] No watch-mode flags
+- [x] Feedback latency < 60s
+- [x] Primary regression fixture is a **commitment block**, not a goal
+- [ ] UAT instructions include the ⟳ re-check-in step (trap #4) — belongs to plan 30-05, not yet run
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** automated verification complete (597/597 tests, `flutter analyze` clean, both
+entry points GREEN by name — see `30-GREEN-wave2.txt` and `30-GREEN-final.txt`); the UAT
+screenshot itself (Manual-Only Verifications table above) is deferred to plan `30-05` per the
+phase's own sequencing.
