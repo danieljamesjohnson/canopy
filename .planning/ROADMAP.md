@@ -532,11 +532,35 @@ commitment block, on the 25+5 lattice), COMMITBREAK-02 (the commitment's own sta
 are unchanged — D-01 preserved)
 **Depends on:** Phase 28 (owns `schedule_generator.dart` and the lattice this extends). Independent
 of Phase 29 — that phase's render work is correct and is what makes the emitted break visible.
-**Plans:** 0 plans
+**Plans:** 5 plans
+
+**Scope note — a deliberate extension beyond this entry (D-30-03).** Planning found the identical
+bare `cursor += 25` walk duplicated in `lib/providers/schedule_notifier.dart:addEventToday`, under a
+doc comment saying it "mirrors the commitment-anchoring step in `ScheduleGeneratorService.generate()`".
+Fixing only the generator would leave a second live path to the owner's exact symptom (an event added
+mid-day would still have no breaks). It is in scope, fixed by *sharing* the generator's helper rather
+than repairing the copy. Planning also found a defect beyond this entry's write-up (D-30-02): STEP E's
+trailing trim deletes *any* trailing short break, including a tail-stretched commitment break, erasing
+real minutes from inside the committed window — narrowed to `commitmentId == null`.
 
 Plans:
 
-- [ ] TBD (run `/gsd-plan-phase 30` to break down)
+**Wave 1** *(parallel — disjoint files; tests only, proven RED against the unfixed code)*
+
+- [ ] 30-01-PLAN.md — The COMMITBREAK generator regression group + 6 re-pointed tests; RED evidence
+- [ ] 30-02-PLAN.md — `addEventToday` second-path tests + the `commitmentId`-on-a-break render guard; RED evidence
+
+**Wave 2** *(blocked on Wave 1 completion — `lib/services/` only)*
+
+- [ ] 30-03-PLAN.md — Tracer: one break end-to-end through Step 1→STEP E; then the per-block cadence counter, the long break and the tail; STEP E narrowed
+
+**Wave 3** *(blocked on Wave 2 completion — `lib/providers/` only)*
+
+- [ ] 30-04-PLAN.md — `addEventToday` delegates to the shared helper; `_trimTrailingNonWork` narrowed; closing full-suite gate
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 30-05-PLAN.md — Promote trap #4 into `CLAUDE.md`; human UAT on port 8143 with the ⟳ re-check-in step
 
 ### Phase 31: Breaks You Can Skip
 
