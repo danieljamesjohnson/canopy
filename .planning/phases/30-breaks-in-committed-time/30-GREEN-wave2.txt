@@ -1,0 +1,148 @@
+Phase 30 Plan 03 — GREEN evidence for the generator fix (wave 2 boundary)
+==========================================================================
+
+Captured command (exact, --concurrency=1 is not optional — see
+30-VALIDATION.md "Test Infrastructure"; default concurrency's expanded
+reporter drops/duplicates per-test-name lines at this suite's scale, Phase 28
+precedent 28-03-SUMMARY.md):
+
+  export PATH="$PATH:/home/dan/development/flutter/bin" && \
+    flutter test --concurrency=1 --reporter expanded
+
+Captured: 2026-08-24, against the FIXED engine — lib/services/schedule_generator.dart
+now contains ScheduleGeneratorService.buildCommitmentChunks and
+.breakCadenceForMood, Step 1 calls the helper, and STEP E's trailing trim is
+narrowed to commitmentId == null (D-30-02). Proven below by git diff --stat
+that this plan's two lib-touching commits change only that one file.
+
+RESULT: 597 tests total, 592 passed, 5 failed. Baseline before this phase was
+587 (30-RESEARCH.md); +10 tests were added across 30-01 (+6, the COMMITBREAK
+generator group) and 30-02 (+3 addEventToday tests, +1 render guard) =
+587 + 10 = 597, matching exactly. No test was deleted anywhere in the phase.
+
+Every one of the 5 failures is in test/providers/schedule_notifier_add_event_test.dart
+— the addEventToday second path, which this plan (30-03) deliberately does not
+touch (D-30-03: that fix lands in 30-04). Zero failures anywhere else in the
+597-test suite.
+
+RED -> GREEN CROSS-CHECK — every wave-1 test named RED or GUARD, by name
+--------------------------------------------------------------------------------
+
+Part A — from 30-RED-generator.txt (30-01, generator-only tests). All 11 RED
+tests turn GREEN in this plan; the 1 GUARD stays GREEN throughout.
+
+| Test                                                              | Wave-1 class | Status now |
+|--------------------------------------------------------------------|--------------|------------|
+| COMMITBREAK-01/PRIMARY                                             | RED          | GREEN      |
+| COMMITBREAK-02/D-01                                                 | RED          | GREEN      |
+| COMMITBREAK-01/CADENCE                                              | RED          | GREEN      |
+| COMMITBREAK-01/TAIL                                                 | RED          | GREEN      |
+| COMMITBREAK-01/STEP-E                                               | RED          | GREEN      |
+| COMMITBREAK-01/NO-DOUBLE-BOOK                                       | GUARD        | GREEN      |
+| Test 2 (commitment block on Monday generates 2 anchored chunks)     | RED          | GREEN      |
+| Test 10 (commitment block + discretionary)                          | RED          | GREEN      |
+| Test 13 (all-commitment day)                                        | RED          | GREEN      |
+| WR-03 (narrow pre-gap)                                              | RED          | GREEN      |
+| LATTICE-02/D-05 (narrow + control halves)                           | RED          | GREEN      |
+| LATTICE-01/D-01 / GUARD 7                                           | RED          | GREEN      |
+
+All 12 tests in Part A pass now (0 failures) — proven above by the same
+`flutter test test/services/schedule_generator_test.dart --concurrency=1`
+run also reporting 0 failures in that file this session.
+
+Part B — from 30-RED-secondpath.txt (30-02, addEventToday + render tests).
+This plan (30-03) touches only the generator, so its own boundary is: the
+1 test that exercises the REAL generator (COMMITBREAK-01/RENDER) clears here;
+the 5 tests that exercise addEventToday (a separate, still-unfixed code path)
+correctly remain RED, clearing in wave 3 (30-04). The 1 GUARD in that file
+(COMMITBREAK-02/ADD-EVENT) was already green pre-fix (30-02's own finding —
+addEventToday's tail-stretch and D-01 preservation were never actually
+broken) and stays green, unaffected by either fix.
+
+| Test                                                                 | Wave-1 class | Status now              |
+|-------------------------------------------------------------------------|--------------|--------------------------|
+| COMMITBREAK-01/RENDER (lattice_break_pair_test.dart)                    | RED          | GREEN — clears here (wave 2, 30-03) |
+| inserts a same-day one-off, preserving existing progress (re-pointed)   | RED          | still RED — clears wave 3 (30-04) |
+| COMMITBREAK-01/ADD-EVENT (new)                                          | RED          | still RED — clears wave 3 (30-04) |
+| COMMITBREAK-01/ADD-EVENT-TRIM (new)                                     | RED          | still RED — clears wave 3 (30-04) |
+| editing an event re-anchors today (idempotent by commitmentId) (re-pointed) | RED      | still RED — clears wave 3 (30-04) |
+| creates a minimal today schedule when none exists (empty-state add) (re-pointed) | RED  | still RED — clears wave 3 (30-04) |
+| COMMITBREAK-02/ADD-EVENT (new)                                          | GUARD        | GREEN — unaffected, was already passing pre-fix |
+
+DEVIATION NOTE — plan-authoring inconsistency, documented per this plan's own
+<critical> instruction rather than silently reconciled:
+
+30-03-PLAN.md's Task 3 acceptance criteria says the table must mark
+"COMMITBREAK-01/ADD-EVENT, COMMITBREAK-02/ADD-EVENT and
+COMMITBREAK-01/ADD-EVENT-TRIM as still-RED-by-design, clearing in wave 3."
+This list is inaccurate in two ways, both verified against the real suite
+output (not assumed):
+
+  1. COMMITBREAK-02/ADD-EVENT is NOT RED — it is the GUARD that 30-02's own
+     SUMMARY (key-decisions) and 30-RED-secondpath.txt's own classification
+     table document as already passing pre-fix (addEventToday's pre-existing
+     tail-stretch and D-01 preservation were never actually broken). It is
+     green in this run for that same pre-existing reason, not because 30-03
+     fixed anything on that path. Marking it "still-RED-by-design" would
+     misdescribe a GUARD as a RED, an error 30-02 explicitly took care not to
+     make.
+  2. The plan's list of 3 omits 2 real RED failures that ARE present in this
+     run: "editing an event re-anchors today (idempotent by commitmentId)"
+     and "creates a minimal today schedule when none exists (empty-state
+     add)" — both re-pointed tests from 30-02 that assert the post-fix
+     4-anchored-chunk shape against the still-unfixed addEventToday path.
+     30-RED-secondpath.txt's own classification table (30-02, captured
+     2026-08-24) already lists all 5 correctly as RED/wave-3; this plan's
+     Task 3 acceptance text just didn't carry all 5 forward by name.
+
+The real invariant — "every failure in the full-suite run belongs to
+test/providers/schedule_notifier_add_event_test.dart" — holds exactly as
+written in the plan's acceptance criteria and is proven above (5/5 failures,
+0 elsewhere). Part B's table lists the accurate 5 RED + 1 GUARD rather than
+the plan's incomplete 3-item list, so a future reader of this file is not
+misled about what wave 3 (30-04) actually needs to fix.
+
+FULL BY-NAME OUTPUT (failing tests block only — full 597-line capture omitted
+here for length; captured verbatim during this session's
+`flutter test --concurrency=1 --reporter expanded` run)
+--------------------------------------------------------------------------------
+597 tests: 592 passed, 5 failed.
+
+Failing tests:
+  /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: COMMITBREAK-01/ADD-EVENT-TRIM: the trailing trim must not delete a commitment break (D-30-02)
+  /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: COMMITBREAK-01/ADD-EVENT: an event added mid-day gets the same 25+5 lattice as a generated day
+  /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: creates a minimal today schedule when none exists (empty-state add)
+  /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: editing an event re-anchors today (idempotent by commitmentId)
+  /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: inserts a same-day one-off, preserving existing progress
+
+`flutter analyze`: No issues found!
+
+WAVE BOUNDARY PROOF — git diff --stat, this plan's two lib-touching commits
+--------------------------------------------------------------------------------
+Command: git diff --stat HEAD~2 HEAD  (spans Task 1's tracer commit and
+Task 2's cadence-expansion commit, i.e. the two commits before this
+evidence-capture commit)
+
+ lib/services/schedule_generator.dart | 216 ++++++++++++++++++++++++++++-------
+ 1 file changed, 173 insertions(+), 43 deletions(-)
+
+Command: git diff --name-only HEAD~2 HEAD
+
+lib/services/schedule_generator.dart
+
+Command: git diff --name-only HEAD~2 HEAD | grep -c '^test/'
+
+0
+
+Zero paths under test/ — every changed path is lib/services/schedule_generator.dart
+alone. The wave boundary (this plan touches lib/ only; waves 1 touched
+test/ only) is proven from git, not asserted in prose.
+
+D-01 / COMMITBREAK-02 STATIC CHECK
+--------------------------------------------------------------------------------
+`block.startMinutes` / `block.endMinutes` inside buildCommitmentChunks appear
+only on the right-hand side of expressions (read, never assigned) — confirmed
+by inspection of the diff: every occurrence is inside `cursor = block.startMinutes`
+(read), `cursor + 25 <= block.endMinutes` (read), `block.endMinutes` in the
+tail-stretch arithmetic (read). No assignment to either field appears
+anywhere in the diff. Phase 28 D-01 / COMMITBREAK-02 hold.
