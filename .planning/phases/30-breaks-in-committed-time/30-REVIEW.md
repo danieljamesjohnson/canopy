@@ -17,6 +17,22 @@ findings:
 status: issues_found
 ---
 
+## Fix Dispositions (REVIEW-FIX)
+
+Applied by the gsd-code-fixer agent. Full suite (598 tests, up from 597 — the
+new WR-02 regression test) green, `flutter analyze` clean, both re-verified
+after every commit below.
+
+| ID | Disposition | Commit | Notes |
+|---|---|---|---|
+| CR-01 | FIXED | `4f6f673` | `_trimTrailingNonWork` narrowed to `chunkType == ChunkType.shortBreak && commitmentId == null`, mirroring STEP E's both guards. Doc comment rewritten to name both. |
+| WR-02 | FIXED | `7c09a3d` | Added regression test seeding a trailing `[work, shortBreak, longBreak]` (all discretionary) and asserting all three survive `addEventToday` via the `!anchorsToday` early-return path. Proved RED first against the pre-CR-01-fix code (git `42116fc`) — collapsed to `{w1}`, confirming the cascading `while` deleted both breaks — then GREEN against the CR-01 fix. |
+| WR-01 | FIXED | `89676f7` | `_reflowDiscretionaryWork` now takes `longBreakEvery` as a required parameter; `addEventToday` passes `ScheduleGeneratorService.breakCadenceForMood(cadenceMoodIndex)` — the same mood-derived value `buildCommitmentChunks` already used in the same call — instead of the hardcoded `4`. |
+| WR-03 | FIXED | `89676f7` | The reflow's long-break duration changed from a hardcoded `25` to `ScheduleGeneratorService.longBreakMinutes` (30), matching every other code path. No existing test asserted the reflowed long break's duration (as the review noted), so no test needed updating; none was weakened. |
+| IN-01 | FIXED | `89676f7` | Exposed `shortBreakMinutes`, `longBreakMinutes`, `workChunkMinutes`, `dayStartMinutes`, `dayEndMinutes` as public `static const` on `ScheduleGeneratorService` (public aliases of the existing private lattice constants, plus two new day-boundary/work-duration constants matching `_assignSyntheticStartTimes`'s own locals). `_reflowDiscretionaryWork` now reads all of its day-boundary and duration values from there instead of re-declaring literals — closing the exact duplication vector WR-03 drifted through. |
+
+---
+
 # Phase 30: Code Review Report
 
 **Reviewed:** 2026-08-24T00:00:00Z
