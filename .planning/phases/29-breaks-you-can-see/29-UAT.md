@@ -122,13 +122,19 @@ sub-compact one. Opened as **Phase 30 — Breaks You Can Skip** rather than wide
 
 ---
 
-## Item 1 — Does a 5-minute break read as a break?
+## ✅ UNBLOCKED 2026-08-24 — Phase 30 has landed. Judge this now.
 
-**Blocked until Phase 30 lands.** Breaks between commitment-block chunks are not emitted by the
-engine at all (see the correction at the top of this file), so on a day built around a committed
-`Work` block there is almost nothing here to judge. Judge this once Phase 30 puts breaks in
-committed time — then a full day has breaks in it and item 1 is a real question. Re-check-in (⟳)
-first either way, or the app will show a day generated before the fix.
+Phase 30 shipped the same day: `buildCommitmentChunks` now applies the 25+5 lattice inside
+commitment windows, and `addEventToday` was found duplicating the same defect and fixed too.
+598/598 tests green. **A full day now has breaks in it**, so items 1–3 below are real questions with
+something to look at.
+
+Both this phase's UAT and Phase 30's are served by the **same build** on `http://danserver:8143/`
+(the debug bundle contains both phases' work — verified in the served bytes). Judge them in one
+sitting: Phase 30's `30-UAT.md` asks whether the breaks are *there*; this file asks whether the
+5-minute one *reads as a break*. **⟳ Re-check-in first** — trap #4, now in CLAUDE.md.
+
+## Item 1 — Does a 5-minute break read as a break?
 
 Scroll through the morning. Between two work cards there should be a thin line with "Short break"
 sitting on it. The question is not "can I find it" — it is: glancing at the day, does that row say

@@ -261,7 +261,13 @@ post-Phase-22 tree — do not chase the old ones.
 
 ### Blockers / Concerns
 
-None.
+**Phase 31 is blocked on Phase 29's UAT verdict (2026-08-24).** Not a soft "pending" — the ROADMAP
+entry for Phase 31 states it outright: *"Do not start until Phase 29's UAT verdict is recorded — if
+that verdict changes the sub-compact layout, it changes what this phase attaches a gesture to."*
+Phase 31 attaches a swipe gesture to the 20dp sub-compact hairline; if Dan judges that hairline
+reads as a divider rather than a break, the layout changes and any planning done first is discarded.
+The autonomous run honoured the gate and stopped rather than planning speculatively. See
+`QUESTIONS.md`.
 
 ## Deferred Verification
 
