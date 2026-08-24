@@ -112,7 +112,8 @@ void main() {
       name: 'Dentist',
       daysOfWeek: const [],
       startMinutes: 14 * 60, // 2:00pm
-      endMinutes: 15 * 60, // 3:00pm → 2 chunks
+      endMinutes: 15 * 60, // 3:00pm → 60-min window: 2 work chunks +
+      // the 25+5 lattice's short breaks between/after them (COMMITBREAK-01).
       date: DateTime(2026, 3, 23),
     );
     final inserted = await notifier.addEventToday(block);
@@ -123,14 +124,221 @@ void main() {
     final orig = chunks.where((c) => c.id == 'chunk-done');
     expect(orig.length, 1);
     expect(orig.first.isCompleted, isTrue);
-    // Two new anchored "Dentist" chunks were added at 2pm/2:25pm.
+    // Two new anchored "Dentist" chunks were added at 2pm/2:25pm. Break
+    // chunks carry rationale: '' (D-30-04), so this filter still isolates
+    // exactly the two work chunks even once breaks exist between them.
     final dentist = chunks.where((c) => c.rationale == 'Dentist').toList();
     expect(dentist.length, 2);
     expect(dentist.every((c) => c.commitmentId == block.id), isTrue);
     expect(dentist.first.anchoredStartMinutes, 14 * 60);
+    expect(
+      dentist[1].anchoredStartMinutes,
+      14 * 60 + 30,
+      reason:
+          'the second work chunk starts after the first work chunk PLUS '
+          'its short break (25+5), not back-to-back at +25 (COMMITBREAK-01)',
+    );
+    // The short break the lattice inserts between the two work chunks.
+    final midBreak = chunks.where(
+      (c) =>
+          c.chunkType == ChunkType.shortBreak &&
+          c.anchoredStartMinutes == 14 * 60 + 25 &&
+          c.durationMinutes == 5 &&
+          c.commitmentId == block.id,
+    );
+    expect(
+      midBreak.length,
+      1,
+      reason:
+          'a commitment break added mid-day must exist on the lattice, same '
+          'as a generated day (COMMITBREAK-01/ADD-EVENT)',
+    );
     // Sorted: the 8am completed chunk precedes the 2pm event.
     expect(chunks.first.id, 'chunk-done');
   });
+
+  test(
+    'COMMITBREAK-01/ADD-EVENT: an event added mid-day gets the same 25+5 '
+    'lattice as a generated day',
+    () async {
+      final repo = _InMemoryScheduleRepository();
+      final notifier = await makeNotifier(repo);
+
+      final block = CommitmentBlock(
+        name: 'Meeting',
+        daysOfWeek: const [],
+        startMinutes: 840, // 14:00
+        endMinutes: 900, // 15:00 — 60-min window, mood 3 (N=4): no
+        // cadence boundary reached, short breaks only.
+        date: DateTime(2026, 3, 23),
+      );
+      final inserted = await notifier.addEventToday(block);
+      expect(inserted, isTrue);
+
+      final blockChunks =
+          notifier.todaySchedule!.chunks
+              .where((c) => c.commitmentId == block.id)
+              .toList()
+            ..sort(
+              (a, b) => a.anchoredStartMinutes!.compareTo(
+                b.anchoredStartMinutes!,
+              ),
+            );
+
+      expect(
+        blockChunks.length,
+        4,
+        reason:
+            'work@840/25, shortBreak@865/5, work@870/25, shortBreak@895/5 — '
+            'the same 25+5 lattice a generated day gets inside a commitment '
+            'window (COMMITBREAK-01), reached via the SECOND path '
+            '(addEventToday), not generate()',
+      );
+      expect(blockChunks[0].chunkType, ChunkType.work);
+      expect(blockChunks[0].anchoredStartMinutes, 840);
+      expect(blockChunks[0].durationMinutes, 25);
+      expect(blockChunks[1].chunkType, ChunkType.shortBreak);
+      expect(blockChunks[1].anchoredStartMinutes, 865);
+      expect(blockChunks[1].durationMinutes, 5);
+      expect(blockChunks[2].chunkType, ChunkType.work);
+      expect(blockChunks[2].anchoredStartMinutes, 870);
+      expect(blockChunks[2].durationMinutes, 25);
+      expect(blockChunks[3].chunkType, ChunkType.shortBreak);
+      expect(blockChunks[3].anchoredStartMinutes, 895);
+      expect(blockChunks[3].durationMinutes, 5);
+      expect(
+        blockChunks.every((c) => c.commitmentId == block.id),
+        isTrue,
+        reason: 'D-30-04: every anchored chunk (work AND break) carries '
+            "the block's commitmentId",
+      );
+    },
+  );
+
+  test(
+    "COMMITBREAK-02/ADD-EVENT: the added event's own window never moves",
+    () async {
+      final repo = _InMemoryScheduleRepository();
+      final notifier = await makeNotifier(repo);
+
+      final block = CommitmentBlock(
+        name: 'Meeting',
+        daysOfWeek: const [],
+        startMinutes: 840,
+        endMinutes: 900,
+        date: DateTime(2026, 3, 23),
+      );
+      final inserted = await notifier.addEventToday(block);
+      expect(inserted, isTrue);
+
+      final blockChunks =
+          notifier.todaySchedule!.chunks
+              .where((c) => c.commitmentId == block.id)
+              .toList()
+            ..sort(
+              (a, b) => a.anchoredStartMinutes!.compareTo(
+                b.anchoredStartMinutes!,
+              ),
+            );
+      expect(blockChunks, isNotEmpty);
+      expect(blockChunks.first.anchoredStartMinutes, 840);
+      expect(
+        blockChunks.last.anchoredStartMinutes! +
+            blockChunks.last.durationMinutes,
+        900,
+        reason:
+            "the last chunk's end must reach the block's own endMinutes "
+            'exactly — no lattice remainder left uncovered (D-01/COMMITBREAK-02)',
+      );
+      // The block object itself — read back after addEventToday returns —
+      // must never have had its own start/end moved.
+      expect(block.startMinutes, 840);
+      expect(block.endMinutes, 900);
+    },
+  );
+
+  test(
+    'COMMITBREAK-01/ADD-EVENT-TRIM: the trailing trim must not delete a '
+    'commitment break (D-30-02)',
+    () async {
+      final repo = _InMemoryScheduleRepository();
+      // Seed today with: a completed discretionary work chunk, then another
+      // block's anchored work+break pair as the chronologically LAST items —
+      // exactly the shape _trimTrailingNonWork sees when a PREVIOUS
+      // addEventToday call already anchored a commitment break onto today.
+      final discretionary =
+          ScheduledChunk(
+            id: 'w0',
+            chunkTypeIndex: ChunkType.work.index,
+            goalId: 'goal-1',
+            durationMinutes: 25,
+            syntheticStartMinutes: 480,
+            rationale: 'Deep work',
+          )..isCompleted = true;
+      final otherWork = ScheduledChunk(
+        id: 'other-work',
+        chunkTypeIndex: ChunkType.work.index,
+        commitmentId: 'other-block',
+        durationMinutes: 25,
+        anchoredStartMinutes: 1170,
+        rationale: 'Other meeting',
+      );
+      final otherBreak = ScheduledChunk(
+        id: 'other-break',
+        chunkTypeIndex: ChunkType.shortBreak.index,
+        commitmentId: 'other-block',
+        durationMinutes: 5,
+        anchoredStartMinutes: 1195,
+        rationale: '',
+      );
+      await repo.save(
+        DailySchedule(
+          id: 'sched-1',
+          dateYmd: testDateYmd,
+          moodIndex: 3,
+          chunks: [discretionary, otherWork, otherBreak],
+        ),
+      );
+      final notifier = ScheduleNotifier(
+        now: () => DateTime(2026, 3, 23),
+        repo: repo,
+        logRepo: _InMemoryLogRepository(),
+        goalRepo: _InMemoryGoalRepository(),
+      );
+      await notifier.init();
+
+      // Add an event for a DIFFERENT day — this exercises the early-return
+      // (!anchorsToday) branch, which still runs _trimTrailingNonWork()
+      // against today's existing chunks before bailing out.
+      final block = CommitmentBlock(
+        name: 'Tomorrow',
+        daysOfWeek: const [],
+        startMinutes: 9 * 60,
+        endMinutes: 10 * 60,
+        date: DateTime(2026, 3, 24),
+      );
+      final placed = await notifier.addEventToday(block);
+
+      expect(placed, isFalse);
+      final survivingBreak = notifier.todaySchedule!.chunks.where(
+        (c) =>
+            c.anchoredStartMinutes == 1195 &&
+            c.chunkType == ChunkType.shortBreak &&
+            c.commitmentId == 'other-block',
+      );
+      expect(
+        survivingBreak.length,
+        1,
+        reason:
+            'D-30-02: _trimTrailingNonWork must not delete a commitment '
+            "break just because it's the day's trailing chunk — only a "
+            'discretionary (commitmentId == null) trailing short break may '
+            'be trimmed. NOTE: the discretionary half of this trim is '
+            'already covered by CR-01 below and is deliberately not '
+            're-tested here.',
+      );
+    },
+  );
 
   test(
     'returns false for an event on a different day (does not touch today)',
@@ -384,8 +592,10 @@ void main() {
       final callChunks = notifier.todaySchedule!.chunks
           .where((c) => c.commitmentId == block.id)
           .toList();
-      // Exactly the new placement — no stale 10:00 copy left behind.
-      expect(callChunks.length, 2);
+      // Exactly the new placement — no stale 10:00 copy left behind. A
+      // 60-min window now yields 4 chunks (2 work + 2 short breaks on the
+      // lattice, COMMITBREAK-01), not the pre-phase 2 bare work chunks.
+      expect(callChunks.length, 4);
       expect(
         callChunks.every((c) => c.anchoredStartMinutes! >= 16 * 60),
         isTrue,
@@ -486,8 +696,17 @@ void main() {
       expect(placed, isTrue);
       expect(notifier.hasScheduleToday, isTrue);
       final chunks = notifier.todaySchedule!.chunks;
-      expect(chunks.length, 2);
-      expect(chunks.every((c) => c.rationale == 'Dentist'), isTrue);
+      // 60-min window -> 4 chunks (2 work + 2 short breaks on the lattice,
+      // COMMITBREAK-01), not the pre-phase 2 bare work chunks.
+      expect(chunks.length, 4);
+      // Break chunks carry rationale: '' (D-30-04) — only the work chunks
+      // are named for the event.
+      expect(
+        chunks
+            .where((c) => c.chunkType == ChunkType.work)
+            .every((c) => c.rationale == 'Dentist'),
+        isTrue,
+      );
       // Persisted, so it survives a reload.
       expect(await repo.getByDate('2026-03-23'), isNotNull);
     },
