@@ -344,14 +344,27 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
   /// next (e.g. `resolveNowState`). No-op if `_todaySchedule` is null or
   /// already trailing-work-clean.
   ///
-  /// D-30-02: narrowed to `commitmentId == null` — only a discretionary
-  /// trailing break may be trimmed. Before D-30-03 wired `addEventToday` to
-  /// `buildCommitmentChunks`, every break here was discretionary by
-  /// construction, so the unnarrowed loop was harmless; now that anchored
-  /// commitment breaks exist on this path too, an unnarrowed trim could
-  /// durably delete real committed minutes from Hive the moment a commitment
-  /// break happens to be the day's chronologically-last chunk. Mirrors the
-  /// generator's own STEP E narrowing (schedule_generator.dart, D-30-02).
+  /// Mirrors the generator's own STEP E narrowing (schedule_generator.dart)
+  /// with BOTH of its guards, not just one:
+  ///
+  /// 1. `chunkType == ChunkType.shortBreak` — only a trailing SHORT break is
+  ///    ever trimmed. A trailing LONG break deliberately survives
+  ///    (LATTICE-02: "never silently suppressed" — a day can legitimately
+  ///    end on an explicit "take a 30-minute break" card with nothing after
+  ///    it, e.g. Test 6 in schedule_generator_test.dart). CR-01 (code review
+  ///    iteration 2): this guard was missing here even though STEP E has
+  ///    always had it, so this trim matched `chunkType != ChunkType.work`
+  ///    instead — both break types — and silently deleted a legitimate
+  ///    trailing discretionary long break (and, via the cascading `while`,
+  ///    its preceding short break too) out of persisted Hive state on every
+  ///    `addEventToday` call.
+  /// 2. `commitmentId == null` (D-30-02) — only a discretionary trailing
+  ///    break may be trimmed. Before D-30-03 wired `addEventToday` to
+  ///    `buildCommitmentChunks`, every break here was discretionary by
+  ///    construction, so the unnarrowed loop was harmless; now that anchored
+  ///    commitment breaks exist on this path too, an unnarrowed trim could
+  ///    durably delete real committed minutes from Hive the moment a
+  ///    commitment break happens to be the day's chronologically-last chunk.
   ///
   /// `chunks` is not guaranteed clock-sorted at this point, so trim against a
   /// sorted copy and remove by identity from the real list — "trailing"
@@ -366,7 +379,7 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
         return aStart.compareTo(bStart);
       });
     while (sorted.isNotEmpty &&
-        sorted.last.chunkType != ChunkType.work &&
+        sorted.last.chunkType == ChunkType.shortBreak &&
         sorted.last.commitmentId == null) {
       schedule.chunks.remove(sorted.removeLast());
     }
