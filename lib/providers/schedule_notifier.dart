@@ -274,33 +274,26 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       return false;
     }
 
-    // Build 25-minute anchored work chunks across the block window — mirrors the
-    // commitment-anchoring step in ScheduleGeneratorService.generate(). The form
-    // enforces a >= 25-minute window, so this is never empty in practice; guard
-    // anyway so a degenerate window can never claim a false success.
-    final newChunks = <ScheduledChunk>[];
-    int cursor = block.startMinutes;
-    while (cursor + 25 <= block.endMinutes) {
-      newChunks.add(
-        ScheduledChunk(
-          chunkTypeIndex: ChunkType.work.index,
-          goalId: null,
-          commitmentId: block.id,
-          durationMinutes: 25,
-          anchoredStartMinutes: cursor,
-          rationale: block.name,
-        ),
-      );
-      cursor += 25;
-    }
-    // Honor the FULL entered window: stretch the last chunk to reach endMinutes
-    // so a sub-25-min tail (e.g. a 9:00–9:40 meeting's last 15 min) is covered
-    // and the reflow's occupancy windows protect it — otherwise goal-work would
-    // be booked into the human's committed time.
-    if (newChunks.isNotEmpty) {
-      final last = newChunks.last;
-      last.durationMinutes = block.endMinutes - last.anchoredStartMinutes!;
-    }
+    // D-30-03: delegate to ScheduleGeneratorService.buildCommitmentChunks
+    // instead of hand-rolling a second copy of the commitment-window walk.
+    // The old local loop here carried the identical bare unbroken-lattice
+    // defect as generate()'s pre-30-03 Step 1 — two independent
+    // implementations of the same rule is exactly how that defect survived
+    // into a second file, so the duplicate is deleted rather than repaired.
+    // Both entry points (generate() and addEventToday) now produce
+    // identical 25+5(+30) lattice windows BY CONSTRUCTION, because both
+    // call the same helper. Cadence comes from today's own mood — the
+    // existing schedule's moodIndex when one exists, else 3 (matching the
+    // minimal-schedule branch's own default below for exactly this
+    // situation) — via breakCadenceForMood, which carries the same
+    // out-of-range fallback the generator uses.
+    final cadenceMoodIndex = _todaySchedule?.moodIndex ?? 3;
+    final newChunks = ScheduleGeneratorService.buildCommitmentChunks(
+      block,
+      longBreakEvery: ScheduleGeneratorService.breakCadenceForMood(
+        cadenceMoodIndex,
+      ),
+    );
     if (newChunks.isEmpty) {
       if (removedStale) {
         await _repo.save(_todaySchedule!);
@@ -342,14 +335,23 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     return true;
   }
 
-  /// Removes trailing non-work chunks from `_todaySchedule!.chunks`, mirroring
-  /// `ScheduleGeneratorService.generate()`'s STEP E trim
-  /// (`schedule_generator.dart`). `addEventToday`'s stale-chunk-removal above
-  /// can leave a break as the day's new trailing item when the commitment
-  /// that used to follow it moves off today; without this trim, that
-  /// dangling break survives into persisted state and whatever reads it next
-  /// (e.g. `resolveNowState`). No-op if `_todaySchedule` is null or already
-  /// trailing-work-clean.
+  /// Removes trailing DISCRETIONARY non-work chunks from
+  /// `_todaySchedule!.chunks`, mirroring `ScheduleGeneratorService.generate()`'s
+  /// STEP E trim (`schedule_generator.dart`). `addEventToday`'s stale-chunk-
+  /// removal above can leave a break as the day's new trailing item when the
+  /// commitment that used to follow it moves off today; without this trim,
+  /// that dangling break survives into persisted state and whatever reads it
+  /// next (e.g. `resolveNowState`). No-op if `_todaySchedule` is null or
+  /// already trailing-work-clean.
+  ///
+  /// D-30-02: narrowed to `commitmentId == null` — only a discretionary
+  /// trailing break may be trimmed. Before D-30-03 wired `addEventToday` to
+  /// `buildCommitmentChunks`, every break here was discretionary by
+  /// construction, so the unnarrowed loop was harmless; now that anchored
+  /// commitment breaks exist on this path too, an unnarrowed trim could
+  /// durably delete real committed minutes from Hive the moment a commitment
+  /// break happens to be the day's chronologically-last chunk. Mirrors the
+  /// generator's own STEP E narrowing (schedule_generator.dart, D-30-02).
   ///
   /// `chunks` is not guaranteed clock-sorted at this point, so trim against a
   /// sorted copy and remove by identity from the real list — "trailing"
@@ -363,7 +365,9 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
         final bStart = b.displayStartMinutes ?? 9999;
         return aStart.compareTo(bStart);
       });
-    while (sorted.isNotEmpty && sorted.last.chunkType != ChunkType.work) {
+    while (sorted.isNotEmpty &&
+        sorted.last.chunkType != ChunkType.work &&
+        sorted.last.commitmentId == null) {
       schedule.chunks.remove(sorted.removeLast());
     }
   }
