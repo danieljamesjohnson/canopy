@@ -1,0 +1,184 @@
+Phase 30 Plan 02 — Second-Path RED Evidence
+=============================================
+
+Commands (both required --concurrency=1 — default concurrency's expanded
+reporter drops/duplicates per-test-name lines at this suite's scale, per
+30-VALIDATION.md "Test Infrastructure"):
+
+  export PATH="$PATH:/home/dan/development/flutter/bin"
+  flutter test test/providers/schedule_notifier_add_event_test.dart \
+    test/screens/lattice_break_pair_test.dart --concurrency=1
+
+  (Task 1/2 per-file dev-loop commands, run individually during authoring:)
+  flutter test test/providers/schedule_notifier_add_event_test.dart --concurrency=1
+  flutter test test/screens/lattice_break_pair_test.dart --concurrency=1
+
+Result: 12 passed, 6 failed (18 tests total across both files).
+
+Classification table
+---------------------
+
+| Test (by name)                                                                                          | File                                          | RED/GUARD | Clears in wave |
+|------------------------------------------------------------------------------------------------------------|------------------------------------------------|-----------|-----------------|
+| inserts a same-day one-off, preserving existing progress (re-pointed)                                       | schedule_notifier_add_event_test.dart          | RED       | 3 (30-04)       |
+| COMMITBREAK-01/ADD-EVENT: an event added mid-day gets the same 25+5 lattice as a generated day (new)         | schedule_notifier_add_event_test.dart          | RED       | 3 (30-04)       |
+| COMMITBREAK-02/ADD-EVENT: the added event's own window never moves (new)                                     | schedule_notifier_add_event_test.dart          | GUARD     | n/a — passes now|
+| COMMITBREAK-01/ADD-EVENT-TRIM: the trailing trim must not delete a commitment break (D-30-02) (new)          | schedule_notifier_add_event_test.dart          | RED       | 3 (30-04)       |
+| returns false for an event on a different day (does not touch today)                                        | schedule_notifier_add_event_test.dart          | GUARD     | n/a — passes now|
+| adding an event reflows overlapping discretionary work (no double-book)                                     | schedule_notifier_add_event_test.dart          | GUARD     | n/a — passes now|
+| adding an event leaves NO work-vs-break overlap (breaks re-emitted)                                          | schedule_notifier_add_event_test.dart          | GUARD     | n/a — passes now|
+| a 30/60/45-min event protects its FULL window from discretionary work (x3)                                   | schedule_notifier_add_event_test.dart          | GUARD     | n/a — passes now|
+| editing an event re-anchors today (idempotent by commitmentId) (re-pointed)                                  | schedule_notifier_add_event_test.dart          | RED       | 3 (30-04)       |
+| CR-01: moving a commitment off today trims the now-trailing break                                            | schedule_notifier_add_event_test.dart          | GUARD     | n/a — passes now|
+| creates a minimal today schedule when none exists (empty-state add) (re-pointed)                             | schedule_notifier_add_event_test.dart          | RED       | 3 (30-04)       |
+| D-06: the engine emits a 5-minute break immediately followed by a 30-minute break                            | lattice_break_pair_test.dart                   | GUARD     | n/a — passes now (Phase 28/29)|
+| D-06: buildTimeline renders the pair as two adjacent ChunkRows with no gap row between                       | lattice_break_pair_test.dart                   | GUARD     | n/a — passes now (Phase 28/29)|
+| D-06: TimelineGeometry positions the pair abutting exactly — no overlap, no dead space                       | lattice_break_pair_test.dart                   | GUARD     | n/a — passes now (Phase 28/29)|
+| D-06: a 5-minute break card and a 30-minute break card render adjacently without throwing                    | lattice_break_pair_test.dart                   | GUARD     | n/a — passes now (Phase 28/29)|
+| COMMITBREAK-01/RENDER: a break carrying commitmentId renders as a break, not a commitment-tinted work card (D-30-04) (new) | lattice_break_pair_test.dart | RED       | 2 (30-03)       |
+
+Summary: 4 RED tests in schedule_notifier_add_event_test.dart clear in wave 3
+(30-04, the notifier fix). 1 RED test in lattice_break_pair_test.dart clears
+in wave 2 (30-03, the generator fix) — it exercises the REAL
+ScheduleGeneratorService, not addEventToday, so it depends only on the
+generator landing.
+
+Note on COMMITBREAK-02/ADD-EVENT (unexpected GUARD, not distorted to force
+failure, per the plan's own instruction and the Phase 28/30-01 precedent):
+this test asserts the block's own start/end are unchanged and that the last
+placed chunk's end reaches block.endMinutes exactly. Both were ALREADY true
+in the pre-phase addEventToday — the existing tail-stretch
+(`last.durationMinutes = block.endMinutes - last.anchoredStartMinutes!`)
+already covers the full window, and the block object was never mutated.
+COMMITBREAK-02 was therefore never the second path's defect; only
+COMMITBREAK-01 (no break lattice) and the STEP-E-equivalent trim bug
+(D-30-02) are. This mirrors 30-01-SUMMARY.md's own finding for
+COMMITBREAK-01/NO-DOUBLE-BOOK in the generator.
+
+Full captured output
+---------------------
+
+$ export PATH="$PATH:/home/dan/development/flutter/bin"
+$ flutter test test/providers/schedule_notifier_add_event_test.dart test/screens/lattice_break_pair_test.dart --concurrency=1
+
+00:00 +0: loading /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart
+00:00 +0: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: inserts a same-day one-off, preserving existing progress
+00:00 +0 -1: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: inserts a same-day one-off, preserving existing progress [E]
+  Expected: <870>
+    Actual: <865>
+  the second work chunk starts after the first work chunk PLUS its short break (25+5), not back-to-back at +25 (COMMITBREAK-01)
+
+  package:matcher                                             expect
+  package:flutter_test/src/widget_tester.dart 473:18          expect
+  test/providers/schedule_notifier_add_event_test.dart 134:5  main.<fn>
+
+00:00 +0 -1: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: COMMITBREAK-01/ADD-EVENT: an event added mid-day gets the same 25+5 lattice as a generated day
+00:00 +0 -2: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: COMMITBREAK-01/ADD-EVENT: an event added mid-day gets the same 25+5 lattice as a generated day [E]
+  Expected: <4>
+    Actual: <2>
+  work@840/25, shortBreak@865/5, work@870/25, shortBreak@895/5 — the same 25+5 lattice a generated day gets inside a commitment window (COMMITBREAK-01), reached via the SECOND path (addEventToday), not generate()
+
+  package:matcher                                             expect
+  package:flutter_test/src/widget_tester.dart 473:18          expect
+  test/providers/schedule_notifier_add_event_test.dart 188:7  main.<fn>
+
+00:00 +0 -2: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: COMMITBREAK-02/ADD-EVENT: the added event's own window never moves
+00:00 +1 -2: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: COMMITBREAK-01/ADD-EVENT-TRIM: the trailing trim must not delete a commitment break (D-30-02)
+00:00 +1 -3: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: COMMITBREAK-01/ADD-EVENT-TRIM: the trailing trim must not delete a commitment break (D-30-02) [E]
+  Expected: <1>
+    Actual: <0>
+  D-30-02: _trimTrailingNonWork must not delete a commitment break just because it's the day's trailing chunk — only a discretionary (commitmentId == null) trailing short break may be trimmed. NOTE: the discretionary half of this trim is already covered by CR-01 below and is deliberately not re-tested here.
+
+  package:matcher                                             expect
+  package:flutter_test/src/widget_tester.dart 473:18          expect
+  test/providers/schedule_notifier_add_event_test.dart 329:7  main.<fn>
+
+00:00 +1 -3: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: returns false for an event on a different day (does not touch today)
+00:00 +2 -3: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: adding an event reflows overlapping discretionary work (no double-book)
+00:00 +3 -3: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: adding an event leaves NO work-vs-break overlap (breaks re-emitted)
+00:00 +4 -3: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: a 30-min event protects its FULL window from discretionary work
+00:00 +5 -3: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: a 60-min event protects its FULL window from discretionary work
+00:00 +6 -3: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: a 45-min event protects its FULL window from discretionary work
+00:00 +7 -3: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: editing an event re-anchors today (idempotent by commitmentId)
+00:00 +7 -4: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: editing an event re-anchors today (idempotent by commitmentId) [E]
+  Expected: <4>
+    Actual: <2>
+
+  package:matcher                                             expect
+  package:flutter_test/src/widget_tester.dart 473:18          expect
+  test/providers/schedule_notifier_add_event_test.dart 598:7  main.<fn>
+
+00:00 +7 -4: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: CR-01: moving a commitment off today trims the now-trailing break (no dangling break survives addEventToday)
+00:00 +8 -4: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: creates a minimal today schedule when none exists (empty-state add)
+00:00 +8 -5: /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: creates a minimal today schedule when none exists (empty-state add) [E]
+  Expected: <4>
+    Actual: <2>
+
+  package:matcher                                             expect
+  package:flutter_test/src/widget_tester.dart 473:18          expect
+  test/providers/schedule_notifier_add_event_test.dart 701:7  main.<fn>
+
+00:00 +8 -5: loading /home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart
+00:00 +8 -5: /home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart: D-06: a cadence boundary emits two consecutive break chunks D-06: the engine emits a 5-minute break immediately followed by a 30-minute break
+00:00 +9 -5: /home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart: D-06: a cadence boundary emits two consecutive break chunks D-06: buildTimeline renders the pair as two adjacent ChunkRows with no gap row between
+00:00 +10 -5: /home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart: D-06: a cadence boundary emits two consecutive break chunks D-06: TimelineGeometry positions the pair abutting exactly — no overlap, no dead space
+00:00 +11 -5: /home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart: D-06: the pair renders D-06: a 5-minute break card and a 30-minute break card render adjacently without throwing
+00:00 +12 -5: /home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart: COMMITBREAK-01/RENDER — a commitment break renders as a break COMMITBREAK-01/RENDER: a break carrying commitmentId renders as a break, not a commitment-tinted work card (D-30-04)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: non-empty
+  Actual: []
+the generated day contains no short break yet — the unfixed engine never applies the lattice inside
+a commitment window (COMMITBREAK-01)
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart:344:9)
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:29)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart line 344
+The test description was:
+  COMMITBREAK-01/RENDER: a break carrying commitmentId renders as a break, not a commitment-tinted
+  work card (D-30-04)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +12 -6: /home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart: COMMITBREAK-01/RENDER — a commitment break renders as a break COMMITBREAK-01/RENDER: a break carrying commitmentId renders as a break, not a commitment-tinted work card (D-30-04) [E]
+  Test failed. See exception logs above.
+  The test description was: COMMITBREAK-01/RENDER: a break carrying commitmentId renders as a break, not a commitment-tinted work card (D-30-04)
+
+00:00 +12 -6: Some tests failed.
+
+Failing tests:
+  /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: COMMITBREAK-01/ADD-EVENT-TRIM: the trailing trim must not delete a commitment break (D-30-02)
+  /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: COMMITBREAK-01/ADD-EVENT: an event added mid-day gets the same 25+5 lattice as a generated day
+  /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: creates a minimal today schedule when none exists (empty-state add)
+  /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: editing an event re-anchors today (idempotent by commitmentId)
+  /home/dan/CodeProjects/canopy/test/providers/schedule_notifier_add_event_test.dart: inserts a same-day one-off, preserving existing progress
+  /home/dan/CodeProjects/canopy/test/screens/lattice_break_pair_test.dart: COMMITBREAK-01/RENDER — a commitment break renders as a break COMMITBREAK-01/RENDER: a break carrying commitmentId renders as a break, not a commitment-tinted work card (D-30-04)
+
+Full-suite cross-check (flutter test --concurrency=1, all 597 tests,
+covering this plan's two touched files plus the 30-01 wave-1 generator
+tests): 580 passed, 17 failed — exactly the 11 pre-existing RED failures
+recorded in 30-RED-generator.txt (30-01, unchanged by this plan) plus the 6
+new/re-pointed failures enumerated above. No other test in the 597-test
+suite regressed.
+
+git diff --stat (this plan's two task commits — Task 1 + Task 2)
+------------------------------------------------------------------
+
+$ git diff --stat HEAD~2 HEAD
+ .../schedule_notifier_add_event_test.dart          | 231 ++++++++++++++++++++-
+ test/screens/lattice_break_pair_test.dart          | 126 +++++++++++
+ 2 files changed, 351 insertions(+), 6 deletions(-)
+
+$ git log -1 --name-only
+(commit ae11ad6 — test(30-02): render guard proving a commitment break
+stays a break (D-30-04))
+test/screens/lattice_break_pair_test.dart
+
+Zero paths under lib/ in either task commit — confirms the wave boundary
+30-03/30-04 must respect.
