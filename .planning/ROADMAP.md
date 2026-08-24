@@ -105,6 +105,8 @@ standalone phases rather than opening v1.6. Detail for each follows below.
 - [x] Phase 27: True Grid (4/4 plans) — GRID-01, GRID-02 — complete 2026-08-19
 - [x] Phase 28: The Day Is a Lattice — LATTICE-01, LATTICE-02 (completed 2026-08-19)
 - [ ] Phase 29: Breaks You Can See — SEEBREAK-01, SEEBREAK-02
+- [ ] Phase 30: Breaks In Committed Time — COMMITBREAK-01, COMMITBREAK-02
+- [ ] Phase 31: Breaks You Can Skip — SKIPBREAK-01, SKIPBREAK-02
 
 ### Phase 27: True Grid
 
@@ -450,7 +452,93 @@ Plans:
 
 - [ ] 29-04-PLAN.md — Prove `UNIFORM` in pixels, settle the work card's 26dp overflow, and the closing human UAT checkpoint
 
-### Phase 30: Breaks You Can Skip
+### Phase 30: Breaks In Committed Time
+
+Standalone phase, no milestone. Raised by the owner during Phase 29 UAT (2026-08-24) after a
+re-check-in produced a fresh day that still showed no breaks between his work chunks. Second
+report of the same symptom; the first (2026-08-21) was misdiagnosed as stale Hive data — see
+"How this was missed twice" below, and `29-UAT.md` ATTEMPT 1.
+
+**Goal:** A break lands between work chunks inside a committed block, the same as it does anywhere
+else in the day — without the commitment's own start or end time moving by a minute.
+
+**The defect, reproduced.** Probing the real generator with a commitment block named `Work`
+(09:00–11:40) alongside one discretionary goal reproduces the owner's screenshot exactly:
+
+```
+WORK 08:30-08:55 (25m)                    <- discretionary: "Creative time"
+  SB 08:55-09:00 (5m)                     <- the one break that appears
+WORK 09:00-09:25 (25m)  [ANCHORED: Work]
+WORK 09:25-09:50 (25m)  [ANCHORED: Work]  <- no break
+WORK 09:50-10:15 (25m)  [ANCHORED: Work]  <- no break
+WORK 10:15-10:40 (25m)  [ANCHORED: Work]  <- no break
+WORK 10:40-11:05 (25m)  [ANCHORED: Work]  <- no break
+WORK 11:05-11:40 (35m)  [ANCHORED: Work]  <- stretched tail
+```
+
+**Root cause, two lines.** `schedule_generator.dart` Step 1 walks a commitment window with a bare
+`cursor += 25` — no break reserved, no lattice alignment — and STEP C then adds those chunks
+straight through: `final List<ScheduledChunk> result = [...commitmentChunks];`, under a comment
+that states the behaviour outright ("commitment chunks (no breaks between them)"). **Phase 28's
+lattice was only ever applied to the discretionary packing loop.**
+
+**This is a misreading of Phase 28's D-01, not a deliberate trade.** D-01 says *"a user's fixed
+commitment keeps its own wall-clock time and is never rounded onto :00/:30 — rounding it would move
+the user's actual appointment."* That is a correct statement about the **window**. It was
+implemented as "no breaks anywhere inside the window," which is far stronger than D-01 requires:
+an 8-hour Work block can run 25+5 cells for its whole length without its start or end moving at
+all. **D-01 stays intact — do not round `block.startMinutes` or `block.endMinutes`.**
+
+**What the phase must build:**
+
+1. Break insertion inside a commitment window, on the same 25+5 lattice the discretionary loop
+   uses, seeded from the block's own (unrounded) start rather than from the global :00/:30 grid —
+   a block starting at 09:10 gets cells at 09:10/09:40/10:10, not a 20-minute stub.
+2. **Decide the long-break cadence question deliberately.** Does a commitment block's work count
+   toward the same `longBreakEvery` counter the discretionary loop maintains, or does it run its
+   own? Today `breakCount` lives entirely inside `_assignSyntheticStartTimes` and never sees a
+   commitment chunk. Whichever way it goes, record the reasoning — a 6-hour meeting block silently
+   accruing four long breaks is as wrong as it accruing none.
+3. **The tail.** Step 1 stretches the final chunk to `block.endMinutes` so a sub-25 remainder is
+   covered. That interacts with break insertion: a window whose remainder is under 30 minutes has
+   no room for a full cell. Do not let the last break push past `endMinutes`, and do not let the
+   stretch swallow a break that should have been emitted.
+4. A regression test built from a **commitment block**, not a goal. The existing suite's
+   `makeBlock` fixture (540–600, two chunks) would have caught this on day one and no test asserted
+   break placement for it. That gap is the actual defect behind the defect.
+
+**How this was missed twice, and what stops a third time.** The Phase 28 engine work verified the
+lattice against discretionary days only. The Phase 29 diagnosis then probed the generator across
+all five moods and both goal types — but never with a commitment block — saw breaks everywhere,
+and concluded the engine was clean and the owner's day was stale. **A probe that only covers the
+half of a code path you already suspect is not evidence.** The commitment path has been the
+untested half through both phases. Any verification for this phase must exercise a day built from
+a commitment block as its primary fixture, not as an afterthought.
+
+**Verification note.** Unlike Phases 27 and 29, this is arithmetic, not glyph metrics — geometric
+assertions in `flutter test` are trustworthy here (STATE.md carry-forward invariant). A real-browser
+step is *not* required to prove break placement. It IS required before closing, for one reason
+only: the owner has now reported this symptom twice, and a generated-day screenshot is what closes
+it credibly. Reuse port 8143 and re-check-in first — see trap #4 below.
+
+**A human UAT checkpoint is required**, and re-check-in is part of it. **Trap #4, data layer (to
+be promoted into CLAUDE.md):** `ScheduleNotifier._loadToday()` reads today's schedule from Hive and
+`generate()` runs only at check-in, so an already-generated day is never regenerated on load. Any
+engine change is invisible in the running app until ⟳ Re-check-in. A UAT that tests generator
+output and does not say this in its own instructions will produce a false failure.
+
+**Requirements:** COMMITBREAK-01 (a break is emitted between consecutive work chunks inside a
+commitment block, on the 25+5 lattice), COMMITBREAK-02 (the commitment's own start and end times
+are unchanged — D-01 preserved)
+**Depends on:** Phase 28 (owns `schedule_generator.dart` and the lattice this extends). Independent
+of Phase 29 — that phase's render work is correct and is what makes the emitted break visible.
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run `/gsd-plan-phase 30` to break down)
+
+### Phase 31: Breaks You Can Skip
 
 Standalone phase, no milestone. Raised by the owner during Phase 29 UAT (2026-08-21): **"Breaks are
 fully functional features, with timers, etc."** followed by the explicit scope call **"don't add
@@ -490,6 +578,7 @@ resets a habit streak would be a serious regression.
 1. Swipe-to-skip on break chunks at every density. The complete (right-swipe) direction is a
    separate question — decide it deliberately and record the reasoning; "complete a break" may not
    be a meaningful action, in which case breaks get a one-directional Dismissible.
+
 2. **Resolve the 20dp grab-target problem.** A 5-minute break's row is 20dp
    (`5 × kPixelsPerMinute`), well under any usable drag target, and Phase 29's sub-compact tier
    renders it as a bare hairline with no card behind it. This is the same duration-exact-slot
@@ -497,6 +586,7 @@ resets a habit streak would be a serious regression.
    axis. **The grid is not negotiable**: SEEBREAK-02 (rendered height never deviates from
    `durationMinutes × kPixelsPerMinute`) still holds, and raising `kPixelsPerMinute` remains
    rejected (Phase 29 D-03).
+
 3. **Decide and document what skipping a break MEANS**, because the honest default is
    counter-intuitive. The timeline is duration-exact and time-anchored, so skipping a 5-minute
    break does **not** hand those 5 minutes back — the next work chunk still starts when it always
@@ -505,6 +595,7 @@ resets a habit streak would be a serious regression.
    for it; if planning concludes otherwise, stop and ask rather than widening scope unilaterally.
    Note that `_absorbReclaimedTimeIntoNextBreak` (Phase 23 G-05) already moves a break when work
    finishes early — read it before designing, so the two behaviours do not contradict each other.
+
 4. A skipped break must render as skipped at every density, including sub-compact. Phase 29's
    `_SubCompactRow` has no completed/skipped visual state at all — check before assuming.
 
@@ -530,7 +621,7 @@ verdict changes the sub-compact layout, it changes what this phase attaches a ge
 
 Plans:
 
-- [ ] TBD (run `/gsd-plan-phase 30` to break down)
+- [ ] TBD (run `/gsd-plan-phase 31` to break down)
 
 ## Progress
 
@@ -549,4 +640,5 @@ Plans:
 | 27. True Grid | — (standalone) | 4/4 | Complete | 2026-08-19 |
 | 28. The Day Is a Lattice | — (standalone) | 3/3 | Complete   | 2026-08-19 |
 | 29. Breaks You Can See | — (standalone) | 3/4 | In Progress|  |
-| 30. Breaks You Can Skip | — (standalone) | 0/? | Not Started |  |
+| 30. Breaks In Committed Time | — (standalone) | 0/? | Not Started |  |
+| 31. Breaks You Can Skip | — (standalone) | 0/? | Not Started |  |
