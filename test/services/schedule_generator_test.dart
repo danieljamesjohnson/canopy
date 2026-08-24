@@ -2802,4 +2802,402 @@ void main() {
       },
     );
   });
+
+  // ---------------------------------------------------------------------------
+  // COMMITBREAK — Phase 30: breaks inside a committed block. Every test here
+  // calls the real sut.generate() (never a hand-built ScheduledChunk list —
+  // lattice_break_pair_test.dart's stated convention) and is built from a
+  // COMMITMENT BLOCK, not a goal (the test gap the ROADMAP names as the
+  // actual defect behind the defect). Each test's leading comment states (a)
+  // which requirement it proves, (b) the arithmetic derivation of its
+  // expected sequence, and (c) whether it is a RED regression test (must
+  // fail against the unfixed engine, must pass after 30-03) or a GUARD (must
+  // pass now AND after the fix).
+  // ---------------------------------------------------------------------------
+  group('COMMITBREAK — breaks inside a committed block', () {
+    // RED — COMMITBREAK-01/PRIMARY
+    test(
+      'COMMITBREAK-01/PRIMARY: the ROADMAP repro (Work 09:00-11:40, mood 3) puts a break between every pair of commitment work chunks',
+      () {
+        // (a) Proves COMMITBREAK-01. (b) Derivation: block 540-700 (160
+        // min), mood 3 (N=4, own counter per D-30-01). Cell 1: W@540/25,
+        // cursor 565, blockBreakCount=1 (not boundary) -> SB@565/5, cursor
+        // 570. Cell 2: W@570/25, cursor 595, count=2 -> SB@595/5, cursor
+        // 600. Cell 3: W@600/25, cursor 625, count=3 -> SB@625/5, cursor
+        // 630. Cell 4: W@630/25, cursor 655, count=4 -- boundary: footprint
+        // 5+30=35, 655+35=690<=700 fits -> SB@655/5 + LB@660/30, cursor 690.
+        // Loop ends (690+25=715>700). Tail: cursor 690 < 700, stretch the
+        // LAST unit placed (the long break) by 10 -> LB@660 becomes 40 min,
+        // reaching 700 exactly. This is the exact fixture 30-RESEARCH.md
+        // captured from the real prototype this phase is built from. (c)
+        // RED — the unfixed engine emits 6 bare 25-min work chunks with a
+        // single 35-min stretched tail and zero breaks.
+        final block = makeBlock(
+          name: 'Work',
+          startMinutes: 540,
+          endMinutes: 700,
+        );
+        final result = sut.generate(
+          goals: [makeHabit()],
+          blocks: [block],
+          moodIndex: 3,
+          date: monday,
+          completionLogs: [],
+        );
+        final anchored =
+            result.where((c) => c.anchoredStartMinutes != null).toList()
+              ..sort(
+                (a, b) => a.anchoredStartMinutes!.compareTo(
+                  b.anchoredStartMinutes!,
+                ),
+              );
+
+        expect(anchored.length, 9);
+        expect(anchored[0].chunkType, ChunkType.work);
+        expect(anchored[0].anchoredStartMinutes, 540);
+        expect(anchored[0].durationMinutes, 25);
+        expect(anchored[1].chunkType, ChunkType.shortBreak);
+        expect(anchored[1].anchoredStartMinutes, 565);
+        expect(anchored[1].durationMinutes, 5);
+        expect(anchored[2].chunkType, ChunkType.work);
+        expect(anchored[2].anchoredStartMinutes, 570);
+        expect(anchored[2].durationMinutes, 25);
+        expect(anchored[3].chunkType, ChunkType.shortBreak);
+        expect(anchored[3].anchoredStartMinutes, 595);
+        expect(anchored[3].durationMinutes, 5);
+        expect(anchored[4].chunkType, ChunkType.work);
+        expect(anchored[4].anchoredStartMinutes, 600);
+        expect(anchored[4].durationMinutes, 25);
+        expect(anchored[5].chunkType, ChunkType.shortBreak);
+        expect(anchored[5].anchoredStartMinutes, 625);
+        expect(anchored[5].durationMinutes, 5);
+        expect(anchored[6].chunkType, ChunkType.work);
+        expect(anchored[6].anchoredStartMinutes, 630);
+        expect(anchored[6].durationMinutes, 25);
+        expect(anchored[7].chunkType, ChunkType.shortBreak);
+        expect(anchored[7].anchoredStartMinutes, 655);
+        expect(anchored[7].durationMinutes, 5);
+        expect(anchored[8].chunkType, ChunkType.longBreak);
+        expect(anchored[8].anchoredStartMinutes, 660);
+        expect(anchored[8].durationMinutes, 40);
+        for (final c in anchored) {
+          expect(
+            c.commitmentId,
+            block.id,
+            reason:
+                'every commitment-window chunk carries the block id (D-30-04)',
+          );
+        }
+      },
+    );
+
+    // RED — COMMITBREAK-02/D-01
+    test(
+      "COMMITBREAK-02/D-01: an off-lattice 09:10 block gets cells at 09:10/09:40/10:10 and its own window never moves",
+      () {
+        // (a) Proves COMMITBREAK-02 (D-01 preserved). (b) block 550-700
+        // (150 min, no goals), mood 3 (N=4). Cell 1: W@550/25, cursor 575,
+        // count=1 -> SB@575/5, cursor 580. Cell 2: W@580/25, cursor 605,
+        // count=2 -> SB@605/5, cursor 610. Cell 3: W@610/25, cursor 635,
+        // count=3 -> SB@635/5, cursor 640. Cell 4: W@640/25, cursor 665,
+        // count=4 -- boundary: footprint 35, 665+35=700<=700 fits ->
+        // SB@665/5 + LB@670/30, cursor 700 == endMinutes, no stretch. Work
+        // starts land at 550/580/610/640 -- the window's own off-lattice
+        // 550 start is never rounded onto the global :00/:30 grid. (c) RED
+        // — the unfixed engine emits 6 bare 25-min work chunks at
+        // 550/575/600/625/650/675.
+        final block = makeBlock(
+          name: 'Work',
+          startMinutes: 550,
+          endMinutes: 700,
+        );
+        final result = sut.generate(
+          goals: [],
+          blocks: [block],
+          moodIndex: 3,
+          date: monday,
+          completionLogs: [],
+        );
+        final anchored =
+            result.where((c) => c.anchoredStartMinutes != null).toList()
+              ..sort(
+                (a, b) => a.anchoredStartMinutes!.compareTo(
+                  b.anchoredStartMinutes!,
+                ),
+              );
+        final workStarts = anchored
+            .where((c) => c.chunkType == ChunkType.work)
+            .map((c) => c.anchoredStartMinutes)
+            .toList();
+
+        expect(workStarts, [550, 580, 610, 640]);
+        expect(
+          550 % 30,
+          10,
+          reason: 'the block start is genuinely off-lattice, not rounded',
+        );
+        final last = anchored.last;
+        expect(
+          last.anchoredStartMinutes! + last.durationMinutes,
+          700,
+          reason: 'the window is fully covered through its true end',
+        );
+        // GUARD half — block-object immutability, green now and after.
+        expect(block.startMinutes, 550);
+        expect(block.endMinutes, 700);
+      },
+    );
+
+    // RED — COMMITBREAK-01/CADENCE
+    test(
+      'COMMITBREAK-01/CADENCE: a 6-hour block at mood 3 accrues exactly 2 long breaks, on its own counter (D-30-01)',
+      () {
+        // (a) Proves D-30-01 -- a commitment block runs its own cadence
+        // counter, not the discretionary loop's shared breakCount. (b)
+        // block 540-900 (360 min, no goals), mood 3 (N=4). Simulated in
+        // 30-RESEARCH.md's Cadence Decision section against the real
+        // prototype: 10 work + 10 short + 2 long = 360 minutes exactly,
+        // long breaks at the 4th and 8th work chunk's boundary (660, 810).
+        // Two long breaks for a 6-hour meeting is neither the
+        // shared-counter over-accrual (four) nor the shipped defect (zero).
+        // (c) RED — the unfixed engine emits 14 bare 25-min work chunks,
+        // zero breaks.
+        final block = makeBlock(
+          name: 'Work',
+          startMinutes: 540,
+          endMinutes: 900,
+        );
+        final result = sut.generate(
+          goals: [],
+          blocks: [block],
+          moodIndex: 3,
+          date: monday,
+          completionLogs: [],
+        );
+        final anchored =
+            result.where((c) => c.anchoredStartMinutes != null).toList()
+              ..sort(
+                (a, b) => a.anchoredStartMinutes!.compareTo(
+                  b.anchoredStartMinutes!,
+                ),
+              );
+
+        final workChunks = anchored
+            .where((c) => c.chunkType == ChunkType.work)
+            .toList();
+        final shortBreaks = anchored
+            .where((c) => c.chunkType == ChunkType.shortBreak)
+            .toList();
+        final longBreaks = anchored
+            .where((c) => c.chunkType == ChunkType.longBreak)
+            .toList();
+
+        expect(workChunks.length, 10);
+        expect(shortBreaks.length, 10);
+        expect(longBreaks.length, 2);
+        expect(longBreaks.map((c) => c.anchoredStartMinutes).toList(), [
+          660,
+          810,
+        ]);
+        for (final lb in longBreaks) {
+          expect(lb.durationMinutes, 30);
+        }
+        final totalDuration = anchored.fold<int>(
+          0,
+          (sum, c) => sum + c.durationMinutes,
+        );
+        expect(totalDuration, 360);
+
+        for (int i = 1; i < anchored.length; i++) {
+          expect(
+            anchored[i].anchoredStartMinutes,
+            anchored[i - 1].anchoredStartMinutes! +
+                anchored[i - 1].durationMinutes,
+            reason:
+                'chunk $i must start exactly where the previous one ends '
+                '-- no gap inside the committed window',
+          );
+        }
+      },
+    );
+
+    // RED — COMMITBREAK-01/TAIL
+    test(
+      "COMMITBREAK-01/TAIL: the last unit -- work or break -- stretches to the block's end and never swallows an emitted break",
+      () {
+        // (a) Proves the tail-stretch always extends whichever chunk was
+        // genuinely last for the block, never retroactively grows a work
+        // chunk backward over a break that was already reserved. (b) all
+        // four sub-fixtures are the worked-examples table from
+        // 30-RESEARCH.md's Pitfall 3, verified against the real prototype.
+        // No goals, mood 3 (N=4) in every sub-fixture. (c) RED for the
+        // three non-empty sub-fixtures (the unfixed engine stretches a bare
+        // work chunk instead); the 540-560 sub-fixture is a GUARD
+        // (unchanged -- a window under one 25-min cell has always emitted
+        // nothing).
+        List<ScheduledChunk> anchoredOf(int start, int end) {
+          final block = makeBlock(
+            name: 'Work',
+            startMinutes: start,
+            endMinutes: end,
+          );
+          final result = sut.generate(
+            goals: [],
+            blocks: [block],
+            moodIndex: 3,
+            date: monday,
+            completionLogs: [],
+          );
+          return result.where((c) => c.anchoredStartMinutes != null).toList()
+            ..sort(
+              (a, b) =>
+                  a.anchoredStartMinutes!.compareTo(b.anchoredStartMinutes!),
+            );
+        }
+
+        // 540-600: divides evenly on the 30-min lattice -- no remainder, no
+        // stretch needed.
+        final evenSplit = anchoredOf(540, 600);
+        expect(evenSplit.length, 4);
+        expect(evenSplit[0].chunkType, ChunkType.work);
+        expect(evenSplit[0].anchoredStartMinutes, 540);
+        expect(evenSplit[0].durationMinutes, 25);
+        expect(evenSplit[1].chunkType, ChunkType.shortBreak);
+        expect(evenSplit[1].anchoredStartMinutes, 565);
+        expect(evenSplit[1].durationMinutes, 5);
+        expect(evenSplit[2].chunkType, ChunkType.work);
+        expect(evenSplit[2].anchoredStartMinutes, 570);
+        expect(evenSplit[2].durationMinutes, 25);
+        expect(evenSplit[3].chunkType, ChunkType.shortBreak);
+        expect(evenSplit[3].anchoredStartMinutes, 595);
+        expect(evenSplit[3].durationMinutes, 5);
+
+        // 540-610: a 10-minute remainder. The last unit placed is the short
+        // break just reserved -- stretch IT, 5 -> 15.
+        final tenMinRemainder = anchoredOf(540, 610);
+        expect(tenMinRemainder.length, 4);
+        expect(tenMinRemainder[3].chunkType, ChunkType.shortBreak);
+        expect(tenMinRemainder[3].anchoredStartMinutes, 595);
+        expect(tenMinRemainder[3].durationMinutes, 15);
+
+        // 540-627: a 27-minute remainder. No break fits after the 3rd work
+        // chunk (625+5=630 > 627), so the last unit placed is that WORK
+        // chunk -- stretch IT, 25 -> 27.
+        final twentySevenMinRemainder = anchoredOf(540, 627);
+        expect(twentySevenMinRemainder.length, 5);
+        expect(twentySevenMinRemainder[4].chunkType, ChunkType.work);
+        expect(twentySevenMinRemainder[4].anchoredStartMinutes, 600);
+        expect(twentySevenMinRemainder[4].durationMinutes, 27);
+
+        // 540-560: shorter than one 25-min cell -- the while loop body
+        // never executes once. Zero chunks for this block, and with no
+        // other goals/blocks, generate() returns an empty list outright
+        // (GUARD -- unchanged by this phase).
+        final tooNarrow = sut.generate(
+          goals: [],
+          blocks: [
+            makeBlock(name: 'Work', startMinutes: 540, endMinutes: 560),
+          ],
+          moodIndex: 3,
+          date: monday,
+          completionLogs: [],
+        );
+        expect(tooNarrow, isEmpty);
+      },
+    );
+
+    // RED — COMMITBREAK-01/STEP-E
+    test(
+      'COMMITBREAK-01/STEP-E: a tail-stretched commitment break survives the trailing trim (D-30-02)',
+      () {
+        // (a) Proves D-30-02 -- STEP E's trailing-short-break trim narrows
+        // to commitmentId == null. (b) block 540-610 (no goals, mood 3):
+        // the last chunk placed is the short break at 595, tail-stretched
+        // to 15 minutes (595-610) -- see TAIL's identical sub-fixture.
+        // Without the narrowed trim, STEP E deletes it because its own trim
+        // condition only checks chunkType, not origin. (c) RED -- the
+        // unfixed engine's last chunk is a bare stretched work chunk with
+        // no break to delete, so the reason string below documents what the
+        // fix must prevent from regressing.
+        final block = makeBlock(
+          name: 'Work',
+          startMinutes: 540,
+          endMinutes: 610,
+        );
+        final result = sut.generate(
+          goals: [],
+          blocks: [block],
+          moodIndex: 3,
+          date: monday,
+          completionLogs: [],
+        );
+
+        expect(result.last.chunkType, ChunkType.shortBreak);
+        expect(result.last.anchoredStartMinutes, 595);
+        expect(result.last.durationMinutes, 15);
+        expect(result.last.commitmentId, block.id);
+        expect(
+          result.last.anchoredStartMinutes! + result.last.durationMinutes,
+          610,
+          reason:
+              "STEP E's trailing trim must never delete a stretched "
+              'commitment break -- doing so silently erases 15 real '
+              'committed minutes (D-30-02)',
+        );
+      },
+    );
+
+    // GUARD — COMMITBREAK-01/NO-DOUBLE-BOOK
+    test(
+      "COMMITBREAK-01/NO-DOUBLE-BOOK: no discretionary chunk lands inside a commitment's internal break gap",
+      () {
+        // (a) Proves Pitfall 2's window-merge dependency -- every chunk
+        // Step 1 emits (work AND break) must be anchored and contiguous so
+        // STEP B's free-slot merge sees one solid occupied span, never a
+        // false gap a discretionary chunk could be packed into. (b) block
+        // 540-900 saturated with 10 habits at mood 5 (heaviest packing
+        // pressure). (c) GUARD -- green now (the pre-fix window is already
+        // one contiguous span, just without internal breaks) AND after the
+        // fix (the internal break gaps are covered by anchored break
+        // chunks, so the merged span is still solid).
+        final block = makeBlock(
+          name: 'Work',
+          startMinutes: 540,
+          endMinutes: 900,
+        );
+        final goals = List.generate(10, (i) => makeHabit(name: 'Habit $i'));
+        final result = sut.generate(
+          goals: goals,
+          blocks: [block],
+          moodIndex: 5,
+          date: monday,
+          completionLogs: [],
+          lighterDay: false,
+        );
+
+        final discretionary = result
+            .where((c) => c.anchoredStartMinutes == null)
+            .toList();
+        expect(discretionary, isNotEmpty);
+        for (final c in discretionary) {
+          expect(
+            c.syntheticStartMinutes,
+            isNotNull,
+            reason: 'every discretionary chunk must have a synthetic start',
+          );
+          final s = c.syntheticStartMinutes!;
+          final e = s + c.durationMinutes;
+          final intersects = s < 900 && e > 540;
+          expect(
+            intersects,
+            isFalse,
+            reason:
+                'discretionary chunk [$s, $e) must not intersect the '
+                'commitment window [540, 900), including its internal '
+                'break gaps',
+          );
+        }
+      },
+    );
+  });
 }
