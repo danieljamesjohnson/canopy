@@ -1,0 +1,307 @@
+Phase 30 Plan 01 — RED evidence for the generator test suite
+==============================================================
+
+Captured command (exact, --concurrency=1 is not optional — see 30-VALIDATION.md
+"Test Infrastructure"; default concurrency's expanded reporter drops/duplicates
+per-test-name lines at this suite's scale, Phase 28 precedent 28-03-SUMMARY.md):
+
+  export PATH="$PATH:/home/dan/development/flutter/bin" && \
+    flutter test test/services/schedule_generator_test.dart --concurrency=1 --reporter expanded
+
+Captured: 2026-08-24, against the UNFIXED engine (lib/ untouched by this plan —
+proven below by git diff --stat). 76 tests total in this file, 65 pass, 11 fail.
+
+CLASSIFICATION TABLE — every test this plan touched, RED or GUARD
+-------------------------------------------------------------------------------
+Test                                                | Class | Result (this run)
+-------------------------------------------------------------------------------
+COMMITBREAK-01/PRIMARY (new)                        | RED   | FAIL (as required)
+COMMITBREAK-02/D-01 (new)                           | RED   | FAIL (as required)
+COMMITBREAK-01/CADENCE (new)                        | RED   | FAIL (as required)
+COMMITBREAK-01/TAIL (new)                           | RED   | FAIL (as required)
+COMMITBREAK-01/STEP-E (new)                         | RED   | FAIL (as required)
+COMMITBREAK-01/NO-DOUBLE-BOOK (new)                 | GUARD | PASS (as required)
+Test 2 (re-pointed)                                 | RED   | FAIL (as required)
+Test 10 (re-pointed)                                | RED   | FAIL (as required)
+Test 13 (re-pointed)                                | RED   | FAIL (as required)
+WR-03 (re-pointed)                                  | RED   | FAIL (as required)
+LATTICE-02/D-05 (re-pointed, narrow+control halves) | RED   | FAIL (as required)
+LATTICE-01/D-01 / GUARD 7 (re-pointed)              | RED   | FAIL (as required)
+-------------------------------------------------------------------------------
+Totals: 11 RED (all failing, as required) + 1 GUARD (passing, as required) = 12
+tests classified. 64 other pre-existing tests in the file are untouched by this
+plan and pass unchanged (confirmed cadence-insensitive by 30-RESEARCH.md
+Pitfall 4's grep/read audit).
+
+No test predicted RED came back green — every RED-classified test above is a
+genuine FAIL in this capture, so no investigation-and-re-word step was needed
+(contrast with Phase 28's WR-03, which had to be re-scoped when the opposite
+happened). NO-DOUBLE-BOOK's GUARD classification (30-01-PLAN.md's own call,
+not discovered here) is confirmed correct by this run: it passes both before
+and will pass after 30-03, because Step 1's pre-fix commitment window is
+already one contiguous stretched-work-chunk span with no false gap for a
+discretionary chunk to land in — the window-merge dependency (30-RESEARCH.md
+Pitfall 2) that COMMITBREAK-01 depends on for its OWN correctness doesn't
+regress anything that was already true.
+
+FULL BY-NAME OUTPUT (flutter test --concurrency=1 --reporter expanded)
+-------------------------------------------------------------------------------
+Resolving dependencies...
+Downloading packages...
+  _fe_analyzer_shared 93.0.0 (105.0.0 available)
+  analyzer 10.0.1 (14.1.0 available)
+  async 2.13.0 (2.13.1 available)
+  build 4.0.4 (4.0.10 available)
+  build_config 1.2.0 (1.3.2 available)
+  build_daemon 4.1.1 (4.1.5 available)
+  build_runner 2.11.1 (2.16.0 available)
+  built_value 8.12.4 (8.12.7 available)
+  code_assets 1.0.0 (2.0.0 available)
+  cross_file 0.3.5+2 (0.3.5+4 available)
+  cupertino_icons 1.0.8 (1.0.9 available)
+  dart_style 3.1.5 (3.1.12 available)
+  dbus 0.7.12 (0.7.15 available)
+  equatable 2.0.8 (2.1.0 available)
+  flutter_local_notifications 21.0.0 (22.3.0 available)
+  flutter_local_notifications_linux 8.0.0 (8.0.1 available)
+  flutter_local_notifications_platform_interface 11.0.0 (12.2.0 available)
+  flutter_local_notifications_windows 3.0.0 (3.1.1 available)
+  flutter_timezone 5.0.2 (5.1.0 available)
+  go_router 17.1.0 (17.5.0 available)
+  hive_ce_generator 1.11.1 (1.11.3 available)
+  hooks 1.0.1 (2.2.0 available)
+  intl 0.20.2 (0.20.3 available)
+  json_annotation 4.11.0 (4.12.0 available)
+  matcher 0.12.19 (0.12.20 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.0 (1.19.0 available)
+  native_toolchain_c 0.17.4 (0.19.4 available)
+  objective_c 9.3.0 (9.6.0 available)
+  package_config 2.2.0 (3.0.0 available)
+  path_provider 2.1.5 (2.1.6 available)
+  path_provider_android 2.2.22 (2.3.1 available)
+  path_provider_linux 2.2.1 (2.2.2 available)
+  path_provider_platform_interface 2.1.2 (2.1.3 available)
+  screen_retriever 0.2.0 (0.2.2 available)
+  screen_retriever_linux 0.2.0 (0.2.2 available)
+  screen_retriever_macos 0.2.0 (0.2.2 available)
+  screen_retriever_platform_interface 0.2.0 (0.2.2 available)
+  screen_retriever_windows 0.2.0 (0.2.2 available)
+  share_plus 12.0.2 (13.3.0 available)
+  share_plus_platform_interface 6.1.0 (7.2.0 available)
+  shared_preferences 2.5.4 (2.5.5 available)
+  shared_preferences_android 2.4.20 (2.4.27 available)
+  shared_preferences_platform_interface 2.4.1 (2.4.2 available)
+  source_gen 4.2.0 (4.3.0 available)
+  source_helper 1.3.10 (1.3.13 available)
+  test_api 0.7.11 (0.7.13 available)
+  timezone 0.11.0 (0.11.1 available)
+  url_launcher_web 2.4.2 (2.4.3 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.2.0 (2.4.2 available)
+  vm_service 15.0.2 (15.3.0 available)
+  win32 5.15.0 (6.4.0 available)
+  window_manager 0.5.1 (0.5.2 available)
+  xml 6.6.1 (7.0.1 available)
+Got dependencies!
+55 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart
+00:00 +0: Test 1: no goals, no blocks → empty list
+00:00 +1: Test 2: commitment block on Monday generates 2 anchored chunks
+00:00 +1 -1: Test 2: commitment block on Monday generates 2 anchored chunks [E]
+  Expected: <570>
+    Actual: <565>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 119:5    main.<fn>
+
+00:00 +1 -1: Test 2b: commitment block NOT generated on Saturday
+00:00 +2 -1: Test 3: mood=1 excludes outcome goals
+00:00 +3 -1: Test 4: mood=1 includes outcome when deadline==today
+00:00 +4 -1: Test 5: mood=5 caps discretionary work chunks at 11
+00:00 +5 -1: Test 6: mood=3 break pattern with 4 work chunks (boundary chunk is the last chunk)
+00:00 +6 -1: Test 7: mood=1 break pattern with 2 work chunks (boundary chunk is the last chunk)
+00:00 +7 -1: Test 8: deadline==today floors daysRemaining at 1 (no exception)
+00:00 +8 -1: Test 9: outcome goal with null deadline is scheduled at low urgency
+00:00 +9 -1: Test 10: commitment block + discretionary — a break sits between consecutive commitment work chunks
+00:00 +9 -2: Test 10: commitment block + discretionary — a break sits between consecutive commitment work chunks [E]
+  Expected: ChunkType:<ChunkType.shortBreak>
+    Actual: ChunkType:<ChunkType.work>
+  a 5-minute break must close the commitment work chunk's own cell (COMMITBREAK-01)
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 326:7    main.<fn>
+
+00:00 +9 -2: Test 11: 2 habits only → trailing break trimmed (last chunk is work)
+00:00 +10 -2: Test 12: commitment block + 1 habit → discretionary gets synthetic time; sorted
+00:00 +11 -2: Test 13: all-commitment day → commitment work chunks with breaks between them, no long break at N=4
+00:00 +11 -3: Test 13: all-commitment day → commitment work chunks with breaks between them, no long break at N=4 [E]
+  Expected: <2>
+    Actual: <0>
+  a break closes every commitment work cell (COMMITBREAK-01)
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 448:7    main.<fn>
+
+00:00 +11 -3: WR-02: overlapping commitment blocks merge — no discretionary overlaps window
+00:00 +12 -3: WR-01: emitted long break matches reserved slot — no overlapping synthetic times
+00:00 +13 -3: WR-03: no discretionary break sorts inside the commitment window (narrow pre-gap)
+00:00 +13 -4: WR-03: no discretionary break sorts inside the commitment window (narrow pre-gap) [E]
+  Expected: ChunkType:<ChunkType.shortBreak>
+    Actual: ChunkType:<ChunkType.work>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 630:7    main.<fn>
+
+00:00 +13 -4: T-09-01: mood 4, 3 time-target goals → more than 3 discretionary chunks
+00:00 +14 -4: T-09-02: most-behind time-target goal gets >= ahead goal chunk count
+00:00 +15 -4: T-09-03a: 3x/week habit absent on non-due weekday (Tuesday), present on due day
+00:00 +16 -4: T-09-04: near-deadline outcome chunk precedes far-deadline outcome chunk
+00:00 +17 -4: T-09-05: lighterDay=true yields strictly fewer chunks than lighterDay=false at mood 5
+00:00 +18 -4: T-09-06: high-priority time-target goal wins 1-slot competition over low-priority
+00:00 +19 -4: T-09-WR02: missed due day (no log entry) breaks streak to 0
+00:00 +20 -4: higher priorityWeight goal appears before lower priorityWeight goal in generated chunks
+00:00 +21 -4: Step 2: high-priority habit is scheduled before low-priority habit
+00:00 +22 -4: Step 4: high-priority time-target goal with equal remaining hours gets chunk before low-priority
+00:00 +23 -4: Step 4: high-priority time-target goal gets strictly more chunks than low-priority under shared cap
+00:00 +24 -4: T-09-WR02b: no missed days — consecutive completions count correctly
+00:00 +25 -4: computeDueWeekdays is weekday-biased freq=5 is Mon–Fri (no weekend) — the reported bug
+00:00 +26 -4: computeDueWeekdays is weekday-biased lower frequencies spread within the work week
+00:00 +27 -4: computeDueWeekdays is weekday-biased freq=6 adds Saturday; freq=7 is daily
+00:00 +28 -4: computeDueWeekdays is weekday-biased a 5x/week habit is NOT scheduled on Saturday but IS on a weekday
+00:00 +29 -4: CAP-01: mood=1, 4 daily habits + 1 outcome → outcome receives ≥1 chunk
+00:00 +30 -4: CAP-01: mood=1 total work chunks do not exceed cap
+00:00 +31 -4: PRIORITY-02: high-priority habit (0.75) gets more chunks than normal (0.5) at mood=3
+00:00 +32 -4: PRIORITY-02: high-priority outcome (0.75) gets more chunks than normal (0.5) at mood=3
+00:00 +33 -4: FILL-01: mood=1, open capacity after habits → time-target goal appears in schedule
+00:00 +34 -4: FILL-02: 3 time-target goals with limited cap — no single goal swallows all open slots
+00:00 +35 -4: startFloorMinutes places discretionary work near "now" null floor keeps the 8:00 AM (480) default start
+00:00 +36 -4: startFloorMinutes places discretionary work near "now" a 15:42 floor starts the chunk at 16:00 (rounded up to 30), not 8 AM
+00:00 +37 -4: startFloorMinutes places discretionary work near "now" a floor earlier than 8:00 AM is clamped up to 480
+00:00 +38 -4: VSCHED-01 time-target: low/stormy day → gives-valence time-target appears
+00:00 +39 -4: VSCHED-01-outcome: low day → gives-valence outcome with no deadline appears
+00:00 +40 -4: VSCHED-02: low day discretionary count < medium day count
+00:00 +41 -4: VSCHED-02-neutral-excluded: neutral/costs time-target gets no restorative floor on low day
+00:00 +42 -4: VSCHED-03: high day under heavy backlog reserves a gives-valence slot
+00:00 +43 -4: VSCHED-03-highpri-fallback: high day, no gives goal → high-priority goal reserved
+00:00 +44 -4: determinism: same inputs produce same schedule
+00:00 +45 -4: CR-01 regression: gives+high-priority time-target on low-mood day gets exactly 1 chunk (no double-place)
+00:00 +46 -4: one-off dated commitments anchors on its specific date
+00:00 +47 -4: one-off dated commitments does NOT anchor on a different date (even same weekday)
+00:00 +48 -4: one-off dated commitments date-only equality ignores any time component on the date
+00:00 +49 -4: one-off dated commitments recurring and one-off blocks coexist on a matching day
+00:00 +50 -4: BREAK-01: mood=1 places a long break after every 2 work chunks
+00:00 +51 -4: BREAK-01: mood=2 places a long break after every 3 work chunks (regression lock — also true under the pre-BREAK-01 formula, does not by itself prove the new table is wired up)
+00:00 +52 -4: BREAK-01: mood=3 places a long break after every 4 work chunks (baseline unchanged)
+00:00 +53 -4: BREAK-01: mood=4 places a long break after every 4 work chunks (regression lock — also true under the pre-BREAK-01 formula, does not by itself prove the new table is wired up)
+00:00 +54 -4: BREAK-01: mood=5 places a long break after every 5 work chunks
+00:00 +55 -4: BREAK-02: only 5-min short breaks and 30-min long breaks are ever emitted, at every mood
+00:00 +56 -4: TONE-01: under-pace time-target rationale reads as working toward, not behind
+00:00 +57 -4: TONE-01: on-track branch is unchanged
+00:00 +58 -4: LATTICE — the day is a 30-minute lattice LATTICE-01: every cell starts on a 30-minute boundary, at every mood
+00:00 +59 -4: LATTICE — the day is a 30-minute lattice LATTICE-01/D-02: work resumes on the lattice after an off-boundary commitment
+00:00 +60 -4: LATTICE — the day is a 30-minute lattice LATTICE-02: exactly floor(workChunks / N) long breaks of exactly 30 minutes, at every mood
+00:00 +61 -4: LATTICE — the day is a 30-minute lattice LATTICE-02/D-05: the owner's day — mood 3, N=4, 4 work chunks — still gets its long break
+00:00 +62 -4: LATTICE — the day is a 30-minute lattice LATTICE-02: the Nth chunk closes its own cell AND is followed by a separate 30-minute cell
+00:00 +63 -4: LATTICE — the day is a 30-minute lattice LATTICE-02/D-05: a slot too narrow for the boundary footprint reserves the short break only — capacity-driven, and it does not fire on a nominal day
+00:00 +63 -5: LATTICE — the day is a 30-minute lattice LATTICE-02/D-05: a slot too narrow for the boundary footprint reserves the short break only — capacity-driven, and it does not fire on a nominal day [E]
+  Expected: <6>
+    Actual: <5>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 2632:9   main.<fn>.<fn>
+
+00:00 +63 -5: LATTICE — the day is a 30-minute lattice LATTICE-01/D-01: a fixed commitment keeps its own wall-clock start, unrounded
+00:00 +63 -6: LATTICE — the day is a 30-minute lattice LATTICE-01/D-01: a fixed commitment keeps its own wall-clock start, unrounded [E]
+  Expected: <4>
+    Actual: <2>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 2807:9   main.<fn>.<fn>
+
+00:00 +63 -6: LATTICE — the day is a 30-minute lattice D-04: neither _moodCap nor the day end moves — per-mood work-chunk counts are unchanged
+00:00 +64 -6: COMMITBREAK — breaks inside a committed block COMMITBREAK-01/PRIMARY: the ROADMAP repro (Work 09:00-11:40, mood 3) puts a break between every pair of commitment work chunks
+00:00 +64 -7: COMMITBREAK — breaks inside a committed block COMMITBREAK-01/PRIMARY: the ROADMAP repro (Work 09:00-11:40, mood 3) puts a break between every pair of commitment work chunks [E]
+  Expected: <9>
+    Actual: <6>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 2915:9   main.<fn>.<fn>
+
+00:00 +64 -7: COMMITBREAK — breaks inside a committed block COMMITBREAK-02/D-01: an off-lattice 09:10 block gets cells at 09:10/09:40/10:10 and its own window never moves
+00:00 +64 -8: COMMITBREAK — breaks inside a committed block COMMITBREAK-02/D-01: an off-lattice 09:10 block gets cells at 09:10/09:40/10:10 and its own window never moves [E]
+  Expected: [550, 580, 610, 640]
+    Actual: [550, 575, 600, 625, 650, 675]
+     Which: at location [1] is <575> instead of <580>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 2993:9   main.<fn>.<fn>
+
+00:00 +64 -8: COMMITBREAK — breaks inside a committed block COMMITBREAK-01/CADENCE: a 6-hour block at mood 3 accrues exactly 2 long breaks, on its own counter (D-30-01)
+00:00 +64 -9: COMMITBREAK — breaks inside a committed block COMMITBREAK-01/CADENCE: a 6-hour block at mood 3 accrues exactly 2 long breaks, on its own counter (D-30-01) [E]
+  Expected: <10>
+    Actual: <14>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 3055:9   main.<fn>.<fn>
+
+00:00 +64 -9: COMMITBREAK — breaks inside a committed block COMMITBREAK-01/TAIL: the last unit -- work or break -- stretches to the block's end and never swallows an emitted break
+00:00 +64 -10: COMMITBREAK — breaks inside a committed block COMMITBREAK-01/TAIL: the last unit -- work or break -- stretches to the block's end and never swallows an emitted break [E]
+  Expected: <4>
+    Actual: <2>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 3121:9   main.<fn>.<fn>
+
+00:00 +64 -10: COMMITBREAK — breaks inside a committed block COMMITBREAK-01/STEP-E: a tail-stretched commitment break survives the trailing trim (D-30-02)
+00:00 +64 -11: COMMITBREAK — breaks inside a committed block COMMITBREAK-01/STEP-E: a tail-stretched commitment break survives the trailing trim (D-30-02) [E]
+  Expected: ChunkType:<ChunkType.shortBreak>
+    Actual: ChunkType:<ChunkType.work>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/services/schedule_generator_test.dart 3195:9   main.<fn>.<fn>
+
+00:00 +64 -11: COMMITBREAK — breaks inside a committed block COMMITBREAK-01/NO-DOUBLE-BOOK: no discretionary chunk lands inside a commitment's internal break gap
+00:00 +65 -11: Some tests failed.
+
+Failing tests:
+  /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: COMMITBREAK — breaks inside a committed block COMMITBREAK-01/CADENCE: a 6-hour block at mood 3 accrues exactly 2 long breaks, on its own counter (D-30-01)
+  /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: COMMITBREAK — breaks inside a committed block COMMITBREAK-01/PRIMARY: the ROADMAP repro (Work 09:00-11:40, mood 3) puts a break between every pair of commitment work chunks
+  /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: COMMITBREAK — breaks inside a committed block COMMITBREAK-01/STEP-E: a tail-stretched commitment break survives the trailing trim (D-30-02)
+  /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: COMMITBREAK — breaks inside a committed block COMMITBREAK-01/TAIL: the last unit -- work or break -- stretches to the block's end and never swallows an emitted break
+  /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: COMMITBREAK — breaks inside a committed block COMMITBREAK-02/D-01: an off-lattice 09:10 block gets cells at 09:10/09:40/10:10 and its own window never moves
+  /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: LATTICE — the day is a 30-minute lattice LATTICE-01/D-01: a fixed commitment keeps its own wall-clock start, unrounded
+  /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: LATTICE — the day is a 30-minute lattice LATTICE-02/D-05: a slot too narrow for the boundary footprint reserves the short break only — capacity-driven, and it does not fire on a nominal day
+  /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 10: commitment block + discretionary — a break sits between consecutive commitment work chunks
+  /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 13: all-commitment day → commitment work chunks with breaks between them, no long break at N=4
+  /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: Test 2: commitment block on Monday generates 2 anchored chunks
+  /home/dan/CodeProjects/canopy/test/services/schedule_generator_test.dart: WR-03: no discretionary break sorts inside the commitment window (narrow pre-gap)
+
+WAVE BOUNDARY PROOF — git diff --stat, this plan's two task commits
+-------------------------------------------------------------------------------
+Command: git diff --stat HEAD~2 HEAD  (spans the two commits this plan made
+before this evidence-capture commit: the new COMMITBREAK group, then the
+six re-pointed tests)
+
+ test/services/schedule_generator_test.dart | 634 +++++++++++++++++++++++++----
+ 1 file changed, 546 insertions(+), 88 deletions(-)
+
+Command: git diff --name-only HEAD~2 HEAD
+
+test/services/schedule_generator_test.dart
+
+Zero paths under lib/ — every changed path is under test/. The wave boundary
+(this plan touches tests only; 30-03 touches lib/ only) is proven from git,
+not asserted in prose.
