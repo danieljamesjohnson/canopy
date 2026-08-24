@@ -99,7 +99,8 @@ void main() {
 
   // ---------------------------------------------------------------------------
   // Test 2: commitment block Mon–Fri, 60-min window → 2 work chunks with
-  // correct anchoredStartMinutes; NOT generated on Saturday.
+  // correct anchoredStartMinutes, with a 5-minute break between them
+  // (COMMITBREAK-01, Phase 30); NOT generated on Saturday.
   // ---------------------------------------------------------------------------
   test('Test 2: commitment block on Monday generates 2 anchored chunks', () {
     final block = makeBlock(); // Mon-Fri, 540-600
@@ -115,9 +116,18 @@ void main() {
         .toList();
     expect(workChunks.length, 2);
     expect(workChunks[0].anchoredStartMinutes, 540);
-    expect(workChunks[1].anchoredStartMinutes, 565); // 540 + 25
+    expect(workChunks[1].anchoredStartMinutes, 570); // 540 + 25 + 5 (break)
     expect(workChunks[0].goalId, isNull);
     expect(workChunks[1].goalId, isNull);
+
+    final shortBreaks = result
+        .where((c) => c.chunkType == ChunkType.shortBreak)
+        .toList();
+    expect(shortBreaks.length, 2);
+    expect(shortBreaks[0].anchoredStartMinutes, 565);
+    expect(shortBreaks[0].durationMinutes, 5);
+    expect(shortBreaks[1].anchoredStartMinutes, 595);
+    expect(shortBreaks[1].durationMinutes, 5);
   });
 
   test('Test 2b: commitment block NOT generated on Saturday', () {
@@ -290,13 +300,15 @@ void main() {
   );
 
   // ---------------------------------------------------------------------------
-  // Test 10: commitment block + discretionary habits → no breaks between
-  //          consecutive commitment chunks (READ-02 Pitfall 2)
+  // Test 10: commitment block + discretionary habits → a break DOES sit
+  //          between consecutive commitment work chunks (COMMITBREAK-01,
+  //          Phase 30 — this reverses the pre-Phase-30 READ-02 assertion).
   // ---------------------------------------------------------------------------
   test(
-    'Test 10: commitment block + discretionary — no breaks between commitment chunks',
+    'Test 10: commitment block + discretionary — a break sits between consecutive commitment work chunks',
     () {
-      // makeBlock() is Mon-Fri 540-600 → 2 anchored chunks at 540, 565
+      // makeBlock() is Mon-Fri 540-600 → 2 anchored work chunks at 540, 570,
+      // with a 5-minute break at 565 closing the first cell (COMMITBREAK-01).
       final block = makeBlock();
       final result = sut.generate(
         goals: [makeHabit()],
@@ -306,21 +318,25 @@ void main() {
         completionLogs: [],
       );
       final idx540 = result.indexWhere((c) => c.anchoredStartMinutes == 540);
-      final idx565 = result.indexWhere((c) => c.anchoredStartMinutes == 565);
       expect(
         idx540,
         greaterThanOrEqualTo(0),
         reason: 'chunk at 540 must be present',
       );
       expect(
-        idx565,
-        greaterThanOrEqualTo(0),
-        reason: 'chunk at 565 must be present',
+        result[idx540 + 1].chunkType,
+        ChunkType.shortBreak,
+        reason:
+            'a 5-minute break must close the commitment work chunk\'s own '
+            'cell (COMMITBREAK-01)',
       );
+      final nextWork = result
+          .skip(idx540 + 1)
+          .firstWhere((c) => c.chunkType == ChunkType.work);
       expect(
-        idx565,
-        idx540 + 1,
-        reason: 'No break between consecutive commitment chunks (READ-02)',
+        nextWork.anchoredStartMinutes,
+        570,
+        reason: 'the next commitment work chunk starts after the break',
       );
     },
   );
@@ -402,31 +418,45 @@ void main() {
   );
 
   // ---------------------------------------------------------------------------
-  // Test 13: all-commitment day (no discretionary) → only work chunks; no breaks
+  // Test 13: all-commitment day (no discretionary) → 2 work chunks + 2 short
+  // breaks; the cadence boundary (N=4 at mood 3) is never reached
+  // (COMMITBREAK-01, Phase 30 — this reverses the pre-Phase-30 "no breaks"
+  // assertion).
   // ---------------------------------------------------------------------------
-  test('Test 13: all-commitment day → commitment chunks only, no breaks', () {
-    // makeBlock() generates 2 commitment chunks; no discretionary goals.
-    final block = makeBlock();
-    final result = sut.generate(
-      goals: [],
-      blocks: [block],
-      moodIndex: 3,
-      date: monday,
-      completionLogs: [],
-    );
-    // Result contains only work chunks — no breaks.
-    final hasAnyBreak = result.any(
-      (c) =>
-          c.chunkType == ChunkType.shortBreak ||
-          c.chunkType == ChunkType.longBreak,
-    );
-    expect(
-      hasAnyBreak,
-      isFalse,
-      reason: 'All-commitment day must not contain any break chunks (READ-02)',
-    );
-    expect(workChunksOf(result), equals(2));
-  });
+  test(
+    'Test 13: all-commitment day → commitment work chunks with breaks between them, no long break at N=4',
+    () {
+      // makeBlock() generates 2 work chunks + 2 short breaks; no
+      // discretionary goals. Mood 3 -> N=4, and only 2 work chunks are ever
+      // produced by this 60-min window, so the cadence boundary (every 4th
+      // chunk) is never reached — zero long breaks.
+      final block = makeBlock();
+      final result = sut.generate(
+        goals: [],
+        blocks: [block],
+        moodIndex: 3,
+        date: monday,
+        completionLogs: [],
+      );
+      final shortBreaks = result
+          .where((c) => c.chunkType == ChunkType.shortBreak)
+          .toList();
+      final longBreaks = result
+          .where((c) => c.chunkType == ChunkType.longBreak)
+          .toList();
+      expect(workChunksOf(result), equals(2));
+      expect(
+        shortBreaks.length,
+        equals(2),
+        reason: 'a break closes every commitment work cell (COMMITBREAK-01)',
+      );
+      expect(
+        longBreaks,
+        isEmpty,
+        reason: 'only 2 work chunks are produced; N=4 is never reached',
+      );
+    },
+  );
 
   // ---------------------------------------------------------------------------
   // Test WR-02: two OVERLAPPING same-day commitment blocks must merge into one
@@ -564,17 +594,24 @@ void main() {
 
   // ---------------------------------------------------------------------------
   // Test WR-03: a discretionary chunk packed into a narrow pre-commitment gap
-  // must not cause a break to sort between two contiguous commitment chunks,
-  // and no break may sort into a position that splits the commitment window
-  // (READ-02 at slot boundaries).
+  // must not cause a DISCRETIONARY break to sort inside the commitment
+  // window; the commitment's OWN internal break (COMMITBREAK-01, Phase 30)
+  // legitimately sits inside that window and is asserted separately below —
+  // this test passes unchanged pre- and post-fix (capacity-driven omission
+  // pre-fix produces the same 540/565 adjacency this test already asserted,
+  // for a different underlying reason than its old comment stated), so its
+  // comment is corrected here rather than its behavior.
   // ---------------------------------------------------------------------------
   test(
-    'WR-03: break never sorts between contiguous commitment chunks (narrow pre-gap)',
+    'WR-03: no discretionary break sorts inside the commitment window (narrow pre-gap)',
     () {
-      // Commitment block 540-590 (2 chunks: 540, 565). A free gap exists before
-      // it (480-540) into which discretionary chunks are packed; the trailing
-      // break footprint at the slot boundary must NOT be emitted so it cannot
-      // sort into the commitment window or between the contiguous 540/565 chunks.
+      // Commitment block 540-590 (a 50-minute window — exactly 2x25 with no
+      // slack for a full break-and-cell). Post COMMITBREAK-01: one work
+      // chunk (540-565) and its own short break, footprint-checked at
+      // 565+5=570<=590 (fits), then tail-stretched by the remaining 20
+      // minutes to close the window: 565-590, 25 minutes total. A free gap
+      // exists before the block (480-540) into which discretionary chunks
+      // are packed.
       final block = makeBlock(
         name: 'Morning',
         startMinutes: 540,
@@ -588,29 +625,26 @@ void main() {
         completionLogs: [],
       );
 
-      // The two commitment chunks (anchored 540 and 565) must be adjacent in the
-      // final list — no break between them (READ-02).
-      final idx540 = result.indexWhere((c) => c.anchoredStartMinutes == 540);
       final idx565 = result.indexWhere((c) => c.anchoredStartMinutes == 565);
-      expect(idx540, greaterThanOrEqualTo(0));
       expect(idx565, greaterThanOrEqualTo(0));
-      expect(
-        idx565,
-        idx540 + 1,
-        reason:
-            'no break may sort between contiguous commitment chunks (WR-03)',
-      );
+      expect(result[idx565].chunkType, ChunkType.shortBreak);
+      expect(result[idx565].durationMinutes, 25);
 
-      // No break chunk may sit inside the commitment window [540, 590).
+      // No DISCRETIONARY break chunk may sit inside the commitment window
+      // [540, 590) — re-scoped to commitmentId == null (WR-03) and to
+      // displayStartMinutes so a legitimate anchored commitment break
+      // (commitmentId == block.id) is never mistaken for a violation.
       for (final c in result) {
         if (c.chunkType == ChunkType.work) continue;
-        final start = c.syntheticStartMinutes ?? 9999;
+        if (c.commitmentId != null) continue;
+        final start = c.displayStartMinutes ?? 9999;
         final insideWindow = start >= 540 && start < 590;
         expect(
           insideWindow,
           isFalse,
           reason:
-              'break at $start must not fall inside commitment window (WR-03)',
+              'discretionary break at $start must not fall inside the '
+              'commitment window (WR-03)',
         );
       }
     },
@@ -2570,14 +2604,18 @@ void main() {
         // cadence boundary). lighterDay: false — mood 1 has no lower tier,
         // so lighterDay cannot change the cap; passed for parity with the
         // other lattice fixtures, not for effect. blocks: [09:15-10:00]
-        // (555-600, a 45-min window) — this produces exactly one anchored
-        // chunk stretched to cover 555-600 (see RED-PROOF 2's derivation).
-        // Free slot 1 is [480, 555). Chunk 1 is ordinary — W@480(25), cursor
-        // 505, footprint 5 fits (510 <= 555) -> SB@505(5), cursor 510.
-        // Chunk 2 is the boundary — W@510(25), cursor 535: the full 35-min
-        // footprint needs 570 > 555 so it does NOT fit, but the 5-min short
-        // break alone does (540 <= 555) -> the fallback reserves only the
-        // short break; no long break is emitted after chunk 2.
+        // (555-600, a 45-min window). Post COMMITBREAK-01 (Phase 30), the
+        // block itself now also runs the break-insertion loop on its OWN
+        // mood-1 cadence (N=2): W@555/25, cursor 580, blockBreakCount=1 (not
+        // boundary at N=2) -> footprint 5, 580+5=585<=600 fits -> SB@580/5,
+        // cursor 585, tail-stretched by the remaining 15 to 20 minutes
+        // (580-600) since no further 25-min cell fits. Free slot 1 (before
+        // the block) is unaffected — [480, 555). Chunk 1 is ordinary —
+        // W@480(25), cursor 505, footprint 5 fits (510 <= 555) -> SB@505(5),
+        // cursor 510. Chunk 2 is the boundary — W@510(25), cursor 535: the
+        // full 35-min footprint needs 570 > 555 so it does NOT fit, but the
+        // 5-min short break alone does (540 <= 555) -> the fallback reserves
+        // only the short break; no long break is emitted after chunk 2.
         final narrowGoals = List.generate(
           3,
           (i) => makeHabit(name: 'Habit $i'),
@@ -2591,7 +2629,7 @@ void main() {
           lighterDay: false,
         );
 
-        expect(narrow.length, 5);
+        expect(narrow.length, 6);
         expect(narrow[0].chunkType, ChunkType.work);
         expect(narrow[0].syntheticStartMinutes, 480);
         expect(narrow[0].durationMinutes, 25);
@@ -2606,7 +2644,10 @@ void main() {
         expect(narrow[3].durationMinutes, 5);
         expect(narrow[4].chunkType, ChunkType.work);
         expect(narrow[4].anchoredStartMinutes, 555);
-        expect(narrow[4].durationMinutes, 45);
+        expect(narrow[4].durationMinutes, 25);
+        expect(narrow[5].chunkType, ChunkType.shortBreak);
+        expect(narrow[5].anchoredStartMinutes, 580);
+        expect(narrow[5].durationMinutes, 20);
         expect(
           narrow.where((c) => c.chunkType == ChunkType.longBreak),
           isEmpty,
@@ -2621,7 +2662,9 @@ void main() {
         // <= 585). The only difference between (a) and (b) is 30 minutes of
         // slot width — that is what makes the fallback capacity-driven
         // rather than a suppression rule, and asserting it is what makes
-        // the claim falsifiable.
+        // the claim falsifiable. The commitment block itself (585-630, still
+        // a 45-min window) produces the same shape as NARROW's block, just
+        // shifted: W@585/25, SB@610/5 tail-stretched to 20 (610-630).
         final controlGoals = List.generate(
           3,
           (i) => makeHabit(name: 'Habit $i'),
@@ -2635,7 +2678,7 @@ void main() {
           lighterDay: false,
         );
 
-        expect(control.length, 6);
+        expect(control.length, 7);
         expect(control[0].chunkType, ChunkType.work);
         expect(control[0].syntheticStartMinutes, 480);
         expect(control[0].durationMinutes, 25);
@@ -2653,7 +2696,10 @@ void main() {
         expect(control[4].durationMinutes, 30);
         expect(control[5].chunkType, ChunkType.work);
         expect(control[5].anchoredStartMinutes, 585);
-        expect(control[5].durationMinutes, 45);
+        expect(control[5].durationMinutes, 25);
+        expect(control[6].chunkType, ChunkType.shortBreak);
+        expect(control[6].anchoredStartMinutes, 610);
+        expect(control[6].durationMinutes, 20);
         final controlLongBreaks = control
             .where((c) => c.chunkType == ChunkType.longBreak)
             .toList();
@@ -2721,23 +2767,29 @@ void main() {
       },
     );
 
-    // GUARD 7 — must be green now AND after the fix.
+    // GUARD 7 — the "540 stays 540, unrounded" half is green now AND after
+    // the fix (D-01); the chunk-count/composition half is RE-POINTED by
+    // Phase 30 (COMMITBREAK-01) and now fails pre-fix.
     test(
       'LATTICE-01/D-01: a fixed commitment keeps its own wall-clock start, unrounded',
       () {
         // 4 habits fill habitCeiling=4 at mood 3 (cap=8); blocks:
-        // [makeBlock()] — the house default 540-600, a 60-min window. Per
-        // the existing block-chunking loop (unchanged by this phase —
-        // D-01/D-02 only affect the free-slot start rounding, never the
-        // anchored chunks themselves) this produces exactly 2 anchored
-        // chunks: 540 (25 min, unstretched) and 565 (35 min, stretched to
-        // reach 600). 565 is deliberately off-lattice (565 % 30 == 25) —
-        // rounding a commitment would move the user's actual appointment,
-        // which is the opposite of the product's purpose.
+        // [makeBlock()] — the house default 540-600, a 60-min window. D-01
+        // governs the window's OWN boundaries — block.startMinutes/
+        // endMinutes are never rounded, so the window's start stays the
+        // user's real 540 (09:00) and its true end stays 600 (10:00). The
+        // chunk COMPOSITION inside that window is exactly what
+        // COMMITBREAK-01 (Phase 30) changes: the old "2 bare work chunks,
+        // one stretched" shape is now 2 work chunks with a 5-minute break
+        // closing each cell — W@540/25, SB@565/5, W@570/25, SB@595/5. 565 is
+        // deliberately off-lattice (565 % 30 == 25) — rounding a commitment
+        // would move the user's actual appointment, which is the opposite
+        // of the product's purpose.
         final goals = List.generate(4, (i) => makeHabit(name: 'Habit $i'));
+        final block = makeBlock();
         final result = sut.generate(
           goals: goals,
-          blocks: [makeBlock()],
+          blocks: [block],
           moodIndex: 3,
           date: monday,
           completionLogs: [],
@@ -2752,16 +2804,24 @@ void main() {
                 ),
               );
 
-        expect(anchored.length, 2);
+        expect(anchored.length, 4);
+        expect(anchored[0].chunkType, ChunkType.work);
         expect(anchored[0].anchoredStartMinutes, 540);
         expect(anchored[0].durationMinutes, 25);
+        expect(anchored[1].chunkType, ChunkType.shortBreak);
         expect(anchored[1].anchoredStartMinutes, 565);
-        expect(
-          anchored[1].anchoredStartMinutes! % 30,
-          25,
-          reason: 'the second anchored chunk is deliberately off-lattice',
-        );
-        expect(anchored[1].durationMinutes, 35);
+        expect(anchored[1].durationMinutes, 5);
+        expect(anchored[2].chunkType, ChunkType.work);
+        expect(anchored[2].anchoredStartMinutes, 570);
+        expect(anchored[2].durationMinutes, 25);
+        expect(anchored[3].chunkType, ChunkType.shortBreak);
+        expect(anchored[3].anchoredStartMinutes, 595);
+        expect(anchored[3].durationMinutes, 5);
+
+        // The window's own boundaries (D-01) are read back off the block
+        // object after generate() — unchanged.
+        expect(block.startMinutes, 540);
+        expect(block.endMinutes, 600);
       },
     );
 
