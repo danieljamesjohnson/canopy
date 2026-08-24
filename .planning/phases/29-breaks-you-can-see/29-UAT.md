@@ -39,7 +39,43 @@ exactly this kind of look.
 
 ---
 
-## ATTEMPT 1 — VOID (stale Hive day). 2026-08-21.
+## ⚠ ATTEMPT 1's DIAGNOSIS WAS WRONG — corrected 2026-08-24. Read this first.
+
+The stale-Hive explanation written below on 2026-08-21 is **incorrect** and is kept verbatim
+rather than deleted, because how it was reached matters more than the conclusion.
+
+The owner re-checked-in on 2026-08-24 and dropped a second screenshot
+(`~/feedback-drop/canopy/inbox/2026-08-24_13-07-23/`) of a **freshly generated** day. It still had
+no breaks between his work chunks — but it *did* show one "Short break" hairline, between a
+discretionary `Creative time` chunk and the first `Work` chunk.
+
+That one break is the tell. Breaks were being emitted and Phase 29's sub-compact tier was rendering
+them correctly. What was missing was breaks between **commitment-block** chunks — the owner's
+`Work` is a commitment block, and `schedule_generator.dart` Step 1 walks a commitment window with a
+bare `cursor += 25`, no break, no lattice. STEP C then passes those chunks straight through under
+the comment "commitment chunks (no breaks between them)". **Phase 28's lattice was only ever
+applied to the discretionary packing loop.** Reproduced exactly; full analysis and root cause are
+in the ROADMAP under **Phase 30: Breaks In Committed Time**.
+
+**Why the 2026-08-21 diagnosis was wrong, specifically.** The probe run that day swept all five
+moods and both goal types and found correct 25+5 lattice output every time — and concluded the
+generator was clean. It never constructed a **commitment block**. The commitment path was the one
+half of the code path not exercised, and it was the broken half. A probe that covers only the
+branch you already believe is fine does not license a conclusion about the whole function;
+"generator is structurally incapable of producing that layout" was asserted from a sample that
+excluded the producing branch. The existing suite's own `makeBlock` fixture (540–600, two chunks)
+would have surfaced it immediately.
+
+The cost was one wasted round trip for the owner and a second report of the same symptom three
+days later.
+
+**Phase 29 itself is unaffected** — its render work is correct, and the visible "Short break" in
+the 08-24 screenshot is that work doing its job. This UAT is still pending; it should be judged
+after Phase 30 lands, when a full day's worth of breaks exists to look at.
+
+---
+
+## ATTEMPT 1 — VOID. 2026-08-21. (Diagnosis below superseded — see correction above.)
 
 The first UAT attempt could not be judged, and the reason is worth recording because it will
 recur.
@@ -88,9 +124,11 @@ sub-compact one. Opened as **Phase 30 — Breaks You Can Skip** rather than wide
 
 ## Item 1 — Does a 5-minute break read as a break?
 
-**First: tap ⟳ (Re-check-in) and regenerate the day.** See ATTEMPT 1 above — without this you are
-judging a pre-Phase-28 schedule that has no short breaks in it at all, and item 1 fails for a
-reason that has nothing to do with what this phase built.
+**Blocked until Phase 30 lands.** Breaks between commitment-block chunks are not emitted by the
+engine at all (see the correction at the top of this file), so on a day built around a committed
+`Work` block there is almost nothing here to judge. Judge this once Phase 30 puts breaks in
+committed time — then a full day has breaks in it and item 1 is a real question. Re-check-in (⟳)
+first either way, or the app will show a day generated before the fix.
 
 Scroll through the morning. Between two work cards there should be a thin line with "Short break"
 sitting on it. The question is not "can I find it" — it is: glancing at the day, does that row say
