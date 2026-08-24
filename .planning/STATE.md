@@ -263,6 +263,20 @@ post-Phase-22 tree — do not chase the old ones.
 
 None.
 
+## Deferred Verification
+
+| Phase | State | Resume |
+|-------|-------|--------|
+| 29 | verification_deferred_human | `/gsd-verify-work 29` |
+
+**Phase 29 is code-complete and verified 8/9; the 9th truth is its own human UAT verdict, which is
+blocked — not merely unanswered.** `29-UAT.md` item 1 asks whether a 5-minute break reads *as a
+break*, and on a day built around a committed `Work` block there are no breaks to look at:
+`schedule_generator.dart` never applied Phase 28's lattice inside commitment blocks. That is Phase
+30. The deferral is therefore an *ordering* decision already recorded in `29-UAT.md` on 2026-08-24,
+not a skipped gate — judge Phase 29's UAT after Phase 30 lands, when a full day actually has breaks
+in it. Re-check-in (⟳) before judging, or the app shows a pre-fix day (CLAUDE.md trap #4, data layer).
+
 ## Deferred Items
 
 Items acknowledged and deferred at milestone close on 2026-06-15 (v1.4) — carried forward, not yet routed to v1.5 (out of this milestone's scope per REQUIREMENTS.md Future Requirements / Out of Scope):
