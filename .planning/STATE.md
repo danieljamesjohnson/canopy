@@ -268,6 +268,13 @@ None.
 | Phase | State | Resume |
 |-------|-------|--------|
 | 29 | verification_deferred_human | `/gsd-verify-work 29` |
+| 30 | verification_deferred_human | `/gsd-verify-work 30` |
+
+**Phase 30 is code-complete, 8/8 code truths verified, 598/598 tests green.** Its human UAT is
+scaffolded at `30-UAT.md` and the debug build is served at `http://danserver:8143/` (served-bytes
+gate passed, `buildCommitmentChunks` present in the served `main.dart.js`). Phase 29's UAT is now
+unblocked by this — both are judged in one sitting. **⟳ Re-check-in first** (trap #4, now promoted
+into CLAUDE.md).
 
 **Phase 29 is code-complete and verified 8/9; the 9th truth is its own human UAT verdict, which is
 blocked — not merely unanswered.** `29-UAT.md` item 1 asks whether a 5-minute break reads *as a
