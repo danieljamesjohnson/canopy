@@ -70,6 +70,27 @@ class ScheduleGeneratorService {
   /// addition to (never replacing) that chunk's own short break.
   static const int _longBreakMinutes = 30;
 
+  /// Public aliases for the lattice constants above (IN-01), so
+  /// `ScheduleNotifier._reflowDiscretionaryWork` — the notifier's own
+  /// discretionary-repacking pass — reads its minute values from here
+  /// instead of re-declaring its own literals. This is exactly how WR-03's
+  /// 25-vs-30 long-break duration drifted unnoticed: two independent
+  /// declarations of the same value, one of them wrong. Same "delete the
+  /// duplicate, share the source of truth" pattern as D-30-03.
+  static const int shortBreakMinutes = _shortBreakMinutes;
+  static const int longBreakMinutes = _longBreakMinutes;
+
+  /// The duration, in minutes, of one discretionary or commitment work
+  /// chunk — matches the literal `25` used throughout this file's own
+  /// packing passes (Step 1, `_assignSyntheticStartTimes`). Exposed for the
+  /// same IN-01 reason as the break constants above.
+  static const int workChunkMinutes = 25;
+
+  /// The day's packing window — matches `_assignSyntheticStartTimes`'s own
+  /// `defaultDayStart`/`dayEnd` locals. Exposed for the same IN-01 reason.
+  static const int dayStartMinutes = 480; // 8:00 AM
+  static const int dayEndMinutes = 1320; // 10:00 PM
+
   /// Rounds [minutes] up to the next multiple of [_latticeMinutes] — the
   /// file's existing round-up-to-N idiom, generalized from the old 5-minute
   /// version. Used at three call sites: the packing-loop realignment, the

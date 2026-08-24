@@ -307,12 +307,23 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       // Reflow unresolved discretionary work around the (now updated) set of
       // anchored commitment windows so nothing double-books the new event.
       final nowMinutes = now.hour * 60 + now.minute;
-      final reflowed = _reflowDiscretionaryWork(chunks, nowMinutes: nowMinutes)
-        ..sort((a, b) {
-          final aStart = a.displayStartMinutes ?? 9999;
-          final bStart = b.displayStartMinutes ?? 9999;
-          return aStart.compareTo(bStart);
-        });
+      // WR-01: source the reflow's break cadence from the same mood-derived
+      // value buildCommitmentChunks just used above (cadenceMoodIndex),
+      // instead of a hardcoded constant — otherwise the reflowed portion of
+      // the day would silently diverge from the cadence the anchored chunks
+      // inserted moments earlier in this same call used.
+      final reflowed =
+          _reflowDiscretionaryWork(
+            chunks,
+            nowMinutes: nowMinutes,
+            longBreakEvery: ScheduleGeneratorService.breakCadenceForMood(
+              cadenceMoodIndex,
+            ),
+          )..sort((a, b) {
+            final aStart = a.displayStartMinutes ?? 9999;
+            final bStart = b.displayStartMinutes ?? 9999;
+            return aStart.compareTo(bStart);
+          });
       _todaySchedule!.chunks = reflowed;
       await _repo.save(_todaySchedule!);
     } else {
@@ -397,13 +408,23 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
   /// overlapping a work chunk or orphan the Pomodoro spacing. Packing starts at
   /// max(8:00, [nowMinutes]) so an add mid-day never schedules work into hours
   /// that have already passed. Returns the rebuilt chunk list (callers sort it).
+  ///
+  /// [longBreakEvery] (WR-01) is the caller-supplied, mood-derived cadence —
+  /// this method used to hardcode a constant `4` here regardless of the
+  /// day's real mood, silently diverging from `buildCommitmentChunks`'s own
+  /// mood-derived cadence in the very same `addEventToday` call. The caller
+  /// (`addEventToday`) passes `ScheduleGeneratorService.breakCadenceForMood`.
   List<ScheduledChunk> _reflowDiscretionaryWork(
     List<ScheduledChunk> chunks, {
     required int nowMinutes,
+    required int longBreakEvery,
   }) {
-    const dayStart = 480; // 8:00 AM
-    const dayEnd = 1320; // 10:00 PM
-    const longBreakEvery = 4;
+    // IN-01: read day-boundary/duration values from ScheduleGeneratorService
+    // instead of re-declaring separate literals — the duplication is exactly
+    // how WR-03's 25-vs-30 long-break value drifted unnoticed.
+    const dayStart = ScheduleGeneratorService.dayStartMinutes;
+    const dayEnd = ScheduleGeneratorService.dayEndMinutes;
+    const workMinutes = ScheduleGeneratorService.workChunkMinutes;
 
     // Partition: keep anchored + resolved (incl. resolved work); collect movable
     // unresolved work; DROP unresolved breaks (re-emitted below).
@@ -439,10 +460,10 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     for (int i = 0; i < movable.length; i++) {
       final c = movable[i];
       int s = cursor;
-      while (s + 25 <= dayEnd && hits(s, s + 25)) {
+      while (s + workMinutes <= dayEnd && hits(s, s + workMinutes)) {
         s += 5; // step by 5 for tidy start boundaries
       }
-      if (s + 25 > dayEnd) {
+      if (s + workMinutes > dayEnd) {
         // Day genuinely full — leave the chunk untimed (sorts to the end) rather
         // than stacking it on an occupied slot.
         c.syntheticStartMinutes = null;
@@ -450,17 +471,20 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
         continue;
       }
       c.syntheticStartMinutes = s;
-      placed.add([s, s + 25]);
+      placed.add([s, s + workMinutes]);
       result.add(c);
-      cursor = s + 25;
+      cursor = s + workMinutes;
 
       // Reserve + emit a break after this work chunk when more work remains and
-      // it fits contiguously — same 5-min short / 25-min long cadence the
-      // generator uses.
+      // it fits contiguously — same short/long break cadence the generator
+      // uses (WR-03: this used to hardcode 25, five minutes short of the
+      // system-wide 30-minute long break every other code path emits).
       if (i + 1 < movable.length) {
         breakCount++;
         final isLong = breakCount % longBreakEvery == 0;
-        final dur = isLong ? 25 : 5;
+        final dur = isLong
+            ? ScheduleGeneratorService.longBreakMinutes
+            : ScheduleGeneratorService.shortBreakMinutes;
         if (cursor + dur <= dayEnd && !hits(cursor, cursor + dur)) {
           result.add(
             ScheduledChunk(
