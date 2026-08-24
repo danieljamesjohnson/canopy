@@ -671,6 +671,82 @@ void main() {
   });
 
   test(
+    'WR-02: a trailing discretionary long break (and its preceding short '
+    'break) must survive addEventToday, not just a trailing short break',
+    () async {
+      final repo = _InMemoryScheduleRepository();
+      // A day shaped like a legitimate cadence-boundary ending — work, then
+      // the D-06 short-break/long-break pair STEP E deliberately preserves
+      // (schedule_generator_test.dart Test 6: "[..., work, shortBreak,
+      // longBreak]" is a real, generate()-producible shape). Both breaks are
+      // discretionary (commitmentId: null) and synthetic (not anchored) —
+      // exactly the shape CR-01 shows the unnarrowed trim deletes.
+      final w1 = ScheduledChunk(
+        id: 'w1',
+        chunkTypeIndex: ChunkType.work.index,
+        goalId: 'goal-1',
+        durationMinutes: 25,
+        syntheticStartMinutes: 8 * 60,
+        rationale: 'Deep work',
+      );
+      final b1 = ScheduledChunk(
+        id: 'b1',
+        chunkTypeIndex: ChunkType.shortBreak.index,
+        durationMinutes: 5,
+        syntheticStartMinutes: 8 * 60 + 25,
+        rationale: '',
+      );
+      final l1 = ScheduledChunk(
+        id: 'l1',
+        chunkTypeIndex: ChunkType.longBreak.index,
+        durationMinutes: 30,
+        syntheticStartMinutes: 8 * 60 + 30,
+        rationale: '',
+      );
+      await repo.save(
+        DailySchedule(
+          id: 'sched-1',
+          dateYmd: testDateYmd,
+          moodIndex: 3,
+          chunks: [w1, b1, l1],
+        ),
+      );
+      final notifier = ScheduleNotifier(
+        now: () => DateTime(2026, 3, 23),
+        repo: repo,
+        logRepo: _InMemoryLogRepository(),
+        goalRepo: _InMemoryGoalRepository(),
+      );
+      await notifier.init();
+
+      // Add an event for a DIFFERENT day — exercises the early-return
+      // (!anchorsToday) branch, which still runs _trimTrailingNonWork()
+      // against today's existing chunks before bailing out (mirrors
+      // COMMITBREAK-01/ADD-EVENT-TRIM and CR-01's own regression test
+      // above, so this test isolates the trim itself rather than
+      // _reflowDiscretionaryWork, which would drop-and-re-emit breaks on
+      // the anchorsToday==true path and mask this specific bug).
+      final block = CommitmentBlock(
+        name: 'Tomorrow',
+        daysOfWeek: const [],
+        startMinutes: 9 * 60,
+        endMinutes: 10 * 60,
+        date: DateTime(2026, 3, 24),
+      );
+      final placed = await notifier.addEventToday(block);
+
+      expect(placed, isFalse);
+      final chunks = notifier.todaySchedule!.chunks;
+      // Both the long break AND its preceding short break survive — CR-01's
+      // bug deleted both via the cascading while (once the long break is
+      // popped, the short break becomes the new trailing chunk and matches
+      // the unnarrowed `!= ChunkType.work` condition too).
+      expect(chunks.map((c) => c.id).toSet(), {'w1', 'b1', 'l1'});
+      expect(chunks.last.chunkType, ChunkType.longBreak);
+    },
+  );
+
+  test(
     'creates a minimal today schedule when none exists (empty-state add)',
     () async {
       // No schedule pre-seeded — the empty Today screen path.
