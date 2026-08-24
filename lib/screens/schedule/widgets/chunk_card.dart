@@ -37,13 +37,16 @@ enum ChunkCardDensity {
   /// flanking a centered label) instead of a card — no dashed border, no
   /// duration text, non-interactive like every other break tier.
   ///
-  /// The work-chunk arm that handles this value below is a documented dead
-  /// path: `today_screen.dart`'s work-chunk density ternary never selects
-  /// `subCompact` (it stays a 2-way `full`/`compact` split, per
-  /// `29-UI-SPEC.md` § "Scope boundary"). No call site selects this value
-  /// for a break yet either — `_buildBreak`'s density `if`-chain doesn't
-  /// check it until plan `29-02` wires the branch and `today_screen.dart`'s
-  /// break density ternary. Until then this value exists purely so the two
+  /// **Live for breaks since plan `29-02`.** `today_screen.dart`'s break
+  /// density ternary selects this value, and `_buildBreak`'s density
+  /// `if`-chain checks it before `compact`, so it fires for every 5-minute
+  /// break the engine emits. Do not delete this arm as dead code — removing
+  /// it reintroduces the sliver-clipping defect that opened this phase.
+  ///
+  /// The work-chunk arm that handles this value below IS still a documented
+  /// dead path: `today_screen.dart`'s work-chunk density ternary never
+  /// selects `subCompact` (it stays a 2-way `full`/`compact` split, per
+  /// `29-UI-SPEC.md` § "Scope boundary"). That arm exists purely so the two
   /// density-keyed switch expressions in `_WorkChunkContent` below stay
   /// exhaustive.
   subCompact,
@@ -306,11 +309,12 @@ class _DashedBorderPainter extends CustomPainter {
 /// Phase 29 (SEEBREAK-01) — the sub-compact tier's shared row: a hairline
 /// `Divider` on each side of a centered label, no card, no dashed border.
 ///
-/// Shared by `_buildBreak`'s sub-compact branch (wired in plan `29-02`) and
+/// Shared by `_buildBreak`'s sub-compact branch (wired in plan `29-02`, and
+/// live — this is what every 5-minute break renders as) and
 /// `_WorkChunkContent`'s documented dead-path fallback below — both need
 /// the identical widget tree, so it lives once, file-private, rather than
-/// duplicated per call site. Not reachable from any call site as of this
-/// plan (PD-29-01): see the `subCompact` enum value's doc comment above.
+/// duplicated per call site. See the `subCompact` enum value's doc comment
+/// above for which of the two arms is reachable.
 ///
 /// `29-UI-SPEC.md` "Horizontal insets": this row renders through the
 /// existing `TimelineRowTile` wrapper (unlike `LiveRowCard`, which has no
