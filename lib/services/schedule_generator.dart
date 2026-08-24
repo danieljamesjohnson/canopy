@@ -188,14 +188,6 @@ class ScheduleGeneratorService {
   ///
   /// [block.startMinutes]/[block.endMinutes] are read-only throughout (Phase
   /// 28 D-01) — only the chunk *composition* inside the window changes.
-  // TASK 1 (tracer): this helper reserves the short break only — no cadence
-  // boundary, no long break yet. `longBreakEvery` is threaded through the
-  // signature now so the public API doesn't change shape between Task 1 and
-  // Task 2; Task 2 wires it into a boundary check. Four wave-1 tests stay
-  // RED after Task 1 alone by design: COMMITBREAK-01/PRIMARY,
-  // COMMITBREAK-01/CADENCE, COMMITBREAK-02/D-01 (schedule_generator_test.dart)
-  // and COMMITBREAK-01/RENDER (lattice_break_pair_test.dart) — all four need
-  // the cadence boundary Task 2 adds.
   static List<ScheduledChunk> buildCommitmentChunks(
     CommitmentBlock block, {
     required int longBreakEvery,
@@ -208,6 +200,7 @@ class ScheduleGeneratorService {
     // (30-RESEARCH.md Pitfall 3: that is the defect path where the stretch
     // grows a work chunk backward over a break already placed).
     ScheduledChunk? lastForBlock;
+    int blockBreakCount = 0; // D-30-01 — own counter, fresh per block instance
     while (cursor + 25 <= block.endMinutes) {
       final work = ScheduledChunk(
         chunkTypeIndex: ChunkType.work.index,
@@ -220,8 +213,18 @@ class ScheduleGeneratorService {
       chunks.add(work);
       lastForBlock = work;
       cursor += 25;
+      blockBreakCount++;
 
-      if (cursor + _shortBreakMinutes <= block.endMinutes) {
+      // isBoundary selects a footprint, never a duration: a cadence-boundary
+      // cell reserves the ordinary short break PLUS a separate 30-minute
+      // long-break cell after it — the long break never replaces the short
+      // break (Phase 28 D-06), mirroring _assignSyntheticStartTimes's
+      // isBoundary/breakFootprint shape rather than a second,
+      // differently-shaped rule for the same cadence rule.
+      final isBoundary = blockBreakCount % longBreakEvery == 0;
+      final breakFootprint =
+          _shortBreakMinutes + (isBoundary ? _longBreakMinutes : 0);
+      if (cursor + breakFootprint <= block.endMinutes) {
         final sb = ScheduledChunk(
           chunkTypeIndex: ChunkType.shortBreak.index,
           goalId: null,
@@ -237,9 +240,39 @@ class ScheduleGeneratorService {
         chunks.add(sb);
         lastForBlock = sb;
         cursor += _shortBreakMinutes;
+        if (isBoundary) {
+          final lb = ScheduledChunk(
+            chunkTypeIndex: ChunkType.longBreak.index,
+            goalId: null,
+            commitmentId: block.id,
+            durationMinutes: _longBreakMinutes,
+            anchoredStartMinutes: cursor,
+            rationale: '',
+          );
+          chunks.add(lb);
+          lastForBlock = lb;
+          cursor += _longBreakMinutes;
+        }
+      } else if (cursor + _shortBreakMinutes <= block.endMinutes) {
+        // Partial-reservation fallback: the full footprint doesn't fit, but
+        // the chunk's own short break does — mirrors Phase 28 D-05's
+        // capacity-driven fallback for the discretionary loop; the Nth
+        // chunk still closes its own cell even when the window has no room
+        // left for a separate long-break cell. Not a suppression rule.
+        final sb = ScheduledChunk(
+          chunkTypeIndex: ChunkType.shortBreak.index,
+          goalId: null,
+          commitmentId: block.id,
+          durationMinutes: _shortBreakMinutes,
+          anchoredStartMinutes: cursor,
+          rationale: '',
+        );
+        chunks.add(sb);
+        lastForBlock = sb;
+        cursor += _shortBreakMinutes;
       }
-      // else: no break reserved — the window has no room even for the
-      // chunk's own short break (a genuine capacity-driven omission).
+      // else: no break reserved at all — a genuine capacity-driven omission
+      // (Phase 28 D-05's shape), never a position-based suppression rule.
     }
     // Honor the full committed window: stretch whichever chunk was
     // genuinely last (work OR break) to reach block.endMinutes, so a
