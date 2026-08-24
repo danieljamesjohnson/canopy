@@ -15,6 +15,7 @@
 // file is proven RED against the unfixed engine (plan 28-02); plan 28-03
 // lands the engine fix and turns it green.
 
+import 'package:canopy/data/models/commitment_block.dart';
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
@@ -85,6 +86,31 @@ List<ScheduledChunk> _latticeDay() {
     date: DateTime(2026, 3, 23), // Monday — every generator test's fixture day
     completionLogs: [],
     lighterDay: false,
+  );
+}
+
+/// Generates a day from the REAL `ScheduleGeneratorService` around a single
+/// commitment block, no discretionary goals — Phase 30's own reproduction
+/// window (COMMITBREAK-01/RENDER, D-30-04). 540-700 is a 160-minute window;
+/// at mood 3 (N=4) this reaches a cadence boundary partway through, so the
+/// generated day contains BOTH a shortBreak and a longBreak, each carrying
+/// the block's own `commitmentId` (D-30-04) — the exact shape this test
+/// needs to settle whether that changes how a break renders.
+List<ScheduledChunk> _commitmentDay() {
+  final sut = ScheduleGeneratorService();
+  return sut.generate(
+    goals: const [],
+    blocks: [
+      CommitmentBlock(
+        name: 'Work',
+        daysOfWeek: const [1],
+        startMinutes: 540,
+        endMinutes: 700,
+      ),
+    ],
+    moodIndex: 3,
+    date: DateTime(2026, 3, 23), // Monday — every generator test's fixture day
+    completionLogs: [],
   );
 }
 
@@ -297,6 +323,106 @@ void main() {
         // invariant).
         expect(tester.takeException(), isNull);
         expect(find.byType(ChunkCard), findsNWidgets(2));
+      },
+    );
+  });
+
+  group('COMMITBREAK-01/RENDER — a commitment break renders as a break', () {
+    testWidgets(
+      'COMMITBREAK-01/RENDER: a break carrying commitmentId renders as a '
+      'break, not a commitment-tinted work card (D-30-04)',
+      (tester) async {
+        final day = _commitmentDay();
+
+        final shortBreaks = day
+            .where((c) => c.chunkType == ChunkType.shortBreak)
+            .toList();
+        final longBreaks = day
+            .where((c) => c.chunkType == ChunkType.longBreak)
+            .toList();
+
+        expect(
+          shortBreaks,
+          isNotEmpty,
+          reason:
+              'the generated day contains no short break yet — the '
+              'unfixed engine never applies the lattice inside a '
+              'commitment window (COMMITBREAK-01)',
+        );
+        expect(
+          longBreaks.length,
+          1,
+          reason:
+              'the generated day does not contain exactly one long break '
+              'yet — cannot exercise the render guard against a pair that '
+              "doesn't exist (COMMITBREAK-01/RENDER)",
+        );
+        expect(
+          shortBreaks.every((c) => c.commitmentId != null),
+          isTrue,
+          reason:
+              'D-30-04: every commitment-emitted break must carry the '
+              "block's commitmentId",
+        );
+        expect(
+          longBreaks.every((c) => c.commitmentId != null),
+          isTrue,
+          reason:
+              'D-30-04: every commitment-emitted break must carry the '
+              "block's commitmentId",
+        );
+
+        final shortBreak = shortBreaks.first;
+        final longBreak = longBreaks.first;
+
+        final firstStart = day.first.displayStartMinutes!;
+        final lastChunk = day.last;
+        final lastEnd =
+            lastChunk.displayStartMinutes! + lastChunk.durationMinutes;
+        final geometry = TimelineGeometry.forDay(
+          nowMinutes: firstStart,
+          firstStartMinutes: firstStart,
+          lastEndMinutes: lastEnd,
+        );
+
+        await pumpWithMood(
+          tester,
+          Column(
+            children: [
+              SizedBox(
+                height: geometry.heightFor(
+                  shortBreak.displayStartMinutes!,
+                  shortBreak.durationMinutes,
+                ),
+                child: TimelineRowTile(child: ChunkCard(chunk: shortBreak)),
+              ),
+              SizedBox(
+                height: geometry.heightFor(
+                  longBreak.displayStartMinutes!,
+                  longBreak.durationMinutes,
+                ),
+                child: TimelineRowTile(child: ChunkCard(chunk: longBreak)),
+              ),
+            ],
+          ),
+          extraProviders: [
+            ChangeNotifierProvider<ScheduleNotifier>.value(
+              value: _FakeScheduleNotifier(),
+            ),
+          ],
+        );
+        await tester.pump();
+
+        // If ChunkCard.build() ever routed a commitmentId-carrying break
+        // into _WorkChunkContent (30-RESEARCH.md Pitfall 6's premise),
+        // this card would show the chunk's rationale (empty for a break),
+        // not a break title — 'Long break' would not be found. This is a
+        // tree assertion (title presence), not a metric one, so it is safe
+        // under the harness's placeholder font (STATE.md carry-forward
+        // invariant).
+        expect(find.text('Long break'), findsOneWidget);
+        expect(find.byType(ChunkCard), findsNWidgets(2));
+        expect(tester.takeException(), isNull);
       },
     );
   });
