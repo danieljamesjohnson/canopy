@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: none
 current_phase: 31
 current_phase_name: Breaks You Can Skip
-status: executing
+status: awaiting_human_verification
 stopped_at: Phase 31 UI-SPEC approved
 last_updated: "2026-08-25T14:03:11.453Z"
 last_activity: 2026-08-25
-last_activity_desc: Phase 31 execution started
+last_activity_desc: Phase 31 code complete — awaiting human UAT
 state_head: 493e890d3d57822c2ab31f6ce62f23769fe69d5f
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 21
-  completed_plans: 16
+  completed_plans: 21
 milestone_name: milestone
 ---
 
@@ -27,12 +27,34 @@ milestone_name: milestone
 
 ## Current Position
 
-Phase: 31 (Breaks You Can Skip) — EXECUTING
-Plan: 1 of 5
+Phase: 31 (Breaks You Can Skip) — CODE COMPLETE, AWAITING HUMAN UAT
+Plan: 5 of 5 (all executed; 31-05 halted at its blocking checkpoint by design)
 
-**Breaks now exist, are visible, and land everywhere in the day — including inside a committed
-block.** Phases 29 and 30 both closed on 2026-08-25 with a human UAT verdict recorded. 598 tests
-green, `flutter analyze` clean.
+**Breaks can now be skipped — pending the one verdict a test cannot give.** All five plans
+executed, 625 tests green, `flutter analyze` clean, code review found no blockers. The phase is
+`verification_deferred_human`: its ROADMAP entry mandates a human UAT, and `31-UAT.md` is written,
+served, and byte-verified but unanswered. **Resume with `/gsd-verify-work 31`.**
+
+**Phase 31 (Breaks You Can Skip)** deleted `SwipeableChunkCard`'s `chunkType != ChunkType.work`
+early return so every chunk row gets one unconditional `Dismissible` (the `promote` decision — work
+chunks keep `startToEnd`, the second reveal, and `onTap` as additive variant details; breaks get
+skip only, and stay untappable by the owner's instruction). A 5-minute break's 20dp row now clears
+the 48dp touch minimum via `kBreakHitSlop = 16.0`, which grows the row's `Positioned` hit box while
+`Align(center) + SizedBox(height: slot)` confines every painted pixel to the exact duration slot —
+SKIPBREAK-02 intact, proven per-tier per-state. Guard 9 (`next.isSkipped`) closed a D-31-05 gap this
+phase's own skippability newly made reachable.
+
+**Two corrections worth remembering, both found after the artifact that asserted otherwise had
+already been approved.** (1) The UI-SPEC's central hit-test proof was half wrong: `RenderBox.hitTest`
+bounds every box to its own `size` regardless of clip, so the envelope could not be grown inside the
+existing `ClipRect` — the `Positioned` itself had to grow with the clip pushed down inside it.
+(2) The same proof claimed the mechanism was "independent of z-order." It is not. `Stack` resolves
+overlap by last-added-child-wins, and `timelineRows` is chronological, so the break beat the
+*preceding* work chunk but **lost to the following one** — halving the real target to ~36dp, still
+under both platform minimums, and it would have shipped looking green. Fixed with a dedicated
+Layer 1b `Stack` pass, and pinned by a test proven non-vacuous by deleting the pass and watching
+the named thief (`w2`) appear in the failure. The plan-checker had passed that spec 6/6 before
+research existed — **a design contract approved before its research is not yet load-bearing.**
 
 **Phase 29 (Breaks You Can See)** gave the break card a sub-compact density tier, so a 5-minute
 break's 20dp slot renders a legible hairline-with-label instead of being clipped by `ClipRect` to a
@@ -72,16 +94,15 @@ function.** Trap #4 (data layer: an already-generated day is never regenerated o
 promoted into `CLAUDE.md`, and every UAT that tests generator output must say so in its own
 instructions.
 
-Next: **Phase 31 — Breaks You Can Skip.** Unblocked as of the 2026-08-25 UAT verdict — its ROADMAP
-entry required Phase 29's verdict first, because a verdict that changed the sub-compact layout would
-have changed what Phase 31 attaches a gesture to. It did not. Not started — needs
-`/gsd-plan-phase 31`. Phases 27–31 all sit outside any milestone; v1.6 is not yet defined.
+Next: **the owner's thumb.** Phase 31 is code-complete; the only remaining work is the blocking
+human UAT at `http://danserver:8143/` (`31-UAT.md`, Step 0 = mandatory ⟳ Re-check-in). Phases 27–31
+all sit outside any milestone; v1.6 is not yet defined.
 
-Status: Executing Phase 31
-Last activity: 2026-08-25 — Phase 31 execution started
+Status: Phase 31 code complete — awaiting human UAT (`verification_deferred_human`)
+Last activity: 2026-08-25 — Phase 31 executed, 5/5 plans, 625 tests green, UAT served and unanswered
 
 ```
-v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  27 ✅  →  28 ✅  →  29 ✅  →  30 ✅  →  Phase 31 (next)  →  v1.6 not yet defined
+v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  27 ✅  →  28 ✅  →  29 ✅  →  30 ✅  →  31 ⏸ awaiting UAT  →  v1.6 not yet defined
 ```
 
 **Uncommitted-to-a-milestone work is deliberate here.** Phases 27–31 sit outside any milestone. If a
@@ -305,6 +326,31 @@ layout would have changed the gesture target. The verdict came back PASS on 2026
 break, label legible, day looks right), so the sub-compact layout is settled and Phase 31 can attach
 to it as-is. Ready for `/gsd-plan-phase 31`.
 
+## Deferred Verification
+
+| Phase | State | Resume |
+|-------|-------|--------|
+| 31 | verification_deferred_human | /gsd-verify-work 31 |
+
+**Phase 31 is code-complete and blocked only on a thumb.** 625 tests green, `flutter analyze`
+clean, code review no blockers, `31-VERIFICATION.md` = `human_needed` with 13/13 code truths
+verified and 2 backstop truths correctly abstaining (`insufficient_spec`) rather than passing on
+presence. What is unanswered is the one thing no assertion in this repository settles: whether a
+real thumb can reliably swipe an **invisible** 52dp band around a 20dp painted row without also
+grabbing the work chunk beside it. `flutter test` fires synthetic drags at exact coordinates and
+does not model a fingertip's contact patch.
+
+The build is **live now** at `http://danserver:8143/` (debug, `--pwa-strategy=none`), served by
+`tools/serve-uat.py`, and byte-verified before anyone was asked to look: built and served
+`main.dart.js` sha256 both `6cebe2e5…`, and the served bundle greps non-zero for this phase's
+`", skipped"` string and its `needsSlop` predicate. `31-UAT.md` has three items plus two deliberate
+exclusions to rule on, and its Step 0 is a **mandatory ⟳ Re-check-in** (trap #4).
+
+*Note for whoever runs the next UAT:* port 8143 was still held by a server started **2026-08-24**,
+left over from Phase 29/30. It was killed and replaced before the sha256 comparison was taken. Had
+it not been, the verification would have described a server the owner was not actually being shown —
+trap #3 with an extra day of staleness on top. **Check `lsof -i :<port>` before trusting a serve.**
+
 ## Resolved Verification
 
 | Phase | State | Resolved |
@@ -357,13 +403,19 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 
 ## Session Continuity
 
-**Resume file:** .planning/phases/31-breaks-you-can-skip/31-UI-SPEC.md
+**Resume file:** .planning/phases/31-breaks-you-can-skip/31-UAT.md
 
-Last session: 2026-08-18
-Stopped at: Phase 31 UI-SPEC approved
-(`1ca4204` measure+set `kCompactLiveMinHeight`, `7d0a1e6` prove GRID-01 `UNIFORM`).
-Resume at: open `http://danserver:8137/` on a phone/tablet, walk `27-04-SUMMARY.md`'s "Task 3"
-section, record the verdict, then finalize the summary and close Phase 27.
+Last session: 2026-08-25
+Stopped at: Phase 31 code complete, 5/5 plans executed, blocking human UAT unanswered.
+Resume at: open `http://danserver:8143/` **on a phone or tablet** (not a desktop pointer — the whole
+question is fingertip size). Tap **⟳ Re-check-in first** — mandatory, trap #4, Item 3 is meaningless
+without it. Then walk `31-UAT.md`'s three items, rule on its two deliberate exclusions, record each
+verdict in that file, and run `/gsd-verify-work 31`.
+
+If the server is no longer up:
+`flutter build web --debug --source-maps --pwa-strategy=none --no-pub` then
+`python3 tools/serve-uat.py 8143 --dir build/web`. Check `lsof -i :8143` first — a stale server from
+a previous phase was squatting that port this session.
 
 ## Performance Metrics
 
