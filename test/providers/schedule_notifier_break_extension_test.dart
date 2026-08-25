@@ -394,7 +394,9 @@ void main() {
         final notifier = makeNotifier(
           repo: repo,
           // Deliberately inside w1's own window, so every one of the eight
-          // existing guards passes and the function reaches its mutation.
+          // guards that predate this phase passes and execution reaches
+          // Guard 9 — the `next.isSkipped` guard this phase adds. Without
+          // that, the function would reach its mutation.
           now: () => DateTime(2026, 6, 13, 10, 10),
           chunks: [w1, b1],
         );

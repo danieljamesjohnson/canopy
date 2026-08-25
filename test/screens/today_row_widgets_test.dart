@@ -960,7 +960,7 @@ void main() {
     });
 
     testWidgets(
-      'SwipeableChunkCard forwards density on the break early-return path '
+      'SwipeableChunkCard forwards density for a break '
       '(regression guard for the forgotten-forward failure mode)',
       (tester) async {
         await pumpWithMood(
@@ -981,17 +981,15 @@ void main() {
     );
 
     testWidgets(
-      'SEEBREAK-01: SwipeableChunkCard forwards subCompact on the break '
-      'early-return path',
+      'SEEBREAK-01: SwipeableChunkCard forwards subCompact for a break',
       (tester) async {
-        // RESEARCH assumption A2 (full-file re-grep, not targeted): `grep -n
-        // "ChunkCardDensity\|density"
-        // lib/screens/schedule/widgets/swipeable_chunk_card.dart` over the
-        // WHOLE file shows two forwarding sites (the break early-return at
-        // ~line 79-81, and the Dismissible's `child: ChunkCard(...)` at
-        // ~line 123-132) — neither branches on a specific density value,
-        // both just forward the `density:` parameter through unmodified.
-        // Confirmed: no source change is needed in that file.
+        // Phase 31 note: this comment used to describe TWO density-forwarding
+        // sites — the break early-return and the Dismissible's
+        // `child: ChunkCard(...)`. Phase 31's `promote` decision (D3) deleted
+        // the early return, so there is now exactly ONE forwarding site: the
+        // single unconditional `Dismissible`. The assertions below are
+        // unchanged and still hold — a break at subCompact still gets its
+        // density forwarded, it just arrives by the one remaining path.
         await pumpWithMood(
           tester,
           SwipeableChunkCard(
