@@ -370,6 +370,99 @@ void main() {
         expect(b1.durationMinutes, 5, reason: 'Guard 7');
       },
     );
+
+    test(
+      'D-31-05: an already-skipped following break is never moved or '
+      'extended by G-05',
+      () async {
+        final repo = _InMemoryScheduleRepository();
+        final w1 = ScheduledChunk(
+          id: 'w1',
+          chunkTypeIndex: ChunkType.work.index,
+          goalId: 'goal-1',
+          durationMinutes: 25,
+          syntheticStartMinutes: 600,
+          rationale: 'Cleaning',
+        );
+        final b1 = ScheduledChunk(
+          id: 'b1',
+          chunkTypeIndex: ChunkType.shortBreak.index,
+          durationMinutes: 5,
+          syntheticStartMinutes: 625,
+          rationale: '',
+        )..isSkipped = true;
+        final notifier = makeNotifier(
+          repo: repo,
+          // Deliberately inside w1's own window, so every one of the eight
+          // existing guards passes and the function reaches its mutation.
+          now: () => DateTime(2026, 6, 13, 10, 10),
+          chunks: [w1, b1],
+        );
+        await notifier.init();
+        await notifier.markComplete('w1');
+
+        expect(
+          b1.displayStartMinutes,
+          625,
+          reason:
+              'D-31-05: a skipped break must never move — would be 610 if '
+              'the guard were missing',
+        );
+        expect(
+          b1.durationMinutes,
+          5,
+          reason:
+              'D-31-05: a skipped break must never extend — would be 20 if '
+              'the guard were missing',
+        );
+        expect(
+          b1.isSkipped,
+          isTrue,
+          reason: 'D-31-05: the skipped state itself must be untouched',
+        );
+      },
+    );
+
+    test(
+      'D-31-05 does not disable G-05: an unresolved following break still '
+      'absorbs reclaimed time',
+      () async {
+        final repo = _InMemoryScheduleRepository();
+        final w1 = ScheduledChunk(
+          id: 'w1',
+          chunkTypeIndex: ChunkType.work.index,
+          goalId: 'goal-1',
+          durationMinutes: 25,
+          syntheticStartMinutes: 600,
+          rationale: 'Cleaning',
+        );
+        final b1 = ScheduledChunk(
+          id: 'b1',
+          chunkTypeIndex: ChunkType.shortBreak.index,
+          durationMinutes: 5,
+          syntheticStartMinutes: 625,
+          rationale: '',
+        );
+        final notifier = makeNotifier(
+          repo: repo,
+          now: () => DateTime(2026, 6, 13, 10, 10),
+          chunks: [w1, b1],
+        );
+        await notifier.init();
+        await notifier.markComplete('w1');
+
+        expect(
+          b1.displayStartMinutes,
+          610,
+          reason: 'D-31-05 must not disable G-05 for an unresolved break',
+        );
+        expect(
+          b1.durationMinutes,
+          20,
+          reason: 'D-31-05 must not disable G-05 for an unresolved break',
+        );
+      },
+    );
   });
 
   test('G-05 revert on failure — the break, the completion flag and the '
