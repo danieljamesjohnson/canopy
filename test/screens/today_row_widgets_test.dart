@@ -67,12 +67,18 @@ ScheduledChunk _workChunk({
       ..isCompleted = completed
       ..isSkipped = skipped;
 
-ScheduledChunk _breakChunk({required ChunkType type, bool completed = false}) =>
+ScheduledChunk _breakChunk({
+  required ChunkType type,
+  bool completed = false,
+  bool skipped = false,
+}) =>
     ScheduledChunk(
-      id: 'b1',
-      chunkTypeIndex: type.index,
-      durationMinutes: type == ChunkType.shortBreak ? 5 : 25,
-    )..isCompleted = completed;
+        id: 'b1',
+        chunkTypeIndex: type.index,
+        durationMinutes: type == ChunkType.shortBreak ? 5 : 25,
+      )
+      ..isCompleted = completed
+      ..isSkipped = skipped;
 
 /// A 25-minute work chunk carrying a goal name, a rationale, a non-default
 /// priority weight and a non-neutral valence — used by the ChunkCardDensity
@@ -781,6 +787,176 @@ void main() {
           );
         },
       );
+
+      // D-31-04 (Phase 31, SKIPBREAK-01): skipped-break rendering at every
+      // density tier, reusing _WorkChunkContent's existing resolved-state
+      // vocabulary (Opacity(0.5) + TextDecoration.lineThrough) rather than
+      // inventing a break-specific one.
+      testWidgets(
+        "D-31-04: a skipped full-tier break is muted, struck through, and "
+        "reads 'skipped'",
+        (tester) async {
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak, skipped: true),
+              density: ChunkCardDensity.full,
+            ),
+          );
+          final mutedOpacity = find.byWidgetPredicate(
+            (w) => w is Opacity && w.opacity == 0.5,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: mutedOpacity,
+            ),
+            findsOneWidget,
+          );
+          final titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, TextDecoration.lineThrough);
+          expect(find.text('skipped'), findsOneWidget);
+          expect(find.text('5 min'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'D-31-04: an unresolved full-tier break is unchanged — no muting, '
+        'no strikethrough, still reads its duration',
+        (tester) async {
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak),
+              density: ChunkCardDensity.full,
+            ),
+          );
+          final mutedOpacity = find.byWidgetPredicate(
+            (w) => w is Opacity && w.opacity == 0.5,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: mutedOpacity,
+            ),
+            findsNothing,
+          );
+          final titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
+          expect(find.text('5 min'), findsOneWidget);
+          expect(find.text('skipped'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        "D-31-04: a skipped compact break is muted and struck through, and "
+        "its new Semantics label carries ', skipped'",
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak, skipped: true),
+              density: ChunkCardDensity.compact,
+            ),
+          );
+          final mutedOpacity = find.byWidgetPredicate(
+            (w) => w is Opacity && w.opacity == 0.5,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: mutedOpacity,
+            ),
+            findsOneWidget,
+          );
+          final titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, TextDecoration.lineThrough);
+          expect(
+            find.bySemanticsLabel('Short break, 5 min, skipped'),
+            findsOneWidget,
+          );
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'D-31-04: a skipped sub-compact break is muted and struck through '
+        'and still renders exactly two Dividers',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak, skipped: true),
+              density: ChunkCardDensity.subCompact,
+            ),
+          );
+          final mutedOpacity = find.byWidgetPredicate(
+            (w) => w is Opacity && w.opacity == 0.5,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: mutedOpacity,
+            ),
+            findsOneWidget,
+          );
+          final titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, TextDecoration.lineThrough);
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: find.byType(Divider),
+            ),
+            findsNWidgets(2),
+          );
+          expect(
+            find.bySemanticsLabel('Short break, 5 min, skipped'),
+            findsOneWidget,
+          );
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        "D-31-04: an unresolved sub-compact break is byte-for-byte Phase "
+        "29's treatment",
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak),
+              density: ChunkCardDensity.subCompact,
+            ),
+          );
+          final mutedOpacity = find.byWidgetPredicate(
+            (w) => w is Opacity && w.opacity == 0.5,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: mutedOpacity,
+            ),
+            findsNothing,
+          );
+          final titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: find.byType(Divider),
+            ),
+            findsNWidgets(2),
+          );
+          expect(
+            find.bySemanticsLabel('Short break, 5 min'),
+            findsOneWidget,
+          );
+          handle.dispose();
+        },
+      );
     });
 
     testWidgets(
@@ -839,6 +1015,125 @@ void main() {
         );
       },
     );
+  });
+
+  group('Phase 31 — what a break still is not', () {
+    // D-31-01 (locked, 31-UI-SPEC.md): a break is never tappable, never
+    // completable, and never re-swipeable once skipped — the owner's
+    // 2026-08-21 instruction, made checkable here rather than assumed.
+    for (final density in [
+      ChunkCardDensity.full,
+      ChunkCardDensity.compact,
+      ChunkCardDensity.subCompact,
+    ]) {
+      testWidgets(
+        "a break's ChunkCard receives a null onTap even when the caller "
+        'supplies one (density: $density)',
+        (tester) async {
+          await pumpWithMood(
+            tester,
+            SwipeableChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak),
+              density: density,
+              onTap: () {},
+            ),
+            extraProviders: [
+              ChangeNotifierProvider<ScheduleNotifier>.value(
+                value: _FakeScheduleNotifier(),
+              ),
+            ],
+          );
+          final chunkCard = tester.widget<ChunkCard>(find.byType(ChunkCard));
+          expect(
+            chunkCard.onTap,
+            isNull,
+            reason:
+                "the owner's 2026-08-21 instruction: a break never becomes "
+                'tappable at any density, even when the caller supplies a '
+                'non-null onTap — the isWork gate in SwipeableChunkCard is '
+                'the only thing enforcing this.',
+          );
+        },
+      );
+    }
+
+    testWidgets("a break's Dismissible offers only the skip direction", (
+      tester,
+    ) async {
+      await pumpWithMood(
+        tester,
+        SwipeableChunkCard(chunk: _breakChunk(type: ChunkType.shortBreak)),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(
+            value: _FakeScheduleNotifier(),
+          ),
+        ],
+      );
+      final dismissible = tester.widget<Dismissible>(
+        find.byType(Dismissible),
+      );
+      expect(dismissible.direction, DismissDirection.endToStart);
+    });
+
+    testWidgets(
+      "an unresolved WORK chunk's Dismissible still offers the full "
+      "horizontal direction (paired guard — the break case above cannot "
+      'pass by this widget silently losing the complete direction for '
+      'everyone)',
+      (tester) async {
+        await pumpWithMood(
+          tester,
+          SwipeableChunkCard(chunk: _workChunk()),
+          extraProviders: [
+            ChangeNotifierProvider<ScheduleNotifier>.value(
+              value: _FakeScheduleNotifier(),
+            ),
+          ],
+        );
+        final dismissible = tester.widget<Dismissible>(
+          find.byType(Dismissible),
+        );
+        expect(dismissible.direction, DismissDirection.horizontal);
+      },
+    );
+
+    testWidgets('a skipped break cannot be re-swiped', (tester) async {
+      await pumpWithMood(
+        tester,
+        SwipeableChunkCard(
+          chunk: _breakChunk(type: ChunkType.shortBreak, skipped: true),
+        ),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(
+            value: _FakeScheduleNotifier(),
+          ),
+        ],
+      );
+      final dismissible = tester.widget<Dismissible>(
+        find.byType(Dismissible),
+      );
+      expect(dismissible.direction, DismissDirection.none);
+    });
+
+    testWidgets('a break never reaches markComplete', (tester) async {
+      final fake = _FakeScheduleNotifier();
+      await pumpWithMood(
+        tester,
+        SwipeableChunkCard(chunk: _breakChunk(type: ChunkType.shortBreak)),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(value: fake),
+        ],
+      );
+      // D-31-01's executable form: chunk.isCompleted stays permanently
+      // false for every break. direction: endToStart with no startToEnd
+      // arm means a rightward drag has no enabled direction to resolve to
+      // — it consumes the gesture and springs back without calling
+      // either notifier method.
+      await tester.drag(find.byType(Dismissible), const Offset(400, 0));
+      await tester.pumpAndSettle();
+      expect(fake.lastCompletedId, isNull);
+      expect(fake.lastSkippedId, isNull);
+    });
   });
 
   group('LiveRowCard — two density tiers (GRID-02)', () {

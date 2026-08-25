@@ -161,7 +161,10 @@ class ChunkCard extends StatelessWidget {
     if (density == ChunkCardDensity.subCompact) {
       return _SubCompactRow(
         label: title,
-        semanticsLabel: '$title, ${chunk.durationMinutes} min',
+        semanticsLabel:
+            '$title, ${chunk.durationMinutes} min'
+            '${chunk.isSkipped ? ", skipped" : ""}',
+        isSkipped: chunk.isSkipped,
       );
     }
 
@@ -169,23 +172,42 @@ class ChunkCard extends StatelessWidget {
     // no duration text, no completed check icon — D-02 forbids inflating the
     // box, so at a 5-minute break's 27.5px slot the only lever is content.
     if (density == ChunkCardDensity.compact) {
-      return Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        child: CustomPaint(
-          painter: _DashedBorderPainter(
-            color: theme.colorScheme.outlineVariant,
-            strokeWidth: 1,
-            dashWidth: 2,
-            dashGap: 2,
-            radius: 6,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-            child: Center(
-              child: Text(
-                title,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+      // D-31-04 (phase 31): this tier had NO Semantics wrapper at all before
+      // this phase — strikethrough/opacity convey nothing to a screen
+      // reader, so this wrapper closes a pre-existing accessibility gap
+      // rather than adding decoration on top of an existing one.
+      return Semantics(
+        label:
+            '$title, ${chunk.durationMinutes} min'
+            '${chunk.isSkipped ? ", skipped" : ""}',
+        excludeSemantics: true,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: Opacity(
+            opacity: chunk.isSkipped ? 0.5 : 1.0,
+            child: CustomPaint(
+              painter: _DashedBorderPainter(
+                color: theme.colorScheme.outlineVariant,
+                strokeWidth: 1,
+                dashWidth: 2,
+                dashGap: 2,
+                radius: 6,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 0,
+                ),
+                child: Center(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      decoration: chunk.isSkipped
+                          ? TextDecoration.lineThrough
+                          : null,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -195,14 +217,17 @@ class ChunkCard extends StatelessWidget {
     }
 
     // detailed / full — today's unchanged treatment (measured 80.0px for a
-    // long break, fits its 137.5px slot at kPixelsPerMinute).
+    // long break, fits its 137.5px slot at kPixelsPerMinute), plus D-31-04's
+    // (phase 31) skipped-state muting/strikethrough on the whole row.
     final titleStyle = isLong
         ? theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w500,
             color: theme.colorScheme.onSurfaceVariant,
+            decoration: chunk.isSkipped ? TextDecoration.lineThrough : null,
           )
         : theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
+            decoration: chunk.isSkipped ? TextDecoration.lineThrough : null,
           );
 
     return Container(
@@ -217,33 +242,39 @@ class ChunkCard extends StatelessWidget {
             horizontal: 16,
             vertical: isLong ? 24 : 12,
           ),
-          child: Row(
-            children: [
-              if (isLong) ...[
-                Icon(
-                  Icons.self_improvement,
-                  size: 20,
-                  color: theme.colorScheme.onSurfaceVariant,
+          child: Opacity(
+            opacity: chunk.isSkipped ? 0.5 : 1.0,
+            child: Row(
+              children: [
+                if (isLong) ...[
+                  Icon(
+                    Icons.self_improvement,
+                    size: 20,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Text(title, style: titleStyle),
+                const Spacer(),
+                Text(
+                  // D-31-04: verbatim reuse of _buildTrailingStatus's
+                  // existing 'skipped' string (below) for a skipped work
+                  // chunk — a reuse decision, not a new copy decision.
+                  chunk.isSkipped ? 'skipped' : '${chunk.durationMinutes} min',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-                const SizedBox(width: 8),
+                if (chunk.isCompleted) ...[
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.check_circle,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                ],
               ],
-              Text(title, style: titleStyle),
-              const Spacer(),
-              Text(
-                '${chunk.durationMinutes} min',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              if (chunk.isCompleted) ...[
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.check_circle,
-                  color: theme.colorScheme.primary,
-                  size: 20,
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),
@@ -341,15 +372,28 @@ class _DashedBorderPainter extends CustomPainter {
 /// non-interactive at every density today and this phase does not change
 /// that.
 class _SubCompactRow extends StatelessWidget {
-  const _SubCompactRow({required this.label, required this.semanticsLabel});
+  const _SubCompactRow({
+    required this.label,
+    required this.semanticsLabel,
+    this.isSkipped = false,
+  });
 
   /// The visible label (e.g. `'Short break'`) — deliberately drops the
   /// duration; [semanticsLabel] restates it for screen readers.
   final String label;
 
   /// The full accessibility label (e.g. `'Short break, 5 min'`) — the
-  /// UI-SPEC's locked copywriting contract for this tier.
+  /// UI-SPEC's locked copywriting contract for this tier. The caller appends
+  /// `', skipped'` when [isSkipped] is true (D-31-04, phase 31).
   final String semanticsLabel;
+
+  /// D-31-04 (phase 31): when true, mutes the row to `Opacity(0.5)` and adds
+  /// `TextDecoration.lineThrough` to [label] — the exact resolved-state
+  /// vocabulary `_WorkChunkContent` already uses for a work chunk, reused
+  /// here rather than re-authored. Defaults to `false` so the pre-existing
+  /// `_WorkChunkContent`'s own (documented, unreachable) `_SubCompactRow`
+  /// call site keeps compiling untouched.
+  final bool isSkipped;
 
   @override
   Widget build(BuildContext context) {
@@ -367,35 +411,39 @@ class _SubCompactRow extends StatelessWidget {
     return Semantics(
       label: semanticsLabel,
       excludeSemantics: true,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Divider(
-              height: 1,
-              thickness: 1,
-              color: theme.colorScheme.outlineVariant,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+      child: Opacity(
+        opacity: isSkipped ? 0.5 : 1.0,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Divider(
+                height: 1,
+                thickness: 1,
+                color: theme.colorScheme.outlineVariant,
               ),
             ),
-          ),
-          Expanded(
-            child: Divider(
-              height: 1,
-              thickness: 1,
-              color: theme.colorScheme.outlineVariant,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  decoration: isSkipped ? TextDecoration.lineThrough : null,
+                ),
+              ),
             ),
-          ),
-        ],
+            Expanded(
+              child: Divider(
+                height: 1,
+                thickness: 1,
+                color: theme.colorScheme.outlineVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
