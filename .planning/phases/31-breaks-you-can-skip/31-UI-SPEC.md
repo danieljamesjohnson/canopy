@@ -488,8 +488,9 @@ reveal deliberately uses `error`, matching work-chunk skip, never `primary`.
 - **E3 — the Today timeline as a list-collection**: interleaved break and work rows, absolutely
   positioned, mixed resolved/unresolved states.
 
-**Coverage: 23 applicable — 13 resolved (explicit), 2 resolved (backstop), 8 dismissed with reason,
-0 unresolved.**
+**Coverage: 23 applicable — 11 resolved (explicit), 2 resolved (backstop), 10 dismissed with reason,
+0 unresolved.** (Per-element: E1 = 5 explicit + 3 dismissed; E2 = 2 explicit + 2 backstop + 4
+dismissed; E3 = 4 explicit + 3 dismissed. 11 + 2 + 10 = 23.)
 
 ### E1 — break swipe-to-skip gesture
 
