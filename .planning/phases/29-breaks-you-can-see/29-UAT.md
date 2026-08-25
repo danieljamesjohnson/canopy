@@ -70,8 +70,9 @@ The cost was one wasted round trip for the owner and a second report of the same
 days later.
 
 **Phase 29 itself is unaffected** — its render work is correct, and the visible "Short break" in
-the 08-24 screenshot is that work doing its job. This UAT is still pending; it should be judged
-after Phase 30 lands, when a full day's worth of breaks exists to look at.
+the 08-24 screenshot is that work doing its job. This UAT was held until Phase 30 landed, so that a
+full day's worth of breaks existed to look at. **It was judged on 2026-08-25 and passed all three
+items** — see the verdicts below.
 
 ---
 
@@ -142,7 +143,11 @@ sitting on it. The question is not "can I find it" — it is: glancing at the da
 as a divider, say so plainly; that is the exact complaint that opened this phase and a near-miss is
 a fail here.
 
-**Verdict:**
+**Verdict:** PASS — 2026-08-25. Owner confirmed a 5-minute break reads as a *break* at a glance,
+not as a divider, a separator, or the edge of the card above. This is the exact complaint that
+opened the phase ("there's no 5 minute breaks in between"), and it is now answered against a day
+that genuinely has breaks in it — which only became possible once Phase 30 landed. A near-miss
+would have been a fail here; the owner did not hesitate.
 
 ## Item 2 — Is the label actually legible at this size?
 
@@ -151,7 +156,11 @@ crowded by the cards above and below, or too faint against the background? Try i
 system text scale. If the text is fine but feels weak, say which: too small, too pale, or too
 tight.
 
-**Verdict:**
+**Verdict:** PASS — 2026-08-25. Owner confirmed the "Short break" label is clearly readable — not
+clipped top or bottom, not crowded by the neighbouring cards, not too faint. The sub-compact tier's
+ink fits its 20dp slot in a real browser, which is what `kSubCompactBreakMinHeight = 32.0` was
+measured for. Note the harness caveat this vindicates: `flutter test`'s placeholder font could not
+have settled this either way.
 
 ## Item 3 — Does the day still look right around it?
 
@@ -160,7 +169,9 @@ should be clipped mid-glyph, and a 30-minute long break should still look clearl
 5-minute one. If a long break and a short break ever sit next to each other, they should not read
 as the same thing.
 
-**Verdict:**
+**Verdict:** PASS — 2026-08-25. Owner confirmed the day still looks right: hour brackets even
+(GRID-01 intact), nothing overlapping or clipped mid-glyph, and a 30-minute long break still reads
+as clearly heavier than a 5-minute one. The two break tiers do not read as the same thing.
 
 ---
 

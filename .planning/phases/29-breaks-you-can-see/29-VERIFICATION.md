@@ -1,8 +1,8 @@
 ---
 phase: 29-breaks-you-can-see
 verified: 2026-08-24T00:00:00Z
-status: human_needed
-score: 9/9 must-haves verified (code-level); phase-closing human verdict outstanding, blocked on Phase 30
+status: passed
+score: 9/9 must-haves verified — human verdict recorded 2026-08-25, all three UAT items PASS
 behavior_unverified: 0
 overrides_applied: 0
 human_verification:
@@ -16,6 +16,15 @@ human_verification:
     expected: "A person scrolls a full day and confirms hour brackets are uniform, nothing overlaps or clips mid-glyph, and a long break still reads as visually heavier than a short one."
     why_human: "Whole-day visual composition judgement; Phase 27 precedent (16/17 automated pass, 2/3 human items failed) is the documented reason this class of check is not delegable to automation."
 ---
+
+## Human verdict — recorded 2026-08-25
+
+All `human_verification` items above were judged by the owner against the served debug build on
+`http://danserver:8143/` and **passed**. Verbatim verdicts are in this phase's `*-UAT.md`.
+
+No re-check-in was needed this session: the build went up on 2026-08-24 and the calendar day
+rolled over, so the owner's 2026-08-25 check-in necessarily ran through the fixed engine. Trap #4
+was not in play — it remains in CLAUDE.md for the next same-day UAT.
 
 # Phase 29: Breaks You Can See Verification Report
 

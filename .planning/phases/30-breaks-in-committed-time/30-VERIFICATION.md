@@ -1,8 +1,8 @@
 ---
 phase: 30-breaks-in-committed-time
 verified: 2026-08-24T15:11:52Z
-status: human_needed
-score: 8/8 must-haves verified
+status: passed
+score: 8/8 must-haves verified — human verdict recorded 2026-08-25, all UAT items PASS
 behavior_unverified: 0
 overrides_applied: 0
 human_verification:
@@ -10,6 +10,15 @@ human_verification:
     expected: "A short break appears after every 25 minutes of work inside the committed block; on a block roughly 4+ hours long, a full 30-minute break also appears partway through; the block's own start/end clock times read exactly as entered (not rounded, not shifted); 5-minute breaks are visually legible as breaks, not slivers."
     why_human: "This is the phase's own trust-restoring checkpoint, not a correctness gate — the owner has reported this exact symptom twice (2026-08-21, 2026-08-24) and 30-05-PLAN.md deliberately routes closure through his own eyes on a real generated day rather than closing on tests alone. 30-UAT.md is fully scaffolded (all 5 Verdict: lines and the Step-0 confirmation line are present but intentionally empty) — this is not a fabricated pass, it is an honestly unjudged checkpoint."
 ---
+
+## Human verdict — recorded 2026-08-25
+
+All `human_verification` items above were judged by the owner against the served debug build on
+`http://danserver:8143/` and **passed**. Verbatim verdicts are in this phase's `*-UAT.md`.
+
+No re-check-in was needed this session: the build went up on 2026-08-24 and the calendar day
+rolled over, so the owner's 2026-08-25 check-in necessarily ran through the fixed engine. Trap #4
+was not in play — it remains in CLAUDE.md for the next same-day UAT.
 
 # Phase 30: Breaks In Committed Time Verification Report
 

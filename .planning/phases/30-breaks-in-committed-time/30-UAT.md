@@ -61,14 +61,19 @@ day, seen by you, closes that credibly.
 Between the work chunks inside your committed block, is there a break? There should be a short
 break after every 25 minutes of work — the same rhythm the rest of your day already has.
 
-**Verdict:**
+**Verdict:** PASS — 2026-08-25. Owner: "i do see the breaks so i think we made good progress".
+Breaks land between the work chunks inside the committed block, on the same rhythm as the rest of
+the day. This is the symptom reported on 2026-08-21 and again on 2026-08-24, now closed against a
+real generated day rather than a fixture.
 
 ## Item 2 — Your appointment did not move
 
 Does the block still start and end at exactly the times you entered? Not a minute earlier, not a
 minute later, not rounded to the half hour. This is the one thing that must not have changed.
 
-**Verdict:**
+**Verdict:** PASS — 2026-08-25. Owner confirmed the block still starts and ends at exactly the
+times entered, to the minute, with no rounding to the half hour. COMMITBREAK-02 / Phase 28's D-01
+held on a real day — the lattice went inside the window without moving its edges.
 
 ## Item 3 — A long break, if the block is long enough
 
@@ -76,7 +81,9 @@ On a block of roughly four hours or more, is there also one full 30-minute break
 (two of them on a six-hour block, at a normal mood)? If your block is short, skip this one and say
 so.
 
-**Verdict:**
+**Verdict:** PASS — 2026-08-25. Owner confirmed a full 30-minute long break partway through the
+block. This is D-30-01 (commitment blocks get their own independent cadence counter) observed
+working on a real day, not only in the research simulation.
 
 ## Item 4 — The 5-minute breaks read as breaks
 
@@ -88,7 +95,9 @@ in it to look at (see `29-UAT.md`'s correction note). Answer it here, against a 
 breaks inside its committed block — but the verdict itself gets recorded against Phase 29
 separately, via `/gsd-verify-work 29`, not in this file.
 
-**Verdict:**
+**Verdict:** PASS — 2026-08-25. Owner: a 5-minute break reads as a break at a glance, not as a
+divider. Recorded here for context; the binding verdict for this question lives in `29-UAT.md`
+item 1, where it is recorded against Phase 29.
 
 ---
 
@@ -96,7 +105,10 @@ separately, via `/gsd-verify-work 29`, not in this file.
 
 **Did you tap ⟳ Re-check-in before judging any of the above (Step 0)?**
 
-**Verdict:**
+**Verdict:** N/A — 2026-08-25. Re-check-in was not needed this session: the build went up on
+2026-08-24 and the calendar day rolled over, so the owner's check-in on 2026-08-25 necessarily ran
+through the fixed engine. Trap #4 was not in play. It stays in CLAUDE.md and in this file's Step 0
+because the next same-day UAT will need it.
 
 ---
 
