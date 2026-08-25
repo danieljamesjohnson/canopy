@@ -571,6 +571,15 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     final breakStart = next.displayStartMinutes;
     if (breakStart == null) return null;
 
+    // Guard 9 (D-31-05): before Phase 31 no UI path could ever set a
+    // break's isSkipped, so this guard had nothing to guard. Now that a
+    // break can be skipped, absorbing reclaimed time into one would move
+    // and extend it out from under its own skipped state — the row would
+    // still render skipped (D-31-04) while its persisted start and
+    // duration silently changed underneath that rendering, contradicting
+    // D-31-03's "mark it skipped and move on."
+    if (next.isSkipped) return null;
+
     // Guard 7: the break's window must not already be open — otherwise
     // there is nothing to move.
     if (nowMinutes >= breakStart) return null;
