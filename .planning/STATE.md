@@ -1,17 +1,20 @@
 ---
 gsd_state_version: 1.0
 milestone: none
-milestone_name: milestone
-status: executing
-stopped_at: Completed 29-03-PLAN.md — kSubCompactBreakMinHeight measured in a real browser (32.0), port 8143 claimed, measure_card_extent.py committed, 587 tests green
-last_updated: "2026-08-20T13:47:48.548Z"
-last_activity: 2026-08-20 -- Phase 29 execution started
+current_phase: 31
+current_phase_name: Breaks You Can Skip
+status: planning
+stopped_at: Phase 30 complete, ready to plan Phase 31
+last_updated: "2026-08-25T12:56:30.172Z"
+last_activity: 2026-08-25
+last_activity_desc: Phase 30 complete, transitioned to Phase 31
+state_head: 092fc1174c82facd07cad135122135a1d059aa47
 progress:
-  total_phases: 3
-  completed_phases: 2
-  total_plans: 11
-  completed_plans: 10
-  percent: 67
+  total_phases: 5
+  completed_phases: 4
+  total_plans: 16
+  completed_plans: 16
+milestone_name: milestone
 ---
 
 # Execution State
@@ -24,44 +27,62 @@ progress:
 
 ## Current Position
 
-Phase: 29 (Breaks You Can See) — EXECUTING
-Plan: 4 of 4
+Phase: 31 — Breaks You Can Skip
+Plan: Not started
 
-The day is now a 30-minute lattice: 25 minutes of work + 5 minutes of break per cell, and after
-every N work cells a full 30-minute break in a cell of its own. N still comes once from the morning
-check-in mood — the engine did not become adaptive, which the owner declined explicitly.
+**Breaks now exist, are visible, and land everywhere in the day — including inside a committed
+block.** Phases 29 and 30 both closed on 2026-08-25 with a human UAT verdict recorded. 598 tests
+green, `flutter analyze` clean.
 
-**The reported bug ("the schedule still isn't functioning right") is fixed.** At mood 3 with a
-4-chunk day the long break landed last and was silently dropped, so the user had never seen one
-fire. That exact day is now a named regression test, and the verifier reproduced it independently
-by calling `generate()` directly rather than trusting the phase's own assertions.
+**Phase 29 (Breaks You Can See)** gave the break card a sub-compact density tier, so a 5-minute
+break's 20dp slot renders a legible hairline-with-label instead of being clipped by `ClipRect` to a
+divider-like sliver. `kSubCompactBreakMinHeight = 32.0`, measured in a real browser, not estimated.
+Owner's verdict: reads as a break at a glance, label legible, day still looks right around it.
 
-Research confirmed all three named defects against source with line numbers and found a fourth:
-STEP E's trailing trim stripped *any* trailing break, which would have re-suppressed the long break
-by a second path even after the packing loop was fixed. The capacity question was answered on a
-simulation of the real packing loop rather than an estimate — neither `_moodCap` nor the day's end
-moved (D-04), verified byte-identical by diff.
+**Phase 30 (Breaks In Committed Time)** fixed the defect the owner reported *twice*. Phase 28's
+lattice had only ever been applied to the discretionary packing loop; `schedule_generator.dart`
+Step 1 walked a commitment window with a bare `cursor += 25`, so a committed `Work` block ran
+back-to-back 25-minute chunks all day. Now `ScheduleGeneratorService.buildCommitmentChunks` applies
+the 25+5 lattice inside the window, seeded from the block's own *unrounded* start, with its own
+independent long-break cadence counter (D-30-01). D-01 held: the block's start and end never move —
+confirmed by the owner against his real appointment times.
 
-**RED-proof was structural.** All 20 tests were written in wave 1 and proven failing against the
-unfixed engine (`28-RED-unit.txt`, `28-RED-d06.txt`); wave 2 touched only `lib/`. Git confirms wave
-2 modified no test file — RED→GREEN came from the production change alone. That directly closes the
-v1.5 failure mode recorded in the invariants below.
+**Three defects were caught that the plans did not anticipate, and the pattern is worth keeping:**
 
-Final: 579 tests green (567 baseline + 8 unit + 4 D-06, none deleted), `flutter analyze` clean,
-code review 0 critical / 2 warnings (both fixed, suite still green).
+1. Research found STEP E's trailing trim could silently delete a tail-stretched *commitment* break,
+   erasing real covered minutes from inside the user's window. Narrowed to `commitmentId == null`.
+2. Research also found `schedule_notifier.dart:addEventToday` duplicating the identical
+   `cursor += 25` defect via a second path reaching the same timeline. Fixed by **deleting** the
+   duplicate and sharing the helper (D-30-03) — the drift vector removed, not patched. A deliberate
+   scope extension beyond the ROADMAP's `schedule_generator.dart`-only boundary, taken because this
+   bug had already been missed twice by scoping too narrowly.
+3. Code review caught a blocker **the phase itself introduced**: `_trimTrailingNonWork` got the
+   `commitmentId` narrowing but not the matching `shortBreak` guard, so any day ending on a
+   discretionary long break lost that break *and* its preceding short break from persisted Hive
+   state on every `addEventToday` call. 597/597 passed with that live — no test seeded that shape.
+   Fixed with a regression test proven RED first.
 
-Next: **Phase 29 — Breaks You Can See.** Added 2026-08-20 from Phase 28's UAT and scoped in the
-ROADMAP (approach decided: a sub-compact density tier). Not started — needs `/gsd-plan-phase 29`.
-Phases 27, 28 and 29 all sit outside any milestone; v1.6 is not yet defined.
+**Why this took three attempts, and what changed.** The 2026-08-21 diagnosis blamed stale Hive data
+and was wrong. The probe that day swept all five moods and both goal types — but never built a
+commitment block, which was the one half of the code path that was broken. **A probe that covers
+only the branch you already believe is fine does not license a conclusion about the whole
+function.** Trap #4 (data layer: an already-generated day is never regenerated on load) is now
+promoted into `CLAUDE.md`, and every UAT that tests generator output must say so in its own
+instructions.
 
-Status: Ready to execute
-Last activity: 2026-08-20 -- Phase 29 execution started
+Next: **Phase 31 — Breaks You Can Skip.** Unblocked as of the 2026-08-25 UAT verdict — its ROADMAP
+entry required Phase 29's verdict first, because a verdict that changed the sub-compact layout would
+have changed what Phase 31 attaches a gesture to. It did not. Not started — needs
+`/gsd-plan-phase 31`. Phases 27–31 all sit outside any milestone; v1.6 is not yet defined.
+
+Status: Ready to plan
+Last activity: 2026-08-25 — Phase 30 complete, transitioned to Phase 31
 
 ```
-v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  Phase 27 ✅  →  Phase 28 ✅  →  Phase 29 (next)  →  v1.6 not yet defined
+v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  27 ✅  →  28 ✅  →  29 ✅  →  30 ✅  →  Phase 31 (next)  →  v1.6 not yet defined
 ```
 
-**Uncommitted-to-a-milestone work is deliberate here.** Phases 27, 28 and 29 sit outside any milestone. If a
+**Uncommitted-to-a-milestone work is deliberate here.** Phases 27–31 sit outside any milestone. If a
 v1.6 is opened before it ships, fold it in rather than leaving it orphaned.
 
 ## Project Reference
@@ -69,7 +90,7 @@ v1.6 is opened before it ships, fold it in rather than leaving it orphaned.
 See: `.planning/PROJECT.md` (updated 2026-08-14)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Phase 29 — Breaks You Can See
+**Current focus:** Phase 31 — Breaks You Can Skip
 
 ## Shipped Milestones
 
@@ -133,6 +154,21 @@ guards against:
   27's duration-exact slots — not a Phase 28 regression.** Approach decided at add time (option 1, a
   sub-compact density tier); options 2 and 3 recorded with the reasons they lost. Evidence:
   `.planning/seeds/SEED-005-five-minute-breaks-clip-to-a-sliver.md`.
+
+- **Phase 30 added 2026-08-24, completed 2026-08-25: Breaks In Committed Time.** Out of Phase 29's
+  UAT — the owner reported "no 5 minute breaks" a second time, on a freshly generated day. The
+  2026-08-21 diagnosis (stale Hive data) was **wrong** and is kept in `29-UAT.md` rather than
+  deleted, because how it was reached matters: the probe that day swept all five moods and both goal
+  types but never constructed a commitment block, which was the broken half. Real cause:
+  `schedule_generator.dart` Step 1 walked a commitment window with a bare `cursor += 25` — Phase 28's
+  lattice was only ever applied to the discretionary packing loop. Scope was deliberately extended
+  beyond the ROADMAP's `schedule_generator.dart`-only boundary to also fix `addEventToday`, which
+  duplicated the identical defect via a second path (D-30-03).
+
+- **Phase 31 added 2026-08-21: Breaks You Can Skip.** Out of the same 2026-08-21 feedback drop
+  ("Breaks are fully functional features, with timers, etc."), with the owner's own scope call:
+  *"don't add tappable then. Just make it skippable like the other ones."* Tappable is explicitly
+  out. Gated on Phase 29's UAT verdict, which cleared 2026-08-25. Not started.
 
 ### Decisions
 
@@ -261,34 +297,30 @@ post-Phase-22 tree — do not chase the old ones.
 
 ### Blockers / Concerns
 
-**Phase 31 is blocked on Phase 29's UAT verdict (2026-08-24).** Not a soft "pending" — the ROADMAP
-entry for Phase 31 states it outright: *"Do not start until Phase 29's UAT verdict is recorded — if
-that verdict changes the sub-compact layout, it changes what this phase attaches a gesture to."*
-Phase 31 attaches a swipe gesture to the 20dp sub-compact hairline; if Dan judges that hairline
-reads as a divider rather than a break, the layout changes and any planning done first is discarded.
-The autonomous run honoured the gate and stopped rather than planning speculatively. See
-`QUESTIONS.md`.
+None. **Phase 31's gate is cleared.** Its ROADMAP entry required Phase 29's UAT verdict first —
+Phase 31 attaches a swipe gesture to the 20dp sub-compact hairline, so a verdict that changed that
+layout would have changed the gesture target. The verdict came back PASS on 2026-08-25 (reads as a
+break, label legible, day looks right), so the sub-compact layout is settled and Phase 31 can attach
+to it as-is. Ready for `/gsd-plan-phase 31`.
 
-## Deferred Verification
+## Resolved Verification
 
-| Phase | State | Resume |
-|-------|-------|--------|
-| 29 | verification_deferred_human | `/gsd-verify-work 29` |
-| 30 | verification_deferred_human | `/gsd-verify-work 30` |
+| Phase | State | Resolved |
+|-------|-------|----------|
+| 29 | ✅ passed | Human UAT 2026-08-25 — all 3 items PASS (`29-UAT.md`) |
+| 30 | ✅ passed | Human UAT 2026-08-25 — all items PASS (`30-UAT.md`) |
 
-**Phase 30 is code-complete, 8/8 code truths verified, 598/598 tests green.** Its human UAT is
-scaffolded at `30-UAT.md` and the debug build is served at `http://danserver:8143/` (served-bytes
-gate passed, `buildCommitmentChunks` present in the served `main.dart.js`). Phase 29's UAT is now
-unblocked by this — both are judged in one sitting. **⟳ Re-check-in first** (trap #4, now promoted
-into CLAUDE.md).
+Both were `verification_deferred_human` for one working day. Phase 29's was deferred deliberately
+rather than skipped: item 1 asks whether a 5-minute break reads *as a break*, and on a day built
+around a committed `Work` block there were no breaks to look at until Phase 30 landed. Both were
+then judged in a single sitting against the same served build on port 8143.
 
-**Phase 29 is code-complete and verified 8/9; the 9th truth is its own human UAT verdict, which is
-blocked — not merely unanswered.** `29-UAT.md` item 1 asks whether a 5-minute break reads *as a
-break*, and on a day built around a committed `Work` block there are no breaks to look at:
-`schedule_generator.dart` never applied Phase 28's lattice inside commitment blocks. That is Phase
-30. The deferral is therefore an *ordering* decision already recorded in `29-UAT.md` on 2026-08-24,
-not a skipped gate — judge Phase 29's UAT after Phase 30 lands, when a full day actually has breaks
-in it. Re-check-in (⟳) before judging, or the app shows a pre-fix day (CLAUDE.md trap #4, data layer).
+**How the UAT was closed, for the next one's benefit.** Served bytes were sha256-checked against
+built bytes before the owner was asked to look at anything (`84ef9419…`, identical), and the served
+`main.dart.js` was grepped for `buildCommitmentChunks` to prove the change was actually in the
+bundle. No re-check-in was needed on the day because the calendar had rolled over, so the owner's
+check-in necessarily ran through the fixed engine — but trap #4 stays in `CLAUDE.md` and in every
+generator-output UAT's own Step 0, because a same-day UAT will need it.
 
 ## Deferred Items
 
@@ -324,7 +356,7 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 ## Session Continuity
 
 Last session: 2026-08-18
-Stopped at: Completed 29-03-PLAN.md — kSubCompactBreakMinHeight measured in a real browser (32.0), port 8143 claimed, measure_card_extent.py committed, 587 tests green
+Stopped at: Phase 30 complete, ready to plan Phase 31
 (`1ca4204` measure+set `kCompactLiveMinHeight`, `7d0a1e6` prove GRID-01 `UNIFORM`).
 Resume at: open `http://danserver:8137/` on a phone/tablet, walk `27-04-SUMMARY.md`'s "Task 3"
 section, record the verdict, then finalize the summary and close Phase 27.

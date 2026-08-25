@@ -104,8 +104,8 @@ standalone phases rather than opening v1.6. Detail for each follows below.
 
 - [x] Phase 27: True Grid (4/4 plans) — GRID-01, GRID-02 — complete 2026-08-19
 - [x] Phase 28: The Day Is a Lattice — LATTICE-01, LATTICE-02 (completed 2026-08-19)
-- [ ] Phase 29: Breaks You Can See — SEEBREAK-01, SEEBREAK-02
-- [ ] Phase 30: Breaks In Committed Time — COMMITBREAK-01, COMMITBREAK-02
+- [x] Phase 29: Breaks You Can See — SEEBREAK-01, SEEBREAK-02 (completed 2026-08-25)
+- [x] Phase 30: Breaks In Committed Time — COMMITBREAK-01, COMMITBREAK-02 (completed 2026-08-25)
 - [ ] Phase 31: Breaks You Can Skip — SKIPBREAK-01, SKIPBREAK-02
 
 ### Phase 27: True Grid
@@ -494,15 +494,18 @@ all. **D-01 stays intact — do not round `block.startMinutes` or `block.endMinu
 1. Break insertion inside a commitment window, on the same 25+5 lattice the discretionary loop
    uses, seeded from the block's own (unrounded) start rather than from the global :00/:30 grid —
    a block starting at 09:10 gets cells at 09:10/09:40/10:10, not a 20-minute stub.
+
 2. **Decide the long-break cadence question deliberately.** Does a commitment block's work count
    toward the same `longBreakEvery` counter the discretionary loop maintains, or does it run its
    own? Today `breakCount` lives entirely inside `_assignSyntheticStartTimes` and never sees a
    commitment chunk. Whichever way it goes, record the reasoning — a 6-hour meeting block silently
    accruing four long breaks is as wrong as it accruing none.
+
 3. **The tail.** Step 1 stretches the final chunk to `block.endMinutes` so a sub-25 remainder is
    covered. That interacts with break insertion: a window whose remainder is under 30 minutes has
    no room for a full cell. Do not let the last break push past `endMinutes`, and do not let the
    stretch swallow a break that should have been emitted.
+
 4. A regression test built from a **commitment block**, not a goal. The existing suite's
    `makeBlock` fixture (540–600, two chunks) would have caught this on day one and no test asserted
    break placement for it. That gap is the actual defect behind the defect.
@@ -532,7 +535,7 @@ commitment block, on the 25+5 lattice), COMMITBREAK-02 (the commitment's own sta
 are unchanged — D-01 preserved)
 **Depends on:** Phase 28 (owns `schedule_generator.dart` and the lattice this extends). Independent
 of Phase 29 — that phase's render work is correct and is what makes the emitted break visible.
-**Plans:** 5 plans
+**Plans:** 5/5 plans complete
 
 **Scope note — a deliberate extension beyond this entry (D-30-03).** Planning found the identical
 bare `cursor += 25` walk duplicated in `lib/providers/schedule_notifier.dart:addEventToday`, under a
@@ -547,20 +550,20 @@ Plans:
 
 **Wave 1** *(parallel — disjoint files; tests only, proven RED against the unfixed code)*
 
-- [ ] 30-01-PLAN.md — The COMMITBREAK generator regression group + 6 re-pointed tests; RED evidence
-- [ ] 30-02-PLAN.md — `addEventToday` second-path tests + the `commitmentId`-on-a-break render guard; RED evidence
+- [x] 30-01-PLAN.md — The COMMITBREAK generator regression group + 6 re-pointed tests; RED evidence
+- [x] 30-02-PLAN.md — `addEventToday` second-path tests + the `commitmentId`-on-a-break render guard; RED evidence
 
 **Wave 2** *(blocked on Wave 1 completion — `lib/services/` only)*
 
-- [ ] 30-03-PLAN.md — Tracer: one break end-to-end through Step 1→STEP E; then the per-block cadence counter, the long break and the tail; STEP E narrowed
+- [x] 30-03-PLAN.md — Tracer: one break end-to-end through Step 1→STEP E; then the per-block cadence counter, the long break and the tail; STEP E narrowed
 
 **Wave 3** *(blocked on Wave 2 completion — `lib/providers/` only)*
 
-- [ ] 30-04-PLAN.md — `addEventToday` delegates to the shared helper; `_trimTrailingNonWork` narrowed; closing full-suite gate
+- [x] 30-04-PLAN.md — `addEventToday` delegates to the shared helper; `_trimTrailingNonWork` narrowed; closing full-suite gate
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 30-05-PLAN.md — Promote trap #4 into `CLAUDE.md`; human UAT on port 8143 with the ⟳ re-check-in step
+- [x] 30-05-PLAN.md — Promote trap #4 into `CLAUDE.md`; human UAT on port 8143 with the ⟳ re-check-in step
 
 ### Phase 31: Breaks You Can Skip
 
@@ -663,6 +666,6 @@ Plans:
 | 21-26 (Right Now) | v1.5 | 28/28 | Complete   | 2026-08-14 |
 | 27. True Grid | — (standalone) | 4/4 | Complete | 2026-08-19 |
 | 28. The Day Is a Lattice | — (standalone) | 3/3 | Complete   | 2026-08-19 |
-| 29. Breaks You Can See | — (standalone) | 3/4 | In Progress|  |
-| 30. Breaks In Committed Time | — (standalone) | 0/? | Not Started |  |
+| 29. Breaks You Can See | — (standalone) | 4/4 | Complete    | 2026-08-25 |
+| 30. Breaks In Committed Time | — (standalone) | 5/5 | Complete    | 2026-08-25 |
 | 31. Breaks You Can Skip | — (standalone) | 0/? | Not Started |  |
