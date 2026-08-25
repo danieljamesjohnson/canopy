@@ -188,6 +188,35 @@ own gesture handling; or a chunk shorter than `2 × kBreakHitSlop` immediately a
 neighbor under 32dp — not producible by today's lattice, which sandwiches every break between
 25-minute-or-longer work chunks — would need re-checking by hand).
 
+---
+
+> ### ⚠ CORRECTION — this proof is incomplete (added 2026-08-25, post-approval)
+>
+> `31-RESEARCH.md` verified the above against the Flutter SDK source and found the argument
+> **half right**. Two corrections, both binding on the plan:
+>
+> **1. The proof's own premise defeats the mechanism as originally drawn.** `ClipRect` clips this
+> row's hit-testing too — and more fundamentally, `RenderBox.hitTest` bounds *every* render box to
+> its own `size` regardless of any clip. So growing the hit area cannot be done inside the existing
+> `Positioned` → `ClipRect` → `OverflowBox` wrapper. **The `Positioned` rect itself must be grown**
+> to `slot + 2 × kBreakHitSlop`, with the `ClipRect` pushed *down* inside it around a confined,
+> slot-sized child. The paint confinement (`Align(center) + SizedBox(height: slot)`) and therefore
+> SKIPBREAK-02 are unaffected — only the widget nesting order changes.
+>
+> **2. "Independent of z-order" is wrong.** Once a break's box overlaps its neighbours — which this
+> phase makes happen for the first time in this codebase — `Stack` resolves the overlap by z-order
+> (last-added child wins, per `RenderStack.hitTestChildren`), *not* by whose `ClipRect` disclaims the
+> band. `timelineRows` is chronological, so the break beats the *preceding* work chunk (top band) but
+> **loses to the *following* one (bottom band)** — halving the effective target from the claimed 52dp
+> to ~36dp, still under both Material 48dp and iOS 44pt. **Fix:** render slop-bearing breaks in a
+> dedicated third `Stack` pass, added after the normal Layer-1 loop and before the now-line overlay,
+> mirroring the existing live-row pattern. See `31-RESEARCH.md` "Pitfall 1".
+>
+> The *conclusion* of this section still stands — no touch is stolen from a neighbour, and the target
+> clears 48dp — but only once fix (2) is implemented. It does not stand for the mechanism as
+> originally specified. The plan must implement both corrections; the checker's 6/6 PASS was issued
+> against the pre-correction text and did not catch this.
+
 **What this does NOT solve, and is deliberately left unsolved:** whether a real thumb's touch
 centroid reliably lands inside a 52dp *invisible* band it cannot see the edges of. That is exactly
 the physical question the ROADMAP says no assertion settles — it is what the mandatory human UAT
