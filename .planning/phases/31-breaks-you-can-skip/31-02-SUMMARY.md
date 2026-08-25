@@ -174,3 +174,12 @@ None - no external service configuration required.
 ---
 *Phase: 31-breaks-you-can-skip*
 *Completed: 2026-08-25*
+
+## Self-Check: PASSED
+
+- `lib/screens/schedule/widgets/chunk_card.dart` — FOUND
+- `test/screens/today_row_widgets_test.dart` — FOUND
+- `.planning/phases/31-breaks-you-can-skip/31-02-SUMMARY.md` — FOUND
+- Commit `a6b2d21` (Task 1: feat) — FOUND in `git log`
+- Commit `ed54e5e` (Task 2: test) — FOUND in `git log`
+- Commit `1da3bd8` (docs: SUMMARY) — FOUND in `git log`
