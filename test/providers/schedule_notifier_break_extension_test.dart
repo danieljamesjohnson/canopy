@@ -539,6 +539,179 @@ void main() {
     expect(state, isA<GapBeforeNext>());
     expect((state as GapBeforeNext).next.id, 'b1');
   });
+
+  group('Phase 31 — skipping a break is inert below the UI', () {
+    test('skipping a break never writes a Goal', () async {
+      final repo = _InMemoryScheduleRepository();
+      final goalRepo = _RecordingGoalRepository();
+      final w1 = ScheduledChunk(
+        id: 'w1',
+        chunkTypeIndex: ChunkType.work.index,
+        goalId: 'goal-1',
+        durationMinutes: 25,
+        syntheticStartMinutes: 600,
+        rationale: 'Cleaning',
+      );
+      final b1 = ScheduledChunk(
+        id: 'b1',
+        chunkTypeIndex: ChunkType.shortBreak.index,
+        durationMinutes: 5,
+        syntheticStartMinutes: 625,
+        rationale: '',
+      );
+      repo.stored = DailySchedule(
+        id: 'sched-inert-goal',
+        dateYmd: testDateYmd,
+        moodIndex: 3,
+        chunks: [w1, b1],
+      );
+      final notifier = ScheduleNotifier(
+        now: () => DateTime(2026, 6, 13, 10, 26),
+        repo: repo,
+        logRepo: _InMemoryLogRepository(),
+        goalRepo: goalRepo,
+      );
+      await notifier.init();
+
+      await notifier.markSkipped('b1');
+
+      expect(
+        goalRepo.saved,
+        isEmpty,
+        reason:
+            "a break's goalId is always null, so the streak write-back is "
+            'unreachable — a failure here means a break just touched the '
+            "user's habit data, which is the serious regression the "
+            'ROADMAP told planning to verify rather than assume',
+      );
+    });
+
+    test('skipping a break moves no other chunk', () async {
+      final repo = _InMemoryScheduleRepository();
+      final w1 = ScheduledChunk(
+        id: 'w1',
+        chunkTypeIndex: ChunkType.work.index,
+        goalId: 'goal-1',
+        durationMinutes: 25,
+        syntheticStartMinutes: 600,
+        rationale: 'Cleaning',
+      );
+      final sb1 = ScheduledChunk(
+        id: 'sb1',
+        chunkTypeIndex: ChunkType.shortBreak.index,
+        durationMinutes: 5,
+        syntheticStartMinutes: 625,
+        rationale: '',
+      );
+      final w2 = ScheduledChunk(
+        id: 'w2',
+        chunkTypeIndex: ChunkType.work.index,
+        goalId: 'goal-1',
+        durationMinutes: 25,
+        syntheticStartMinutes: 630,
+        rationale: 'Cleaning',
+      );
+      final lb1 = ScheduledChunk(
+        id: 'lb1',
+        chunkTypeIndex: ChunkType.longBreak.index,
+        durationMinutes: 25,
+        syntheticStartMinutes: 655,
+        rationale: '',
+      );
+      final w3 = ScheduledChunk(
+        id: 'w3',
+        chunkTypeIndex: ChunkType.work.index,
+        goalId: 'goal-1',
+        durationMinutes: 25,
+        syntheticStartMinutes: 680,
+        rationale: 'Cleaning',
+      );
+      final chunks = [w1, sb1, w2, lb1, w3];
+      final before = {
+        for (final c in chunks)
+          c.id: (start: c.displayStartMinutes, duration: c.durationMinutes),
+      };
+
+      final notifier = makeNotifier(
+        repo: repo,
+        now: () => DateTime(2026, 6, 13, 10, 10),
+        chunks: chunks,
+      );
+      await notifier.init();
+      await notifier.markSkipped('sb1');
+
+      for (final c in chunks) {
+        expect(
+          c.displayStartMinutes,
+          before[c.id]!.start,
+          reason:
+              "D-31-03: skipping sb1 must not move ${c.id}'s start time — "
+              "every other chunk's start time is untouched",
+        );
+        expect(
+          c.durationMinutes,
+          before[c.id]!.duration,
+          reason:
+              "D-31-03: skipping sb1 must not resize ${c.id} — only sb1's "
+              'own isSkipped flag flips',
+        );
+      }
+      expect(
+        sb1.isSkipped,
+        isTrue,
+        reason: "the skip itself must still have taken effect on sb1",
+      );
+    });
+
+    test(
+      'skipping a break appends exactly one CompletionLog entry, with no '
+      'goal attribution',
+      () async {
+        final repo = _InMemoryScheduleRepository();
+        final logRepo = _InMemoryLogRepository();
+        final w1 = ScheduledChunk(
+          id: 'w1',
+          chunkTypeIndex: ChunkType.work.index,
+          goalId: 'goal-1',
+          durationMinutes: 25,
+          syntheticStartMinutes: 600,
+          rationale: 'Cleaning',
+        );
+        final b1 = ScheduledChunk(
+          id: 'b1',
+          chunkTypeIndex: ChunkType.shortBreak.index,
+          durationMinutes: 5,
+          syntheticStartMinutes: 625,
+          rationale: '',
+        );
+        repo.stored = DailySchedule(
+          id: 'sched-inert-log',
+          dateYmd: testDateYmd,
+          moodIndex: 3,
+          chunks: [w1, b1],
+        );
+        final notifier = ScheduleNotifier(
+          now: () => DateTime(2026, 6, 13, 10, 26),
+          repo: repo,
+          logRepo: logRepo,
+          goalRepo: _InMemoryGoalRepository(),
+        );
+        await notifier.init();
+
+        await notifier.markSkipped('b1');
+
+        expect(logRepo.logs, hasLength(1));
+        expect(logRepo.logs.single.chunkId, 'b1');
+        expect(
+          logRepo.logs.single.goalId,
+          '',
+          reason:
+              'a skipped break must never be mistaken later for goal '
+              "activity — markSkipped writes '' for a null-goal chunk today",
+        );
+      },
+    );
+  });
 }
 
 /// A schedule repository whose [getTodaysSchedule] returns a fixed, seeded
@@ -565,4 +738,31 @@ class _SeededThrowingScheduleRepository implements DailyScheduleRepository {
       dateYmd == _schedule.dateYmd ? _schedule : null;
   @override
   Future<DailySchedule?> getTodaysSchedule() async => _schedule;
+}
+
+/// A GoalRepository fake that records every [save] call, alongside the
+/// baseline `_InMemoryGoalRepository` behaviour (kept as a subclass rather
+/// than changing the shared fake, so existing cases stay byte-identical).
+/// [getById] returns a habit Goal for any id — permissive on purpose, so
+/// the guard-removal experiment described in the plan (temporarily
+/// bypassing markSkipped's `goalId != null && isNotEmpty` guard) can
+/// actually reach and exercise [save], proving Case 1 is a real
+/// prohibition test rather than one that can never fail.
+class _RecordingGoalRepository implements GoalRepository {
+  final List<Goal> saved = [];
+
+  @override
+  Future<List<Goal>> getAll() async => const [];
+  @override
+  Future<Goal?> getById(String id) async => Goal(
+    id: id.isEmpty ? 'fallback-goal' : id,
+    name: 'Recording fixture goal',
+    goalTypeIndex: GoalType.habit.index,
+  );
+  @override
+  Future<void> save(Goal goal) async => saved.add(goal);
+  @override
+  Future<void> delete(String id) async {}
+  @override
+  Future<List<Goal>> getActive() async => const [];
 }
