@@ -1,0 +1,158 @@
+Resolving dependencies...
+Downloading packages...
+  _fe_analyzer_shared 93.0.0 (105.0.0 available)
+  analyzer 10.0.1 (14.1.0 available)
+  async 2.13.0 (2.13.1 available)
+  build 4.0.4 (4.0.10 available)
+  build_config 1.2.0 (1.3.2 available)
+  build_daemon 4.1.1 (4.1.5 available)
+  build_runner 2.11.1 (2.16.0 available)
+  built_value 8.12.4 (8.12.7 available)
+  code_assets 1.0.0 (2.0.0 available)
+  cross_file 0.3.5+2 (0.3.5+4 available)
+  cupertino_icons 1.0.8 (1.0.9 available)
+  dart_style 3.1.5 (3.1.12 available)
+  dbus 0.7.12 (0.7.15 available)
+  equatable 2.0.8 (2.1.0 available)
+  flutter_local_notifications 21.0.0 (22.3.0 available)
+  flutter_local_notifications_linux 8.0.0 (8.0.1 available)
+  flutter_local_notifications_platform_interface 11.0.0 (12.2.0 available)
+  flutter_local_notifications_windows 3.0.0 (3.1.1 available)
+  flutter_timezone 5.0.2 (5.1.0 available)
+  go_router 17.1.0 (17.5.0 available)
+  hive_ce_generator 1.11.1 (1.11.3 available)
+  hooks 1.0.1 (2.2.0 available)
+  intl 0.20.2 (0.20.3 available)
+  json_annotation 4.11.0 (4.12.0 available)
+  matcher 0.12.19 (0.12.20 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.0 (1.19.0 available)
+  native_toolchain_c 0.17.4 (0.19.4 available)
+  objective_c 9.3.0 (9.6.0 available)
+  package_config 2.2.0 (3.0.0 available)
+  path_provider 2.1.5 (2.1.6 available)
+  path_provider_android 2.2.22 (2.3.1 available)
+  path_provider_linux 2.2.1 (2.2.2 available)
+  path_provider_platform_interface 2.1.2 (2.1.3 available)
+  screen_retriever 0.2.0 (0.2.2 available)
+  screen_retriever_linux 0.2.0 (0.2.2 available)
+  screen_retriever_macos 0.2.0 (0.2.2 available)
+  screen_retriever_platform_interface 0.2.0 (0.2.2 available)
+  screen_retriever_windows 0.2.0 (0.2.2 available)
+  share_plus 12.0.2 (13.3.0 available)
+  share_plus_platform_interface 6.1.0 (7.2.0 available)
+  shared_preferences 2.5.4 (2.5.5 available)
+  shared_preferences_android 2.4.20 (2.4.27 available)
+  shared_preferences_platform_interface 2.4.1 (2.4.2 available)
+  source_gen 4.2.0 (4.3.0 available)
+  source_helper 1.3.10 (1.3.13 available)
+  test_api 0.7.11 (0.7.13 available)
+  timezone 0.11.0 (0.11.1 available)
+  url_launcher_web 2.4.2 (2.4.3 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.2.0 (2.4.2 available)
+  vm_service 15.0.2 (15.3.0 available)
+  win32 5.15.0 (6.4.0 available)
+  window_manager 0.5.1 (0.5.2 available)
+  xml 6.6.1 (7.0.1 available)
+Got dependencies!
+55 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/dan/CodeProjects/canopy/.claude/worktrees/agent-a1173f464e42b0483/test/screens/today_screen_test.dart
+00:00 +0: Task 1 — scaffold, AppBar, reconciled empty state empty state renders without throwing when there is no schedule
+00:00 +1: Task 1 — scaffold, AppBar, reconciled empty state empty state keeps every affordance from both old screens
+00:00 +2: Task 1 — scaffold, AppBar, reconciled empty state tapping Add an event from the empty state opens a modal
+00:00 +3: Task 1 — scaffold, AppBar, reconciled empty state at 1024x768 the content is constrained to 720dp (POLISH-01)
+00:00 +4: Task 1 — scaffold, AppBar, reconciled empty state AppBar exposes add-event, re-check-in, start-focus and exactly one refresh icon
+00:00 +5: Task 1 — scaffold, AppBar, reconciled empty state accepts an injectable now clock function
+00:00 +6: Task 2 — the day as one list, live row in place, named free time exactly one LiveRowCard, for the 10:45 chunk
+00:00 +7: Task 2 — the day as one list, live row in place, named free time completed and skipped chunks still render as rows, inline, no "Skipped today" text
+00:00 +8: Task 2 — the day as one list, live row in place, named free time the leading "Free until" row precedes the first activity while that window is still open
+00:00 +9: Task 2 — the day as one list, live row in place, named free time the leading "Free until" row is gone once its window has closed (NOW-02)
+00:01 +10: Task 2 — the day as one list, live row in place, named free time a named "Free ·" row appears for the 11:15–13:00 gap
+00:01 +11: Task 2 — the day as one list, live row in place, named free time "See full schedule" appears nowhere (D-08 / G4)
+00:01 +12: Task 2 — the day as one list, live row in place, named free time a mood-2 schedule renders the restoratives card
+00:01 +13: Task 2 — the day as one list, live row in place, named free time a mood-4 schedule does not render the restoratives card
+00:01 +14: Task 2 — the day as one list, live row in place, named free time work chunks more than half resolved expose "View your day"
+00:01 +15: Task 2 — the day as one list, live row in place, named free time work chunks below half resolved do NOT expose "View your day"
+00:01 +16: Task 2 — the day as one list, live row in place, named free time tapping an unresolved non-live work row opens ChunkDetailSheet
+00:01 +17: Task 2 — the day as one list, live row in place, named free time gutter column shares a left edge with the "Today" heading (G-04)
+00:01 +18: Task 2 — the day as one list, live row in place, named free time the chunk count appears once, in the progress row, not in the mood chip (G-06)
+00:01 +19: Task 2 — the day as one list, live row in place, named free time the end-of-day card follows the INJECTED clock, not the wall clock (D-01 regression)
+00:01 +20: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape a 25-minute work chunk slot measures exactly 25 * kPixelsPerMinute
+00:01 +21: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape a 105-minute gap renders at 105 * kPixelsPerMinute — not compressed, not clamped (D-02)
+00:01 +22: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape two clock-contiguous chunks: the second slot top equals the first slot top plus the first slot height
+00:01 +23: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape the timeline Stack's SizedBox height equals (rangeEnd - rangeStart) * kPixelsPerMinute plus 2 * kTimelineEdgePadding (G-04/G-05, 26-10-PLAN.md) when no live row is swelling it
+00:01 +24: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape GRID-02: the live row's rendered slot is duration-exact, not swelled (single-line tier)
+00:01 +25: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape GRID-02: the live row's rendered slot is duration-exact, not swelled (compact tier)
+00:01 +26: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-01 the day has a shape a 5-minute short break slot measures exactly 5 * kPixelsPerMinute
+00:01 +27: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line no suppression — exactly one NowLineOverlay in every NowState (the Active row is the one that used to assert findsNothing)
+00:02 +28: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line mid-chunk truth — the line sits at TimelineGeometry's own computed offset, strictly inside the live chunk's rendered span
+00:02 +29: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line motion — a one-minute tick advances the line by exactly kPixelsPerMinute
+00:02 +30: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line PreStart is representable — the line never renders above the top of the rendered range
+00:02 +31: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line DayComplete is representable — the line never renders below the bottom of the rendered range
+00:02 +32: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line no chip text in a non-live state — the chip is retired, not suppressed
+00:02 +33: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line the now-line dot is centred on the ChunkCard left edge, straddling the gutter boundary
+00:02 +34: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line the LIVE row is flush with an ordinary card on both edges, and the dot is centred on that shared edge
+00:02 +35: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line G-03: no time chip over the live row — the full-bleed card leaves no gutter
+00:02 +36: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line semantics — exactly one "Now — 9:12 AM" node; the chip's own visible text is excluded from the tree
+00:02 +37: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line hit-testing — a Complete tap still lands through the now-line (IgnorePointer proof)
+00:02 +38: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line colour — the now-line rule uses colorScheme.primary and the hour hairline uses colorScheme.outlineVariant
+00:02 +39: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line hour axis coverage — one HourAxisLine per hour boundary, first labelled from rangeStart
+00:02 +40: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line G-04: the first and last hour-axis labels stay inside the Stack's own painted bounds
+00:02 +41: Task 2 — the day as one list, live row in place, named free time Phase 26 — CAL-02 the now-line G-05: the now-line stays inside the Stack at the EXACT boundary minute — PreStart (nowMinutes == rangeStart) and DayComplete (nowMinutes == rangeEnd), not merely "near" the edge
+00:02 +42: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes centres on open in every NowState, including DayComplete (closes the Phase 24 UAT gap by construction)
+00:02 +43: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes the target is the clamped centred-on-now value
+00:03 +44: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes the past is off-screen — the 8am chunk is not visible without scrolling up
+00:03 +45: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes centres once — a later 1-minute tick does not move the offset again
+00:03 +46: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes a DevClock jump re-arms it exactly once
+00:03 +47: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes a state transition does NOT re-centre on a mounted tree (PD-19) — a fresh open still does
+00:03 +48: Task 3 — scroll-on-open + edge-state copy Phase 26 — CAL-03 elapsed time recedes empty state does not throw (hasClients guard)
+00:03 +49: Task 3 — scroll-on-open + edge-state copy pre-start: "Nothing until" is present, no LiveRowCard
+00:03 +50: Task 3 — scroll-on-open + edge-state copy gap-before-next: "Up next" is present, no LiveRowCard
+00:03 +51: Task 3 — scroll-on-open + edge-state copy day-complete: "That's the day." is present, no LiveRowCard
+00:03 +52: Task 3 — scroll-on-open + edge-state copy no floating recall pill — "Jump to now" appears nowhere (D-03)
+00:03 +53: Task 3 — scroll-on-open + edge-state copy gap-before-next targeting a break names the break, not "Work block"
+00:03 +54: Task 3 — scroll-on-open + edge-state copy edge states are distinct — no state satisfies another state's copy
+00:03 +55: Task 3 — scroll-on-open + edge-state copy copywriting guard: "behind" appears only in the DayComplete "behind you" phrase, never in PreStart or GapBeforeNext
+00:03 +56: WR-01 — Start focus follows nowState, not a list-order scan Start focus pushes the Active chunk from nowState, not the stale earlier unresolved chunk
+00:04 +57: WR-01 — Start focus follows nowState, not a list-order scan Start focus is disabled when nowState is DayComplete (no meaningful target to guess at)
+00:04 +58: WR-01 — Start focus follows nowState, not a list-order scan Start focus is disabled while a break is the Active chunk
+00:04 +59: WR-01 — Start focus follows nowState, not a list-order scan Start focus is disabled while a break is the GapBeforeNext target
+00:04 +60: WR-01 — Start focus follows nowState, not a list-order scan Start focus is disabled while a break is Overdue
+00:04 +61: WR-01 — Start focus follows nowState, not a list-order scan Start focus still targets the Active work chunk when a break follows it
+00:04 +62: Phase 29 — SEEBREAK: breaks you can see SEEBREAK-01 tier boundary: a break slot below kSubCompactBreakMinHeight renders sub-compact; at the threshold it renders compact
+00:04 +63: Phase 29 — SEEBREAK: breaks you can see SEEBREAK-02: a 5-minute break occupies exactly 20.0dp of slot at sub-compact density
+00:04 +64: Phase 31 — SKIPBREAK: breaks you can skip SKIPBREAK-01 tracer: a drag started inside the break's top slop band resolves to that break
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: 'b1'
+  Actual: <null>
+   Which: not an <Instance of 'String'>
+SKIPBREAK-01/D-31-02: a drag starting inside the grown hit-test envelope above a break's painted top
+edge must still resolve to that break's Dismissible and call markSkipped.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/dan/CodeProjects/canopy/.claude/worktrees/agent-a1173f464e42b0483/test/screens/today_screen_test.dart:2430:9)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/dan/CodeProjects/canopy/.claude/worktrees/agent-a1173f464e42b0483/test/screens/today_screen_test.dart line 2430
+The test description was:
+  SKIPBREAK-01 tracer: a drag started inside the break's top slop band resolves to that break
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:04 +64 -1: Phase 31 — SKIPBREAK: breaks you can skip SKIPBREAK-01 tracer: a drag started inside the break's top slop band resolves to that break [E]
+  Test failed. See exception logs above.
+  The test description was: SKIPBREAK-01 tracer: a drag started inside the break's top slop band resolves to that break
+  
+00:04 +64 -1: Phase 31 — SKIPBREAK: breaks you can skip SKIPBREAK-01 vacuity guard: a 5-minute break's slot is genuinely under the drag-target minimum
+00:04 +65 -1: Some tests failed.
+
+Failing tests:
+  /home/dan/CodeProjects/canopy/.claude/worktrees/agent-a1173f464e42b0483/test/screens/today_screen_test.dart: Phase 31 — SKIPBREAK: breaks you can skip SKIPBREAK-01 tracer: a drag started inside the break's top slop band resolves to that break

@@ -169,6 +169,34 @@ const double kFullBreakMinHeight = 88.0;
 /// `flutter test`.
 const double kSubCompactBreakMinHeight = 32.0;
 
+/// Extra invisible hit-test reach added above AND below a break's own slot
+/// (D-31-02, phase 31), before any clamp against a short neighbor. On-grid
+/// (multiple of 4). Not a visual/paint value — confines nothing that paints;
+/// see [kMinBreakDragTarget]'s doc comment for the gate that decides when it
+/// applies, and `today_screen.dart`'s Layer 1b Stack pass for the ordering
+/// fix that makes both the top and bottom slop bands actually win.
+///
+/// **PD-31-01 (31-01-PLAN.md): the defensive per-neighbour clamp
+/// (`clamp(kBreakHitSlop, 0, precedingRowSlot / 2)`) is deliberately
+/// OMITTED — slop is applied symmetrically, full value, both sides,
+/// unconditionally.** Two reasons: (1) the painted content is centred
+/// inside the grown box via `Align(center)`, which reproduces
+/// `geometry.yFor(start)` exactly only when the two slops are equal — an
+/// asymmetric clamp would silently shift the painted row by up to 8dp off
+/// its true position, precisely the "timeline lies about when something
+/// happens" failure this phase exists to prevent; (2) today's lattice
+/// sandwiches every break between work chunks of 25 minutes or longer
+/// (100dp at [kPixelsPerMinute]), so the clamp can never bind — it would be
+/// dead code. If a future lattice change ever places a chunk under 32dp
+/// beside a break, this symmetric-slop assumption needs re-deriving.
+const double kBreakHitSlop = 16.0;
+
+/// Slop ([kBreakHitSlop]) is applied only while `slot < kMinBreakDragTarget`
+/// — a break already at or above this height clears both Material's 48dp
+/// and iOS's 44pt touch-target minimums on its own painted slot alone, so
+/// growing its hit-test box would add nothing.
+const double kMinBreakDragTarget = 48.0;
+
 /// **MEASURED (2026-08-18, plan 27-04).** The slot height at or above which
 /// `LiveRowCard`'s compact tier fits; below it the single-line tier is used
 /// (there is no third tier).

@@ -2373,4 +2373,96 @@ void main() {
       },
     );
   });
+
+  group('Phase 31 — SKIPBREAK: breaks you can skip', () {
+    // Fixture shape mirrors the Phase 29 group's breakBoundaryFixture above:
+    // a 25-minute work chunk, a 5-minute short break at 8:25, and a
+    // following 25-minute work chunk — pumped at 18:00 (DayComplete) so
+    // nothing is live and the break renders through ChunkCard, not
+    // LiveRowCard (PD-31-06).
+    DailySchedule skipTracerFixture() {
+      return DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: [
+          _workChunk(id: 'w1', syntheticStartMinutes: 480, durationMinutes: 25),
+          _breakChunk(id: 'b1', syntheticStartMinutes: 505, durationMinutes: 5),
+          _workChunk(id: 'w2', syntheticStartMinutes: 510, durationMinutes: 25),
+        ],
+      );
+    }
+
+    testWidgets(
+      'SKIPBREAK-01 tracer: a drag started inside the break\'s top slop '
+      'band resolves to that break',
+      (tester) async {
+        // Uses the file's own _FakeScheduleNotifierWithSchedule directly —
+        // it already overrides markSkipped/markComplete to record ids
+        // without calling super (see class definition above), which is
+        // exactly the recording-fake shape this tracer needs: the real
+        // markSkipped reads a private field this fake does not populate, so
+        // letting it run would silently prove nothing.
+        final fake = _FakeScheduleNotifierWithSchedule(skipTracerFixture());
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: fake,
+          now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
+        );
+
+        // Locate the break's painted band via the confined, slot-sized
+        // ClipRect — not the outer Positioned, which is deliberately taller
+        // than the slot once this phase's hit-test envelope lands
+        // (31-UI-SPEC.md § Verification item 1).
+        final breakClipRect = find
+            .ancestor(
+              of: find.text('Short break'),
+              matching: find.byType(ClipRect),
+            )
+            .first;
+        final paintedRect = tester.getRect(breakClipRect);
+        final origin = Offset(
+          paintedRect.center.dx,
+          paintedRect.top - kBreakHitSlop + 2,
+        );
+        await tester.dragFrom(origin, const Offset(-400, 0));
+        await tester.pumpAndSettle();
+
+        expect(
+          fake.lastSkippedId,
+          'b1',
+          reason:
+              'SKIPBREAK-01/D-31-02: a drag starting inside the grown '
+              'hit-test envelope above a break\'s painted top edge must '
+              'still resolve to that break\'s Dismissible and call '
+              'markSkipped.',
+        );
+      },
+    );
+
+    testWidgets(
+      'SKIPBREAK-01 vacuity guard: a 5-minute break\'s slot is genuinely '
+      'under the drag-target minimum',
+      (tester) async {
+        expect(
+          5 * kPixelsPerMinute,
+          lessThan(kMinBreakDragTarget),
+          reason:
+              'a 5-minute break must actually land below '
+              'kMinBreakDragTarget, or the tracer test above compares '
+              'against a slot that never needed slop in the first place — '
+              'a failure here means the constants moved out from under '
+              'Test A\'s premise.',
+        );
+        expect(
+          kBreakHitSlop,
+          greaterThan(0.0),
+          reason:
+              'kBreakHitSlop must be positive, or the tracer test above '
+              'passes vacuously (a zero slop still "passes" a drag started '
+              'at the painted edge itself) — a failure here means the '
+              'constant moved out from under Test A\'s premise.',
+        );
+      },
+    );
+  });
 }
