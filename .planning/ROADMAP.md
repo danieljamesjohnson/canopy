@@ -644,7 +644,14 @@ own gesture target)
 **Depends on:** Phase 29 (owns the sub-compact tier this phase must make skippable, and
 `kSubCompactBreakMinHeight`). Do not start until Phase 29's UAT verdict is recorded — if that
 verdict changes the sub-compact layout, it changes what this phase attaches a gesture to.
-**Plans:** 0 plans
+**Plans:** 5 plans
+
+Plans:
+- [ ] 31-01-PLAN.md — Tracer: constants, the promoted one-`Dismissible` `SwipeableChunkCard`, the grown hit-test envelope and the Layer 1b Stack pass, proven end-to-end by the repo's first drag-simulation test (wave 1)
+- [ ] 31-02-PLAN.md — Skipped-break rendering at all three density tiers, plus the tests pinning breaks as untappable and uncompletable (wave 2)
+- [ ] 31-03-PLAN.md — Hit-test proofs (both slop bands, negative no-theft case) and painted-grid proofs (per-state extent, adjacency, total height) (wave 3)
+- [ ] 31-04-PLAN.md — D-31-05's ninth guard in `_absorbReclaimedTimeIntoNextBreak`, proven RED first, plus streak-inertness and nothing-else-moves assertions (wave 2)
+- [ ] 31-05-PLAN.md — Blocking human UAT on a real touch device, port 8143, with a mandatory ⟳ Re-check-in Step 0 (wave 4)
 
 Plans:
 
