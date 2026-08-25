@@ -2380,14 +2380,33 @@ void main() {
     // following 25-minute work chunk — pumped at 18:00 (DayComplete) so
     // nothing is live and the break renders through ChunkCard, not
     // LiveRowCard (PD-31-06).
+    //
+    // Plan 31-03 DEVIATION (Rule 1, auto-fixed, test-file-only): w1/w2 gain
+    // distinct `rationale` strings ('Preceding work'/'Following work') —
+    // the factory default ('Deep work') left both work chunks with
+    // identical title text, which plan 31-01's original single-case tracer
+    // never needed to disambiguate but this plan's negative/adjacency cases
+    // do (they anchor a `find.text(...)` on each neighbour's own painted
+    // title to get its rect). Neither string is read by any existing
+    // assertion in this group.
     DailySchedule skipTracerFixture() {
       return DailySchedule(
         dateYmd: _todayYmd(),
         moodIndex: 3,
         chunks: [
-          _workChunk(id: 'w1', syntheticStartMinutes: 480, durationMinutes: 25),
+          _workChunk(
+            id: 'w1',
+            syntheticStartMinutes: 480,
+            durationMinutes: 25,
+            rationale: 'Preceding work',
+          ),
           _breakChunk(id: 'b1', syntheticStartMinutes: 505, durationMinutes: 5),
-          _workChunk(id: 'w2', syntheticStartMinutes: 510, durationMinutes: 25),
+          _workChunk(
+            id: 'w2',
+            syntheticStartMinutes: 510,
+            durationMinutes: 25,
+            rationale: 'Following work',
+          ),
         ],
       );
     }
@@ -2478,5 +2497,543 @@ void main() {
         );
       },
     );
+
+    // Plan 31-03, Task 1: the two computed origins below (the break's
+    // bottom-slop-band point and the following work chunk's own,
+    // unambiguously-inside-its-content point) are shared by both of the
+    // next two cases — each case independently re-pumps the fixture and
+    // re-derives both points, then asserts they are genuinely distinct
+    // before trusting either drag's result. If the fixture ever drifted so
+    // both points landed on (or near) the same pixel, both cases could
+    // start passing by coincidence rather than by proving the ordering
+    // claim — this guard makes that drift announce itself instead.
+    testWidgets(
+      'SKIPBREAK-01: a drag started inside the break\'s BOTTOM slop band '
+      'resolves to that break, not the following work chunk',
+      (tester) async {
+        final fake = _FakeScheduleNotifierWithSchedule(skipTracerFixture());
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: fake,
+          now: () => DateTime(2026, 8, 7, 9, 0), // DayComplete, see Case A's
+          // clock-choice comment above for why 9:00 (not 18:00) keeps the
+          // fixture inside the default test viewport.
+        );
+
+        final breakRect = tester.getRect(
+          find
+              .ancestor(
+                of: find.text('Short break'),
+                matching: find.byType(ClipRect),
+              )
+              .first,
+        );
+        final followingRect = tester.getRect(
+          find
+              .ancestor(
+                of: find.text('Following work'),
+                matching: find.byType(ClipRect),
+              )
+              .first,
+        );
+
+        final bottomBandOrigin = Offset(
+          breakRect.center.dx,
+          breakRect.bottom + kBreakHitSlop - 2,
+        );
+        final negativeCaseOrigin = Offset(
+          followingRect.center.dx,
+          followingRect.top + kBreakHitSlop * 2,
+        );
+        // Vacuity guard (both cases lean on the fixture placing the break
+        // and its following neighbour where they think they do): the two
+        // origins must be genuinely distinct points, and the break's own
+        // painted slot must actually be the 5-minute (20.0dp) fixture both
+        // this and the negative case below assume.
+        expect(
+          (bottomBandOrigin.dy - negativeCaseOrigin.dy).abs(),
+          greaterThan(1.0),
+          reason:
+              'the bottom-slop-band origin and the negative-case origin '
+              'must be genuinely distinct points, or this pair of tests '
+              'could pass by landing somewhere convenient rather than by '
+              'proving the ordering claim',
+        );
+        expect(breakRect.height, 5 * kPixelsPerMinute);
+
+        await tester.dragFrom(bottomBandOrigin, const Offset(-400, 0));
+        await tester.pumpAndSettle();
+
+        expect(
+          fake.lastSkippedId,
+          'b1',
+          reason:
+              '31-RESEARCH.md Pitfall 1: if the slop-bearing break is '
+              'emitted in the chronological Layer 1a loop instead of its '
+              'own later Layer 1b pass, the following work chunk (added '
+              'to the Stack later) wins the contested bottom-slop pixels '
+              'and the effective touch target is roughly 36dp, not 52dp.',
+        );
+        expect(fake.lastCompletedId, isNull);
+        expect(
+          fake.lastSkippedId,
+          isNot('w2'),
+          reason:
+              'a failure here means the following work chunk stole the '
+              'touch, not just that the break missed it — names the thief.',
+        );
+      },
+    );
+
+    testWidgets(
+      'SKIPBREAK-01 negative case: a drag started well inside the '
+      'following work chunk\'s own painted content still resolves to that '
+      'work chunk',
+      (tester) async {
+        final fake = _FakeScheduleNotifierWithSchedule(skipTracerFixture());
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: fake,
+          now: () => DateTime(2026, 8, 7, 9, 0), // DayComplete
+        );
+
+        final breakRect = tester.getRect(
+          find
+              .ancestor(
+                of: find.text('Short break'),
+                matching: find.byType(ClipRect),
+              )
+              .first,
+        );
+        final followingRect = tester.getRect(
+          find
+              .ancestor(
+                of: find.text('Following work'),
+                matching: find.byType(ClipRect),
+              )
+              .first,
+        );
+
+        final bottomBandOrigin = Offset(
+          breakRect.center.dx,
+          breakRect.bottom + kBreakHitSlop - 2,
+        );
+        // At least kBreakHitSlop * 2 below the following chunk's own top
+        // edge, so this point is unambiguously outside any slop band.
+        final negativeCaseOrigin = Offset(
+          followingRect.center.dx,
+          followingRect.top + kBreakHitSlop * 2,
+        );
+        expect(
+          (bottomBandOrigin.dy - negativeCaseOrigin.dy).abs(),
+          greaterThan(1.0),
+          reason:
+              'see the matching guard on the bottom-slop-band case above — '
+              'both cases must target genuinely distinct points',
+        );
+        expect(breakRect.height, 5 * kPixelsPerMinute);
+
+        await tester.dragFrom(negativeCaseOrigin, const Offset(-400, 0));
+        await tester.pumpAndSettle();
+
+        expect(
+          fake.lastSkippedId,
+          'w2',
+          reason:
+              'a touch that lands inside a neighbouring work chunk\'s own '
+              'painted content must resolve to that neighbour and steal '
+              'nothing from the break — this is the one thing flutter '
+              'test\'s exact-coordinate synthetic gestures can genuinely '
+              'settle (SKIPBREAK-01 negative/no-theft proof).',
+        );
+      },
+    );
+
+    testWidgets(
+      'SKIPBREAK-01: a below-threshold drag resolves nothing (UI-SPEC E1 '
+      'partial)',
+      (tester) async {
+        final fake = _FakeScheduleNotifierWithSchedule(skipTracerFixture());
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: fake,
+          now: () => DateTime(2026, 8, 7, 9, 0), // DayComplete
+        );
+
+        final breakRect = tester.getRect(
+          find
+              .ancestor(
+                of: find.text('Short break'),
+                matching: find.byType(ClipRect),
+              )
+              .first,
+        );
+
+        // dismissThresholds is a fraction of the row's WIDTH
+        // (31-RESEARCH.md Pattern 2), not its height — this case is about
+        // the gesture completing (a small horizontal drag well under the
+        // dismiss threshold), not about the row's height.
+        await tester.dragFrom(breakRect.center, const Offset(-8, 0));
+        await tester.pumpAndSettle();
+
+        expect(fake.lastSkippedId, isNull);
+        expect(fake.lastCompletedId, isNull);
+
+        final opacity = tester.widget<Opacity>(
+          find
+              .ancestor(
+                of: find.text('Short break'),
+                matching: find.byType(Opacity),
+              )
+              .first,
+        );
+        expect(
+          opacity.opacity,
+          1.0,
+          reason:
+              'the break must still render unresolved after a '
+              'below-threshold drag',
+        );
+      },
+    );
+
+    group('SKIPBREAK-02 — the grid is unchanged', () {
+      // Same shape as the Phase 29 group's breakBoundaryFixture above (a
+      // completed 25-minute preceding work chunk, a break of the
+      // parameterised duration/resolution, a following 25-minute work
+      // chunk) — this task's own read_first names that test as the
+      // template.
+      // Excludes end_of_day_card.dart's own Dismissible (a DayComplete-only
+      // dismiss-the-card affordance, unrelated to any chunk row) — without
+      // this, the zero-breaks/mixed-day cases below over-count by one
+      // whenever the fixture is DayComplete-eligible for that card.
+      Finder chunkDismissibles() => find.byWidgetPredicate(
+        (widget) =>
+            widget is Dismissible &&
+            widget.key != const Key('end_of_day_card'),
+      );
+
+      DailySchedule gridFixture(
+        int durationMinutes, {
+        bool isSkipped = false,
+      }) {
+        return DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(id: 'w1', syntheticStartMinutes: 480, isCompleted: true),
+            _breakChunk(
+              id: 'b1',
+              syntheticStartMinutes: 505,
+              durationMinutes: durationMinutes,
+              isSkipped: isSkipped,
+            ),
+            _workChunk(id: 'w2', syntheticStartMinutes: 505 + durationMinutes),
+          ],
+        );
+      }
+
+      testWidgets(
+        'painted extent is exactly duration x kPixelsPerMinute in every '
+        'resolved state, at every density',
+        (tester) async {
+          const cases = [
+            (durationMinutes: 5, isSkipped: false), // sub-compact, unresolved
+            (durationMinutes: 5, isSkipped: true), // sub-compact, skipped
+            (durationMinutes: 30, isSkipped: false), // full tier, unresolved
+            (durationMinutes: 30, isSkipped: true), // full tier, skipped
+          ];
+
+          for (var i = 0; i < cases.length; i++) {
+            final c = cases[i];
+            if (i > 0) {
+              // TodayScreenState._nowFn is late final — a second
+              // pumpWidget with a different fixture/clock is silently
+              // ignored without a full unmount first (Phase 26/29
+              // precedent, also noted in this task's own read_first).
+              await tester.pumpWidget(const SizedBox.shrink());
+            }
+            await _pumpTodayScreen(
+              tester,
+              scheduleNotifier: _FakeScheduleNotifierWithSchedule(
+                gridFixture(c.durationMinutes, isSkipped: c.isSkipped),
+              ),
+              now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
+            );
+
+            // Assert against the confined ClipRect that SwipeableChunkCard's
+            // `visualHeight` parameter creates (PD-31-02/PD-31-03) — NEVER
+            // the enclosing Positioned, which is deliberately taller for a
+            // sub-48dp break. Asserting the Positioned's height would
+            // assert the wrong thing: it could falsely fail a correct
+            // implementation (a slop-bearing break's Positioned IS
+            // legitimately duration + 2*slop tall) or falsely pass a
+            // broken one that grew the visible box instead of just the
+            // hit-test box.
+            final breakClipRect = find
+                .ancestor(
+                  of: find.text('Short break'),
+                  matching: find.byType(ClipRect),
+                )
+                .first;
+            expect(
+              tester.getSize(breakClipRect).height,
+              c.durationMinutes * kPixelsPerMinute,
+              reason:
+                  'duration=${c.durationMinutes} isSkipped=${c.isSkipped}: '
+                  'painted height must stay exactly duration-exact '
+                  'regardless of the grown hit-test envelope',
+            );
+          }
+        },
+      );
+
+      testWidgets(
+        'painted rows stay exactly adjacent — zero gap, zero overlap',
+        (tester) async {
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(
+              skipTracerFixture(),
+            ),
+            now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
+          );
+
+          Rect paintedRectFor(String text) => tester.getRect(
+            find
+                .ancestor(of: find.text(text), matching: find.byType(ClipRect))
+                .first,
+          );
+
+          final precedingRect = paintedRectFor('Preceding work');
+          final breakRect = paintedRectFor('Short break');
+          final followingRect = paintedRectFor('Following work');
+
+          expect(
+            breakRect.top,
+            closeTo(precedingRect.bottom, 0.5),
+            reason:
+                'only hit-testing overlaps in this phase; paint does not — '
+                'a non-zero gap here means the symmetric-slop centring '
+                'assumption (PD-31-01) has drifted',
+          );
+          expect(
+            followingRect.top,
+            closeTo(breakRect.bottom, 0.5),
+            reason:
+                'only hit-testing overlaps in this phase; paint does not — '
+                'a non-zero gap here means the symmetric-slop centring '
+                'assumption (PD-31-01) has drifted',
+          );
+
+          // Independent authority check: the break's own painted top must
+          // sit at the same offset from geometry.yFor(505) that the
+          // preceding row's own painted top sits from geometry.yFor(480) —
+          // i.e. both rows agree on ONE consistent geometry-to-screen
+          // mapping. Derived from TimelineGeometry, the app's one
+          // minute-to-pixel authority, built from the same fixture
+          // today_screen.dart's own build() would use — not a literal, and
+          // not just a re-check of the adjacency assertions above (which
+          // would stay green even if the break and both neighbours drifted
+          // together by the same amount).
+          final geometry = TimelineGeometry.forDay(
+            nowMinutes: 18 * 60,
+            firstStartMinutes: 480,
+            lastEndMinutes: 535,
+          );
+          final globalOffset = precedingRect.top - geometry.yFor(480);
+          expect(
+            breakRect.top,
+            closeTo(geometry.yFor(505) + globalOffset, 0.5),
+            reason:
+                "the break's painted top must match geometry.yFor(505) "
+                'under the same mapping the preceding row uses',
+          );
+        },
+      );
+
+      testWidgets(
+        'the timeline\'s total painted extent is unchanged by this phase',
+        (tester) async {
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(
+              skipTracerFixture(),
+            ),
+            now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
+          );
+
+          final geometry = TimelineGeometry.forDay(
+            nowMinutes: 18 * 60,
+            firstStartMinutes: 480,
+            lastEndMinutes: 535,
+          );
+
+          // A slop-bearing break's Positioned deliberately extends
+          // kBreakHitSlop beyond its own slot at both ends (Layer 1b) —
+          // the Stack's own SizedBox must NOT have grown to accommodate
+          // that; only the break's own child box grows. Located by the
+          // derived height value itself, not a GlobalKey —
+          // today_screen.dart's own `_timelineStackKey` is private to that
+          // library and unreachable from this test file — this is the
+          // only SizedBox in this tree configured with exactly
+          // `height: geometry.totalHeight`.
+          final timelineStack = find.byWidgetPredicate(
+            (widget) =>
+                widget is SizedBox && widget.height == geometry.totalHeight,
+          );
+          expect(
+            timelineStack,
+            findsOneWidget,
+            reason:
+                'edge-probe row 5: if the Stack grew to accommodate the '
+                'slop-bearing break\'s hit-test envelope, no SizedBox in '
+                'this tree would carry exactly geometry.totalHeight any '
+                'more',
+          );
+          expect(tester.getSize(timelineStack).height, geometry.totalHeight);
+        },
+      );
+
+      testWidgets(
+        'a day with zero breaks introduces no new copy and no new row '
+        '(UI-SPEC E3 empty)',
+        (tester) async {
+          final schedule = DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'w1',
+                syntheticStartMinutes: 480,
+                durationMinutes: 25,
+              ),
+              _workChunk(
+                id: 'w2',
+                syntheticStartMinutes: 505,
+                durationMinutes: 25,
+              ),
+            ],
+          );
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+            now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
+          );
+
+          expect(
+            find.textContaining('break'),
+            findsNothing,
+            reason:
+                'a break-free day must introduce no break copy anywhere on '
+                'the screen — UI-SPEC E3 empty',
+          );
+          expect(chunkDismissibles(), findsNWidgets(2));
+        },
+      );
+
+      testWidgets(
+        'a mixed day renders every row independently (UI-SPEC E3 '
+        'populated / zero-one-many)',
+        (tester) async {
+          final schedule = DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'w1',
+                syntheticStartMinutes: 480,
+                durationMinutes: 25,
+                isCompleted: true,
+              ),
+              _workChunk(
+                id: 'w2',
+                syntheticStartMinutes: 505,
+                durationMinutes: 25,
+                isSkipped: true,
+              ),
+              _breakChunk(
+                id: 'b1',
+                syntheticStartMinutes: 530,
+                durationMinutes: 5,
+                isSkipped: true,
+              ),
+              _breakChunk(
+                id: 'b2',
+                chunkTypeIndex: ChunkType.longBreak.index,
+                syntheticStartMinutes: 535,
+                durationMinutes: 30,
+              ),
+              _workChunk(
+                id: 'w3',
+                syntheticStartMinutes: 565,
+                durationMinutes: 25,
+              ),
+            ],
+          );
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+            now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
+          );
+
+          // The gesture is attached per-row by chunk.id (SwipeableChunkCard's
+          // Dismissible key) — break count has no bearing on it, and no
+          // list-level affordance/header/count exists.
+          expect(chunkDismissibles(), findsNWidgets(5));
+
+          final shortBreakRect = tester.getSize(
+            find
+                .ancestor(
+                  of: find.text('Short break'),
+                  matching: find.byType(ClipRect),
+                )
+                .first,
+          );
+          expect(shortBreakRect.height, 5 * kPixelsPerMinute);
+
+          final longBreakRect = tester.getSize(
+            find
+                .ancestor(
+                  of: find.text('Long break'),
+                  matching: find.byType(ClipRect),
+                )
+                .first,
+          );
+          expect(longBreakRect.height, 30 * kPixelsPerMinute);
+
+          final shortBreakOpacity = tester.widget<Opacity>(
+            find
+                .ancestor(
+                  of: find.text('Short break'),
+                  matching: find.byType(Opacity),
+                )
+                .first,
+          );
+          expect(
+            shortBreakOpacity.opacity,
+            0.5,
+            reason:
+                'the skipped short break must render the resolved treatment',
+          );
+
+          final longBreakOpacity = tester.widget<Opacity>(
+            find
+                .ancestor(
+                  of: find.text('Long break'),
+                  matching: find.byType(Opacity),
+                )
+                .first,
+          );
+          expect(
+            longBreakOpacity.opacity,
+            1.0,
+            reason:
+                'the unresolved long break must not render the resolved '
+                'treatment',
+          );
+        },
+      );
+    });
   });
 }
