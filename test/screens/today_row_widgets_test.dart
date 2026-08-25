@@ -67,12 +67,18 @@ ScheduledChunk _workChunk({
       ..isCompleted = completed
       ..isSkipped = skipped;
 
-ScheduledChunk _breakChunk({required ChunkType type, bool completed = false}) =>
+ScheduledChunk _breakChunk({
+  required ChunkType type,
+  bool completed = false,
+  bool skipped = false,
+}) =>
     ScheduledChunk(
-      id: 'b1',
-      chunkTypeIndex: type.index,
-      durationMinutes: type == ChunkType.shortBreak ? 5 : 25,
-    )..isCompleted = completed;
+        id: 'b1',
+        chunkTypeIndex: type.index,
+        durationMinutes: type == ChunkType.shortBreak ? 5 : 25,
+      )
+      ..isCompleted = completed
+      ..isSkipped = skipped;
 
 /// A 25-minute work chunk carrying a goal name, a rationale, a non-default
 /// priority weight and a non-neutral valence — used by the ChunkCardDensity
@@ -779,6 +785,176 @@ void main() {
             ),
             findsNothing,
           );
+        },
+      );
+
+      // D-31-04 (Phase 31, SKIPBREAK-01): skipped-break rendering at every
+      // density tier, reusing _WorkChunkContent's existing resolved-state
+      // vocabulary (Opacity(0.5) + TextDecoration.lineThrough) rather than
+      // inventing a break-specific one.
+      testWidgets(
+        "D-31-04: a skipped full-tier break is muted, struck through, and "
+        "reads 'skipped'",
+        (tester) async {
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak, skipped: true),
+              density: ChunkCardDensity.full,
+            ),
+          );
+          final mutedOpacity = find.byWidgetPredicate(
+            (w) => w is Opacity && w.opacity == 0.5,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: mutedOpacity,
+            ),
+            findsOneWidget,
+          );
+          final titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, TextDecoration.lineThrough);
+          expect(find.text('skipped'), findsOneWidget);
+          expect(find.text('5 min'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'D-31-04: an unresolved full-tier break is unchanged — no muting, '
+        'no strikethrough, still reads its duration',
+        (tester) async {
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak),
+              density: ChunkCardDensity.full,
+            ),
+          );
+          final mutedOpacity = find.byWidgetPredicate(
+            (w) => w is Opacity && w.opacity == 0.5,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: mutedOpacity,
+            ),
+            findsNothing,
+          );
+          final titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
+          expect(find.text('5 min'), findsOneWidget);
+          expect(find.text('skipped'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        "D-31-04: a skipped compact break is muted and struck through, and "
+        "its new Semantics label carries ', skipped'",
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak, skipped: true),
+              density: ChunkCardDensity.compact,
+            ),
+          );
+          final mutedOpacity = find.byWidgetPredicate(
+            (w) => w is Opacity && w.opacity == 0.5,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: mutedOpacity,
+            ),
+            findsOneWidget,
+          );
+          final titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, TextDecoration.lineThrough);
+          expect(
+            find.bySemanticsLabel('Short break, 5 min, skipped'),
+            findsOneWidget,
+          );
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'D-31-04: a skipped sub-compact break is muted and struck through '
+        'and still renders exactly two Dividers',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak, skipped: true),
+              density: ChunkCardDensity.subCompact,
+            ),
+          );
+          final mutedOpacity = find.byWidgetPredicate(
+            (w) => w is Opacity && w.opacity == 0.5,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: mutedOpacity,
+            ),
+            findsOneWidget,
+          );
+          final titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, TextDecoration.lineThrough);
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: find.byType(Divider),
+            ),
+            findsNWidgets(2),
+          );
+          expect(
+            find.bySemanticsLabel('Short break, 5 min, skipped'),
+            findsOneWidget,
+          );
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        "D-31-04: an unresolved sub-compact break is byte-for-byte Phase "
+        "29's treatment",
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await pumpWithMood(
+            tester,
+            ChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak),
+              density: ChunkCardDensity.subCompact,
+            ),
+          );
+          final mutedOpacity = find.byWidgetPredicate(
+            (w) => w is Opacity && w.opacity == 0.5,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: mutedOpacity,
+            ),
+            findsNothing,
+          );
+          final titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: find.byType(Divider),
+            ),
+            findsNWidgets(2),
+          );
+          expect(
+            find.bySemanticsLabel('Short break, 5 min'),
+            findsOneWidget,
+          );
+          handle.dispose();
         },
       );
     });
