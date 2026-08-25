@@ -4,11 +4,11 @@ milestone: none
 current_phase: 31
 current_phase_name: Breaks You Can Skip
 status: planning
-stopped_at: Phase 30 complete, ready to plan Phase 31
-last_updated: "2026-08-25T12:56:30.172Z"
+stopped_at: Phase 31 UI-SPEC approved
+last_updated: "2026-08-25T13:19:30.871Z"
 last_activity: 2026-08-25
 last_activity_desc: Phase 30 complete, transitioned to Phase 31
-state_head: 092fc1174c82facd07cad135122135a1d059aa47
+state_head: 0844eefec29aed615507d8dd339f4addaa441297
 progress:
   total_phases: 5
   completed_phases: 4
@@ -21,7 +21,7 @@ milestone_name: milestone
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-20T13:47:48.543Z
+**Last session:** 2026-08-25T13:19:30.709Z
 
 ---
 
@@ -51,11 +51,13 @@ confirmed by the owner against his real appointment times.
 
 1. Research found STEP E's trailing trim could silently delete a tail-stretched *commitment* break,
    erasing real covered minutes from inside the user's window. Narrowed to `commitmentId == null`.
+
 2. Research also found `schedule_notifier.dart:addEventToday` duplicating the identical
    `cursor += 25` defect via a second path reaching the same timeline. Fixed by **deleting** the
    duplicate and sharing the helper (D-30-03) — the drift vector removed, not patched. A deliberate
    scope extension beyond the ROADMAP's `schedule_generator.dart`-only boundary, taken because this
    bug had already been missed twice by scoping too narrowly.
+
 3. Code review caught a blocker **the phase itself introduced**: `_trimTrailingNonWork` got the
    `commitmentId` narrowing but not the matching `shortBreak` guard, so any day ending on a
    discretionary long break lost that break *and* its preceding short break from persisted Hive
@@ -355,8 +357,10 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 
 ## Session Continuity
 
+**Resume file:** .planning/phases/31-breaks-you-can-skip/31-UI-SPEC.md
+
 Last session: 2026-08-18
-Stopped at: Phase 30 complete, ready to plan Phase 31
+Stopped at: Phase 31 UI-SPEC approved
 (`1ca4204` measure+set `kCompactLiveMinHeight`, `7d0a1e6` prove GRID-01 `UNIFORM`).
 Resume at: open `http://danserver:8137/` on a phone/tablet, walk `27-04-SUMMARY.md`'s "Task 3"
 section, record the verdict, then finalize the summary and close Phase 27.
