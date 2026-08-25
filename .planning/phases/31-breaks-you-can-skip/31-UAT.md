@@ -50,23 +50,36 @@ serve a stale bundle, trap #3):
 python3 tools/serve-uat.py 8143 --dir build/web
 ```
 
-<!-- ORCHESTRATOR: fill in the four results below after building, serving, and verifying from the
-     main working tree. Do not judge this UAT until all four lines are filled in with real output. -->
+Verification run by the orchestrator on **2026-08-25**, from the main working tree, after the
+build above:
 
 ```
 $ sha256sum build/web/main.dart.js
-<!-- ORCHESTRATOR: built sha256 -->
+6cebe2e51062d93531d5238fe8e211c7ee9e1e12daee0beb632e41a43d1fcab7
 
 $ curl -s http://danserver:8143/main.dart.js | sha256sum
-<!-- ORCHESTRATOR: served sha256 -->
+6cebe2e51062d93531d5238fe8e211c7ee9e1e12daee0beb632e41a43d1fcab7
 
 $ curl -s http://danserver:8143/main.dart.js | grep -c ", skipped"
-<!-- ORCHESTRATOR: grep count (must be non-zero — this string literal is introduced by this
-     phase's sub-compact and compact semantics labels) -->
+3
+
+$ curl -s http://danserver:8143/main.dart.js | grep -c "needsSlop"
+3
+
+$ curl -sI http://danserver:8143/main.dart.js | grep -i cache-control
+Cache-Control: no-store, max-age=0
 ```
 
-**<!-- ORCHESTRATOR: state here whether the two sha256 lines are identical and the grep count is
-non-zero. Do not proceed to Step 0 below until both hold. -->**
+**✓ VERIFIED — the two sha256 values are identical, and both grep counts are non-zero.** The bytes
+being served on 8143 are byte-for-byte the bundle just built, that bundle contains this phase's
+`", skipped"` semantics string, and it contains the `needsSlop` predicate that gates the grown
+hit-test envelope. `Cache-Control: no-store` is present, so trap #3 cannot apply. Proceed to Step 0.
+
+**One thing worth knowing, because it nearly produced a false UAT.** Port 8143 was still held by a
+server started on **2026-08-24 09:49** — left running since Phase 29/30. It was killed and replaced
+with a fresh one pointing at the new build before the sha256 comparison above was taken. Had it been
+left up, the comparison would have been run against a server the owner was not actually being shown,
+which is the same class of mistake as trap #3 with an extra day of staleness on top.
 
 A non-zero grep count proves the *code* shipped and NOT that the *data on screen* was produced by
 it — that distinction is trap #4, it is exactly what Step 0 below exists for, and an agent who has
@@ -107,10 +120,11 @@ happened on 2026-08-21: a UAT judged a pre-fix day, reported a false failure, an
 defect survive three more days until the owner reported the identical symptom again on 2026-08-24.
 Re-check-in first. Item 3 in particular is meaningless without it.
 
-**<!-- ORCHESTRATOR / OWNER: record here whether Step 0 was performed, and the date. An unrecorded
-Step 0 invalidates Item 3 below and must be re-run, not assumed. -->**
+Record here whether Step 0 was performed, and the date. An unrecorded Step 0 invalidates Item 3
+below and must be re-run, not assumed — the orchestrator cannot perform this step for you, because
+it requires tapping ⟳ Re-check-in in the running app.
 
-**Step 0 performed:** _pending_
+**Step 0 performed:** _pending — owner_
 **Date:** _pending_
 
 ---
