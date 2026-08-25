@@ -822,10 +822,16 @@ Flutter mechanisms, not new library adoption.
 | A1 | The recommended fix for Pitfall 1 (a third Stack pass for slop-bearing breaks) is sufficient and introduces no new z-order conflicts among *multiple* adjacent slop-bearing breaks (e.g. two 5-minute breaks separated only by a very short work chunk) | Common Pitfalls, Pitfall 1 | Under today's lattice this cannot occur — every break is sandwiched between work chunks of ≥25 minutes (per `STATE.md`'s Phase 28 lattice notes) — but if a future lattice change ever placed two short breaks back-to-back, the "later added wins both slop bands" rule would need re-verification. Flagged, not blocking, given today's evidence. |
 | A2 | `_buildPositionedRow`'s current signature (only `row`, `geometry`, `nowState`, `secondsRemaining` — no sibling access) will need to gain either an ordered-list index or precomputed `precedingRowSlot`/`followingRowSlot` values to implement the defensive slop-halving clamp `31-UI-SPEC.md` specifies (`clamp(kBreakHitSlop, 0, precedingRowSlot / 2)`) | Code Examples, "corrected widget arrangement" | If the planner instead hard-codes `kBreakHitSlop` without the clamp (reasonable, since today's lattice never produces a neighbor under 32dp — confirmed dead per UI-SPEC's own "not producible by today's lattice" note), the simplification is defensible but should be a stated, deliberate choice, not a silent omission |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> Both questions were resolved during planning on 2026-08-25. Each recommendation below was adopted
+> and is recorded as a planning decision in `31-01-PLAN.md`.
 
 1. **Does SKIPBREAK-01's "at every density" reach the live-row overlay, or only the non-live
    `ChunkCardDensity` tiers?**
+   **RESOLVED: see PD-31-06 in `31-01-PLAN.md`** — `LiveRowCard`'s `showActions` stays work-only and
+   untouched, recorded as a deliberate, documented exclusion and surfaced to the owner in the UAT
+   rather than assumed away.
    - What we know: a live break today renders through `LiveRowCard` with `showActions:
      chunk.chunkType == ChunkType.work` (verified, `today_screen.dart:979`) — meaning a live break
      has **zero** skip affordance, before and (if left alone) after this phase.
@@ -840,6 +846,12 @@ Flutter mechanisms, not new library adoption.
      rather than being assumed away.
 
 2. **Exact mechanism for threading `precedingRowSlot`/`followingRowSlot` into `_buildPositionedRow`.**
+   **RESOLVED: see PD-31-01 in `31-01-PLAN.md`** — the clamp is omitted and slop stays symmetric.
+   Planning found a second, stronger reason than the "dead code under today's lattice" one below:
+   the painted content is *centred* inside the grown box, and centring only reproduces
+   `geometry.yFor(start)` when the two slops are **equal**. An asymmetric clamp would shift the
+   painted row by up to 8dp — precisely the "timeline lies about when something happens" failure
+   this phase exists to prevent, and a silent SKIPBREAK-02 violation.
    - What we know: `timelineRows` is available at the call site (`today_screen.dart:1387`,
      `:1480`) as a `List<TimelineRow>`, in guaranteed chronological order.
    - What's unclear: whether the planner should pass the full list + index into
