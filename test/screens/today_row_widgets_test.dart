@@ -1017,6 +1017,125 @@ void main() {
     );
   });
 
+  group('Phase 31 — what a break still is not', () {
+    // D-31-01 (locked, 31-UI-SPEC.md): a break is never tappable, never
+    // completable, and never re-swipeable once skipped — the owner's
+    // 2026-08-21 instruction, made checkable here rather than assumed.
+    for (final density in [
+      ChunkCardDensity.full,
+      ChunkCardDensity.compact,
+      ChunkCardDensity.subCompact,
+    ]) {
+      testWidgets(
+        "a break's ChunkCard receives a null onTap even when the caller "
+        'supplies one (density: $density)',
+        (tester) async {
+          await pumpWithMood(
+            tester,
+            SwipeableChunkCard(
+              chunk: _breakChunk(type: ChunkType.shortBreak),
+              density: density,
+              onTap: () {},
+            ),
+            extraProviders: [
+              ChangeNotifierProvider<ScheduleNotifier>.value(
+                value: _FakeScheduleNotifier(),
+              ),
+            ],
+          );
+          final chunkCard = tester.widget<ChunkCard>(find.byType(ChunkCard));
+          expect(
+            chunkCard.onTap,
+            isNull,
+            reason:
+                "the owner's 2026-08-21 instruction: a break never becomes "
+                'tappable at any density, even when the caller supplies a '
+                'non-null onTap — the isWork gate in SwipeableChunkCard is '
+                'the only thing enforcing this.',
+          );
+        },
+      );
+    }
+
+    testWidgets("a break's Dismissible offers only the skip direction", (
+      tester,
+    ) async {
+      await pumpWithMood(
+        tester,
+        SwipeableChunkCard(chunk: _breakChunk(type: ChunkType.shortBreak)),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(
+            value: _FakeScheduleNotifier(),
+          ),
+        ],
+      );
+      final dismissible = tester.widget<Dismissible>(
+        find.byType(Dismissible),
+      );
+      expect(dismissible.direction, DismissDirection.endToStart);
+    });
+
+    testWidgets(
+      "an unresolved WORK chunk's Dismissible still offers the full "
+      "horizontal direction (paired guard — the break case above cannot "
+      'pass by this widget silently losing the complete direction for '
+      'everyone)',
+      (tester) async {
+        await pumpWithMood(
+          tester,
+          SwipeableChunkCard(chunk: _workChunk()),
+          extraProviders: [
+            ChangeNotifierProvider<ScheduleNotifier>.value(
+              value: _FakeScheduleNotifier(),
+            ),
+          ],
+        );
+        final dismissible = tester.widget<Dismissible>(
+          find.byType(Dismissible),
+        );
+        expect(dismissible.direction, DismissDirection.horizontal);
+      },
+    );
+
+    testWidgets('a skipped break cannot be re-swiped', (tester) async {
+      await pumpWithMood(
+        tester,
+        SwipeableChunkCard(
+          chunk: _breakChunk(type: ChunkType.shortBreak, skipped: true),
+        ),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(
+            value: _FakeScheduleNotifier(),
+          ),
+        ],
+      );
+      final dismissible = tester.widget<Dismissible>(
+        find.byType(Dismissible),
+      );
+      expect(dismissible.direction, DismissDirection.none);
+    });
+
+    testWidgets('a break never reaches markComplete', (tester) async {
+      final fake = _FakeScheduleNotifier();
+      await pumpWithMood(
+        tester,
+        SwipeableChunkCard(chunk: _breakChunk(type: ChunkType.shortBreak)),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(value: fake),
+        ],
+      );
+      // D-31-01's executable form: chunk.isCompleted stays permanently
+      // false for every break. direction: endToStart with no startToEnd
+      // arm means a rightward drag has no enabled direction to resolve to
+      // — it consumes the gesture and springs back without calling
+      // either notifier method.
+      await tester.drag(find.byType(Dismissible), const Offset(400, 0));
+      await tester.pumpAndSettle();
+      expect(fake.lastCompletedId, isNull);
+      expect(fake.lastSkippedId, isNull);
+    });
+  });
+
   group('LiveRowCard — two density tiers (GRID-02)', () {
     Future<void> pumpLiveRowCard(
       WidgetTester tester, {
