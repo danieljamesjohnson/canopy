@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: none
 current_phase: 31
 current_phase_name: Breaks You Can Skip
-status: planning
+status: executing
 stopped_at: Phase 31 UI-SPEC approved
-last_updated: "2026-08-25T13:19:30.871Z"
+last_updated: "2026-08-25T14:02:12.143Z"
 last_activity: 2026-08-25
 last_activity_desc: Phase 30 complete, transitioned to Phase 31
-state_head: 0844eefec29aed615507d8dd339f4addaa441297
+state_head: b4ec4a27bcaf62abd658992a0198deb27ba14b7e
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 16
+  total_plans: 21
   completed_plans: 16
 milestone_name: milestone
 ---
@@ -27,7 +27,7 @@ milestone_name: milestone
 
 ## Current Position
 
-Phase: 31 — Breaks You Can Skip
+Phase: 31 (Breaks You Can Skip) — READY TO EXECUTE
 Plan: Not started
 
 **Breaks now exist, are visible, and land everywhere in the day — including inside a committed
@@ -77,7 +77,7 @@ entry required Phase 29's verdict first, because a verdict that changed the sub-
 have changed what Phase 31 attaches a gesture to. It did not. Not started — needs
 `/gsd-plan-phase 31`. Phases 27–31 all sit outside any milestone; v1.6 is not yet defined.
 
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-08-25 — Phase 30 complete, transitioned to Phase 31
 
 ```

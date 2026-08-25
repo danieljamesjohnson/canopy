@@ -53,28 +53,25 @@ Discuss was skipped per `workflow.skip_discuss=true`. Implementation choices are
 discretion **except** where the ROADMAP entry already constrains them (above). The following are
 open questions planning must decide deliberately and record:
 
-### D-31-01 — Swipe direction(s) for a break
-The complete (right-swipe) direction is a separate question from skip. "Complete a break" may not
-be a meaningful action, in which case breaks get a **one-directional** `Dismissible` (skip only)
-while work chunks keep both directions. Decide and record the reasoning either way.
+- **D-31-01 — Swipe direction(s) for a break** The complete (right-swipe) direction is a separate
+  question from skip. "Complete a break" may not be a meaningful action, in which case breaks get a
+  **one-directional** `Dismissible` (skip only) while work chunks keep both directions. Decide and
+  record the reasoning either way.
 
-### D-31-02 — The 20dp grab target
-A 5-minute break's row is 20dp (`5 × kPixelsPerMinute`) — well under a usable drag target — and
-Phase 29's sub-compact tier renders it as a bare hairline with no card behind it. This is the same
-duration-exact-slot tension Phase 27 created and Phase 29 met on the *legibility* axis; meet it
-here on the *gesture* axis. The grid is not negotiable, so the answer cannot be "make the row
-taller."
+- **D-31-02 — The 20dp grab target** A 5-minute break's row is 20dp (`5 × kPixelsPerMinute`) — well
+  under a usable drag target — and Phase 29's sub-compact tier renders it as a bare hairline with no
+  card behind it. This is the same duration-exact-slot tension Phase 27 created and Phase 29 met on
+  the *legibility* axis; meet it here on the *gesture* axis. The grid is not negotiable, so the
+  answer cannot be "make the row taller."
 
-### D-31-03 — What skipping a break means
-The honest default is counter-intuitive: the timeline is duration-exact and time-anchored, so
-skipping a 5-minute break does **not** hand those 5 minutes back — the next work chunk still starts
-when it always did. The cheap, consistent reading is **"mark it skipped and move on."** Adopt that
-unless there is a strong reason not to; anything else is an engine change and requires asking the
-owner first.
+- **D-31-03 — What skipping a break means** The honest default is counter-intuitive: the timeline is
+  duration-exact and time-anchored, so skipping a 5-minute break does **not** hand those 5 minutes
+  back — the next work chunk still starts when it always did. The cheap, consistent reading is
+  **"mark it skipped and move on."** Adopt that unless there is a strong reason not to; anything else
+  is an engine change and requires asking the owner first.
 
-### D-31-04 — Skipped-break rendering at sub-compact
-`_SubCompactRow` has no completed/skipped visual state. Check before assuming, then design one that
-fits a 20dp hairline.
+- **D-31-04 — Skipped-break rendering at sub-compact** `_SubCompactRow` has no completed/skipped
+  visual state. Check before assuming, then design one that fits a 20dp hairline.
 
 </decisions>
 

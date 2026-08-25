@@ -647,11 +647,27 @@ verdict changes the sub-compact layout, it changes what this phase attaches a ge
 **Plans:** 5 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 31-01-PLAN.md — Tracer: constants, the promoted one-`Dismissible` `SwipeableChunkCard`, the grown hit-test envelope and the Layer 1b Stack pass, proven end-to-end by the repo's first drag-simulation test (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 31-02-PLAN.md — Skipped-break rendering at all three density tiers, plus the tests pinning breaks as untappable and uncompletable (wave 2)
-- [ ] 31-03-PLAN.md — Hit-test proofs (both slop bands, negative no-theft case) and painted-grid proofs (per-state extent, adjacency, total height) (wave 3)
 - [ ] 31-04-PLAN.md — D-31-05's ninth guard in `_absorbReclaimedTimeIntoNextBreak`, proven RED first, plus streak-inertness and nothing-else-moves assertions (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 31-03-PLAN.md — Hit-test proofs (both slop bands, negative no-theft case) and painted-grid proofs (per-state extent, adjacency, total height) (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 31-05-PLAN.md — Blocking human UAT on a real touch device, port 8143, with a mandatory ⟳ Re-check-in Step 0 (wave 4)
+
+**Cross-cutting constraints:**
+
+- A break that is currently in progress (the now-line falls inside its slot) can also be skipped, and the live-row treatment must compose with the skipped treatment rather than fight it — the row keeps its slot height, stays on the timeline, and does not move the now-line.
+- This phase adds no text length at any tier — strikethrough is a decoration flag, and the full-tier swap shortens the string. Inherited large-text-scale behaviour at the 20dp sub-compact tier is Phase 29's surface and is unchanged here.
 
 Plans:
 
