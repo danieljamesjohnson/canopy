@@ -2403,10 +2403,24 @@ void main() {
         // markSkipped reads a private field this fake does not populate, so
         // letting it run would silently prove nothing.
         final fake = _FakeScheduleNotifierWithSchedule(skipTracerFixture());
+        // 9:00 AM, not 18:00 — DEVIATION from the plan's literal clock
+        // (Rule 1, auto-fixed): the fixture's day ends at 8:55 AM, so any
+        // "now" past that is DayComplete (no live row) exactly as the plan
+        // requires. But CAL-03 ("elapsed time recedes") auto-scrolls the
+        // Stack to centre on `now` on open, and at 18:00 that centres nine
+        // hours past this tiny fixture — scrolling the whole day, break
+        // included, entirely off the SingleChildScrollView's viewport. A
+        // drag computed from `tester.getRect` (which returns geometrically
+        // correct coordinates regardless of scroll) then targets a point
+        // outside the actual rendered surface and silently misses every
+        // widget — this is what produced Test A's initial `null` (not
+        // `'w1'` or `'b1'`) during RED-to-GREEN iteration. Pumping shortly
+        // after the fixture's own end keeps DayComplete true while keeping
+        // the break within the default test viewport.
         await _pumpTodayScreen(
           tester,
           scheduleNotifier: fake,
-          now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
+          now: () => DateTime(2026, 8, 7, 9, 0), // DayComplete
         );
 
         // Locate the break's painted band via the confined, slot-sized
