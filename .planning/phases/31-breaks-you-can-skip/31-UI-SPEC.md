@@ -444,19 +444,66 @@ reveal deliberately uses `error`, matching work-chunk skip, never `primary`.
 
 ## UI Considerations
 
-> Populated per the ui-consideration-probe taxonomy. This phase is narrow (one new gesture, one new
-> resolved-state rendering) so most categories are dismissed with a reason rather than left open.
+> Populated by the `ui-consideration-probe` engine (`ui-consideration-probe.cjs`), not hand-derived.
+> The probe proposed **23 applicable** considerations across the three surfaces below; every one is
+> resolved here. An earlier hand-written draft of this section claimed 6 — it was replaced, not
+> appended to, because the missing 17 included two genuinely load-bearing ones (E1 `partial`, the
+> below-threshold drag; E2 `partial`, an *in-progress* break being skipped).
 
-Applicable state considerations resolved: 6 covered, 0 backstop, 0 unresolved.
+**Surfaces probed:**
 
-| Category | Element(s) | Status | Resolution / Reason |
-|----------|------------|--------|---------------------|
-| error | break swipe-to-skip (interactive-control) | ✅ covered | Reuses `markSkipped`'s existing WR-05 revert-and-rethrow path verbatim (`schedule_notifier.dart:727-738`) — no new failure surface. Same unresolved-caller-side gap that already exists for the work-chunk swipe (an uncaught `rethrow` inside `confirmDismiss`'s async callback) is unchanged by this phase, not newly introduced — out of scope to fix here since it predates this phase. |
-| loading | break swipe-to-skip | ✅ covered | No loading indicator on either the existing work-chunk swipe or this phase's break swipe — `markSkipped` is fire-and-forget from the gesture's perspective, matching existing pattern exactly. |
-| long-text | break label (static-content) | ✅ covered | `'Short break'`/`'Long break'` are fixed, non-user-generated strings; `maxLines: 1` + `TextOverflow.ellipsis` already present at every tier (Phase 29), unaffected by adding the skipped decoration (text content length is unchanged by strikethrough). |
-| overflow | break label at every tier | ✅ covered | Same ellipsis/maxLines guard as above; the new trailing `'skipped'` string at full/detailed tier is shorter than the string it replaces (`'skipped'` vs `'N min'`-shaped strings), so it cannot introduce new overflow. |
-| populated | mixed day: skipped + unresolved breaks and work chunks together | ✅ covered | D-31-04's matrix defines the visual treatment at every density; no shared/cross-row state — each `Dismissible` is keyed independently by `chunk.id`, matching the existing work-chunk pattern. |
-| zero-one-many | breaks in a day (list-collection, engine-governed) | ✅ covered | A day with zero breaks (e.g. very low mood/short day) renders nothing extra — no empty-state copy needed; a day with many breaks renders each independently, no list-level affordance required. Count is entirely engine-governed and out of this phase's scope. |
+- **E1 — break swipe-to-skip gesture** (interactive-control): the new `Dismissible` wrapping every
+  break row, its grown hit-test envelope, and the `markSkipped` write it triggers.
+- **E2 — break card rendered content** (static-content, three density tiers): label, icon, trailing
+  text, and the new skipped treatment (opacity + strikethrough + semantics).
+- **E3 — the Today timeline as a list-collection**: interleaved break and work rows, absolutely
+  positioned, mixed resolved/unresolved states.
+
+**Coverage: 23 applicable — 13 resolved (explicit), 2 resolved (backstop), 8 dismissed with reason,
+0 unresolved.**
+
+### E1 — break swipe-to-skip gesture
+
+| Category | Status | Resolution / Reason |
+|----------|--------|---------------------|
+| empty | ➖ dismissed | A gesture has no "no data" state. The `Dismissible` exists only where a break row exists; zero breaks means zero gestures, nothing to render or explain. |
+| loading | ✅ resolved (explicit) | **No loading affordance is introduced.** `confirmDismiss` returns `false` so the row springs back to rest immediately; `markSkipped`'s Hive write completes off the gesture path and the skipped rendering appears on the next `notifyListeners()`. **Acceptance:** no spinner, skeleton, or disabled state appears on the break-swipe path — identical to the shipped work-chunk swipe. |
+| error | ✅ resolved (explicit) | Reuses `markSkipped`'s existing WR-05 revert-and-rethrow verbatim (`schedule_notifier.dart:727-738`). **Acceptance:** with a throwing repository, `chunk.isSkipped` is left `false` and the row renders unresolved — no half-applied state. The pre-existing uncaught-`rethrow`-inside-`confirmDismiss` gap is unchanged by this phase (it already affects the work-chunk swipe) and is explicitly **not** in scope. |
+| populated | ✅ resolved (explicit) | **Acceptance:** `swipeable_chunk_card.dart`'s `chunk.chunkType != ChunkType.work` early return no longer suppresses the gesture, so every break row at every tier is swipeable — including the 20dp sub-compact one. |
+| partial | ✅ resolved (explicit) | **A drag that does not reach `dismissThreshold` is a real state and must be designed.** It springs back, the `colorScheme.error` reveal retracts with it, and the break stays unresolved — no `markSkipped` call fires. **Acceptance:** a below-threshold drag leaves `isSkipped == false` and no `CompletionLog` entry. |
+| overflow | ✅ resolved (explicit) | The reveal background and `Icons.arrow_forward` are confined to the slot by `Align(center) + SizedBox(height: slot)`, with icon size clamped to `min(20, slot - 4)`; the per-row `ClipRect` (PD-10) is the backstop. **Acceptance:** the SKIPBREAK-02 test — painted extent never deviates from `durationMinutes × kPixelsPerMinute`. |
+| zero-one-many | ➖ dismissed | Each `Dismissible` is keyed independently by `chunk.id` and Flutter permits one active drag at a time; there is no aggregate or cross-row gesture state to design. |
+| long-text | ➖ dismissed | The reveal is icon-only — it carries no text at all (matching the shipped work-chunk reveal), so there is no string to grow. |
+
+### E2 — break card rendered content (three tiers)
+
+| Category | Status | Resolution / Reason |
+|----------|--------|---------------------|
+| empty | ➖ dismissed | Break labels are engine-generated constants (`'Short break'` / `'Long break'`), never absent or user-supplied. A break with no label cannot occur. |
+| loading | ➖ dismissed | The card renders synchronously from a `Chunk` already in memory; there is no async path inside the card to show progress for. |
+| error | ➖ dismissed | The card performs no I/O. Failure is owned by E1's `markSkipped` path, resolved above; there is no separate card-level error state. |
+| populated | ✅ resolved (explicit) | D-31-04's density × resolved-state matrix is the contract. **Acceptance:** a widget test per tier (full, compact, sub-compact) asserting the skipped treatment — `Opacity(0.5)`, `TextDecoration.lineThrough`, and at full tier the trailing `'skipped'` string. |
+| partial | ⚠ resolved (backstop) | **`{ statement: "A break that is currently in progress (the now-line falls inside its slot) can also be skipped, and the live-row treatment must compose with the skipped treatment rather than fight it — the row keeps its slot height, stays on the timeline, and does not move the now-line.", verification: backstop }`** — a held-out widget test rendering a live break with `isSkipped: true`. Flagged rather than specified because the exact live-row visual is owned by Phase 27's now-line work and this document cannot settle the composition from a desk. |
+| overflow | ✅ resolved (explicit) | `maxLines: 1` + `TextOverflow.ellipsis` are already present at every tier (Phase 29). The new trailing `'skipped'` is shorter than the `'N min'`-shaped string it replaces, so it cannot introduce new overflow. **Acceptance:** no new `RenderFlex overflow` in any tier's widget test. |
+| zero-one-many | ➖ dismissed | One card renders exactly one break. Collection-cardinality concerns belong to E3 and are resolved there. |
+| long-text | ⚠ resolved (backstop) | **`{ statement: "This phase adds no text length at any tier — strikethrough is a decoration flag, and the full-tier swap shortens the string. Inherited large-text-scale behaviour at the 20dp sub-compact tier is Phase 29's surface and is unchanged here.", verification: backstop }`** — the mandatory human UAT is the evidence, since Phase 29 measured sub-compact legibility at default text scale only. Not specified as an acceptance criterion because fixing text-scale at sub-compact would be Phase 29 scope, not this phase's. |
+
+### E3 — the Today timeline as a list-collection
+
+| Category | Status | Resolution / Reason |
+|----------|--------|---------------------|
+| empty | ✅ resolved (explicit) | A day with zero breaks renders no break rows and needs **no empty-state copy** — the work chunks simply sit back-to-back. The timeline's own empty-day state is pre-existing and untouched. **Acceptance:** no new empty-state string is introduced. |
+| loading | ➖ dismissed | `ScheduleNotifier._loadToday()` resolves before the timeline builds; there is no per-row loading state, and this phase does not change that. |
+| error | ➖ dismissed | Schedule-load failure is a pre-existing, list-level surface this phase neither touches nor newly reaches. |
+| populated | ✅ resolved (explicit) | A mixed day — skipped breaks, unresolved breaks, skipped work chunks, completed work chunks — renders each row independently with no shared state. **Acceptance:** a widget test over a mixed day asserting each row's state renders per D-31-04's matrix and no row's height changes. |
+| partial | ✅ resolved (explicit) | A partly-resolved day (now-line partway down, earlier rows skipped, later rows unresolved) is the **normal** case, not an edge. It is covered by the same matrix; skipping a break explicitly does **not** pull later rows forward (D-31-03). **Acceptance:** after skipping a break, every subsequent chunk's `startTime` is unchanged. |
+| overflow | ➖ dismissed | Rows are absolutely positioned from duration and the timeline scrolls. SKIPBREAK-02 guarantees this phase changes no row height, so it cannot change the collection's extent. |
+| zero-one-many | ✅ resolved (explicit) | Zero, one, and many breaks are all engine-governed and all render correctly: no list-level affordance, header, or count is introduced. **Acceptance:** the gesture is attached per-row by `chunk.id`, so break count has no bearing on it. |
+
+**Note for the planner.** The two `verification: backstop` rows (E2 `partial`, E2 `long-text`) carry
+no explicit acceptance criterion by design. If no evidence is wired for them, verification will
+route them to `human_needed` rather than silently passing — that is the intended behaviour, and both
+are already inside the scope of this phase's mandatory human UAT (see the Verification section).
 
 ---
 
