@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: none
 current_phase: 31
 current_phase_name: Breaks You Can Skip
-status: Ready to execute
-stopped_at: Phase 31 gap closure planned (31-06, 31-07, 31-08)
+status: executing
+stopped_at: Phase 31 gap closure executing (31-06, 31-07, 31-08)
 last_updated: "2026-08-26T00:00:00.000Z"
 last_activity: 2026-08-26
-last_activity_desc: Phase 31 gap closure planned — 3 plans, checker passed, owner ruled D-31-06 and D-31-07
+last_activity_desc: Phase 31 gap closure executing — wave 1 of 3 dispatched
 state_head: 493e890d3d57822c2ab31f6ce62f23769fe69d5f
 progress:
   total_phases: 5

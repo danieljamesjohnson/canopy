@@ -54,12 +54,20 @@ still be listening on 8143 — round one found a two-day-old server squatting th
 came within one step of a false UAT. Check and kill before building anything:
 
 ```
-$ lsof -i :8143
-_TO BE FILLED BY ORCHESTRATOR_
+$ ss -ltnp | grep ':8143'
+LISTEN 0 5 0.0.0.0:8143 0.0.0.0:* users:(("python3",pid=2357258,fd=3))
 ```
 
-**Killed PID:** `_TO BE FILLED BY ORCHESTRATOR_`
-**Killed server's start time:** `_TO BE FILLED BY ORCHESTRATOR_`
+**It was squatting the port again — the same failure round one caught, one round later.**
+PID `2357258` is the *round-one* server, still listening. It was started on **2026-08-24 09:49**
+(recorded in `31-UAT.md`, which noted it had already been left running since Phase 29/30) and was
+still serving the **pre-fix** bundle — the build the owner judged FAIL on Item 1. Had it been left
+up, the owner would have re-tested the exact bundle that already failed and concluded the fix did
+not work.
+
+**Killed PID:** `2357258`
+**Killed server's start time:** `2026-08-24 09:49` (per `31-UAT.md`; ~2 days stale at kill time)
+**Replacement PID:** `3484010`, serving the bundle built below.
 
 Build command (verbatim — never `flutter run -d web-server`, never a release build on this port):
 
@@ -77,30 +85,49 @@ Byte-verification, run by the orchestrator after the build and serve above:
 
 ```
 $ sha256sum build/web/main.dart.js
-_TO BE FILLED BY ORCHESTRATOR_
+f3abc81396156c87a019ab676bad96116e80b81cf16c536ed81d08febc4c1811  build/web/main.dart.js
 
 $ curl -s http://danserver:8143/main.dart.js | sha256sum
-_TO BE FILLED BY ORCHESTRATOR_
+f3abc81396156c87a019ab676bad96116e80b81cf16c536ed81d08febc4c1811  -
 
 $ curl -s http://danserver:8143/main.dart.js | grep -c SwipeableRowShell
-_TO BE FILLED BY ORCHESTRATOR_
+10
 
 $ curl -s http://danserver:8143/main.dart.js | grep -c showComplete
-_TO BE FILLED BY ORCHESTRATOR_
+2
 
 $ curl -sI http://danserver:8143/main.dart.js | grep -i cache-control
-_TO BE FILLED BY ORCHESTRATOR_
+Cache-Control: no-store, max-age=0
 ```
 
-**If either grep above returns zero:** do not proceed and do not quietly substitute a different
-string. Pick another symbol from the "Artifacts this phase produces" tables in `31-06-PLAN.md`
-(`kSubCompactGripSize`, `Icons.drag_indicator`) or `31-07-PLAN.md` (`LiveRowCard.showComplete`,
-`class SwipeableRowShell`), re-run the grep, and record here which symbol was used and why the
-first one returned zero. A pre-flight that quietly changes its own success criterion is worse than
-no pre-flight.
+**✓ VERIFIED.** The two sha256 digests are identical, both greps are non-zero, and
+`Cache-Control: no-store` is present so trap #3 cannot apply. The bytes on 8143 are byte-for-byte
+the bundle built above, and it carries wave 2's `SwipeableRowShell` and `showComplete`.
 
-**Expected result once filled in:** the two sha256 digests are identical, and both grep counts are
-non-zero.
+### Two greps DID return zero, and this is the honest account of why
+
+The instruction above says not to quietly substitute a symbol until one passes. So, recorded rather
+than swept up: **`drag_indicator` and `kSubCompactGripSize` — wave 1's grip glyph, the half of
+D-31-06 that Item 2 below asks about — each grep `0` in the served bundle.**
+
+That is not a missing feature. It is the wrong probe for that *kind* of symbol. `dart2js`
+const-folds both: `kSubCompactGripSize` is a `const double` that inlines to a bare literal, and
+`Icons.drag_indicator` is a `const IconData` that survives only as its **codepoint**, never its Dart
+identifier. Verified against the SDK and then against the served bytes:
+
+```
+$ grep -n "static const IconData drag_indicator " $FLUTTER/packages/flutter/lib/src/material/icons.dart
+8411:  static const IconData drag_indicator = IconData(0xe207, fontFamily: 'MaterialIcons');
+
+$ curl -s http://danserver:8143/main.dart.js | grep -c 57863     # 0xe207 == 57863
+4
+```
+
+**So the grip did ship** — the identifier just is not what ships. Both wave-1 and wave-2 symbols are
+confirmed present in the served bytes by a probe appropriate to each. Note this is a general trap for
+any future UAT here: **a name-grep is only a valid presence probe for symbols dart2js preserves.**
+For a const, an icon, or an inlined literal, a zero count means "wrong probe," not "absent" — and
+treating it as "absent" would have sent a working build back for a rebuild.
 
 **The distinction that matters most, stated plainly (trap #4):** a non-zero grep count proves the
 **code** shipped. It does **not** prove that the **data on screen** was produced by that code — an
