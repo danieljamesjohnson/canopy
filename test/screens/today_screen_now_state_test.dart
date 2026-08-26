@@ -14,8 +14,10 @@ import 'package:canopy/providers/restoratives_notifier.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/theme_notifier.dart';
 import 'package:canopy/screens/today/now_state.dart';
+import 'package:canopy/screens/today/timeline_geometry.dart';
 import 'package:canopy/screens/today/today_screen.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
+import 'package:canopy/screens/today/widgets/now_line.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -164,6 +166,25 @@ Future<void> _pumpTodayScreen(
       ),
     ),
   );
+}
+
+/// Jumps the day's scroll offset to exactly 0 and settles.
+///
+/// D-31-07 Case B needs to compare `tester.getRect` screen coordinates
+/// across two separate pumps with different `NowState` classifications
+/// (Active vs GapBeforeNext). CAL-03 ("elapsed time recedes") auto-centres
+/// the scroll offset on open, and it centres DIFFERENTLY per `NowState` —
+/// left unpinned, the two pumps' screen coordinates differ by the scroll
+/// delta between the two auto-centre targets, not by any real geometry
+/// change, which would make a same-position assertion fail for the wrong
+/// reason (or, worse, pass for the wrong reason). Pinning both pumps to the
+/// same offset isolates the actual claim under test.
+Future<void> _pinScrollToTop(WidgetTester tester) async {
+  final scrollable = tester.state<ScrollableState>(
+    find.byType(Scrollable).first,
+  );
+  scrollable.position.jumpTo(0);
+  await tester.pump();
 }
 
 // ─── Helper: build DailySchedule for today ────────────────────────────────────
@@ -1077,15 +1098,20 @@ void main() {
       expect(find.text('Taking a long break'), findsOneWidget);
     });
 
-    testWidgets('live break shows no Complete/Skip (D-02)', (tester) async {
-      // w1 is marked completed here (unlike the sibling live-break cases
-      // above): otherwise w1's OWN non-live ChunkCard row legitimately shows
-      // its own unresolved-work Complete/Skip action row (chunk_card.dart
-      // "Always-visible action row for unresolved chunks"), which would
-      // make a screen-wide findsNothing assertion fail for a reason that has
-      // nothing to do with the live break's own showActions gate. Resolving
-      // w1 isolates the assertion to what this case actually tests: the
-      // LIVE row (b1, a break) renders no Complete/Skip.
+    // The old D-02 case (a live break renders no action icons at all) was
+    // SUPERSEDED 2026-08-26 by D-31-07, for the Skip direction only. D-02's
+    // blanket exclusion is no longer true: the owner ruled
+    // (31-CONTEXT.md "Gap-closure decisions") that a live break must show
+    // Skip. Complete stays excluded — D-31-01: a break can never be
+    // isCompleted, so a Complete button would advertise a state the data
+    // model cannot reach. The one sweeping case that used to assert here is
+    // replaced by the two precise ones below: a live long break shows Skip
+    // and never Complete, and a live WORK chunk at the identical slot height
+    // keeps both (the PD-31-07-03 regression guard this file's own comment
+    // above already promises).
+    testWidgets('D-31-07: a live long break shows Skip and never Complete', (
+      tester,
+    ) async {
       final sn = _FakeScheduleNotifierWithSchedule(
         DailySchedule(
           dateYmd: _todayYmd(),
@@ -1099,8 +1125,9 @@ void main() {
             ),
             _breakChunk(
               id: 'b1',
+              chunkTypeIndex: ChunkType.longBreak.index,
               syntheticStartMinutes: 505,
-              durationMinutes: 5,
+              durationMinutes: 30,
             ),
           ],
         ),
@@ -1108,15 +1135,18 @@ void main() {
       await _pumpTodayScreen(
         tester,
         scheduleNotifier: sn,
+        // Inside b1's 505-535 window; b1's 120dp slot clears
+        // kCompactLiveMinHeight (88.0) so the compact tier — the one with
+        // icon actions — renders.
         now: () => DateTime(2026, 6, 13, 8, 27),
       );
-      // The compact/single-line tiers never produce a FilledButton/
-      // OutlinedButton at all (GRID-02), so these two assertions alone would
-      // now pass trivially regardless of whether the D-02 gate works.
-      // Strengthened below with finders that match what the live row
-      // actually renders in either tier.
-      expect(find.widgetWithText(FilledButton, 'Complete'), findsNothing);
-      expect(find.widgetWithText(OutlinedButton, 'Skip'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(LiveRowCard),
+          matching: find.byTooltip('Skip'),
+        ),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: find.byType(LiveRowCard),
@@ -1124,27 +1154,347 @@ void main() {
         ),
         findsNothing,
       );
-      expect(
-        find.descendant(
-          of: find.byType(LiveRowCard),
-          matching: find.byTooltip('Skip'),
-        ),
-        findsNothing,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(LiveRowCard),
-          matching: find.byType(IconButton),
-        ),
-        findsNothing,
-      );
     });
+
+    testWidgets(
+      'D-31-07: a live WORK chunk at the identical slot height keeps both '
+      'Complete and Skip (PD-31-07-03 regression guard)',
+      (tester) async {
+        final sn = _FakeScheduleNotifierWithSchedule(
+          DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: [
+              _workChunk(
+                id: 'w1',
+                syntheticStartMinutes: 505,
+                // Same 120dp slot as the break case above — the point of
+                // this guard is that D-31-07 changed nothing for work.
+                durationMinutes: 30,
+              ),
+            ],
+          ),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: sn,
+          now: () => DateTime(2026, 6, 13, 8, 27),
+        );
+        expect(
+          find.descendant(
+            of: find.byType(LiveRowCard),
+            matching: find.byTooltip('Skip'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(LiveRowCard),
+            matching: find.byTooltip('Complete'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
 
     // 'live break still shows a progress bar (D-04)' — DELETED (Phase 27,
     // GRID-02). The bar is gone from both live-row tiers by design: once the
     // card is duration-exact, the now-line's position within the card's
     // vertical span IS the fraction elapsed (27-UI-SPEC.md "Compact tier",
     // point 4). Do not restore a progress-bar widget here.
+
+    group('D-31-07 — a live break can be skipped', () {
+      // Fixture shape mirrors today_screen_test.dart's skipTracerFixture():
+      // a completed 25-minute work chunk, a 5-minute short break, and a
+      // following 25-minute work chunk. [breakSkipped] selects which of the
+      // two fixtures Case B's composition proof needs.
+      DailySchedule liveSkipFixture({bool breakSkipped = false}) {
+        return DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 25,
+              isCompleted: true,
+            ),
+            _breakChunk(
+              id: 'b1',
+              syntheticStartMinutes: 505,
+              durationMinutes: 5,
+              isSkipped: breakSkipped,
+            ),
+            _workChunk(id: 'w2', syntheticStartMinutes: 510, durationMinutes: 25),
+          ],
+        );
+      }
+
+      // 8:27 AM = minute 507 — inside b1's 505-510 window.
+      DateTime liveSkipNow() => DateTime(2026, 6, 13, 8, 27);
+
+      testWidgets('Case A — a live short break can be swiped', (
+        tester,
+      ) async {
+        final fake = _FakeScheduleNotifierWithSchedule(liveSkipFixture());
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: fake,
+          now: liveSkipNow,
+        );
+        // b1 renders at the single-line tier (20dp < kCompactLiveMinHeight):
+        // its title is the live present-continuous form, not "Short break".
+        final liveClipRect = find
+            .ancestor(
+              of: find.text('Taking a break'),
+              matching: find.byType(ClipRect),
+            )
+            .first;
+        final paintedRect = tester.getRect(liveClipRect);
+        final origin = Offset(
+          paintedRect.center.dx,
+          paintedRect.top - kBreakHitSlop + 2,
+        );
+        await tester.dragFrom(origin, const Offset(-400, 0));
+        await tester.pumpAndSettle();
+
+        expect(
+          fake.lastSkippedId,
+          'b1',
+          reason:
+              'D-31-07: a drag started inside a LIVE short break\'s grown '
+              'hit-test envelope must still resolve to that break\'s '
+              'SwipeableRowShell and call markSkipped.',
+        );
+        expect(
+          fake.lastCompletedId,
+          isNull,
+          reason: 'D-31-07: a break must never call markComplete.',
+        );
+        expect(
+          fake.lastSkippedId,
+          isNot('w2'),
+          reason:
+              'a failure here must name the thief (the following work '
+              'chunk), not merely report a wrong id.',
+        );
+      });
+
+      // Case B — truth #14's composition, proven.
+      //
+      // CORRECTED FROM THE PLAN'S LITERAL TEXT (documented per this
+      // project's deviation-tracking convention, twice over — see both
+      // notes below):
+      //
+      // Correction 1. The plan's Case B describes pumping "the break
+      // skipped" at a clock still inside its OWN window and expecting
+      // `resolveNowState` to still report it `Active` (i.e. still live).
+      // That premise is false, and is false for ANY chunk type, not just
+      // breaks: `resolveNowState`'s "advance past resolved chunks" loop
+      // (now_state.dart) unconditionally treats an `isCompleted ||
+      // isSkipped` candidate as no longer current, even while its own
+      // window is still open — this is a pre-existing, DELIBERATE, and
+      // already-tested invariant (see this same file's "near-gap: c1
+      // resolved 9:00-9:25, c2 starts 9:25, now=9:10 -> GapBeforeNext" case
+      // above, which resolves a chunk mid-window and asserts GapBeforeNext,
+      // not Active). Verified directly with a probe against
+      // `resolveNowState` before writing this test: the fixture below, with
+      // b1 pre-skipped and the clock unchanged, returns `GapBeforeNext(w2)`,
+      // not `Active(b1)` — so b1 renders through the NON-live break arm,
+      // not `LiveRowCard`, in the second pump.
+      //
+      // Correction 2. `_buildEdgeStateLine` renders NOTHING for
+      // Active/Overdue but renders a real "Up next" banner (heading +
+      // title + "Starts at ...") for GapBeforeNext — a genuine, expected
+      // content difference between the two pumps that pushes the ENTIRE
+      // timeline Stack down the page in pump 2. Comparing raw
+      // `tester.getRect` screen coordinates across the two pumps therefore
+      // compares two different page layouts, not two states of the same
+      // layout (confirmed empirically: the raw absolute-Y comparison failed
+      // by exactly the banner's height). Both measured rects below are
+      // instead expressed RELATIVE TO the timeline Stack's own top, which
+      // cancels this outer-page shift (and any scroll-offset difference)
+      // and isolates the actual claim: has this chunk's position WITHIN the
+      // timeline changed.
+      //
+      // Neither correction weakens truth #14 — together they let this test
+      // prove the claim that is actually true and actually load-bearing:
+      // the SAME chunk's confined paint band survives the
+      // live-to-resolved-and-delisted transition at the IDENTICAL height
+      // and the IDENTICAL position within the timeline, and the now-line
+      // (which reads `nowMinutes` directly, never `nowState`) stays at the
+      // identical position relative to that same timeline. Both arms route
+      // through the same extracted `SwipeableRowShell._confineContent`
+      // (Task 2), which is exactly why this composition holds structurally,
+      // not by coincidence.
+      testWidgets("Case B — truth #14's composition, proven", (tester) async {
+        // Pump 1: b1 unresolved, live.
+        final fakeLive = _FakeScheduleNotifierWithSchedule(liveSkipFixture());
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: fakeLive,
+          now: liveSkipNow,
+        );
+        await _pinScrollToTop(tester);
+        expect(
+          find.byType(LiveRowCard),
+          findsOneWidget,
+          reason: 'b1 must be the live row while unresolved.',
+        );
+        final stackRectLive = tester.getRect(find.byType(Stack).first);
+        final liveClipRect = find
+            .ancestor(
+              of: find.text('Taking a break'),
+              matching: find.byType(ClipRect),
+            )
+            .first;
+        final liveRect = tester.getRect(liveClipRect);
+        expect(
+          liveRect.height,
+          5 * kPixelsPerMinute,
+          reason: "truth #14 claim 1: keeps its slot height (live pump).",
+        );
+        // Relative to the Stack's own top — see Correction 2 above.
+        final liveTopInStack = liveRect.top - stackRectLive.top;
+        final nowLineTopInStackBefore =
+            tester.getRect(find.byType(NowLineOverlay)).top -
+            stackRectLive.top;
+
+        // TodayScreenState._nowFn is late final — a second pump with a
+        // different fixture must fully unmount first, or the second clock
+        // is silently ignored and both measurements come from the same
+        // tree (carried from the sibling file's identical SKIPBREAK-02
+        // comment).
+        await tester.pumpWidget(const SizedBox.shrink());
+
+        // Pump 2: b1 pre-skipped, SAME clock. Per Correction 1 above, this
+        // is GapBeforeNext(w2) — b1 renders through the non-live break arm
+        // (title reverts to "Short break").
+        final fakeSkipped = _FakeScheduleNotifierWithSchedule(
+          liveSkipFixture(breakSkipped: true),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: fakeSkipped,
+          now: liveSkipNow,
+        );
+        await _pinScrollToTop(tester);
+        expect(
+          find.byType(LiveRowCard),
+          findsNothing,
+          reason:
+              'b1 is no longer "current" once resolved — resolveNowState '
+              'delists it, exactly as the pre-existing near-gap invariant '
+              'above already establishes for work chunks. This is the '
+              'corrected, evidence-based half of truth #14\'s "stays on '
+              'the timeline" claim: the SAME slot, not the SAME widget '
+              'type.',
+        );
+        final stackRectResolved = tester.getRect(find.byType(Stack).first);
+        final resolvedClipRect = find
+            .ancestor(
+              of: find.text('Short break'),
+              matching: find.byType(ClipRect),
+            )
+            .first;
+        final resolvedRect = tester.getRect(resolvedClipRect);
+        expect(
+          resolvedRect.height,
+          5 * kPixelsPerMinute,
+          reason: "truth #14 claim 1: keeps its slot height (resolved pump).",
+        );
+        final resolvedTopInStack = resolvedRect.top - stackRectResolved.top;
+        expect(
+          resolvedTopInStack,
+          liveTopInStack,
+          reason:
+              "truth #14 claim 2: stays on the timeline — the confined "
+              "band's top edge, measured relative to the timeline Stack's "
+              "own top (so the GapBeforeNext-only 'Up next' banner above "
+              "the Stack cannot confound the comparison), is at the "
+              "identical position before and after resolution, because "
+              "both arms route through the same "
+              "SwipeableRowShell._confineContent geometry.",
+        );
+        final nowLineTopInStackAfter =
+            tester.getRect(find.byType(NowLineOverlay)).top -
+            stackRectResolved.top;
+        expect(
+          nowLineTopInStackAfter,
+          nowLineTopInStackBefore,
+          reason:
+              "truth #14 claim 3: does not move the now-line — asserted by "
+              "direct equality of the now-line's position relative to the "
+              "Stack (not by re-deriving the expected y from geometry, "
+              "which the vacuity class 27-01's liveExtraPx defect is the "
+              "standing example against), and not by raw screen "
+              "coordinates, which Correction 2 above shows would conflate "
+              "a real geometry change with the GapBeforeNext banner's "
+              "unrelated page shift.",
+        );
+      });
+
+      testWidgets(
+        'Case C — a break that was live and is now resolved-and-delisted '
+        'offers no Skip affordance and cannot be re-swiped',
+        (tester) async {
+          // Same correction as Case B: an "already-skipped LIVE break" is
+          // unreachable through resolveNowState (see Case B's comment) — the
+          // reachable state is a break that WAS live and, once skipped, is
+          // delisted from live status and rendered by the non-live arm.
+          // This proves non-negotiable #5 ("a resolved chunk must not
+          // advertise a gesture it no longer accepts") against exactly that
+          // reachable state, at the geometric position the live row
+          // previously occupied.
+          final fake = _FakeScheduleNotifierWithSchedule(
+            liveSkipFixture(breakSkipped: true),
+          );
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: fake,
+            now: liveSkipNow,
+          );
+          expect(find.byType(LiveRowCard), findsNothing);
+          final resolvedClipRect = find
+              .ancestor(
+                of: find.text('Short break'),
+                matching: find.byType(ClipRect),
+              )
+              .first;
+          final resolvedRect = tester.getRect(resolvedClipRect);
+          final origin = Offset(
+            resolvedRect.center.dx,
+            resolvedRect.top - kBreakHitSlop + 2,
+          );
+          await tester.dragFrom(origin, const Offset(-400, 0));
+          await tester.pumpAndSettle();
+          expect(
+            fake.lastSkippedId,
+            isNull,
+            reason:
+                'an already-skipped break has DismissDirection.none — a '
+                'drag inside its grown envelope must resolve nothing.',
+          );
+        },
+      );
+
+      testWidgets(
+        'Case D — a live, UNRESOLVED break carries no strikethrough '
+        '(pairs with the isSkipped:true case already proven at the widget '
+        'level in today_row_widgets_test.dart, since an isSkipped:true LIVE '
+        'break is unreachable through resolveNowState — see Case B)',
+        (tester) async {
+          final fake = _FakeScheduleNotifierWithSchedule(liveSkipFixture());
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: fake,
+            now: liveSkipNow,
+          );
+          final titleText = tester.widget<Text>(find.text('Taking a break'));
+          expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
+        },
+      );
+    });
 
     testWidgets(
       'GapBeforeNext "Up next" banner names the reference title, not '

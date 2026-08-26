@@ -8,84 +8,48 @@ import '../../../data/models/scheduled_chunk.dart';
 import '../../../providers/schedule_notifier.dart';
 import 'chunk_card.dart';
 
-/// Wraps [ChunkCard] in a single, unconditional [Dismissible] providing
-/// swipe-to-skip for every chunk row; work chunks additionally support
-/// swipe-to-complete (right) and tap.
+/// The one-directional-or-horizontal swipe-to-resolve gesture shell for a
+/// chunk row — a [Dismissible] wrapping an arbitrary [child], confined to
+/// [visualHeight] when set.
 ///
-/// **Supersedes `29-UI-SPEC.md`'s "non-interactive at every density" clause
-/// for the swipe axis only (Phase 31, SKIPBREAK-01/02).** That document's
-/// early return excluded break chunks from `Dismissible` entirely — deleted
-/// here, per the `promote` decision (31-01-PLAN.md): skippability is the
-/// general case, completability is a work-chunk-only detail of it. Tap
-/// access stays out of scope for a break — the owner's 2026-08-21
-/// instruction — enforced below by the `isWork` gate on `onTap`, not by a
-/// separate early return.
+/// **Extracted from [SwipeableChunkCard] (Phase 31, D-31-07), verbatim and
+/// API-preserving.** This is a mechanical extraction, not a rewrite:
+/// [SwipeableChunkCard] is now a thin wrapper that builds this shell with
+/// [ChunkCard] as its [child], and every existing call site/test for
+/// [SwipeableChunkCard] compiles and passes with zero edits. The reason to
+/// extract rather than duplicate: D-31-07 needs the identical swipe contract
+/// for a live break's row (which wraps [LiveRowCard]-adjacent content, not a
+/// [ChunkCard]) — reusing this shell keeps exactly **one** [Dismissible]
+/// definition for chunk rows in the codebase, so the swipe contract cannot
+/// drift between the live and non-live arms.
 ///
 /// Already-resolved (completed or skipped) chunks have [DismissDirection.none]
 /// so they cannot be re-swiped. A break can never be [ScheduledChunk.isCompleted]
 /// (D-31-01) — the `isCompleted` term in `resolved` is defensive/future-proofing
 /// for breaks and load-bearing for work chunks.
-class SwipeableChunkCard extends StatelessWidget {
-  const SwipeableChunkCard({
+class SwipeableRowShell extends StatelessWidget {
+  const SwipeableRowShell({
     super.key,
     required this.chunk,
-    this.goalColor,
-    this.goalName,
-    this.displayRationale,
-    this.goalPriorityWeight,
-    this.goalEmojiTag,
-    this.goalValence,
-    this.onTap,
-    this.showStartTime = true,
-    this.density = ChunkCardDensity.detailed,
     this.visualHeight,
+    required this.child,
   });
 
   final ScheduledChunk chunk;
 
-  /// The goal's color for the left bar. Null → falls back to theme primary.
-  final Color? goalColor;
-
-  /// The resolved goal name to display as primary title on work cards.
-  final String? goalName;
-
-  /// Pre-mapped human-readable rationale. Passed through to ChunkCard.
-  final String? displayRationale;
-
-  /// The goal's priority weight. Passed through to ChunkCard for badge
-  /// rendering. Null for break chunks and commitment chunks.
-  final double? goalPriorityWeight;
-
-  /// The goal's emoji tag. Passed through to ChunkCard. Null for commitment chunks.
-  final String? goalEmojiTag;
-
-  /// The goal's energy valence. Passed through to ChunkCard. Null for commitment chunks.
-  final EnergyValence? goalValence;
-
-  /// Tap callback. Null for break cards and resolved work chunks — the
-  /// `isWork` gate below is the single thing enforcing "no tap on a break",
-  /// by the owner's explicit instruction (2026-08-21).
-  final VoidCallback? onTap;
-
-  /// Forwarded to [ChunkCard] — see its doc comment. Also applied on the
-  /// break-card early-return path below so a gutter-driven screen never
-  /// sees a break card's own clock time doubled.
-  final bool showStartTime;
-
-  /// Forwarded to [ChunkCard] — see its doc comment. Also applied on the
-  /// break-card early-return path below (PD-4, 26-02-PLAN.md): a compact
-  /// break must not render at [ChunkCardDensity.detailed] inside a tiny
-  /// slot just because this early return forgot to forward it.
-  final ChunkCardDensity density;
-
-  /// When non-null (Phase 31, D-31-02/PD-31-02), the card's own painted
-  /// content AND its swipe reveals are each confined to a band exactly
-  /// [visualHeight] tall, vertically centred inside whatever larger box the
-  /// parent supplies — this is what lets a break's touch target exceed its
-  /// painted slot without violating SKIPBREAK-02. Default `null` keeps every
-  /// existing call site byte-for-byte unchanged (an identity transform: no
+  /// When non-null (Phase 31, D-31-02/PD-31-02), the swipe reveals AND
+  /// [child] are each confined to a band exactly [visualHeight] tall,
+  /// vertically centred inside whatever larger box the parent supplies —
+  /// this is what lets a break's touch target exceed its painted slot
+  /// without violating SKIPBREAK-02. Default `null` keeps every existing
+  /// call site byte-for-byte unchanged (an identity transform: no
   /// confinement, the widget sizes to whatever the parent gives it).
   final double? visualHeight;
+
+  /// The row's own painted content — a [ChunkCard] for the non-live arm, or
+  /// the live row's own content for D-31-07's live-break arm. This widget
+  /// does not know or care which; it only confines and wraps it.
+  final Widget child;
 
   /// Confines [child] (a swipe-reveal background) to [visualHeight] when set,
   /// else returns it unchanged. See [visualHeight]'s doc comment.
@@ -97,17 +61,17 @@ class SwipeableChunkCard extends StatelessWidget {
     );
   }
 
-  /// Confines [child] (the card's own painted content) to [visualHeight] via
-  /// `ClipRect` + `OverflowBox`, when set, else returns it unchanged.
+  /// Confines [child] (this shell's own painted content) to [visualHeight]
+  /// via `ClipRect` + `OverflowBox`, when set, else returns it unchanged.
   ///
   /// **PD-31-03 (31-01-PLAN.md).** `ClipRect`/`OverflowBox` live HERE, inside
-  /// `SwipeableChunkCard`, rather than in `today_screen.dart` — because the
-  /// outer box this widget's `Dismissible` receives is deliberately taller
-  /// than the slot (the grown hit-test envelope), and per `31-RESEARCH.md`
-  /// every `RenderBox` bounds its own hit-testing to its own `size`
-  /// regardless of any clip: leaving the clip outside the grown box would
-  /// reject the slop-band touch before the `Dismissible` inside it ever saw
-  /// it. This widget must NOT import `TimelineRowTile` — that horizontal-inset
+  /// this shell, rather than in `today_screen.dart` — because the outer box
+  /// this widget's `Dismissible` receives is deliberately taller than the
+  /// slot (the grown hit-test envelope), and per `31-RESEARCH.md` every
+  /// `RenderBox` bounds its own hit-testing to its own `size` regardless of
+  /// any clip: leaving the clip outside the grown box would reject the
+  /// slop-band touch before the `Dismissible` inside it ever saw it. This
+  /// widget must NOT import `TimelineRowTile` — that horizontal-inset
   /// wrapper stays in `today_screen.dart`, applied outside this widget.
   Widget _confineContent(Widget child) {
     if (visualHeight == null) return child;
@@ -203,23 +167,116 @@ class SwipeableChunkCard extends StatelessWidget {
       secondaryBackground: isWork
           ? _confineReveal(_skipReveal(colorScheme, 28.0))
           : null,
-      child: _confineContent(
-        ChunkCard(
-          chunk: chunk,
-          goalColor: goalColor,
-          goalName: goalName,
-          displayRationale: displayRationale,
-          goalPriorityWeight: goalPriorityWeight,
-          goalEmojiTag: goalEmojiTag,
-          goalValence: goalValence,
-          showStartTime: showStartTime,
-          density: density,
-          // A break never receives onTap, at any density — the owner's
-          // 2026-08-21 instruction. This isWork gate is the ONLY thing
-          // enforcing that after the `promote` decision deleted the old
-          // break-only early return.
-          onTap: (isWork && !resolved) ? onTap : null,
-        ),
+      child: _confineContent(child),
+    );
+  }
+}
+
+/// Wraps [ChunkCard] in a single, unconditional [Dismissible] (via
+/// [SwipeableRowShell]) providing swipe-to-skip for every chunk row; work
+/// chunks additionally support swipe-to-complete (right) and tap.
+///
+/// **Supersedes `29-UI-SPEC.md`'s "non-interactive at every density" clause
+/// for the swipe axis only (Phase 31, SKIPBREAK-01/02).** That document's
+/// early return excluded break chunks from `Dismissible` entirely — deleted
+/// here, per the `promote` decision (31-01-PLAN.md): skippability is the
+/// general case, completability is a work-chunk-only detail of it. Tap
+/// access stays out of scope for a break — the owner's 2026-08-21
+/// instruction — enforced below by the `isWork` gate on `onTap`, not by a
+/// separate early return.
+///
+/// **Phase 31, D-31-07:** the actual swipe/dismiss mechanics live in
+/// [SwipeableRowShell] now, extracted verbatim so a live break's row can
+/// reuse the identical gesture contract. This widget's own public surface —
+/// constructor, every parameter, and the `isWork && !resolved` `onTap`
+/// gating — is unchanged.
+class SwipeableChunkCard extends StatelessWidget {
+  const SwipeableChunkCard({
+    super.key,
+    required this.chunk,
+    this.goalColor,
+    this.goalName,
+    this.displayRationale,
+    this.goalPriorityWeight,
+    this.goalEmojiTag,
+    this.goalValence,
+    this.onTap,
+    this.showStartTime = true,
+    this.density = ChunkCardDensity.detailed,
+    this.visualHeight,
+  });
+
+  final ScheduledChunk chunk;
+
+  /// The goal's color for the left bar. Null → falls back to theme primary.
+  final Color? goalColor;
+
+  /// The resolved goal name to display as primary title on work cards.
+  final String? goalName;
+
+  /// Pre-mapped human-readable rationale. Passed through to ChunkCard.
+  final String? displayRationale;
+
+  /// The goal's priority weight. Passed through to ChunkCard for badge
+  /// rendering. Null for break chunks and commitment chunks.
+  final double? goalPriorityWeight;
+
+  /// The goal's emoji tag. Passed through to ChunkCard. Null for commitment chunks.
+  final String? goalEmojiTag;
+
+  /// The goal's energy valence. Passed through to ChunkCard. Null for commitment chunks.
+  final EnergyValence? goalValence;
+
+  /// Tap callback. Null for break cards and resolved work chunks — the
+  /// `isWork` gate below is the single thing enforcing "no tap on a break",
+  /// by the owner's explicit instruction (2026-08-21).
+  final VoidCallback? onTap;
+
+  /// Forwarded to [ChunkCard] — see its doc comment. Also applied on the
+  /// break-card early-return path below so a gutter-driven screen never
+  /// sees a break card's own clock time doubled.
+  final bool showStartTime;
+
+  /// Forwarded to [ChunkCard] — see its doc comment. Also applied on the
+  /// break-card early-return path below (PD-4, 26-02-PLAN.md): a compact
+  /// break must not render at [ChunkCardDensity.detailed] inside a tiny
+  /// slot just because this early return forgot to forward it.
+  final ChunkCardDensity density;
+
+  /// When non-null (Phase 31, D-31-02/PD-31-02), the card's own painted
+  /// content AND its swipe reveals are each confined to a band exactly
+  /// [visualHeight] tall, vertically centred inside whatever larger box the
+  /// parent supplies — this is what lets a break's touch target exceed its
+  /// painted slot without violating SKIPBREAK-02. Default `null` keeps every
+  /// existing call site byte-for-byte unchanged (an identity transform: no
+  /// confinement, the widget sizes to whatever the parent gives it).
+  final double? visualHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final isWork = chunk.chunkType == ChunkType.work;
+    // A break can never be isCompleted (D-31-01) — this term is defensive
+    // for breaks and load-bearing for work chunks (a completed work chunk
+    // must not be re-swipeable in either direction).
+    final resolved = chunk.isCompleted || chunk.isSkipped;
+    return SwipeableRowShell(
+      chunk: chunk,
+      visualHeight: visualHeight,
+      child: ChunkCard(
+        chunk: chunk,
+        goalColor: goalColor,
+        goalName: goalName,
+        displayRationale: displayRationale,
+        goalPriorityWeight: goalPriorityWeight,
+        goalEmojiTag: goalEmojiTag,
+        goalValence: goalValence,
+        showStartTime: showStartTime,
+        density: density,
+        // A break never receives onTap, at any density — the owner's
+        // 2026-08-21 instruction. This isWork gate is the ONLY thing
+        // enforcing that after the `promote` decision deleted the old
+        // break-only early return.
+        onTap: (isWork && !resolved) ? onTap : null,
       ),
     );
   }

@@ -1,0 +1,127 @@
+D-31-07 non-vacuity RED capture (plan 31-07, Task 3)
+======================================================
+
+Protocol: 31-03-SUMMARY.md's RED protocol, reused exactly. Two production
+changes from this plan's Tasks 1 and 2 were temporarily reverted in
+lib/screens/today/today_screen.dart, `flutter test
+test/screens/today_screen_now_state_test.dart --plain-name "D-31-07"` was
+run against the reverted tree, the output below was captured verbatim, and
+both reversions were then restored byte-identical (confirmed via `git diff`
+showing no residue) before this file was committed alongside the restored
+production code.
+
+What was temporarily reverted
+------------------------------
+
+1. Task 1's `_buildLiveRow` call site — `showActions` was reverted from
+   `isBreak ? !chunk.isSkipped : true` back to the pre-Task-1 form
+   `chunk.chunkType == ChunkType.work` (a live break gets no action row
+   again, exactly as before this plan).
+
+2. Task 2's live-break branch in `_buildPositionedRow`'s `isLive` arm — the
+   `isLiveBreak` predicate was forced to the literal `false` (was:
+   `chunk.chunkType != ChunkType.work`), so every live row — break included
+   — falls through to the plain PD-10 `ClipRect`/`OverflowBox` arm with no
+   `SwipeableRowShell` wrapping (a live break is not swipeable again, exactly
+   as before this plan).
+
+Command
+-------
+
+  flutter test test/screens/today_screen_now_state_test.dart --plain-name "D-31-07"
+
+Captured output (verbatim)
+---------------------------
+
+00:00 +0: loading /home/dan/CodeProjects/canopy/.claude/worktrees/agent-a6a9ecd7be03defae/test/screens/today_screen_now_state_test.dart
+00:00 +0: TodayScreen time-anchored Now (NOW-01/NOW-02) D-31-07: a live long break shows Skip and never Complete
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _DescendantWidgetFinder:<Found 0 widgets with widget matching predicate descending from
+widgets with type "LiveRowCard": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/dan/CodeProjects/canopy/.claude/worktrees/agent-a6a9ecd7be03defae/test/screens/today_screen_now_state_test.dart:1143:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/dan/CodeProjects/canopy/.claude/worktrees/agent-a6a9ecd7be03defae/test/screens/today_screen_now_state_test.dart line 1143
+The test description was:
+  D-31-07: a live long break shows Skip and never Complete
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +0 -1: TodayScreen time-anchored Now (NOW-01/NOW-02) D-31-07: a live long break shows Skip and never Complete [E]
+  Test failed. See exception logs above.
+  The test description was: D-31-07: a live long break shows Skip and never Complete
+
+00:00 +0 -1: TodayScreen time-anchored Now (NOW-01/NOW-02) D-31-07: a live WORK chunk at the identical slot height keeps both Complete and Skip (PD-31-07-03 regression guard)
+00:00 +1 -1: TodayScreen time-anchored Now (NOW-01/NOW-02) D-31-07 — a live break can be skipped Case A — a live short break can be swiped
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: 'b1'
+  Actual: <null>
+   Which: not an <Instance of 'String'>
+D-31-07: a drag started inside a LIVE short break's grown hit-test envelope must still resolve to
+that break's SwipeableRowShell and call markSkipped.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure>.<anonymous closure> (file:///home/dan/CodeProjects/canopy/.claude/worktrees/agent-a6a9ecd7be03defae/test/screens/today_screen_now_state_test.dart:1261:9)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/dan/CodeProjects/canopy/.claude/worktrees/agent-a6a9ecd7be03defae/test/screens/today_screen_now_state_test.dart line 1261
+The test description was:
+  Case A — a live short break can be swiped
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +1 -2: TodayScreen time-anchored Now (NOW-01/NOW-02) D-31-07 — a live break can be skipped Case A — a live short break can be swiped [E]
+  Test failed. See exception logs above.
+  The test description was: Case A — a live short break can be swiped
+
+00:00 +1 -2: TodayScreen time-anchored Now (NOW-01/NOW-02) D-31-07 — a live break can be skipped Case B — truth #14's composition, proven
+00:01 +2 -2: TodayScreen time-anchored Now (NOW-01/NOW-02) D-31-07 — a live break can be skipped Case C — a break that was live and is now resolved-and-delisted offers no Skip affordance and cannot be re-swiped
+00:01 +3 -2: TodayScreen time-anchored Now (NOW-01/NOW-02) D-31-07 — a live break can be skipped Case D — a live, UNRESOLVED break carries no strikethrough (pairs with the isSkipped:true case already proven at the widget level in today_row_widgets_test.dart, since an isSkipped:true LIVE break is unreachable through resolveNowState — see Case B)
+00:01 +4 -2: Some tests failed.
+
+Failing tests:
+  /home/dan/CodeProjects/canopy/.claude/worktrees/agent-a6a9ecd7be03defae/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) D-31-07 — a live break can be skipped Case A — a live short break can be swiped
+  /home/dan/CodeProjects/canopy/.claude/worktrees/agent-a6a9ecd7be03defae/test/screens/today_screen_now_state_test.dart: TodayScreen time-anchored Now (NOW-01/NOW-02) D-31-07: a live long break shows Skip and never Complete
+
+Named failures (both required by this plan's acceptance criteria)
+--------------------------------------------------------------------
+
+1. "D-31-07: a live long break shows Skip and never Complete" — fails with
+   `Expected: exactly one matching candidate / Actual: Found 0 widgets` (the
+   absent Skip tooltip — reverting showActions to work-chunk-only means a
+   live break renders no action row at all).
+
+2. "Case A — a live short break can be swiped" — fails with
+   `Expected: 'b1' / Actual: <null>` (nothing skipped — reverting the
+   live-break branch means a live break's row is not wrapped in
+   SwipeableRowShell, so the drag hits no Dismissible and markSkipped is
+   never called).
+
+The remaining D-31-07 cases (the PD-31-07-03 regression guard, and Cases B/C/D)
+were not asserted to fail here — they either still pass under the reverted
+tree (the regression guard, since it targets a WORK chunk, is unaffected by
+either reversion) or were not reached because the suite run above used
+`--plain-name "D-31-07"` and test execution stopped/continued per the
+normal flutter_test runner behavior; the two failures required by this
+plan's acceptance criteria (the un-swiped break and the absent Skip
+tooltip) are both present above, named, and verbatim.
+
+Both reversions were restored byte-identical before this file's commit —
+confirmed via `git diff lib/screens/today/today_screen.dart` showing no
+residue of either temporary change.

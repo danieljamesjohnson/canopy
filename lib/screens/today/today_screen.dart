@@ -774,6 +774,72 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         // is duration-exact like every other row now.
         final slot = geometry.heightFor(start, chunk.durationMinutes);
         if (isLive) {
+          final isLiveBreak = chunk.chunkType != ChunkType.work;
+          if (isLiveBreak) {
+            // D-31-07: a live break's row is wrapped in the exact same
+            // SwipeableRowShell (one-directional endToStart Dismissible) as
+            // every non-live break, growing its hit-test envelope by
+            // kBreakHitSlop under kMinBreakDragTarget exactly as the
+            // non-live break arm below does.
+            //
+            // Three things a future reader needs and cannot infer from the
+            // code alone:
+            //
+            // (1) This branch needs NO Layer 1b treatment. The live-row loop
+            // (this file's Stack-children site) is already the LAST entry in
+            // the Stack's children, after the now-line overlay — so it wins
+            // hit-test z-order against BOTH chronological neighbours by
+            // construction, unlike the non-live break arm which needs its
+            // own dedicated later pass (31-RESEARCH.md Pitfall 1) to get the
+            // same guarantee.
+            //
+            // (2) `_needsSlop` deliberately carries no `isLive` term. Layer
+            // 1a's exclusion and Layer 1b's inclusion are both expressed
+            // against it (see `_needsSlop`'s own doc comment) — adding an
+            // `isLive` clause to it would only matter if a live break were
+            // ever routed through Layer 1a/1b, and it never is (this branch
+            // returns before either loop is reached, since `isLive` short-
+            // circuits the row into the live-row loop instead). Reusing
+            // `_needsSlop` here to decide the slop AMOUNT is safe precisely
+            // because it does not know or care about `isLive` — it only
+            // asks "is this a break, and is its own slot under the drag
+            // target."
+            //
+            // (3) A chunk is either live or not, never both — `isLive`
+            // comes from `buildTimeline`'s own now-classification and a
+            // chunk id appears in exactly one `ChunkRow`. So the
+            // `ValueKey(chunk.id)` `SwipeableRowShell`'s `Dismissible` uses
+            // cannot collide between this branch and the non-live break arm
+            // below; only one of the two is ever built for a given chunk on
+            // a given frame.
+            //
+            // No outer ClipRect here (unlike the live WORK arm below and the
+            // non-live break arm) — RenderBox.hitTest bounds every box to
+            // its own size regardless of clip (31-RESEARCH.md), so an outer
+            // clip on this grown Positioned would reject the slop-band touch
+            // before the Dismissible inside SwipeableRowShell ever saw it.
+            // SwipeableRowShell's own _confineContent re-imposes
+            // ClipRect + OverflowBox at exactly `slot`, so nothing paints
+            // outside the duration-exact slot and SKIPBREAK-02 still holds.
+            final slop = _needsSlop(chunk, geometry) ? kBreakHitSlop : 0.0;
+            return Positioned(
+              top: geometry.yFor(start) - slop,
+              left: 0,
+              right: 0,
+              height: slot + 2 * slop,
+              child: SwipeableRowShell(
+                chunk: chunk,
+                visualHeight: slot,
+                child: _buildLiveRow(
+                  context,
+                  chunk,
+                  nowState,
+                  secondsRemaining,
+                  slot,
+                ),
+              ),
+            );
+          }
           // PD-10: ClipRect + OverflowBox is the same safety net the
           // non-live arm below uses (not a min/max clamp) — the card lays
           // out at its natural height (no RenderFlex overflow even for a
@@ -1046,13 +1112,24 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
           )
         : null;
 
+    // D-31-07: a live break is skip-only now, not action-less. `isBreak`
+    // is any non-work chunk type — the same definition `_needsSlop` and the
+    // non-live break arm above use. `showActions` used to mean "work chunks
+    // only"; it now means "this row offers at least one action", true for a
+    // work chunk exactly as before and, additively, for an unresolved break
+    // — a resolved (already-skipped) break must not advertise an action it
+    // will not accept, the same rule SwipeableChunkCard enforces with
+    // DismissDirection.none.
+    final isBreak = chunk.chunkType != ChunkType.work;
     return LiveRowCard(
       chunkId: chunk.id,
       kicker: _liveKicker(chunk),
       title: title,
       remainingLabel: remainingLabel,
       slotHeight: slotHeight,
-      showActions: chunk.chunkType == ChunkType.work,
+      showActions: isBreak ? !chunk.isSkipped : true,
+      showComplete: !isBreak,
+      isSkipped: chunk.isSkipped,
       onTap: onTap,
     );
   }
