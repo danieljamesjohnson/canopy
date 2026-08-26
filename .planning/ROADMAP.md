@@ -644,7 +644,7 @@ own gesture target)
 **Depends on:** Phase 29 (owns the sub-compact tier this phase must make skippable, and
 `kSubCompactBreakMinHeight`). Do not start until Phase 29's UAT verdict is recorded — if that
 verdict changes the sub-compact layout, it changes what this phase attaches a gesture to.
-**Plans:** 5 plans
+**Plans:** 8 plans (5 executed and verified, 3 gap-closure planned 2026-08-26)
 
 Plans:
 **Wave 1**
@@ -662,7 +662,21 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 31-05-PLAN.md — Blocking human UAT on a real touch device, port 8143, with a mandatory ⟳ Re-check-in Step 0 (wave 4) — **UAT written, built, served and byte-verified; awaiting the owner's verdict**
+- [x] 31-05-PLAN.md — Blocking human UAT on a real touch device, port 8143, with a mandatory ⟳ Re-check-in Step 0 (wave 4) — **judged 2026-08-26: Item 1 FAIL (a thumb cannot reliably GRAB the row), Items 2-3 PASS**
+
+**Gap closure** *(planned 2026-08-26 from `31-UAT.md`'s two gaps; plans 31-01..31-05 are executed and untouched)*
+
+**Gap-closure Wave 1**
+
+- [ ] 31-06-PLAN.md — D-31-06 BOTH halves: `kBreakHitSlop` 16.0 → 24.0 with its ceiling arithmetic re-derived, AND a visible grip glyph inside `_SubCompactRow`'s existing 20dp row at zero painted cost; two RED captures (gap-closure wave 1)
+
+**Gap-closure Wave 2** *(blocked on Gap-closure Wave 1)*
+
+- [ ] 31-07-PLAN.md — D-31-07: a live break can be skipped — `LiveRowCard` Skip-without-Complete at the compact tier, the extracted `SwipeableRowShell` giving the 20dp single-line tier the same swipe, and verification truth #14's composition PROVEN rather than re-abstained (gap-closure wave 2)
+
+**Gap-closure Wave 3** *(blocked on Gap-closure Wave 2)*
+
+- [ ] 31-08-PLAN.md — Blocking human UAT round two on a real touch device, port 8143 debug build, stale-server kill + served-bytes pre-flight, mandatory ⟳ Re-check-in Step 0, Item 1 re-asked in the same five-attempts form (gap-closure wave 3)
 
 **Cross-cutting constraints:**
 
@@ -687,4 +701,4 @@ Plans:
 | 28. The Day Is a Lattice | — (standalone) | 3/3 | Complete   | 2026-08-19 |
 | 29. Breaks You Can See | — (standalone) | 4/4 | Complete    | 2026-08-25 |
 | 30. Breaks In Committed Time | — (standalone) | 5/5 | Complete    | 2026-08-25 |
-| 31. Breaks You Can Skip | — (standalone) | 0/? | Not Started |  |
+| 31. Breaks You Can Skip | — (standalone) | 5/8 | Gap closure planned (UAT Item 1 FAILED 2026-08-26) |  |
