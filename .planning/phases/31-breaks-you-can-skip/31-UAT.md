@@ -210,11 +210,16 @@ phase did not change it — it is `PD-31-06`, recorded and left alone on purpose
 accident. If you want a running break to be skippable too, say so; it is a small, separate change,
 not a defect in this one.
 
-**What do you want done about this?** _still unanswered as of 2026-08-26._ The owner judged the
-three numbered items and did not rule on this one. It is deliberately left open rather than being
-read as consent either way — no ruling was given, so none is recorded. Carry it into the Item 1
-gap-closure conversation, where a live break's affordance is adjacent to the same acquisition
-problem and the two may share a fix.
+**What do you want done about this?** **RULED 2026-08-26 (asked directly at the start of the
+`--gaps` replan): fold it into this gap closure.** A live break gets a **Skip** action — never
+Complete — and it ships alongside the Item 1 fix so one re-run of the human UAT covers both. The
+ruling is recorded as **D-31-07** in `31-CONTEXT.md`.
+
+For the record of how this went: the verdict above was captured on 2026-08-26 with this item left
+deliberately *unruled* rather than read as consent either way. It was then carried into the Item 1
+gap-closure conversation exactly as this paragraph instructed, and answered there. The prediction
+that "the two may share a fix" held — a live break's affordance and the acquisition problem are the
+same surface.
 
 **2. Break cards are still not tappable.** No detail sheet, at any density. That was your own
 instruction on 2026-08-21 and it is enforced by a test, not by convention. Recorded here only so it
@@ -253,8 +258,9 @@ pending: 0
 skipped: 0
 blocked: 0
 
-Plus one deliberate exclusion (the live-break skip affordance, PD-31-06) left **unruled** — the
-owner did not answer it and no answer has been inferred.
+Plus one deliberate exclusion (the live-break skip affordance, PD-31-06), surfaced **unruled** on
+2026-08-26 and **ruled the same day** at the start of the `--gaps` replan: fold it in, Skip only.
+Recorded as **D-31-07** in `31-CONTEXT.md`. No answer was ever inferred — it was asked.
 
 ## Gaps
 
@@ -269,20 +275,25 @@ owner did not answer it and no answer has been inferred.
   artifacts:
     - path: "lib/screens/today/timeline_geometry.dart"
       issue: "kBreakHitSlop = 16.0 is too small in practice for an invisible acquisition target"
+  owner_ruling: "RULED 2026-08-26 (D-31-06): do BOTH - raise kBreakHitSlop 16.0 -> 24.0 AND add a visible grip glyph inside the existing 20dp label row. Slop-only, a gutter affordance, and long-press were all offered and all declined. Shipping only the slop increase does NOT satisfy this ruling."
   missing:
-    - "Raise kBreakHitSlop. Headroom exists but is bounded and must be computed, not guessed: the Layer 1b pass makes the break WIN the contested band, so every dp added to the slop is taken from the neighbouring work chunk's own effective target. Under today's lattice a 25-minute work chunk is 100dp; if it has a break on both sides it loses 2x the slop. At slop=16 it retains 68dp; at 24, 52dp; at 32, only 36dp - which would push the WORK chunk below the 48dp minimum and simply move the defect next door. The safe ceiling is therefore ~24-26dp, NOT an open-ended increase."
-    - "Because the ceiling is real, a slop increase alone may not be sufficient. Consider pairing it with a way to make the target findable rather than merely large - but note SKIPBREAK-02 forbids growing the PAINTED row, so any visual affordance must fit inside the existing 20dp slot or sit outside the timeline grid entirely. This is a genuine design question, not a constant tweak, and should be treated as one."
+    - "Raise kBreakHitSlop 16.0 -> 24.0. RULED (D-31-06). Headroom exists but is bounded and must be computed, not guessed: the Layer 1b pass makes the break WIN the contested band, so every dp added to the slop is taken from the neighbouring work chunk's own effective target. Under today's lattice a 25-minute work chunk is 100dp; if it has a break on both sides it loses 2x the slop. At slop=16 it retains 68dp; at 24, 52dp; at 32, only 36dp - which would push the WORK chunk below the 48dp minimum and simply move the defect next door. 24 is inside the ~24-26dp safe ceiling. Re-derive this arithmetic in the constant's doc comment rather than restating the number."
+    - "Add a visible grip glyph leading the label inside _SubCompactRow. RULED (D-31-06) - this is the half that answers the actual root cause, and the ceiling above is exactly why a slop increase alone was judged insufficient. SKIPBREAK-02 forbids painting into the slop, so the grip must fit INSIDE the existing 20dp slot and change the row's painted extent by zero pixels."
     - "Do NOT lower dismissThresholds on this evidence. The owner explicitly reported acquisition difficulty, not completion difficulty; the ROADMAP named the threshold as an available lever and the UI-SPEC deliberately declined to pull it without evidence. That evidence still does not exist."
     - "Re-run the same human UAT after any fix. This defect was invisible to 625 green tests and will be invisible to their replacements - a widget test that fires a synthetic drag at an exact coordinate cannot distinguish a 52dp band from a 68dp one."
   debug_session: ""
 
-- truth: "A break that is currently running can be skipped (PD-31-06, deliberate exclusion awaiting an owner ruling)"
-  status: unruled
-  reason: "Surfaced to the owner in this UAT as a deliberate scope call needing a decision. The owner judged Items 1-3 and did not answer it. Recorded as unruled rather than assumed either way."
+- truth: "A break that is currently running can be skipped (PD-31-06, ruled 2026-08-26 -> D-31-07)"
+  status: failed
+  reason: "Surfaced to the owner in this UAT as a deliberate scope call needing a decision. He judged Items 1-3 without answering it, so it was recorded as unruled rather than assumed either way, then asked directly at the start of the --gaps replan and RULED on 2026-08-26: fold it into this gap closure."
   severity: minor
   test: null
-  root_cause: "LiveRowCard.showActions is work-chunk-only. Pre-existing, unchanged by this phase, recorded as PD-31-06."
-  artifacts: []
+  root_cause: "LiveRowCard.showActions is work-chunk-only (chunk.chunkType == ChunkType.work, today_screen.dart:1055). Pre-existing, unchanged by phase 31, recorded as PD-31-06."
+  owner_ruling: "RULED 2026-08-26 (D-31-07): fold into this gap closure. A live break shows Skip ONLY - never Complete, consistent with D-31-01's one-directional endToStart Dismissible and isCompleted staying permanently false for breaks. Ships with the Item 1 fix so one re-run of the human UAT covers both. 'Seed it for later' and 'leave as-is' were both offered and declined."
+  artifacts:
+    - path: "lib/screens/today/today_screen.dart"
+      issue: "showActions gate at line 1055 excludes breaks from the live-row Skip affordance"
   missing:
-    - "Owner ruling required: open a follow-up change, seed it for later, or leave as-is. Do not plan work against this until it is ruled on."
+    - "Allow a live break to show a Skip action via LiveRowCard, Complete excluded."
+    - "Prove UI-SPEC E2's composition claim rather than re-abstaining it: verification truth #14 abstained to insufficient_spec ONLY because no code path existed to exercise it. Once a live break has a Skip affordance, that excuse is gone - assert the row keeps its slot height, stays on the timeline, and does not move the now-line."
   debug_session: ""

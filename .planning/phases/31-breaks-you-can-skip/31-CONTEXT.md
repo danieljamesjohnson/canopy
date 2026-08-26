@@ -73,6 +73,47 @@ open questions planning must decide deliberately and record:
 - **D-31-04 — Skipped-break rendering at sub-compact** `_SubCompactRow` has no completed/skipped
   visual state. Check before assuming, then design one that fits a 20dp hairline.
 
+### Gap-closure decisions — ruled by the owner, 2026-08-26
+
+These two were **asked and answered**, not inferred. They arose from the Phase 31 human UAT
+(`31-UAT.md`, judged 2026-08-26: Item 1 FAIL, Items 2-3 PASS) and are LOCKED inputs to the
+`--gaps` replan. Neither is at Claude's discretion.
+
+- **D-31-06 — The Item 1 acquisition fix is BOTH a bigger slop AND a visible grip.** LOCKED by the
+  owner, 2026-08-26, choosing "Bigger slop + a visible grip" over slop-only, a gutter affordance,
+  and long-press. Two parts, and shipping only the first does not satisfy this decision:
+
+  1. **`kBreakHitSlop` 16.0 → 24.0.** The band a thumb can acquire goes 52dp → 68dp. This number is
+     **derived and bounded, not chosen for feel** — the Layer 1b pass makes the break *win* the
+     contested band, so every dp added is taken from the neighbouring work chunk. A 25-minute work
+     chunk is 100dp; with a break on both sides it loses 2× the slop. At 24 it retains **52dp**
+     (still ≥ the 48dp Material minimum); at 32 it would retain 36dp and the defect would simply
+     move next door. **~24-26 is the ceiling. Do not exceed it, and re-derive this arithmetic in
+     the constant's doc comment rather than restating the number.**
+  2. **A visible grip glyph inside the existing 20dp label row** — leading the `Short break` text in
+     `_SubCompactRow`, between the left `Divider` and the label. This is the half that answers the
+     actual root cause: 52dp already cleared both platform minimums *on paper*, and those minimums
+     assume a target the user can **see**. SKIPBREAK-02 forbids painting into the slop, so the grip
+     must fit **inside** the 20dp slot and change the row's painted extent by **zero pixels**.
+
+  **`dismissThresholds` must NOT be touched.** The owner reported difficulty *grabbing* the row, not
+  difficulty *completing* the swipe. The ROADMAP named the threshold as an available lever and the
+  UI-SPEC deliberately declined to pull it without evidence. That evidence still does not exist.
+
+- **D-31-07 — A currently-live break becomes skippable, in this gap closure.** LOCKED by the owner,
+  2026-08-26, resolving PD-31-06 (which Phase 31 recorded as a deliberate exclusion and the UAT left
+  explicitly *unruled* rather than assuming consent either way). `LiveRowCard.showActions` is
+  work-chunk-only (`chunk.chunkType == ChunkType.work`, `today_screen.dart:1055`); a live break must
+  now show **Skip only — never Complete**, consistent with D-31-01's one-directional `endToStart`
+  `Dismissible` and with `isCompleted` staying permanently false for breaks. This ships **with** the
+  Item 1 fix so a single re-run of the human UAT covers both.
+
+  This also un-blocks verification truth #14, which abstained to `insufficient_spec` in
+  `31-VERIFICATION.md` because no code path existed to exercise it. Once a live break has a Skip
+  affordance, the UI-SPEC E2 composition claim (row keeps its slot height, stays on the timeline,
+  does not move the now-line) becomes a real, testable behaviour and must be **proven, not
+  re-abstained**.
+
 </decisions>
 
 <code_context>
