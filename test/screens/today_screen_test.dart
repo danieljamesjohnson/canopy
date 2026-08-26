@@ -2786,6 +2786,22 @@ void main() {
     });
 
     group('SKIPBREAK-02 — the grid is unchanged', () {
+      // 2026-08-26 (plan 31-06, D-31-06 part 2): this group proves the
+      // break's own SLOT never grew, by measuring the confined ClipRect
+      // that SwipeableChunkCard's `visualHeight` produces — and that
+      // ClipRect is exactly `visualHeight` tall BY CONSTRUCTION regardless
+      // of its child (`_confineContent`/`_confineReveal`,
+      // swipeable_chunk_card.dart). It is therefore structurally incapable
+      // of detecting an inflated CHILD, such as an oversized grip glyph
+      // inside `_SubCompactRow` — a glyph 10dp too tall would still measure
+      // exactly `visualHeight` here and this group would stay green. The
+      // grip's own zero-extent proof lives in
+      // test/screens/today_row_widgets_test.dart's "D-31-06 — the
+      // sub-compact grip glyph" group (Case C), which measures the
+      // unresolved and skipped rows' natural, UNCLIPPED height directly. A
+      // future reader must not mistake this group's continued green for
+      // proof about that glyph.
+      //
       // Same shape as the Phase 29 group's breakBoundaryFixture above (a
       // completed 25-minute preceding work chunk, a break of the
       // parameterised duration/resolution, a following 25-minute work
