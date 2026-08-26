@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: none
 current_phase: 31
 current_phase_name: Breaks You Can Skip
-status: gaps_found
-stopped_at: Phase 31 UI-SPEC approved
-last_updated: "2026-08-25T14:03:11.453Z"
+status: Ready to execute
+stopped_at: Phase 31 gap closure planned (31-06, 31-07, 31-08)
+last_updated: "2026-08-26T00:00:00.000Z"
 last_activity: 2026-08-26
-last_activity_desc: Phase 31 UAT judged — Item 1 FAILED (thumb cannot reliably grab the break)
+last_activity_desc: Phase 31 gap closure planned — 3 plans, checker passed, owner ruled D-31-06 and D-31-07
 state_head: 493e890d3d57822c2ab31f6ce62f23769fe69d5f
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 21
+  total_plans: 24
   completed_plans: 21
 milestone_name: milestone
 ---
@@ -27,13 +27,49 @@ milestone_name: milestone
 
 ## Current Position
 
-Phase: 31 (Breaks You Can Skip) — UAT JUDGED, ITEM 1 FAILED, GAP CLOSURE NEEDED
-Plan: 5 of 5 executed; UAT judged 2026-08-26
+Phase: 31 (Breaks You Can Skip) — GAP CLOSURE PLANNED, READY TO EXECUTE
+Plan: 5 of 5 executed; 3 gap-closure plans written (31-06, 31-07, 31-08), 0 of 3 executed
 
 **Breaks can be skipped — but not reliably by a thumb, which is the whole point.** All five plans
 executed, 625 tests green, `flutter analyze` clean, code review no blockers, 12/12 code truths
 verified. Then the owner picked up a phone: Items 2 and 3 PASS, **Item 1 FAILS** — the 20dp break
-row is too hard to grab. **Resume with `/gsd-plan-phase 31 --gaps`.**
+row is too hard to grab. **Resume with `/gsd-execute-phase 31 --gaps-only`.**
+
+**Gap closure planned 2026-08-26, on two rulings the owner was asked for rather than assumed.**
+`/gsd-plan-phase 31 --gaps` stopped before planning and put both open questions to him, because the
+UAT's own gap list flagged one as "a genuine design question, not a constant tweak" and left the
+other explicitly *unruled* rather than reading silence as consent:
+
+- **D-31-06** — the Item 1 acquisition fix is **both** `kBreakHitSlop` 16.0 → 24.0 **and** a visible
+  grip glyph inside the existing 20dp label row. Slop-only was offered and declined, and that
+  matters: 52dp already cleared Material's 48dp and iOS's 44pt *on paper*, and those minimums assume
+  a target the user can **see** — SKIPBREAK-02 makes this one invisible by construction. 24 is also
+  a derived ceiling, not a preference; at 32 the neighbouring work chunk drops to 36dp and the defect
+  simply moves next door. `dismissThresholds` stays untouched — the reported failure is acquisition,
+  not completion.
+- **D-31-07** — resolves PD-31-06: a currently-live break becomes skippable, **Skip only, never
+  Complete**, shipping with the Item 1 fix so one human UAT re-run covers both.
+
+**The plan is larger than D-31-07's literal wording, deliberately and with the reason recorded.**
+`LiveRowCard` picks its tier from `slotHeight` — `_buildCompact` at/above 88dp, `_buildSingleLine`
+below — so a live 30-minute break gets buttons and a live **5-minute** break gets none at all. Since
+5-minute breaks arrive every 25 minutes, the button-only fix would have shipped a Skip the owner
+rarely meets. 31-07 therefore also extracts the shipped `Dismissible` into `SwipeableRowShell` so
+live rows get the same leftward swipe. The plan-checker read `LiveRowCard` directly and judged the
+extraction **necessary, not scope creep**.
+
+**One vacuity trap caught at planning time.** The existing `SKIPBREAK-02 — the grid is unchanged`
+test measures a `ClipRect` that `_confineContent` makes `visualHeight` tall *by construction,
+regardless of its child* — it would stay green if the grip inflated the row by 10dp. Replaced with
+an unbounded natural-height measurement. Relatedly, 31-06's new band test uses a bare literal `22`
+rather than symbolic `kBreakHitSlop`, because every existing symbolic origin moves with the constant
+and therefore could never have distinguished a 52dp band from a 68dp one — which is exactly why 625
+green tests missed this defect.
+
+**This gap closure ends in another blocking human UAT, and that is not negotiable.** The defect being
+fixed is invisible to automation by construction: a synthetic drag at an exact coordinate cannot tell
+a 52dp band from a 68dp one. Green suites have now been contradicted by a thumb three times in this
+project (Phase 27, Phase 29, Phase 31).
 
 **Phase 31 (Breaks You Can Skip)** deleted `SwipeableChunkCard`'s `chunkType != ChunkType.work`
 early return so every chunk row gets one unconditional `Dismissible` (the `promote` decision — work
