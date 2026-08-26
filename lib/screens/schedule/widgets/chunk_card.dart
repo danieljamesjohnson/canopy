@@ -337,6 +337,16 @@ class _DashedBorderPainter extends CustomPainter {
       oldDelegate.radius != radius;
 }
 
+/// D-31-06 part 2 (phase 31 gap closure). The sub-compact break row's grip
+/// glyph size — deliberately smaller than the `bodySmall` label's own line
+/// box, so the glyph can never become this row's tallest child. Named,
+/// rather than inlined at the `Icon`/`SizedBox` call site, because it is
+/// the single number standing between this row and the SKIPBREAK-02
+/// violation `_SubCompactRow`'s `Divider.height` comment below already
+/// warns about: an unpinned box height on any child of this row inflates
+/// the whole slot.
+const double kSubCompactGripSize = 14.0;
+
 /// Phase 29 (SEEBREAK-01) — the sub-compact tier's shared row: a hairline
 /// `Divider` on each side of a centered label, no card, no dashed border.
 ///
@@ -423,6 +433,44 @@ class _SubCompactRow extends StatelessWidget {
                 color: theme.colorScheme.outlineVariant,
               ),
             ),
+            // D-31-06 part 2: a visible grab affordance, leading the label,
+            // rendered ONLY while the row is still swipeable — a resolved
+            // (skipped) chunk gets DismissDirection.none from
+            // SwipeableChunkCard, so a grip here would advertise a gesture
+            // that no longer exists. Direction-neutral (six-dot grab icon,
+            // not a chevron/arrow) deliberately: this affordance answers
+            // "grab this", not "swipe this way" — a directional icon would
+            // re-open a design question the owner did not rule on.
+            //
+            // The SizedBox pinning both width AND height to
+            // kSubCompactGripSize is belt-and-braces against a future
+            // IconTheme change silently restoring Icon's own 24.0 default
+            // box size — the exact same class of miss the Divider.height
+            // comment above warns about, wearing a different costume.
+            if (!isSkipped) ...[
+              SizedBox(
+                width: kSubCompactGripSize,
+                height: kSubCompactGripSize,
+                child: Icon(
+                  Icons.drag_indicator,
+                  size: kSubCompactGripSize,
+                  // Same colour as the label text, deliberately not
+                  // outlineVariant (the divider colour): the entire finding
+                  // behind this glyph is that the old target was not
+                  // findable, so the faintest colour in the row is the
+                  // wrong answer here.
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(width: 4),
+            ],
+            // Deliberately no Semantics/semanticLabel on the glyph itself:
+            // this whole row is already wrapped in
+            // Semantics(excludeSemantics: true) with the D-31-04 label
+            // above, so a labelled icon here would either be swallowed
+            // silently or perturb an announcement the owner already
+            // passed (31-UAT.md Item 2) — an omission by decision, not by
+            // oversight.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text(

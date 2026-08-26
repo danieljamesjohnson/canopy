@@ -150,6 +150,7 @@ Future<void> _pumpBreakCardUnbounded(
   WidgetTester tester, {
   required ChunkCardDensity density,
   ChunkType type = ChunkType.shortBreak,
+  bool skipped = false,
 }) async {
   await pumpWithMood(
     tester,
@@ -157,7 +158,10 @@ Future<void> _pumpBreakCardUnbounded(
       minHeight: 0,
       maxHeight: double.infinity,
       alignment: Alignment.topCenter,
-      child: ChunkCard(chunk: _breakChunk(type: type), density: density),
+      child: ChunkCard(
+        chunk: _breakChunk(type: type, skipped: skipped),
+        density: density,
+      ),
     ),
   );
 }
@@ -957,6 +961,110 @@ void main() {
           handle.dispose();
         },
       );
+
+      // D-31-06 part 2 (phase 31 gap closure, SKIPBREAK-02). This proof
+      // lives HERE, not in today_screen_test.dart's "SKIPBREAK-02 — the
+      // grid is unchanged" group: that group measures the confined
+      // ClipRect that SwipeableChunkCard's `visualHeight` creates, which is
+      // exactly `visualHeight` tall BY CONSTRUCTION regardless of its
+      // child (`_confineContent`/`_confineReveal`,
+      // swipeable_chunk_card.dart) — it would stay green even if this
+      // glyph inflated the row by 10dp. Only a widget-level, unclipped,
+      // natural-height measurement (Case C below) can actually prove the
+      // glyph's zero-extent claim.
+      group('D-31-06 — the sub-compact grip glyph', () {
+        testWidgets(
+          'Case A: an unresolved sub-compact break renders exactly one '
+          'drag_indicator icon',
+          (tester) async {
+            await _pumpBreakCardUnbounded(
+              tester,
+              density: ChunkCardDensity.subCompact,
+            );
+            expect(
+              find.descendant(
+                of: find.byType(ChunkCard),
+                matching: find.byWidgetPredicate(
+                  (w) => w is Icon && w.icon == Icons.drag_indicator,
+                ),
+              ),
+              findsOneWidget,
+            );
+          },
+        );
+
+        testWidgets(
+          'Case B: a skipped sub-compact break renders no grip — a '
+          'resolved chunk is not swipeable, so the glyph must not '
+          'advertise a gesture that no longer exists',
+          (tester) async {
+            await _pumpBreakCardUnbounded(
+              tester,
+              density: ChunkCardDensity.subCompact,
+              skipped: true,
+            );
+            expect(
+              find.descendant(
+                of: find.byType(ChunkCard),
+                matching: find.byWidgetPredicate(
+                  (w) => w is Icon && w.icon == Icons.drag_indicator,
+                ),
+              ),
+              findsNothing,
+              reason:
+                  'a resolved break gets DismissDirection.none from '
+                  'SwipeableChunkCard; a grip here would advertise a '
+                  'swipe that no longer exists',
+            );
+          },
+        );
+
+        testWidgets(
+          'Case C (load-bearing, SKIPBREAK-02): the grip changes the '
+          'row\'s natural, unclipped height by exactly zero pixels',
+          (tester) async {
+            await _pumpBreakCardUnbounded(
+              tester,
+              density: ChunkCardDensity.subCompact,
+            );
+            final unresolvedHeight = tester
+                .getSize(find.byType(ChunkCard))
+                .height;
+
+            await tester.pumpWidget(const SizedBox.shrink());
+            await _pumpBreakCardUnbounded(
+              tester,
+              density: ChunkCardDensity.subCompact,
+              skipped: true,
+            );
+            final skippedHeight = tester
+                .getSize(find.byType(ChunkCard))
+                .height;
+
+            expect(
+              unresolvedHeight,
+              skippedHeight,
+              reason:
+                  'SKIPBREAK-02: the grip-bearing (unresolved) row and the '
+                  'grip-free (skipped) row must measure the identical '
+                  'natural height — unresolved=$unresolvedHeight '
+                  'skipped=$skippedHeight. A difference here means the '
+                  'glyph inflated the row.',
+            );
+            // Harness bound, NOT a device requirement (PD-29-06's standing
+            // caveat, same file) — a weaker, secondary sanity check that
+            // the unresolved row's placeholder-font height stays inside a
+            // generous multiple of a 5-minute break's own slot.
+            expect(
+              unresolvedHeight,
+              lessThanOrEqualTo(5 * kPixelsPerMinute),
+              reason:
+                  'harness bound (placeholder font, NOT a device '
+                  'requirement): unresolved=$unresolvedHeight',
+            );
+          },
+        );
+      });
     });
 
     testWidgets(
