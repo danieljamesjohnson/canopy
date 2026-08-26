@@ -1251,6 +1251,8 @@ void main() {
       String remainingLabel = '12 min left · until 10:50',
       double slotHeight = 100.0,
       bool showActions = true,
+      bool showComplete = true,
+      bool isSkipped = false,
       VoidCallback? onTap,
       _FakeScheduleNotifier? scheduleNotifier,
     }) async {
@@ -1263,6 +1265,8 @@ void main() {
           remainingLabel: remainingLabel,
           slotHeight: slotHeight,
           showActions: showActions,
+          showComplete: showComplete,
+          isSkipped: isSkipped,
           onTap: onTap,
         ),
         extraProviders: [
@@ -1480,6 +1484,117 @@ void main() {
       await tester.tap(find.byTooltip('Skip'));
       await tester.pump();
       expect(sn.lastSkippedId, 'chunk-xyz');
+    });
+
+    group('D-31-07 — LiveRowCard Skip without Complete', () {
+      testWidgets(
+        'showComplete: false shows exactly one Skip tooltip and no Complete '
+        'tooltip, as a descendant of LiveRowCard',
+        (tester) async {
+          await pumpLiveRowCard(
+            tester,
+            slotHeight: 100.0,
+            showActions: true,
+            showComplete: false,
+          );
+          final liveCard = find.byType(LiveRowCard);
+          expect(
+            find.descendant(
+              of: liveCard,
+              matching: find.byTooltip('Skip'),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(
+              of: liveCard,
+              matching: find.byTooltip('Complete'),
+            ),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        'showComplete: true (default) shows both tooltips — the regression '
+        'guard for the live WORK chunk, which must stay green through every '
+        'later D-31-07 edit',
+        (tester) async {
+          await pumpLiveRowCard(
+            tester,
+            slotHeight: 100.0,
+            showActions: true,
+            showComplete: true,
+          );
+          final liveCard = find.byType(LiveRowCard);
+          expect(
+            find.descendant(of: liveCard, matching: find.byTooltip('Skip')),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(
+              of: liveCard,
+              matching: find.byTooltip('Complete'),
+            ),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'showActions: false hides both tooltips and renders no IconButton at '
+        'all — the pre-existing behaviour, unchanged',
+        (tester) async {
+          await pumpLiveRowCard(tester, slotHeight: 100.0, showActions: false);
+          expect(find.byTooltip('Skip'), findsNothing);
+          expect(find.byTooltip('Complete'), findsNothing);
+          expect(find.byType(IconButton), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'isSkipped strikes the title through with TextDecoration.lineThrough '
+        'at BOTH density tiers, since each tier builds its own title Text',
+        (tester) async {
+          // Compact tier (slotHeight 100.0).
+          await pumpLiveRowCard(
+            tester,
+            slotHeight: 100.0,
+            title: 'Short break',
+            isSkipped: true,
+          );
+          var titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, TextDecoration.lineThrough);
+
+          await pumpLiveRowCard(
+            tester,
+            slotHeight: 100.0,
+            title: 'Short break',
+            isSkipped: false,
+          );
+          titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
+
+          // Single-line tier (slotHeight 20.0).
+          await pumpLiveRowCard(
+            tester,
+            slotHeight: 20.0,
+            title: 'Short break',
+            isSkipped: true,
+          );
+          titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, TextDecoration.lineThrough);
+
+          await pumpLiveRowCard(
+            tester,
+            slotHeight: 20.0,
+            title: 'Short break',
+            isSkipped: false,
+          );
+          titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
+        },
+      );
     });
   });
 }

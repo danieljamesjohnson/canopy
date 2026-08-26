@@ -1046,13 +1046,24 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
           )
         : null;
 
+    // D-31-07: a live break is skip-only now, not action-less. `isBreak`
+    // is any non-work chunk type — the same definition `_needsSlop` and the
+    // non-live break arm above use. `showActions` used to mean "work chunks
+    // only"; it now means "this row offers at least one action", true for a
+    // work chunk exactly as before and, additively, for an unresolved break
+    // — a resolved (already-skipped) break must not advertise an action it
+    // will not accept, the same rule SwipeableChunkCard enforces with
+    // DismissDirection.none.
+    final isBreak = chunk.chunkType != ChunkType.work;
     return LiveRowCard(
       chunkId: chunk.id,
       kicker: _liveKicker(chunk),
       title: title,
       remainingLabel: remainingLabel,
       slotHeight: slotHeight,
-      showActions: chunk.chunkType == ChunkType.work,
+      showActions: isBreak ? !chunk.isSkipped : true,
+      showComplete: !isBreak,
+      isSkipped: chunk.isSkipped,
       onTap: onTap,
     );
   }

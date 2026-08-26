@@ -55,6 +55,8 @@ class LiveRowCard extends StatelessWidget {
     required this.remainingLabel,
     required this.slotHeight,
     this.showActions = true,
+    this.showComplete = true,
+    this.isSkipped = false,
     this.onTap,
   });
 
@@ -77,9 +79,48 @@ class LiveRowCard extends StatelessWidget {
   /// "squeezed" tier (`27-UI-SPEC.md` "The live row's two density tiers").
   final double slotHeight;
 
-  /// Complete/Skip are for work chunks only (UI-SPEC "Actions row"). False
-  /// hides both buttons entirely. Only the compact tier renders them.
+  /// This row offers at least one action (UI-SPEC "Actions row"). False
+  /// hides both buttons entirely; only the compact tier renders them.
+  ///
+  /// **Updated by D-31-07.** Before this phase this parameter alone meant
+  /// "work chunks only" — `showActions: chunk.chunkType == ChunkType.work`
+  /// was the one call site. That is no longer true: a live break now also
+  /// passes `showActions: true` (while unresolved) so it can show Skip.
+  /// *Which* actions render is [showComplete]'s job now, not this
+  /// parameter's — `showActions` only gates whether the action row exists
+  /// at all.
   final bool showActions;
+
+  /// Whether the Complete icon renders when [showActions] is true. Skip
+  /// always renders whenever [showActions] is true, regardless of this
+  /// value.
+  ///
+  /// **D-31-07: a live break is Skip-only, never Complete.** This is
+  /// consistent with D-31-01's one-directional `endToStart` `Dismissible`
+  /// for non-live breaks, and with [ScheduledChunk.isCompleted] staying
+  /// permanently false for a break — offering a Complete button there would
+  /// advertise a state the data model can never reach. Defaults to `true`
+  /// so every pre-D-31-07 call site (the live work chunk) keeps both
+  /// buttons unchanged.
+  final bool showComplete;
+
+  /// Whether this row's title carries `TextDecoration.lineThrough` — the
+  /// same decoration-flag vocabulary D-31-04 shipped for non-live breaks
+  /// (`_SubCompactRow`), which the owner PASSED on 2026-08-26. Applied at
+  /// BOTH density tiers, since each builds its own title `Text` and a fix
+  /// applied to only one would otherwise ship silently.
+  ///
+  /// **PD-31-07-02 — deliberately no translucency wrapper anywhere in this
+  /// widget.** The live card is painted OVER the now-line rule specifically
+  /// so the rule stops at the card's edges (`27-UI-REVIEW.md` addendum, with
+  /// screenshots — a rule striking through the live row otherwise reads as
+  /// "done"/"cancelled"). A translucent card would let that rule bleed back
+  /// through and re-create the exact defect that fix closed, on the one row
+  /// where it would be most confusing. `TextDecoration.lineThrough` is a
+  /// decoration flag on the `TextStyle` — it costs zero layout, so it
+  /// cannot grow this row past its clock-implied slot and cannot violate
+  /// SKIPBREAK-02.
+  final bool isSkipped;
 
   /// Fires when the single-line tier's row is tapped. Ignored by the compact
   /// tier, which has its own explicit icon actions instead. Per PD-27-06,
@@ -160,6 +201,9 @@ class LiveRowCard extends StatelessWidget {
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: colorScheme.onPrimaryContainer,
+                          decoration: isSkipped
+                              ? TextDecoration.lineThrough
+                              : null,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -168,15 +212,16 @@ class LiveRowCard extends StatelessWidget {
                   ),
                 ),
                 if (showActions) ...[
-                  _buildActionIcon(
-                    icon: Icons.check_circle_outline,
-                    color: colorScheme.primary,
-                    tooltip: 'Complete',
-                    onPressed: () =>
-                        context.read<ScheduleNotifier>().markComplete(
-                          chunkId,
-                        ),
-                  ),
+                  if (showComplete)
+                    _buildActionIcon(
+                      icon: Icons.check_circle_outline,
+                      color: colorScheme.primary,
+                      tooltip: 'Complete',
+                      onPressed: () =>
+                          context.read<ScheduleNotifier>().markComplete(
+                            chunkId,
+                          ),
+                    ),
                   _buildActionIcon(
                     icon: Icons.skip_next_outlined,
                     color: colorScheme.error,
@@ -264,6 +309,11 @@ class LiveRowCard extends StatelessWidget {
       fontWeight: FontWeight.w600,
       color: colorScheme.onPrimaryContainer,
     );
+    // D-31-07: only the title carries the skipped decoration — the
+    // remaining-time text (below) keeps `style` unmodified.
+    final titleStyle = style?.copyWith(
+      decoration: isSkipped ? TextDecoration.lineThrough : null,
+    );
     final row = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
       child: Row(
@@ -274,7 +324,7 @@ class LiveRowCard extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: style,
+              style: titleStyle,
             ),
           ),
           // Deliberately never truncates (`27-UI-SPEC.md` "Single-line
