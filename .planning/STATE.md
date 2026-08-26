@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: none
 current_phase: 31
 current_phase_name: Breaks You Can Skip
-status: executing
-stopped_at: Phase 31 gap closure executing (31-06, 31-07, 31-08)
+status: verification_deferred_human
+stopped_at: Phase 31 gap closure — round-two UAT served on 8143, awaiting owner verdict
 last_updated: "2026-08-26T00:00:00.000Z"
 last_activity: 2026-08-26
-last_activity_desc: Phase 31 gap closure executing — wave 1 of 3 dispatched
+last_activity_desc: Phase 31 gap closure code-complete (639/639 green) — blocking round-two UAT awaiting the owner's thumb
 state_head: 493e890d3d57822c2ab31f6ce62f23769fe69d5f
 progress:
   total_phases: 5
@@ -27,8 +27,38 @@ milestone_name: milestone
 
 ## Current Position
 
-Phase: 31 (Breaks You Can Skip) — GAP CLOSURE PLANNED, READY TO EXECUTE
-Plan: 5 of 5 executed; 3 gap-closure plans written (31-06, 31-07, 31-08), 0 of 3 executed
+Phase: 31 (Breaks You Can Skip) — GAP CLOSURE CODE-COMPLETE, BLOCKING UAT AWAITING THE OWNER
+Plan: 5 of 5 executed; gap closure 31-06 and 31-07 executed, 31-08 at its blocking human checkpoint
+
+**Served at `http://danserver:8143/` right now, awaiting a real thumb.** Both gap-closure code plans
+landed: `kBreakHitSlop` 24.0 (68dp band) plus a pinned `Icons.drag_indicator` grip at zero painted
+cost, and a live break that can now be skipped (Skip-only button at the compact tier,
+`SwipeableRowShell` swipe at the 20dp tier). Suite went 625 → **639/639**, `flutter analyze` clean,
+both re-run by the orchestrator on the merged tree rather than taken on the executors' word.
+**Resume by reading `31-GAPS-UAT.md` and recording the owner's verdicts.**
+
+**The stale-server trap fired again, one round later.** Round one found a two-day-old server
+squatting port 8143 and nearly judged the wrong bundle. That same server (PID 2357258, started
+2026-08-24 09:49) was *still* listening at the start of this UAT — still serving the pre-fix bundle
+the owner already judged FAIL. It was killed and replaced before verification. Anyone serving this
+project on a reused port should check the port before trusting what is on it; this has now happened
+twice.
+
+**A presence-probe trap worth carrying forward.** The pre-flight's name-greps for wave 1's grip
+(`drag_indicator`, `kSubCompactGripSize`) both returned **zero** on a bundle that definitely contains
+it. `dart2js` const-folds both — an icon survives only as its codepoint (`0xe207` = 57863, present 4×
+in the served bytes), and a `const double` inlines to a literal. **A name-grep is only a valid
+presence probe for symbols dart2js preserves.** Reading a zero as "the feature is missing" would have
+sent a working build back for a pointless rebuild.
+
+**One deviation, verified rather than accepted.** Plan 31-07's literal Case B asked for a break that
+is simultaneously live and skipped. That state is unreachable: `now_state.dart:176`
+(`while (active.isCompleted || active.isSkipped)`) unconditionally advances past a resolved chunk of
+any type, even mid-window — pre-existing and already tested. The executor proved the reachable claim
+instead (the same chunk's confined band keeps its 20dp slot height and Stack-relative position across
+the live→resolved transition, and the now-line does not move) and documented it, rather than editing
+a heavily-tested state machine or quietly softening the assertion. Verification truth #14 is now
+proven rather than abstaining — but `/gsd-verify-work` should re-score it against that deviation.
 
 **Breaks can be skipped — but not reliably by a thumb, which is the whole point.** All five plans
 executed, 625 tests green, `flutter analyze` clean, code review no blockers, 12/12 code truths

@@ -668,15 +668,15 @@ Plans:
 
 **Gap-closure Wave 1**
 
-- [ ] 31-06-PLAN.md — D-31-06 BOTH halves: `kBreakHitSlop` 16.0 → 24.0 with its ceiling arithmetic re-derived, AND a visible grip glyph inside `_SubCompactRow`'s existing 20dp row at zero painted cost; two RED captures (gap-closure wave 1)
+- [x] 31-06-PLAN.md — D-31-06 BOTH halves: `kBreakHitSlop` 16.0 → 24.0 with its ceiling arithmetic re-derived, AND a visible grip glyph inside `_SubCompactRow`'s existing 20dp row at zero painted cost; two RED captures (gap-closure wave 1)
 
 **Gap-closure Wave 2** *(blocked on Gap-closure Wave 1)*
 
-- [ ] 31-07-PLAN.md — D-31-07: a live break can be skipped — `LiveRowCard` Skip-without-Complete at the compact tier, the extracted `SwipeableRowShell` giving the 20dp single-line tier the same swipe, and verification truth #14's composition PROVEN rather than re-abstained (gap-closure wave 2)
+- [x] 31-07-PLAN.md — D-31-07: a live break can be skipped — `LiveRowCard` Skip-without-Complete at the compact tier, the extracted `SwipeableRowShell` giving the 20dp single-line tier the same swipe, and verification truth #14's composition PROVEN rather than re-abstained (gap-closure wave 2)
 
 **Gap-closure Wave 3** *(blocked on Gap-closure Wave 2)*
 
-- [ ] 31-08-PLAN.md — Blocking human UAT round two on a real touch device, port 8143 debug build, stale-server kill + served-bytes pre-flight, mandatory ⟳ Re-check-in Step 0, Item 1 re-asked in the same five-attempts form (gap-closure wave 3)
+- [ ] 31-08-PLAN.md — Blocking human UAT round two on a real touch device, port 8143 debug build, stale-server kill + served-bytes pre-flight, mandatory ⟳ Re-check-in Step 0, Item 1 re-asked in the same five-attempts form (gap-closure wave 3) — **written, built, served on 8143 and byte-verified; awaiting the owner's verdict**
 
 **Cross-cutting constraints:**
 
