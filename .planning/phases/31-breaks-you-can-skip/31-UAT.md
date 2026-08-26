@@ -1,6 +1,6 @@
 # Phase 31 Plan 05 — Human UAT
 
-**Status:** awaiting owner
+**Status:** complete — judged by the owner 2026-08-26. Item 1 FAIL, Items 2-3 PASS.
 
 **Served at:** `http://danserver:8143/`
 **Debug build** (`flutter build web --debug --source-maps --pwa-strategy=none`), served via
@@ -124,8 +124,8 @@ Record here whether Step 0 was performed, and the date. An unrecorded Step 0 inv
 below and must be re-run, not assumed — the orchestrator cannot perform this step for you, because
 it requires tapping ⟳ Re-check-in in the running app.
 
-**Step 0 performed:** _pending — owner_
-**Date:** _pending_
+**Step 0 performed:** yes — ⟳ Re-check-in tapped before judging.
+**Date:** 2026-08-26
 
 ---
 
@@ -144,7 +144,19 @@ The target is an invisible band 16dp above and 16dp below the visible hairline, 
 area is roughly 52dp against a 20dp visible row. If (a) is unreliable, say roughly how it fails —
 "it grabs the block above" and "nothing happens at all" are different defects with different fixes.
 
-**Verdict:** _pending_
+**Verdict: ❌ FAIL** — owner, 2026-08-26: *"hard to do this with a thumb."*
+
+Failure mode, clarified: **hard to GRAB the row**, not hard to complete the swipe once grabbed.
+So the defect is the size of the acquisition target, not the drag threshold — `dismissThresholds`
+is not implicated and should not be touched on this evidence.
+
+**Why the automated evidence did not catch this, stated plainly.** `kBreakHitSlop = 16.0` yields a
+52dp reachable band, which clears Material's 48dp and iOS's 44pt minimums, and three widget tests
+prove a synthetic drag starting anywhere in that band resolves to the break. All of that is true and
+none of it was sufficient. Those platform minimums assume a target the user can **see**; this band
+is invisible by construction (SKIPBREAK-02 forbids painting into it), so the thumb is aimed at the
+20dp hairline and must land within ±16dp of it by feel alone. A spec minimum met by an invisible
+target is not the same guarantee as one met by a visible one — that distinction is the finding.
 
 ---
 
@@ -163,7 +175,9 @@ could not be settled from a desk (see `31-02-SUMMARY.md` coverage entry D6).
 Also glance at a **30-minute long break** and skip one: it should read as skipped too, with its
 trailing duration text replaced by the word "skipped".
 
-**Verdict:** _pending_
+**Verdict: ✅ PASS** — owner, 2026-08-26: *"yes its visible."* The `Opacity(0.5)` legibility risk
+flagged in advance (`31-02-SUMMARY.md` D6, and the UI-SPEC's E2 `long-text` backstop) did NOT
+materialise. No per-tier opacity adjustment is needed; the uniform 0.5 stands.
 
 ---
 
@@ -178,7 +192,9 @@ This is deliberate and it is counter-intuitive; if it reads as wrong to you, say
 the day forward is a real option that was explicitly deferred rather than dismissed, and it would
 need your decision to plan.
 
-**Verdict:** _pending_
+**Verdict: ✅ PASS** — owner, 2026-08-26: *"no nothing moved."* D-31-03's counter-intuitive default
+holds and reads as correct to the owner. Guard 9 and the mark-skipped-and-move-on semantics are
+confirmed against a real generated day, after a real ⟳ Re-check-in.
 
 ---
 
@@ -194,8 +210,11 @@ phase did not change it — it is `PD-31-06`, recorded and left alone on purpose
 accident. If you want a running break to be skippable too, say so; it is a small, separate change,
 not a defect in this one.
 
-**What do you want done about this?** _pending — options: open a small follow-up change, seed it
-for later, or leave it as-is._
+**What do you want done about this?** _still unanswered as of 2026-08-26._ The owner judged the
+three numbered items and did not rule on this one. It is deliberately left open rather than being
+read as consent either way — no ruling was given, so none is recorded. Carry it into the Item 1
+gap-closure conversation, where a live break's affordance is adjacent to the same acquisition
+problem and the two may share a fix.
 
 **2. Break cards are still not tappable.** No detail sheet, at any density. That was your own
 instruction on 2026-08-21 and it is enforced by a test, not by convention. Recorded here only so it
@@ -222,3 +241,48 @@ judged honestly a working day later.
 Any FAIL routes explicitly — to a gap-closure plan in this phase, or to a new phase — rather than
 being noted and left. A recorded failure with no route is how Phase 24's DayComplete gap survived a
 full plan cycle. Do not let a FAIL here sit unrouted.
+
+---
+
+## Summary
+
+total: 3
+passed: 2
+issues: 1
+pending: 0
+skipped: 0
+blocked: 0
+
+Plus one deliberate exclusion (the live-break skip affordance, PD-31-06) left **unruled** — the
+owner did not answer it and no answer has been inferred.
+
+## Gaps
+
+<!-- YAML for /gsd-plan-phase 31 --gaps consumption -->
+
+- truth: "A 5-minute break's 20dp row can be reliably grabbed and swiped by a thumb at every density (SKIPBREAK-01)"
+  status: failed
+  reason: "User reported: hard to do this with a thumb. Clarified on follow-up: hard to GRAB the row, not hard to complete the swipe once grabbed."
+  severity: major
+  test: 1
+  root_cause: "kBreakHitSlop = 16.0 yields a 52dp acquisition band, which clears Material 48dp and iOS 44pt on paper. Those minimums assume a target the user can SEE. SKIPBREAK-02 forbids painting into the slop, so the band is invisible by construction and the thumb must land within +/-16dp of a 20dp hairline by feel alone. Meeting a platform minimum with an invisible target is a weaker guarantee than meeting it with a visible one, and the difference is what the owner felt."
+  artifacts:
+    - path: "lib/screens/today/timeline_geometry.dart"
+      issue: "kBreakHitSlop = 16.0 is too small in practice for an invisible acquisition target"
+  missing:
+    - "Raise kBreakHitSlop. Headroom exists but is bounded and must be computed, not guessed: the Layer 1b pass makes the break WIN the contested band, so every dp added to the slop is taken from the neighbouring work chunk's own effective target. Under today's lattice a 25-minute work chunk is 100dp; if it has a break on both sides it loses 2x the slop. At slop=16 it retains 68dp; at 24, 52dp; at 32, only 36dp - which would push the WORK chunk below the 48dp minimum and simply move the defect next door. The safe ceiling is therefore ~24-26dp, NOT an open-ended increase."
+    - "Because the ceiling is real, a slop increase alone may not be sufficient. Consider pairing it with a way to make the target findable rather than merely large - but note SKIPBREAK-02 forbids growing the PAINTED row, so any visual affordance must fit inside the existing 20dp slot or sit outside the timeline grid entirely. This is a genuine design question, not a constant tweak, and should be treated as one."
+    - "Do NOT lower dismissThresholds on this evidence. The owner explicitly reported acquisition difficulty, not completion difficulty; the ROADMAP named the threshold as an available lever and the UI-SPEC deliberately declined to pull it without evidence. That evidence still does not exist."
+    - "Re-run the same human UAT after any fix. This defect was invisible to 625 green tests and will be invisible to their replacements - a widget test that fires a synthetic drag at an exact coordinate cannot distinguish a 52dp band from a 68dp one."
+  debug_session: ""
+
+- truth: "A break that is currently running can be skipped (PD-31-06, deliberate exclusion awaiting an owner ruling)"
+  status: unruled
+  reason: "Surfaced to the owner in this UAT as a deliberate scope call needing a decision. The owner judged Items 1-3 and did not answer it. Recorded as unruled rather than assumed either way."
+  severity: minor
+  test: null
+  root_cause: "LiveRowCard.showActions is work-chunk-only. Pre-existing, unchanged by this phase, recorded as PD-31-06."
+  artifacts: []
+  missing:
+    - "Owner ruling required: open a follow-up change, seed it for later, or leave as-is. Do not plan work against this until it is ruled on."
+  debug_session: ""

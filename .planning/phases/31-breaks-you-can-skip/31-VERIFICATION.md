@@ -1,8 +1,8 @@
 ---
 phase: 31-breaks-you-can-skip
 verified: 2026-08-25T15:30:00Z
-status: human_needed
-score: 12/12 code truths verified (2 backstop truths abstained, 3 human UAT items pending)
+status: gaps_found
+score: 12/12 code truths verified; human UAT judged 2026-08-26 — 2 of 3 items PASS, Item 1 (SKIPBREAK-01) FAILED
 behavior_unverified: 0
 overrides_applied: 0
 behavior_unverified_items: []
@@ -25,6 +25,27 @@ human_verification:
 ---
 
 # Phase 31: Breaks You Can Skip — Verification Report
+
+> **UPDATE 2026-08-26 — the human verification came back, and it changed the verdict.**
+> This report's `status` moved `human_needed` -> `gaps_found`. The owner judged the three UAT items
+> on a real phone after a real ⟳ Re-check-in: **Items 2 and 3 PASS, Item 1 FAILS.**
+>
+> - **Item 1 (SKIPBREAK-01) — FAIL.** *"hard to do this with a thumb."* Clarified on follow-up as an
+>   **acquisition** failure (hard to grab the row), not a completion failure. `kBreakHitSlop = 16.0`
+>   gives a 52dp band that clears both platform minimums on paper — but SKIPBREAK-02 makes that band
+>   **invisible**, and those minimums assume a target the user can see. Full root cause and the
+>   bounded-headroom analysis are in `31-UAT.md`'s Gaps section.
+> - **Item 2 (D-31-04) — PASS.** The `Opacity(0.5)` sub-compact legibility risk, flagged in advance
+>   as unsettleable from a desk, did not materialise. No per-tier adjustment needed.
+> - **Item 3 (D-31-03) — PASS.** Nothing else on the day moved. The counter-intuitive
+>   mark-skipped-and-move-on default is confirmed correct against a real generated day.
+>
+> The two `verification: backstop` truths that abstained below are **partially resolved** by this:
+> the sub-compact text/legibility one is now positively confirmed by Item 2's PASS. The PD-31-06
+> live-break one remains **unruled** — the owner did not answer it, and no answer has been inferred.
+>
+> This is the third time in this project that a green suite was contradicted by a thumb (Phase 27,
+> Phase 29, now Phase 31). The checkpoint earned its cost again.
 
 **Phase Goal:** A break can be skipped the same way a work chunk can — at every density, including
 the 5-minute one — without the timeline lying about how long anything takes.

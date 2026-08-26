@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: none
 current_phase: 31
 current_phase_name: Breaks You Can Skip
-status: awaiting_human_verification
+status: gaps_found
 stopped_at: Phase 31 UI-SPEC approved
 last_updated: "2026-08-25T14:03:11.453Z"
-last_activity: 2026-08-25
-last_activity_desc: Phase 31 code complete — awaiting human UAT
+last_activity: 2026-08-26
+last_activity_desc: Phase 31 UAT judged — Item 1 FAILED (thumb cannot reliably grab the break)
 state_head: 493e890d3d57822c2ab31f6ce62f23769fe69d5f
 progress:
   total_phases: 5
@@ -27,13 +27,13 @@ milestone_name: milestone
 
 ## Current Position
 
-Phase: 31 (Breaks You Can Skip) — CODE COMPLETE, AWAITING HUMAN UAT
-Plan: 5 of 5 (all executed; 31-05 halted at its blocking checkpoint by design)
+Phase: 31 (Breaks You Can Skip) — UAT JUDGED, ITEM 1 FAILED, GAP CLOSURE NEEDED
+Plan: 5 of 5 executed; UAT judged 2026-08-26
 
-**Breaks can now be skipped — pending the one verdict a test cannot give.** All five plans
-executed, 625 tests green, `flutter analyze` clean, code review found no blockers. The phase is
-`verification_deferred_human`: its ROADMAP entry mandates a human UAT, and `31-UAT.md` is written,
-served, and byte-verified but unanswered. **Resume with `/gsd-verify-work 31`.**
+**Breaks can be skipped — but not reliably by a thumb, which is the whole point.** All five plans
+executed, 625 tests green, `flutter analyze` clean, code review no blockers, 12/12 code truths
+verified. Then the owner picked up a phone: Items 2 and 3 PASS, **Item 1 FAILS** — the 20dp break
+row is too hard to grab. **Resume with `/gsd-plan-phase 31 --gaps`.**
 
 **Phase 31 (Breaks You Can Skip)** deleted `SwipeableChunkCard`'s `chunkType != ChunkType.work`
 early return so every chunk row gets one unconditional `Dismissible` (the `promote` decision — work
@@ -94,15 +94,17 @@ function.** Trap #4 (data layer: an already-generated day is never regenerated o
 promoted into `CLAUDE.md`, and every UAT that tests generator output must say so in its own
 instructions.
 
-Next: **the owner's thumb.** Phase 31 is code-complete; the only remaining work is the blocking
-human UAT at `http://danserver:8143/` (`31-UAT.md`, Step 0 = mandatory ⟳ Re-check-in). Phases 27–31
-all sit outside any milestone; v1.6 is not yet defined.
+Next: **close Item 1's gap.** `/gsd-plan-phase 31 --gaps`. The design question is real — a bigger
+invisible band has a hard ceiling (~24–26dp) before it starves the neighbouring work chunk, so
+"raise the constant" may not be the whole answer. One owner ruling is also still outstanding
+(PD-31-06, the live-break affordance). Phases 27–31 all sit outside any milestone; v1.6 is not yet
+defined.
 
-Status: Phase 31 code complete — awaiting human UAT (`verification_deferred_human`)
-Last activity: 2026-08-25 — Phase 31 executed, 5/5 plans, 625 tests green, UAT served and unanswered
+Status: Phase 31 gap closure needed — Item 1 FAILED at human UAT
+Last activity: 2026-08-26 — UAT judged: Item 1 FAIL (acquisition), Items 2–3 PASS
 
 ```
-v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  27 ✅  →  28 ✅  →  29 ✅  →  30 ✅  →  31 ⏸ awaiting UAT  →  v1.6 not yet defined
+v1.0 ✅  v1.1 ✅  v1.2 ✅  v1.3 ✅  v1.4 ✅  v1.5 ✅  →  27 ✅  →  28 ✅  →  29 ✅  →  30 ✅  →  31 ⚠ gap  →  v1.6 not yet defined
 ```
 
 **Uncommitted-to-a-milestone work is deliberate here.** Phases 27–31 sit outside any milestone. If a
@@ -113,7 +115,7 @@ v1.6 is opened before it ships, fold it in rather than leaving it orphaned.
 See: `.planning/PROJECT.md` (updated 2026-08-14)
 
 **Core value:** Generate a usable daily schedule every morning — one that reflects your real goals and how you actually feel.
-**Current focus:** Phase 31 — Breaks You Can Skip
+**Current focus:** Phase 31 gap closure — make the 20dp break row grabbable by a thumb
 
 ## Shipped Milestones
 
@@ -330,15 +332,40 @@ to it as-is. Ready for `/gsd-plan-phase 31`.
 
 | Phase | State | Resume |
 |-------|-------|--------|
-| 31 | verification_deferred_human | /gsd-verify-work 31 |
+| 31 | verification_gaps — Item 1 FAILED at human UAT | /gsd-plan-phase 31 --gaps |
 
-**Phase 31 is code-complete and blocked only on a thumb.** 625 tests green, `flutter analyze`
-clean, code review no blockers, `31-VERIFICATION.md` = `human_needed` with 13/13 code truths
-verified and 2 backstop truths correctly abstaining (`insufficient_spec`) rather than passing on
-presence. What is unanswered is the one thing no assertion in this repository settles: whether a
-real thumb can reliably swipe an **invisible** 52dp band around a 20dp painted row without also
-grabbing the work chunk beside it. `flutter test` fires synthetic drags at exact coordinates and
-does not model a fingertip's contact patch.
+**Phase 31's UAT was judged on 2026-08-26 and Item 1 FAILED.** The owner, on a real phone after a
+real ⟳ Re-check-in: *"hard to do this with a thumb."* Clarified on follow-up as an **acquisition**
+failure — hard to *grab* the 20dp row, not hard to complete the swipe once grabbed. Items 2
+(legibility at `Opacity(0.5)`) and 3 (nothing else moves) both PASS.
+
+**The root cause is a real lesson, not a tuning miss.** `kBreakHitSlop = 16.0` yields a 52dp
+acquisition band, clearing Material's 48dp and iOS's 44pt. Three widget tests prove a synthetic drag
+anywhere in that band resolves to the break. All true; none of it sufficient. **Those platform
+minimums assume a target the user can SEE.** SKIPBREAK-02 forbids painting into the slop, so the
+band is invisible by construction and the thumb must land within ±16dp of a 20dp hairline by feel
+alone. Meeting a platform minimum with an invisible target is a weaker guarantee than meeting it
+with a visible one — and the gap between those two guarantees is exactly what a thumb found and
+625 tests could not.
+
+**The fix has a bounded ceiling, so it needs planning rather than a constant bump.** The Layer 1b
+pass makes the break *win* the contested band, so every dp added to the slop is taken from the
+neighbouring work chunk's own target. A 25-minute work chunk is 100dp; with a break on both sides it
+loses 2× the slop. At 16 it keeps 68dp, at 24 → 52dp, at 32 → 36dp, which pushes the *work* chunk
+under the 48dp minimum and just moves the defect next door. Safe ceiling ≈ 24–26dp. A slop increase
+alone may therefore be insufficient, and making the target *findable* rather than merely larger runs
+into SKIPBREAK-02. That tension is the actual design question. Full analysis in `31-UAT.md` Gaps.
+
+**Do NOT lower `dismissThresholds` on this evidence** — the owner reported acquisition difficulty,
+not completion difficulty. The ROADMAP named that lever; the UI-SPEC declined to pull it without
+evidence; that evidence still does not exist.
+
+**Still unruled:** whether a *currently running* break should be skippable (PD-31-06). Surfaced to
+the owner in this UAT; he judged the three numbered items and did not answer it. Recorded as unruled
+rather than read as consent either way.
+
+*Third time in this project a green suite was contradicted by a thumb — Phase 27, Phase 29, now
+Phase 31. The blocking checkpoint earned its cost again.*
 
 The build is **live now** at `http://danserver:8143/` (debug, `--pwa-strategy=none`), served by
 `tools/serve-uat.py`, and byte-verified before anyone was asked to look: built and served
