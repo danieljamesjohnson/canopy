@@ -1,0 +1,68 @@
+RED capture — plan 31-06, Task 2 (D-31-06 part 2, SKIPBREAK-02)
+Non-vacuity protocol per 31-03-SUMMARY.md.
+
+What was temporarily changed: in lib/screens/schedule/widgets/chunk_card.dart's
+`_SubCompactRow`, the pinning `SizedBox(width: kSubCompactGripSize, height:
+kSubCompactGripSize, child: Icon(...))` was replaced with a bare `Icon(
+Icons.drag_indicator, size: 24.0, ...)` — i.e. the pinning SizedBox was
+deleted AND the icon's own size was forced up to Icon's unpinned default
+(24.0), leaving everything else (the `if (!isSkipped)` gate, the trailing
+SizedBox(width: 4), the colour) untouched. This was a temporary, uncommitted
+edit made to prove Case C can genuinely fail; the file was restored
+byte-identical to its intended state immediately after this run (confirmed
+via `diff` against a pre-experiment copy — IDENTICAL) before committing
+anything.
+
+Command run:
+  flutter test test/screens/today_row_widgets_test.dart --plain-name "D-31-06"
+
+Verbatim output (failure block):
+
+00:00 +0: ChunkCardDensity (CAL-01, 26-02-PLAN.md PD-4) break densities D-31-06 — the sub-compact grip glyph Case A: an unresolved sub-compact break renders exactly one drag_indicator icon
+00:00 +1: ChunkCardDensity (CAL-01, 26-02-PLAN.md PD-4) break densities D-31-06 — the sub-compact grip glyph Case B: a skipped sub-compact break renders no grip — a resolved chunk is not swipeable, so the glyph must not advertise a gesture that no longer exists
+00:00 +2: ChunkCardDensity (CAL-01, 26-02-PLAN.md PD-4) break densities D-31-06 — the sub-compact grip glyph Case C (load-bearing, SKIPBREAK-02): the grip changes the row's natural, unclipped height by exactly zero pixels
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <16.0>
+  Actual: <24.0>
+SKIPBREAK-02: the grip-bearing (unresolved) row and the grip-free (skipped) row must measure the
+identical natural height — unresolved=24.0 skipped=16.0. A difference here means the glyph inflated
+the row.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure>.<anonymous closure>.<anonymous closure> (file:///home/dan/CodeProjects/canopy/.claude/worktrees/agent-aaee5ced64c307e34/test/screens/today_row_widgets_test.dart:1044:13)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/dan/CodeProjects/canopy/.claude/worktrees/agent-aaee5ced64c307e34/test/screens/today_row_widgets_test.dart line 1044
+The test description was:
+  Case C (load-bearing, SKIPBREAK-02): the grip changes the row's natural, unclipped height by
+  exactly zero pixels
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +2 -1: ChunkCardDensity (CAL-01, 26-02-PLAN.md PD-4) break densities D-31-06 — the sub-compact grip glyph Case C (load-bearing, SKIPBREAK-02): the grip changes the row's natural, unclipped height by exactly zero pixels [E]
+  Test failed. See exception logs above.
+  The test description was: Case C (load-bearing, SKIPBREAK-02): the grip changes the row's natural, unclipped height by exactly zero pixels
+
+00:00 +2 -1: Some tests failed.
+
+Failing tests:
+  test/screens/today_row_widgets_test.dart: ChunkCardDensity (CAL-01, 26-02-PLAN.md PD-4) break densities D-31-06 — the sub-compact grip glyph Case C (load-bearing, SKIPBREAK-02): the grip changes the row's natural, unclipped height by exactly zero pixels
+
+Result: Case C failed showing two unequal measured heights — the
+grip-bearing (unresolved) row measured 24.0, the grip-free (skipped) row
+measured 16.0 — not a timeout or a null. Cases A and B (presence/absence)
+stayed green, as expected, since neither depends on the glyph's own size.
+This proves Case C is not vacuous: an oversized, unpinned glyph genuinely
+inflates the sub-compact row's natural height and this test catches it; at
+the shipped kSubCompactGripSize (14.0, pinned by a SizedBox on both width
+and height) the two rows measure identically.
+
+chunk_card.dart was restored from the pre-experiment copy immediately after
+capturing this output; a `diff` against that copy showed no difference
+before the task commit.

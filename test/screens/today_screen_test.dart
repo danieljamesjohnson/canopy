@@ -2697,7 +2697,111 @@ void main() {
       },
     );
 
+    group('D-31-06 — a bigger, findable acquisition band', () {
+      // Reuses skipTracerFixture() and the group's established
+      // _FakeScheduleNotifierWithSchedule recording fake and 9:00 AM
+      // DayComplete clock (see Case A's clock-choice comment above the
+      // parent group's first test — the fixture's day ends at 8:55 AM, so
+      // 9:00 keeps DayComplete true while keeping the break inside the
+      // default test viewport CAL-03's auto-scroll would otherwise carry it
+      // out of).
+
+      testWidgets(
+        'D-31-06 Case A: a drag started 22dp above the painted top edge — '
+        'outside the shipped 16dp band — resolves to the break, not the '
+        'preceding work chunk',
+        (tester) async {
+          final fake = _FakeScheduleNotifierWithSchedule(skipTracerFixture());
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: fake,
+            now: () => DateTime(2026, 8, 7, 9, 0), // DayComplete
+          );
+
+          final breakClipRect = find
+              .ancestor(
+                of: find.text('Short break'),
+                matching: find.byType(ClipRect),
+              )
+              .first;
+          final paintedRect = tester.getRect(breakClipRect);
+          // Deliberately a bare numeric literal, NOT an expression involving
+          // kBreakHitSlop: an origin computed from the constant moves with
+          // the constant and therefore cannot discriminate a 52dp band from
+          // a 68dp one — which is exactly how 625 green tests stayed green
+          // through the defect a real thumb found (31-UAT.md Item 1).
+          final origin = Offset(paintedRect.center.dx, paintedRect.top - 22);
+          await tester.dragFrom(origin, const Offset(-400, 0));
+          await tester.pumpAndSettle();
+
+          expect(
+            fake.lastSkippedId,
+            'b1',
+            reason:
+                'D-31-06: a drag 22dp above the break\'s painted top edge — '
+                'outside the OLD 16dp band (52dp total) but inside the NEW '
+                '24dp band (68dp total) — must resolve to the break. A '
+                'failure here that names w1 is the specific regression this '
+                'gap closure fixes, not a generic miss.',
+          );
+          expect(
+            fake.lastSkippedId,
+            isNot('w1'),
+            reason:
+                'a failure here means the preceding work chunk stole the '
+                'touch, not just that the break missed it — names the '
+                'thief.',
+          );
+        },
+      );
+
+      testWidgets(
+        'D-31-06 Case B: a 25-minute work chunk with a break on both sides '
+        'retains at least kMinBreakDragTarget of its own band at the '
+        'shipped slop value',
+        (tester) async {
+          // Pure-constant ceiling guard, no pump — the guard that makes a
+          // future "just bump it again" fail loudly instead of silently
+          // moving Item 1's defect onto the neighbouring work chunk.
+          expect(
+            25 * kPixelsPerMinute - 2 * kBreakHitSlop,
+            greaterThanOrEqualTo(kMinBreakDragTarget),
+            reason:
+                'D-31-06\'s ceiling: raising kBreakHitSlop past ~26dp would '
+                'push the neighbouring 25-minute work chunk\'s own retained '
+                'band below kMinBreakDragTarget (48dp), moving the '
+                'acquisition defect onto the work chunk instead of fixing '
+                'it on the break.',
+          );
+          expect(
+            kBreakHitSlop,
+            lessThanOrEqualTo(26.0),
+            reason:
+                'D-31-06\'s re-derived ceiling is ~24-26dp — a value above '
+                '26.0 provably drops the neighbour below '
+                'kMinBreakDragTarget for a standard 25-minute work chunk.',
+          );
+        },
+      );
+    });
+
     group('SKIPBREAK-02 — the grid is unchanged', () {
+      // 2026-08-26 (plan 31-06, D-31-06 part 2): this group proves the
+      // break's own SLOT never grew, by measuring the confined ClipRect
+      // that SwipeableChunkCard's `visualHeight` produces — and that
+      // ClipRect is exactly `visualHeight` tall BY CONSTRUCTION regardless
+      // of its child (`_confineContent`/`_confineReveal`,
+      // swipeable_chunk_card.dart). It is therefore structurally incapable
+      // of detecting an inflated CHILD, such as an oversized grip glyph
+      // inside `_SubCompactRow` — a glyph 10dp too tall would still measure
+      // exactly `visualHeight` here and this group would stay green. The
+      // grip's own zero-extent proof lives in
+      // test/screens/today_row_widgets_test.dart's "D-31-06 — the
+      // sub-compact grip glyph" group (Case C), which measures the
+      // unresolved and skipped rows' natural, UNCLIPPED height directly. A
+      // future reader must not mistake this group's continued green for
+      // proof about that glyph.
+      //
       // Same shape as the Phase 29 group's breakBoundaryFixture above (a
       // completed 25-minute preceding work chunk, a break of the
       // parameterised duration/resolution, a following 25-minute work

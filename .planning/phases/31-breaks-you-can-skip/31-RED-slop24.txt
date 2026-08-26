@@ -1,0 +1,71 @@
+RED capture — plan 31-06, Task 1 (D-31-06, SKIPBREAK-01)
+Non-vacuity protocol per 31-03-SUMMARY.md.
+
+What was temporarily changed: `kBreakHitSlop` in
+lib/screens/today/timeline_geometry.dart was set back to `16.0` (the old,
+pre-gap-closure value), leaving everything else — including this plan's new
+D-31-06 test group — untouched. This was a temporary, uncommitted edit made
+to prove the new Case A test can genuinely fail; the file was restored
+byte-identical to its intended (24.0) state immediately after this run, and
+`git diff --stat lib/screens/today/timeline_geometry.dart` was confirmed to
+show only the intended 16.0 -> 24.0 change (no residual 16.0) before
+committing.
+
+Command run:
+  flutter test test/screens/today_screen_test.dart --plain-name "D-31-06"
+
+Verbatim output (failure block):
+
+00:00 +0: Phase 31 — SKIPBREAK: breaks you can skip D-31-06 — a bigger, findable acquisition band D-31-06 Case A: a drag started 22dp above the painted top edge — outside the shipped 16dp band — resolves to the break, not the preceding work chunk
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: 'b1'
+  Actual: 'w1'
+   Which: is different.
+          Expected: b1
+            Actual: w1
+                    ^
+           Differ at offset 0
+D-31-06: a drag 22dp above the break's painted top edge — outside the OLD 16dp band (52dp total) but
+inside the NEW 24dp band (68dp total) — must resolve to the break. A failure here that names w1 is
+the specific regression this gap closure fixes, not a generic miss.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure>.<anonymous closure> (file:///home/dan/CodeProjects/canopy/.claude/worktrees/agent-aaee5ced64c307e34/test/screens/today_screen_test.dart:2737:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/dan/CodeProjects/canopy/.claude/worktrees/agent-aaee5ced64c307e34/test/screens/today_screen_test.dart line 2737
+The test description was:
+  D-31-06 Case A: a drag started 22dp above the painted top edge — outside the shipped 16dp band —
+  resolves to the break, not the preceding work chunk
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +0 -1: Phase 31 — SKIPBREAK: breaks you can skip D-31-06 — a bigger, findable acquisition band D-31-06 Case A: a drag started 22dp above the painted top edge — outside the shipped 16dp band — resolves to the break, not the preceding work chunk [E]
+  Test failed. See exception logs above.
+  The test description was: D-31-06 Case A: a drag started 22dp above the painted top edge — outside the shipped 16dp band — resolves to the break, not the preceding work chunk
+
+00:00 +0 -1: Phase 31 — SKIPBREAK: breaks you can skip D-31-06 — a bigger, findable acquisition band D-31-06 Case B: a 25-minute work chunk with a break on both sides retains at least kMinBreakDragTarget of its own band at the shipped slop value
+00:00 +1 -1: Some tests failed.
+
+Failing tests:
+  test/screens/today_screen_test.dart: Phase 31 — SKIPBREAK: breaks you can skip D-31-06 — a bigger, findable acquisition band D-31-06 Case A: a drag started 22dp above the painted top edge — outside the shipped 16dp band — resolves to the break, not the preceding work chunk
+
+Result: Case A failed with the exact named thief (`w1`, the preceding work
+chunk) — not a timeout or a null. Case B (the pure-constant ceiling guard)
+stayed green, as expected, since it does not depend on the drag geometry.
+This proves Case A is not vacuous: at the old 16.0 constant, a drag 22dp
+above the break's painted top edge genuinely falls outside the reachable
+band and is stolen by the preceding work chunk; at the shipped 24.0 constant
+the same literal-coordinate drag resolves correctly to the break.
+
+`timeline_geometry.dart` was restored from the pre-experiment copy
+immediately after capturing this output. `git diff --stat
+lib/screens/today/timeline_geometry.dart` and `git status --short` were both
+checked and showed only this plan's intended 16.0 -> 24.0 change before the
+task commit.
