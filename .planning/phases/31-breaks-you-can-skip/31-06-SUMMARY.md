@@ -214,3 +214,16 @@ None — no external service configuration required.
 ---
 *Phase: 31-breaks-you-can-skip*
 *Completed: 2026-08-26*
+
+## Self-Check: PASSED
+
+- `lib/screens/today/timeline_geometry.dart` — FOUND
+- `lib/screens/schedule/widgets/chunk_card.dart` — FOUND
+- `test/screens/today_screen_test.dart` — FOUND
+- `test/screens/today_row_widgets_test.dart` — FOUND
+- `.planning/phases/31-breaks-you-can-skip/31-RED-slop24.txt` — FOUND
+- `.planning/phases/31-breaks-you-can-skip/31-RED-grip.txt` — FOUND
+- `.planning/phases/31-breaks-you-can-skip/31-06-SUMMARY.md` — FOUND
+- Commit `380dff9` (feat: kBreakHitSlop 24.0) — FOUND in `git log`
+- Commit `04368da` (feat: grip glyph) — FOUND in `git log`
+- Commit `67e1669` (docs: SKIPBREAK-02 correction comment) — FOUND in `git log`
