@@ -645,9 +645,8 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   Widget _buildChunkCard(
     BuildContext context,
     ScheduledChunk chunk,
-    ChunkCardDensity density, {
-    double? visualHeight,
-  }) {
+    ChunkCardDensity density,
+  ) {
     final goalColor = _lookupGoalColor(context, chunk);
     final goalName = _lookupGoalName(context, chunk);
     final displayRationale = _toDisplayRationale(chunk.rationale);
@@ -666,10 +665,6 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       // becomes an hour axis").
       showStartTime: true,
       density: density,
-      // Phase 31 (D-31-02): non-null only for a slop-bearing break's grown
-      // envelope (the ChunkRow arm below). Every other call site passes
-      // null, keeping this an identity transform there.
-      visualHeight: visualHeight,
       // The isWork gate inside SwipeableChunkCard is what actually keeps a
       // break untappable (PD-31-02's promote decision deleted the old
       // break-only early return) — this closure is unchanged and simply
@@ -684,25 +679,6 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
               displayRationale,
             ),
     );
-  }
-
-  /// True only for a short/long break whose slot has a clock position and
-  /// whose rendered height is under [kMinBreakDragTarget] (Phase 31,
-  /// D-31-02). Governs two things together: whether the break's
-  /// `_buildPositionedRow` arm grows its hit-test envelope (below), and
-  /// whether the row is deferred to the Layer 1b Stack pass (Step 3) instead
-  /// of the normal Layer 1a loop — both must agree, or a slop-bearing break
-  /// would render in the wrong pass and lose the z-order fix `31-RESEARCH.md`
-  /// Pitfall 1 exists to provide.
-  bool _needsSlop(ScheduledChunk chunk, TimelineGeometry geometry) {
-    final isBreak =
-        chunk.chunkType == ChunkType.shortBreak ||
-        chunk.chunkType == ChunkType.longBreak;
-    if (!isBreak) return false;
-    final start = chunk.displayStartMinutes;
-    if (start == null) return false;
-    return geometry.heightFor(start, chunk.durationMinutes) <
-        kMinBreakDragTarget;
   }
 
   /// Returns a [Positioned] for [row], placed by [geometry] against the
@@ -774,79 +750,25 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         // is duration-exact like every other row now.
         final slot = geometry.heightFor(start, chunk.durationMinutes);
         if (isLive) {
-          final isLiveBreak = chunk.chunkType != ChunkType.work;
-          if (isLiveBreak) {
-            // D-31-07: a live break's row is wrapped in the exact same
-            // SwipeableRowShell (one-directional endToStart Dismissible) as
-            // every non-live break, growing its hit-test envelope by
-            // kBreakHitSlop under kMinBreakDragTarget exactly as the
-            // non-live break arm below does.
-            //
-            // Three things a future reader needs and cannot infer from the
-            // code alone:
-            //
-            // (1) This branch needs NO Layer 1b treatment. The live-row loop
-            // (this file's Stack-children site) is already the LAST entry in
-            // the Stack's children, after the now-line overlay — so it wins
-            // hit-test z-order against BOTH chronological neighbours by
-            // construction, unlike the non-live break arm which needs its
-            // own dedicated later pass (31-RESEARCH.md Pitfall 1) to get the
-            // same guarantee.
-            //
-            // (2) `_needsSlop` deliberately carries no `isLive` term. Layer
-            // 1a's exclusion and Layer 1b's inclusion are both expressed
-            // against it (see `_needsSlop`'s own doc comment) — adding an
-            // `isLive` clause to it would only matter if a live break were
-            // ever routed through Layer 1a/1b, and it never is (this branch
-            // returns before either loop is reached, since `isLive` short-
-            // circuits the row into the live-row loop instead). Reusing
-            // `_needsSlop` here to decide the slop AMOUNT is safe precisely
-            // because it does not know or care about `isLive` — it only
-            // asks "is this a break, and is its own slot under the drag
-            // target."
-            //
-            // (3) A chunk is either live or not, never both — `isLive`
-            // comes from `buildTimeline`'s own now-classification and a
-            // chunk id appears in exactly one `ChunkRow`. So the
-            // `ValueKey(chunk.id)` `SwipeableRowShell`'s `Dismissible` uses
-            // cannot collide between this branch and the non-live break arm
-            // below; only one of the two is ever built for a given chunk on
-            // a given frame.
-            //
-            // No outer ClipRect here (unlike the live WORK arm below and the
-            // non-live break arm) — RenderBox.hitTest bounds every box to
-            // its own size regardless of clip (31-RESEARCH.md), so an outer
-            // clip on this grown Positioned would reject the slop-band touch
-            // before the Dismissible inside SwipeableRowShell ever saw it.
-            // SwipeableRowShell's own _confineContent re-imposes
-            // ClipRect + OverflowBox at exactly `slot`, so nothing paints
-            // outside the duration-exact slot and SKIPBREAK-02 still holds.
-            final slop = _needsSlop(chunk, geometry) ? kBreakHitSlop : 0.0;
-            return Positioned(
-              top: geometry.yFor(start) - slop,
-              left: 0,
-              right: 0,
-              height: slot + 2 * slop,
-              child: SwipeableRowShell(
-                chunk: chunk,
-                visualHeight: slot,
-                child: _buildLiveRow(
-                  context,
-                  chunk,
-                  nowState,
-                  secondsRemaining,
-                  slot,
-                ),
-              ),
-            );
-          }
-          // PD-10: ClipRect + OverflowBox is the same safety net the
-          // non-live arm below uses (not a min/max clamp) — the card lays
-          // out at its natural height (no RenderFlex overflow even for a
-          // pathological short live chunk), ClipRect guarantees nothing
-          // paints outside the slot. LiveRowCard picks its own density tier
-          // from the slot height it is handed, exactly as ChunkCardDensity
-          // is picked below.
+          // Phase 32 (TAPBREAK-01, D-32-02): the live break arm collapses
+          // into exactly this shape — the same one the live WORK arm below
+          // already used. Before this phase a live break's row was wrapped
+          // in `SwipeableRowShell` with a grown hit-test envelope
+          // (`kBreakHitSlop`/`_needsSlop`), the one-directional swipe D-31-07
+          // added; that swipe is retired for every break, live or not, with
+          // no substitute needed here — `LiveRowCard`'s single-line tier now
+          // carries its own `BreakSkipButton` rail instead
+          // (`live_row_card.dart`). After this collapse, the live break arm
+          // and the live work arm below differ only in which parameters
+          // `_buildLiveRow` passes for this chunk (break-specific title and
+          // kicker strings, `showComplete: false`) — not in their wrapping.
+          //
+          // PD-10: ClipRect + OverflowBox is a safety net (not a min/max
+          // clamp) — the card lays out at its natural height (no RenderFlex
+          // overflow even for a pathological short live chunk), ClipRect
+          // guarantees nothing paints outside the slot. LiveRowCard picks
+          // its own density tier from the slot height it is handed, exactly
+          // as ChunkCardDensity is picked below.
           //
           // Deliberately NOT wrapped in TimelineRowTile — it spans the full
           // content width instead of reserving the fixed gutter column every
@@ -854,8 +776,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
           // internally (kCardLeftInset/kTimelineRowInset). Adding
           // TimelineRowTile here would double that inset — a documented,
           // previously-shipped regression class (timeline_row_tile.dart doc
-          // comment). This is the one difference from the non-live arm below
-          // that a future reader may otherwise "fix" — don't.
+          // comment).
           return Positioned(
             top: geometry.yFor(start),
             left: 0,
@@ -1079,8 +1000,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         : null;
 
     // D-31-07: a live break is skip-only now, not action-less. `isBreak`
-    // is any non-work chunk type — the same definition `_needsSlop` and the
-    // non-live break arm above use. `showActions` used to mean "work chunks
+    // is any non-work chunk type. `showActions` used to mean "work chunks
     // only"; it now means "this row offers at least one action", true for a
     // work chunk exactly as before and, additively, for an unresolved break
     // — a resolved (already-skipped) break must not advertise an action it
@@ -1501,61 +1421,26 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                                 ),
                               ),
                             // Layer 1a — the rows (26-03-PLAN.md), minus the
-                            // live row AND minus any slop-bearing break
-                            // (Phase 31, the third exclusion added below).
-                            // Non-live, non-slop rows first, in their normal
-                            // chronological order.
+                            // live row, in their normal chronological order.
+                            //
+                            // Phase 32 (D-32-02, TAPBREAK-01): this loop used
+                            // to carry a third exclusion clause for any
+                            // slop-bearing break, and a whole second "Layer
+                            // 1b" pass immediately below existed solely to
+                            // re-emit those rows later so their grown
+                            // hit-test envelope would win Z-order against
+                            // both chronological neighbours (31-RESEARCH.md
+                            // Pitfall 1). Breaks have no grown envelope any
+                            // more — no swipe target to widen (button-only,
+                            // D-32-02) — so every non-live, clock-positioned
+                            // row is emitted exactly once, from this single
+                            // pass, and no two sibling boxes overlap: hit-test
+                            // order is irrelevant again, exactly as it was
+                            // before Phase 31.
                             for (final row in timelineRows)
                               if (!(row is ChunkRow && row.isLive) &&
                                   !(row is ChunkRow &&
-                                      row.chunk.displayStartMinutes == null) &&
-                                  !(row is ChunkRow &&
-                                      _needsSlop(row.chunk, geometry)))
-                                _buildPositionedRow(
-                                  context,
-                                  row,
-                                  geometry,
-                                  nowState,
-                                  liveSecondsLeft,
-                                ),
-                            // Layer 1b (Phase 31, D-31-02 — the load-bearing
-                            // fix from 31-RESEARCH.md Pitfall 1) — every
-                            // non-live, slop-bearing break, added AFTER
-                            // Layer 1a and BEFORE the now-line overlay.
-                            //
-                            // `Stack` resolves overlapping siblings by
-                            // walking `lastChild` backward and stopping at
-                            // the first hit (RenderStack /
-                            // defaultHitTestChildren) — before this phase
-                            // every row's box was exactly its slot with zero
-                            // gap between rows, so no two siblings' hit-test
-                            // boxes ever overlapped and hit-test order was
-                            // irrelevant. A slop-bearing break's grown box
-                            // (_buildPositionedRow's break arm) is the FIRST
-                            // overlap this codebase has ever had: it now
-                            // covers pixels also still geometrically inside
-                            // its unenlarged neighbours' own boxes.
-                            // `timelineRows` is chronological, so iterating
-                            // this row in place (inside Layer 1a above)
-                            // would win the top slop band against the
-                            // preceding work chunk (added earlier) but LOSE
-                            // the bottom slop band to the following one
-                            // (added later) — halving the effective touch
-                            // target from 52dp to ~36dp, under both
-                            // Material's 48dp and iOS's 44pt minimums.
-                            // Emitting these rows in their own later pass
-                            // makes them `lastChild`-ward of BOTH
-                            // neighbours, mirroring the live-row pattern
-                            // (PD-10) below. The ordering IS the mechanism,
-                            // exactly as the live-row comment states —
-                            // moving this loop back into Layer 1a silently
-                            // halves the touch target with every test still
-                            // green except the bottom-band one.
-                            for (final row in timelineRows)
-                              if (row is ChunkRow &&
-                                  !row.isLive &&
-                                  row.chunk.displayStartMinutes != null &&
-                                  _needsSlop(row.chunk, geometry))
+                                      row.chunk.displayStartMinutes == null))
                                 _buildPositionedRow(
                                   context,
                                   row,

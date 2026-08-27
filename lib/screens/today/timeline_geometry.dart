@@ -106,82 +106,19 @@ const double kFullTierMinHeight = 88.0;
 /// rot-resistance reason as [kFullTierMinHeight].
 const double kFullBreakMinHeight = 88.0;
 
-/// **MEASURED (2026-08-20, plan 29-03).** The slot height at or above which
-/// the *existing, unchanged* `compact` break tier's own natural height fits
-/// without clipping; below it, the `subCompact` tier (Phase 29, SEEBREAK-01)
-/// renders instead. This is **not** a measurement of the `subCompact` tier's
-/// own height — that tier is designed to fit comfortably under any plausible
-/// break slot, including the smallest, 20dp — it is a measurement of where
-/// `compact` (margin 8dp + padding 0dp + one `bodySmall` line, unchanged by
-/// this phase) stops fitting.
-///
-/// **Method:** headless Chromium (`--use-gl=swiftshader
-/// --enable-unsafe-swiftshader`), viewport `430`×930 at DPR 1 (screenshot px
-/// = logical px), debug build (`flutter build web --debug --source-maps
-/// --pwa-strategy=none`) served through `tools/serve-uat.py` on port `8143`,
-/// pixel-counted via `.planning/phases/29-breaks-you-can-see/tools/
-/// measure_card_extent.py` against `.planning/phases/29-breaks-you-can-see/
-/// shots/compact-long-break-forced.png`.
-///
-/// **How the compact tier was made to render at all.** It is unreachable
-/// under Phase 28's lattice — a 5-minute break's slot is 20dp, a 30-minute
-/// break's slot is 120dp, nothing lands in between — so it was forced by
-/// temporarily raising [kFullBreakMinHeight] to `999.0` (a one-line labelled
-/// forcing edit, reverted before this comment was written) and measuring a
-/// **long** break in its 120dp slot. That works because the
-/// compact break card's height does not depend on which break it is:
-/// `_buildBreak`'s compact branch renders one `bodySmall` line inside a
-/// dashed box with zero vertical padding, and `'Long break'`/`'Short break'`
-/// are both single lines in the same style — nothing that differs between
-/// them occupies vertical space. A short break's 20dp slot would have
-/// clipped the very card being measured, which is the phase's whole defect,
-/// so only the long break's 120dp slot makes the measurement possible at
-/// all. A future reader reproducing this measurement needs the same trick.
-///
-/// **Arithmetic:** raw measured ink extent **22px** (band rows 595..616,
-/// isolated from the neighbouring "Short break" divider by a bounded scan
-/// window) **+ 8.0px** explicit margin for the compact card's own
-/// `margin: EdgeInsets.symmetric(vertical: 4)` (invisible to a pixel scan —
-/// margin paints nothing — but real vertical space the slot must still
-/// reserve; omitting it would reproduce, under a new name, the exact "8dp of
-/// margin nobody zeroed" miss `29-UI-SPEC.md` § "Root cause" already
-/// diagnosed for why the compact tier never fit) **= 30.0**, then **rounded
-/// UP** to the nearest 4dp (a "does it fit" threshold rounds toward the
-/// safer larger value, per `29-UI-SPEC.md` step 8, rather than stacking a
-/// second safety margin on top of a rounding step) **= 32.0**.
-///
-/// **Relationship to numerically-close siblings (Pitfall 3,
-/// `29-RESEARCH.md`).** `32.0` is 56dp from [kFullTierMinHeight] /
-/// [kFullBreakMinHeight] / [kCompactLiveMinHeight] (all `88.0`) — not close.
-/// It is **4dp from [kNowLineHeight] (`28.0`)** — inside the "within ~4dp,
-/// decide explicitly" trigger. Decision: **kept separate, not collapsed.**
-/// [kNowLineHeight] is the now-line overlay's own fixed box height (an
-/// always-present UI chrome element, unrelated to any chunk's content); this
-/// constant is a break-card density-selection threshold compared against a
-/// chunk's *slot* height. They share no widget, no content, and no reason to
-/// move together — the 4dp gap is coincidence between two independently
-/// derived numbers, not a shared cause. It is 12dp from [kHourAxisHeight]
-/// (`20.0`) — not close.
-///
-/// **Do not derive this from `flutter test`.** This file already carries a
-/// three-strikes history of constants that were wrong when set from that
-/// harness's placeholder-font measurements: `kGutterWidth`
-/// (`timeline_row_tile.dart`) went 46 → 75 → 52; [kPixelsPerMinute] went
-/// 4.0 → 5.5 → 4.0; [kCompactLiveMinHeight] went 88.0 (its own initial
-/// unmeasured estimate) → 84.0 (first real-browser measurement) → 88.0
-/// (re-measured after a touch-target UAT finding raised its action row) —
-/// see that constant's own doc comment below for the full history. This is
-/// the fourth measurement taken by this recipe class, not the first, and the
-/// method is unchanged.
-///
-/// **What would invalidate this value:** any change to the `compact` break
-/// tier's own margin, padding, dashed-border stroke, or `bodySmall`
-/// typography; any global text-scale change. Re-measure with
-/// `measure_card_extent.py` against a fresh screenshot — never from
-/// `flutter test`.
-const double kSubCompactBreakMinHeight = 32.0;
+/// **RETIRED (Phase 32, D-32-02, TAPBREAK-01/03).** Used to gate Phase 29's
+/// `subCompact` break tier (`ChunkCardDensity.subCompact`/`_SubCompactRow`,
+/// `chunk_card.dart`) — a hairline-with-label treatment for a break slot too
+/// small for the `compact` card. That tier is deleted outright this phase,
+/// not re-thresholded: at `kPixelsPerMinute = 6.0` a 5-minute break's 30dp
+/// slot would still have landed under this constant's old `32.0` value,
+/// reproducing the exact hairline defect Phase 29 existed to fix, had the
+/// threshold simply moved with the scale instead of the tier it gated being
+/// removed. Nothing reads this constant once `subCompact` is gone — see
+/// `32-RESEARCH.md` § "The retirement surface" for the verified reference
+/// list this deletion closes out.
 
-/// **The Skip rail's fixed width (D-32-03, LOCKED, owner-ruled, 2026-08-27).**
+/// The Skip rail's fixed width (D-32-03, LOCKED, owner-ruled, 2026-08-27).
 /// `64.0` sits on the existing 8-pt spacing scale (`64 = 8 x 8`). At the
 /// smallest reachable break slot (a 5-minute break, 30dp at [kPixelsPerMinute]
 /// = 6.0) this yields a **64 x 30 = 1920dp^2** rail — under Material's
@@ -191,88 +128,19 @@ const double kSubCompactBreakMinHeight = 32.0;
 /// hit-test envelope (this codebase's own Phase 31 approach, twice) is a
 /// weaker guarantee than missing it slightly with a target the user can see.
 /// Do not "fix" this by adding hit-test slop or a vertical overhang — that is
-/// re-litigating a settled decision (see [kBreakHitSlop]/[kMinBreakDragTarget]
-/// below, both retired by the same ruling this constant replaces them with).
+/// re-litigating a settled decision (both retired constants this replaces —
+/// the invisible-envelope slop amount and the drag-target gate that decided
+/// when it applied — are deleted, not merely unused, per this phase's own
+/// "retire deliberately" charter).
 const double kBreakSkipButtonWidth = 64.0;
 
-/// Extra invisible hit-test reach added above AND below a break's own slot
-/// (D-31-02, phase 31), before any clamp against a short neighbor. On-grid
-/// (multiple of 4). Not a visual/paint value — confines nothing that paints;
-/// see [kMinBreakDragTarget]'s doc comment for the gate that decides when it
-/// applies, and `today_screen.dart`'s Layer 1b Stack pass for the ordering
-/// fix that makes both the top and bottom slop bands actually win.
-///
-/// **16.0 → 24.0 (D-31-06, 2026-08-26 gap closure, re-derived here rather
-/// than restated).**
-///
-/// **Why the value moved at all.** The 2026-08-26 human UAT (`31-UAT.md`
-/// Item 1) failed on a real phone: *"hard to do this with a thumb."*
-/// Clarified as an acquisition failure, not a completion failure — the
-/// owner could not reliably grab the row, not that the swipe wouldn't
-/// finish once grabbed. At the old `16.0`, the resulting 52dp band cleared
-/// both Material's 48dp and iOS's 44pt touch-target minimums *on paper*.
-/// That was true and it was not sufficient: those minimums assume a target
-/// the user can **see**, and SKIPBREAK-02 forbids painting into the slop,
-/// so the band is invisible by construction — a thumb aimed at a 20dp
-/// hairline has to land within the slop by feel alone. Meeting a platform
-/// minimum with an invisible target is a weaker guarantee than meeting it
-/// with a visible one. D-31-06 (LOCKED, owner-ruled) pairs this increase
-/// with a visible grip glyph in `_SubCompactRow`
-/// ([kSubCompactGripSize], `chunk_card.dart`) — a future reader who deletes
-/// the glyph has removed half of a two-part fix, not a redundant one.
-///
-/// **The break's own resulting band, at 24.0.** A 5-minute break's painted
-/// slot is `5 * kPixelsPerMinute` = 20dp. With slop on both sides the
-/// reachable band is `20 + 24 + 24` = **68dp**.
-///
-/// **What that costs the neighbour, and why that is the binding
-/// constraint.** The Layer 1b Stack pass (`today_screen.dart`) makes the
-/// break *win* the contested overlap, so every dp of slop is taken from
-/// the neighbouring work chunk's own effective touch target, not shared
-/// with it. A 25-minute work chunk is `25 * kPixelsPerMinute` = 100dp; with
-/// a slop-bearing break on both sides it loses slop at both its top and
-/// bottom edge, so it retains `100 - 2 * kBreakHitSlop`:
-///  - at `16.0`: retains 68dp
-///  - at `24.0` (this value): retains **52dp** — still ≥ [kMinBreakDragTarget]
-///    (48dp)
-///  - at `26.0`: retains exactly 48dp — the last value that does not fall
-///    below the minimum
-///  - at `32.0`: retains 36dp — **below** [kMinBreakDragTarget], which would
-///    push the *work* chunk itself under the platform minimum and simply
-///    move Item 1's defect next door rather than fixing it
-///
-/// This is the ceiling: **roughly 24-26dp**, not a feel-based choice. Do not
-/// raise this value again without re-deriving the whole paragraph above —
-/// a future "just bump it further" that skips this arithmetic is exactly
-/// how the defect would silently relocate.
-///
-/// **PD-31-01's "can never bind" claim, re-examined at 24.0 (not
-/// restated).** The omitted defensive clamp
-/// (`clamp(kBreakHitSlop, 0, precedingRowSlot / 2)`) would begin to bind
-/// whenever a neighbour's own slot is under `2 * kBreakHitSlop` = 48dp —
-/// at [kPixelsPerMinute], a work chunk shorter than **12 minutes**. Checked
-/// against `lib/services/schedule_generator.dart` for this revision (not
-/// assumed): every work chunk — commitment (`buildCommitmentChunks`,
-/// `while (cursor + 25 <= block.endMinutes)`) and discretionary alike — is
-/// created at exactly `durationMinutes: 25`, and the file's only
-/// post-creation mutation of `durationMinutes` (`buildCommitmentChunks`'s
-/// trailing tail-stretch, `lastForBlock.durationMinutes = ... +
-/// (block.endMinutes - cursor)`) only ever *lengthens* the block's last
-/// chunk to cover a sub-lattice remainder — it never shortens a work chunk
-/// below 25 minutes. **The claim still holds**: today's generator cannot
-/// produce a work chunk under the 12-minute binding threshold, so the
-/// clamp remains dead code at this revision too, with a wider margin
-/// (25 min / 100dp actual vs. the 12 min / 48dp threshold) than PD-31-01
-/// had reasoned about at the old value. If a future lattice change ever
-/// emits a work chunk under 12 minutes beside a break, this needs
-/// re-deriving.
-const double kBreakHitSlop = 24.0;
-
-/// Slop ([kBreakHitSlop]) is applied only while `slot < kMinBreakDragTarget`
-/// — a break already at or above this height clears both Material's 48dp
-/// and iOS's 44pt touch-target minimums on its own painted slot alone, so
-/// growing its hit-test box would add nothing.
-const double kMinBreakDragTarget = 48.0;
+/// **RETIRED (Phase 32, D-32-02, TAPBREAK-01).** Used to grow a break's
+/// invisible swipe hit-test envelope beyond its painted slot (Phase 31,
+/// D-31-02/D-31-06), paired with the drag-target gate this constant's own
+/// former sibling (`kMinBreakDragTarget`) supplied. Breaks have no swipe
+/// target to widen any more — button-only, D-32-02 — so neither constant has
+/// a reader left. See `32-RESEARCH.md` § "The retirement surface" for the
+/// verified reference list this deletion closes out.
 
 /// **MEASURED (2026-08-18, plan 27-04).** The slot height at or above which
 /// `LiveRowCard`'s compact tier fits; below it the single-line tier is used

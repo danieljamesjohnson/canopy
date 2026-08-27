@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -9,87 +7,41 @@ import '../../../providers/schedule_notifier.dart';
 import 'chunk_card.dart';
 
 /// The one-directional-or-horizontal swipe-to-resolve gesture shell for a
-/// chunk row — a [Dismissible] wrapping an arbitrary [child], confined to
-/// [visualHeight] when set.
+/// chunk row — a [Dismissible] wrapping an arbitrary [child].
 ///
 /// **Extracted from [SwipeableChunkCard] (Phase 31, D-31-07), verbatim and
 /// API-preserving.** This is a mechanical extraction, not a rewrite:
 /// [SwipeableChunkCard] is now a thin wrapper that builds this shell with
 /// [ChunkCard] as its [child], and every existing call site/test for
-/// [SwipeableChunkCard] compiles and passes with zero edits. The reason to
-/// extract rather than duplicate: D-31-07 needs the identical swipe contract
-/// for a live break's row (which wraps [LiveRowCard]-adjacent content, not a
-/// [ChunkCard]) — reusing this shell keeps exactly **one** [Dismissible]
-/// definition for chunk rows in the codebase, so the swipe contract cannot
-/// drift between the live and non-live arms.
+/// [SwipeableChunkCard] compiles and passes with zero edits.
+///
+/// **Phase 32 (D-32-02, TAPBREAK-01): the confinement mechanism is
+/// RETIRED.** This shell used to accept a `visualHeight` parameter (Phase
+/// 31, D-31-02/PD-31-02) so a break's grown hit-test envelope could exceed
+/// its painted slot while `_confineReveal`/`_confineContent` clipped the
+/// paint back down to the true slot. Breaks are button-only now — no swipe
+/// target to widen — and the live break's own `SwipeableRowShell` call site
+/// (`today_screen.dart`) is deleted with it, so every remaining caller (work
+/// chunks only) always passed `null` even before this phase; `visualHeight`
+/// had zero live non-null callers. Deleted rather than left
+/// present-but-uncalled, per this phase's own "retire deliberately" charter
+/// — Dart does not warn about an unused public parameter carrying a default
+/// value, so nothing else would have forced the issue
+/// (`32-RESEARCH.md` Pitfall 2).
 ///
 /// Already-resolved (completed or skipped) chunks have [DismissDirection.none]
 /// so they cannot be re-swiped. A break can never be [ScheduledChunk.isCompleted]
 /// (D-31-01) — the `isCompleted` term in `resolved` is defensive/future-proofing
 /// for breaks and load-bearing for work chunks.
 class SwipeableRowShell extends StatelessWidget {
-  const SwipeableRowShell({
-    super.key,
-    required this.chunk,
-    this.visualHeight,
-    required this.child,
-  });
+  const SwipeableRowShell({super.key, required this.chunk, required this.child});
 
   final ScheduledChunk chunk;
 
-  /// When non-null (Phase 31, D-31-02/PD-31-02), the swipe reveals AND
-  /// [child] are each confined to a band exactly [visualHeight] tall,
-  /// vertically centred inside whatever larger box the parent supplies —
-  /// this is what lets a break's touch target exceed its painted slot
-  /// without violating SKIPBREAK-02. Default `null` keeps every existing
-  /// call site byte-for-byte unchanged (an identity transform: no
-  /// confinement, the widget sizes to whatever the parent gives it).
-  final double? visualHeight;
-
-  /// The row's own painted content — a [ChunkCard] for the non-live arm, or
-  /// the live row's own content for D-31-07's live-break arm. This widget
-  /// does not know or care which; it only confines and wraps it.
+  /// The row's own painted content — a [ChunkCard] for the work-chunk arm,
+  /// the only caller left after Phase 32 retires the live break's own call
+  /// site. This widget does not know or care which; it only wraps it.
   final Widget child;
-
-  /// Confines [child] (a swipe-reveal background) to [visualHeight] when set,
-  /// else returns it unchanged. See [visualHeight]'s doc comment.
-  Widget _confineReveal(Widget child) {
-    if (visualHeight == null) return child;
-    return Align(
-      alignment: Alignment.center,
-      child: SizedBox(height: visualHeight, child: child),
-    );
-  }
-
-  /// Confines [child] (this shell's own painted content) to [visualHeight]
-  /// via `ClipRect` + `OverflowBox`, when set, else returns it unchanged.
-  ///
-  /// **PD-31-03 (31-01-PLAN.md).** `ClipRect`/`OverflowBox` live HERE, inside
-  /// this shell, rather than in `today_screen.dart` — because the outer box
-  /// this widget's `Dismissible` receives is deliberately taller than the
-  /// slot (the grown hit-test envelope), and per `31-RESEARCH.md` every
-  /// `RenderBox` bounds its own hit-testing to its own `size` regardless of
-  /// any clip: leaving the clip outside the grown box would reject the
-  /// slop-band touch before the `Dismissible` inside it ever saw it. This
-  /// widget must NOT import `TimelineRowTile` — that horizontal-inset
-  /// wrapper stays in `today_screen.dart`, applied outside this widget.
-  Widget _confineContent(Widget child) {
-    if (visualHeight == null) return child;
-    return Align(
-      alignment: Alignment.center,
-      child: SizedBox(
-        height: visualHeight,
-        child: ClipRect(
-          child: OverflowBox(
-            alignment: Alignment.topCenter,
-            minHeight: 0,
-            maxHeight: double.infinity,
-            child: child,
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _completeReveal(ColorScheme colorScheme) => Container(
     color: colorScheme.primary,
@@ -123,12 +75,10 @@ class SwipeableRowShell extends StatelessWidget {
     // for breaks and load-bearing for work chunks (a completed work chunk
     // must not be re-swipeable in either direction).
     final resolved = chunk.isCompleted || chunk.isSkipped;
-    // The shipped work-chunk value (28.0) must stay exactly that; the
-    // clamped branch is D-31-02's rule so a reveal icon fits inside a
-    // confined band as small as a 5-minute break's 20dp slot.
-    final revealIconSize = visualHeight == null
-        ? 28.0
-        : math.max(12.0, math.min(20.0, visualHeight! - 4.0));
+    // Phase 32: the confined branch of this value is retired along with
+    // `visualHeight` — every remaining caller is a work chunk, which always
+    // used the unconfined 28.0 value.
+    const revealIconSize = 28.0;
 
     return Dismissible(
       key: ValueKey(chunk.id),
@@ -159,15 +109,11 @@ class SwipeableRowShell extends StatelessWidget {
       // reveal as `background` (never as `secondaryBackground` alone, which
       // would assert-fail in debug): `background` is always non-null;
       // `secondaryBackground` is non-null only for work chunks.
-      background: _confineReveal(
-        isWork
-            ? _completeReveal(colorScheme)
-            : _skipReveal(colorScheme, revealIconSize),
-      ),
-      secondaryBackground: isWork
-          ? _confineReveal(_skipReveal(colorScheme, 28.0))
-          : null,
-      child: _confineContent(child),
+      background: isWork
+          ? _completeReveal(colorScheme)
+          : _skipReveal(colorScheme, revealIconSize),
+      secondaryBackground: isWork ? _skipReveal(colorScheme, 28.0) : null,
+      child: child,
     );
   }
 }
@@ -203,7 +149,6 @@ class SwipeableChunkCard extends StatelessWidget {
     this.onTap,
     this.showStartTime = true,
     this.density = ChunkCardDensity.detailed,
-    this.visualHeight,
   });
 
   final ScheduledChunk chunk;
@@ -243,15 +188,6 @@ class SwipeableChunkCard extends StatelessWidget {
   /// slot just because this early return forgot to forward it.
   final ChunkCardDensity density;
 
-  /// When non-null (Phase 31, D-31-02/PD-31-02), the card's own painted
-  /// content AND its swipe reveals are each confined to a band exactly
-  /// [visualHeight] tall, vertically centred inside whatever larger box the
-  /// parent supplies — this is what lets a break's touch target exceed its
-  /// painted slot without violating SKIPBREAK-02. Default `null` keeps every
-  /// existing call site byte-for-byte unchanged (an identity transform: no
-  /// confinement, the widget sizes to whatever the parent gives it).
-  final double? visualHeight;
-
   @override
   Widget build(BuildContext context) {
     // Phase 32 (TAPBREAK-01, D-32-02): RESTORED — this is a revert of
@@ -277,7 +213,6 @@ class SwipeableChunkCard extends StatelessWidget {
     final resolved = chunk.isCompleted || chunk.isSkipped;
     return SwipeableRowShell(
       chunk: chunk,
-      visualHeight: visualHeight,
       child: ChunkCard(
         chunk: chunk,
         goalColor: goalColor,

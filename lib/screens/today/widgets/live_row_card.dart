@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/schedule_notifier.dart';
+import '../../../widgets/break_skip_button.dart';
 import '../timeline_geometry.dart';
 import 'timeline_row_tile.dart';
 
@@ -290,8 +291,9 @@ class LiveRowCard extends StatelessWidget {
     );
   }
 
-  /// The single-line tier — one row of text, nothing else. Fits a 5-minute
-  /// break's 20dp slot, and anything else below [kCompactLiveMinHeight].
+  /// The single-line tier — title + countdown, and (Phase 32, TAPBREAK-01)
+  /// a trailing Skip rail. Fits a 5-minute break's 30dp slot, and anything
+  /// else below [kCompactLiveMinHeight].
   ///
   /// Margin is zero VERTICALLY ONLY (PD-27-01) — the smallest guaranteed
   /// slot cannot spend any of its height on margin and still leave room for
@@ -300,6 +302,42 @@ class LiveRowCard extends StatelessWidget {
   /// `left: 0, right: 0` with no [TimelineRowTile] and inherits no inset
   /// from anything — the exact previously-shipped regression this file's
   /// class doc comment (and `timeline_row_tile.dart`'s) records.
+  ///
+  /// **Phase 32 (TAPBREAK-01) — the gap this tier used to leave open.**
+  /// Before this phase this tier ignored [showActions]/[showComplete]
+  /// entirely — the screen already asked for "at least one action, Skip
+  /// only" for a live break (`today_screen.dart`:
+  /// `showActions: isBreak ? !chunk.isSkipped : true`), and this tier simply
+  /// never honored it. A live 5-minute break's ONLY skip mechanism used to
+  /// be the swipe `today_screen.dart` wrapped it in; D-32-02 deletes that
+  /// swipe with no substitute, which would have shipped a running break with
+  /// no way to skip it at all. The fix: the same `BreakSkipButton` rail the
+  /// non-live break card uses, gated on [showActions] exactly the way the
+  /// compact tier gates its own action icons above. [showComplete] stays
+  /// unread here — a break can never be completed (D-31-01), and this tier
+  /// is only ever reached by a break in practice (a work chunk's fixed
+  /// 25-minute duration always clears [kCompactLiveMinHeight]).
+  ///
+  /// **The excluding Semantics wrapper is narrowed to the title+countdown
+  /// subtree only.** Before this phase the whole row (title + countdown)
+  /// was the only content, so wrapping all of it in
+  /// `Semantics(excludeSemantics: true, ...)` was correct — there was no
+  /// focusable child to swallow. The Skip button is a real focusable child;
+  /// an outer excluding wrapper would make it invisible to a screen reader
+  /// while leaving it visibly rendered and tappable — the accessibility
+  /// trap `32-UI-SPEC.md` flags for the non-live card, restated here because
+  /// its own proposed snippet for THIS tier does not address it. The
+  /// wrapper now covers only the title/countdown `Expanded`; the rail's own
+  /// `Semantics(button: true, ...)` (inside `BreakSkipButton`) stands
+  /// unswallowed alongside it.
+  ///
+  /// **The explicit `SizedBox(height: slotHeight)` wrapper below** is the
+  /// same fix `chunk_card.dart`'s redesigned break tiers needed (Phase 32,
+  /// 32-01/32-02): `CrossAxisAlignment.stretch` cannot report a size against
+  /// this row's ambient unbounded incoming height (`today_screen.dart`'s
+  /// `OverflowBox(maxHeight: double.infinity)`) without a tight height
+  /// supplied from above — and this widget already carries [slotHeight] as
+  /// its own duration-exact slot, so no new plumbing is needed to supply it.
   Widget _buildSingleLine(
     BuildContext context,
     ThemeData theme,
@@ -314,40 +352,58 @@ class LiveRowCard extends StatelessWidget {
     final titleStyle = style?.copyWith(
       decoration: isSkipped ? TextDecoration.lineThrough : null,
     );
-    final row = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: titleStyle,
-            ),
-          ),
-          // Deliberately never truncates (`27-UI-SPEC.md` "Single-line
-          // tier": only the title sacrifices characters, the countdown is
-          // the one piece of information this row can't lose). Known,
-          // accepted risk: if `remainingLabel` itself (plus a zero-width
-          // title) still exceeds the available row width, this overflows
-          // the `Row` instead of clipping gracefully — unlikely at default
-          // text scale with this app's `remainingLabel` lengths, but large
-          // accessibility text scales are explicitly out of this phase's
-          // verification scope (`27-VALIDATION.md`), so this has not been
-          // exercised there. Not a regression to fix now — a documented
-          // trade-off for whoever chases an overflow report later (IN-01,
-          // 2026-08-18).
-          Text(' · $remainingLabel', maxLines: 1, style: style),
-        ],
-      ),
-    );
-    return Semantics(
+    final titleAndCountdown = Semantics(
       label: 'Right now: $title, $remainingLabel',
       excludeSemantics: true,
       button: onTap != null,
       onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: titleStyle,
+              ),
+            ),
+            // Deliberately never truncates (`27-UI-SPEC.md` "Single-line
+            // tier": only the title sacrifices characters, the countdown is
+            // the one piece of information this row can't lose). Known,
+            // accepted risk: if `remainingLabel` itself (plus a zero-width
+            // title) still exceeds the available row width, this overflows
+            // the `Row` instead of clipping gracefully — unlikely at default
+            // text scale with this app's `remainingLabel` lengths, but large
+            // accessibility text scales are explicitly out of this phase's
+            // verification scope (`27-VALIDATION.md`), so this has not been
+            // exercised there. Not a regression to fix now — a documented
+            // trade-off for whoever chases an overflow report later (IN-01,
+            // 2026-08-18).
+            Text(' · $remainingLabel', maxLines: 1, style: style),
+          ],
+        ),
+      ),
+    );
+
+    final row = Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: titleAndCountdown),
+        if (showActions)
+          SizedBox(
+            width: kBreakSkipButtonWidth,
+            child: isSkipped
+                ? const BreakSkippedIndicator()
+                : BreakSkipButton(chunkId: chunkId, accessibleTitle: title),
+          ),
+      ],
+    );
+
+    return SizedBox(
+      height: slotHeight,
       child: Card(
         margin: const EdgeInsets.only(
           top: 0,
