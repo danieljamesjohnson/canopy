@@ -637,9 +637,14 @@ if (chunk.chunkType != ChunkType.work) {
 **If this table is empty:** not applicable — see above; all three are LOW-risk, explicitly-flagged
 discretionary choices, not compliance/security/retention claims.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Does the D-31-06 gap-closure test group's sibling assertions inside `today_screen_now_state_test.dart` (the live-break Case A/C swipe tests) have any non-gesture content worth preserving?**
+> **Both resolved at planning, 2026-08-27, in each case by adopting this section's own
+> recommendation.** Q1 → `32-02-PLAN.md` Task 2 rewrites Case A/C in place (same assertions,
+> `tester.tap()` replacing `dragFrom`). Q2 → `32-01-PLAN.md` places `BreakSkipButton` at
+> `lib/widgets/break_skip_button.dart`. Neither was left for the executor to decide.
+
+1. **(RESOLVED — rewrite in place; `32-02-PLAN.md` Task 2.)** Does the D-31-06 gap-closure test group's sibling assertions inside `today_screen_now_state_test.dart` (the live-break Case A/C swipe tests) have any non-gesture content worth preserving?
    - What we know: Case A and Case C both drive `dragFrom` as their trigger and assert on
      `fake.lastSkippedId`/`fake.lastCompletedId` — the assertions themselves (skip fires, complete
      never fires, the correct chunk id is named) are exactly what a button-tap version of the same
@@ -649,7 +654,7 @@ discretionary choices, not compliance/security/retention claims.
    - Recommendation: Rewrite in place — the assertions are correct and valuable (they prove the
      right *chunk* is skipped, not just *a* chunk), only the trigger mechanism needs to change.
 
-2. **Should `BreakSkipButton` live at `lib/widgets/break_skip_button.dart` as the UI-SPEC recommends, or does Claude's discretion (per CONTEXT.md) favor a different location?**
+2. **(RESOLVED — `lib/widgets/break_skip_button.dart`; `32-01-PLAN.md`.)** Should `BreakSkipButton` live at `lib/widgets/break_skip_button.dart` as the UI-SPEC recommends, or does Claude's discretion (per CONTEXT.md) favor a different location?
    - What we know: Both call sites (`chunk_card.dart` under `schedule/widgets/`, `live_row_card.dart`
      under `today/widgets/`) need the identical widget, and `lib/widgets/responsive_shell.dart`
      already establishes the "cross-cutting widget lives in `lib/widgets/`" convention.

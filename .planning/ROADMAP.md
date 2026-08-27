@@ -751,9 +751,11 @@ recorded here rather than performed silently.**
 
 - **Do not make any row lie about its duration.** SKIPBREAK-02's spirit survives D-32-01 intact and
   is the reason that option was chosen: rows get bigger, the mapping stays exact.
+
 - **Do not remove the swipe from work chunks.** Only breaks become button-only.
 - **Do not remove `LiveRowCard`'s compact-tier Skip button** (D-31-07). It is closer to what the
   owner asked for than the swipe ever was, and it survives.
+
 - **Do not re-litigate** skipped-break legibility at `Opacity(0.5)` or D-31-03's
   "skipping a break does not hand the minutes back." Both PASSED human UAT and are settled.
 
@@ -762,6 +764,7 @@ recorded here rather than performed silently.**
 - **D-31-07 was never judged by a human.** The owner did not reach Item 3 of the round-two UAT. It
   is code-complete and test-proven (639/639, including verification truth #14's composition) but has
   never been confirmed on a device, and this phase changes the surface underneath it.
+
 - **The "Up next" transition still needs a ruling.** When a live break is skipped,
   `resolveNowState`'s pre-existing advance-past-resolved loop (`now_state.dart:176`) delists it from
   "current," so the header switches from the break to the next chunk. The now-line itself does not
@@ -797,12 +800,19 @@ section of the day, not a hairline)
 **Plans:** 3 plans in 3 waves (strictly sequential — every plan overlaps the previous plan's files)
 
 Plans:
+**Wave 1**
+
 - [ ] 32-01-PLAN.md — tracer: a 5-minute break at 6.0 renders as a card you tap, proven end to end; then the suite reconciled by classification rather than by retyping numbers
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 32-02-PLAN.md — expansion: the long break and the running break join the same shape (the live 5-minute break's rail and its de-swipe land in one commit), then the dead mechanism is deleted rather than left uncalled
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 32-03-PLAN.md — the real-browser fit measurement and the blocking human UAT, with a mandatory Re-check-in first and D-31-07 re-asked
 
 **Decisions already ruled by the owner (do not re-ask):** D-32-01 (`kPixelsPerMinute` 6.0), D-32-02 (button-only, retire the swipe machinery), D-32-03 (~64×30dp Skip button).
-
 
 ## Progress
 

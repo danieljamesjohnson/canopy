@@ -4,16 +4,16 @@ milestone: none
 current_phase: 32
 current_phase_name: Breaks You Can Tap
 status: superseded
-stopped_at: Phase 31 round-two UAT judged — swipe approach rejected, work routed to Phase 32
-last_updated: "2026-08-27T00:00:00.000Z"
+stopped_at: Phase 32 UI-SPEC approved
+last_updated: "2026-08-27T13:22:07.246Z"
 last_activity: 2026-08-27
 last_activity_desc: Phase 31 round-two UAT judged — icon means the wrong verb; owner ruled D-32-01/D-32-02, Phase 32 created
-state_head: 493e890d3d57822c2ab31f6ce62f23769fe69d5f
+state_head: b2d29984795ca0d9bde55a7b411903839f934882
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 4
-  total_plans: 24
-  completed_plans: 21
+  total_plans: 27
+  completed_plans: 24
 milestone_name: milestone
 ---
 
@@ -21,13 +21,13 @@ milestone_name: milestone
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-25T13:19:30.709Z
+**Last session:** 2026-08-27T12:44:10.262Z
 
 ---
 
 ## Current Position
 
-Phase: 32 (Breaks You Can Tap) — CREATED 2026-08-27, NOT YET PLANNED
+Phase: 32 (Breaks You Can Tap) — READY TO EXECUTE
 Plan: none yet. **Resume with `/gsd-plan-phase 32`.**
 
 Phase 31 is **superseded, not failed**: 31-06 and 31-07 shipped and are green, 31-08's UAT was
@@ -58,6 +58,7 @@ including verification truth #14's composition, and still never confirmed by a h
   alternatives *because it keeps the grid honest*: every row still renders at exactly
   `durationMinutes × kPixelsPerMinute`, so nothing lies about its duration. Accepted cost: the day
   is 50% taller to scroll. The rejected options all bought a bigger break by making some row lie.
+
 - **D-32-02 — breaks become button-only**, reversing D-31-01's `Dismissible` for breaks and making
   **all of D-31-06 dead** — slop, drag target, Layer 1b pass, grip glyph. Phase 32 must *retire*
   that machinery, not merely stop calling it. Accepted inconsistency: work chunks stay swipeable, so
@@ -112,6 +113,7 @@ other explicitly *unruled* rather than reading silence as consent:
   a derived ceiling, not a preference; at 32 the neighbouring work chunk drops to 36dp and the defect
   simply moves next door. `dismissThresholds` stays untouched — the reported failure is acquisition,
   not completion.
+
 - **D-31-07** — resolves PD-31-06: a currently-live break becomes skippable, **Skip only, never
   Complete**, shipping with the Item 1 fix so one human UAT re-run covers both.
 
@@ -537,10 +539,10 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 
 ## Session Continuity
 
-**Resume file:** .planning/phases/31-breaks-you-can-skip/31-UAT.md
+**Resume file:** .planning/phases/32-breaks-you-can-tap/32-UI-SPEC.md
 
 Last session: 2026-08-25
-Stopped at: Phase 31 code complete, 5/5 plans executed, blocking human UAT unanswered.
+Stopped at: Phase 32 UI-SPEC approved
 Resume at: open `http://danserver:8143/` **on a phone or tablet** (not a desktop pointer — the whole
 question is fingertip size). Tap **⟳ Re-check-in first** — mandatory, trap #4, Item 3 is meaningless
 without it. Then walk `31-UAT.md`'s three items, rule on its two deliberate exclusions, record each
