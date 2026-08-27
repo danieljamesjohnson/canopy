@@ -433,7 +433,13 @@ to it as-is. Ready for `/gsd-plan-phase 31`.
 
 | Phase | State | Resume |
 |-------|-------|--------|
-| 31 | verification_gaps — Item 1 FAILED at human UAT | /gsd-plan-phase 31 --gaps |
+| 31 | superseded — gaps will not be closed in 31 | (none — work routed to Phase 32) |
+
+**Superseded 2026-08-27.** This row previously read `verification_gaps` / `/gsd-plan-phase 31
+--gaps`. That resume command is now wrong and must not be run: the round-two UAT verdict replaced
+the swipe approach rather than repairing it, and Phase 32 (`Breaks You Can Tap`) carries the work.
+The gap analysis below is retained because Phase 32 inherits its lesson, not because Phase 31 will
+act on it.
 
 **Phase 31's UAT was judged on 2026-08-26 and Item 1 FAILED.** The owner, on a real phone after a
 real ⟳ Re-check-in: *"hard to do this with a thumb."* Clarified on follow-up as an **acquisition**
