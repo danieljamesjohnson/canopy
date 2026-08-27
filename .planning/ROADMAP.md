@@ -728,11 +728,21 @@ recorded here rather than performed silently.**
    border, not a hairline between two `Divider`s. This retires Phase 29's `_SubCompactRow`
    treatment for breaks at the 5-minute tier.
 
-3. A visible, labelled **Skip** button on the break card. Sized to a real tap target: at 30dp of row
-   the button will need to be the full row height and lean on horizontal width for its target area,
-   since 30dp is still under Material's 48dp minimum. **This is the same too-small-target problem in
-   a new place — solve it with a visible target rather than an invisible band, which is the entire
-   lesson of Phase 31.**
+3. A visible, labelled **Skip** button on the break card.
+
+   **D-32-03 — the button is ~64dp wide × the full 30dp row height. Owner-ruled 2026-08-27.** At
+   6.0 px/min a 5-min row is 30dp, under Material's 48dp minimum, so the button earns its target
+   area from **width** instead of height: roughly 64 × 30 = 1920dp² against the 48 × 48 = 2304dp²
+   guideline. Slightly under on raw area, and **deliberately so** — every pixel of it is *visible*,
+   and a wider-than-tall target suits a thumb's actual contact patch better than a square one.
+
+   **Three alternatives were offered and declined**, and the reasoning is the whole lesson of Phase
+   31: a vertically-overhanging hit area would have hit 48dp *on paper* by extending into invisible
+   space above and below — which is precisely the invisible-target pattern that failed the owner
+   twice — and would have stolen target area from the neighbouring work chunks again. A 48dp floor
+   on short breaks was declined because it makes the row lie about its duration, reversing the very
+   reason D-32-01 chose to scale the whole timeline. **Meeting a spec number with an invisible
+   target is not the same guarantee as missing it slightly with a visible one.**
 
 4. Remove the swipe path for breaks and retire the machinery it leaves dead (D-32-02 above),
    including the grip glyph and its tests.
@@ -757,11 +767,19 @@ recorded here rather than performed silently.**
   "current," so the header switches from the break to the next chunk. The now-line itself does not
   move. Flagged in advance in the round-two UAT; still unanswered.
 
-**Verification note — and this is the phase's real risk.** `kPixelsPerMinute` is load-bearing for
-every pixel assertion in the suite. Phase 31 ended at 639 green tests, and a large number of them
-hardcode geometry derived from 4.0. **A mass update of those expected values is exactly how a suite
-stops being able to fail.** Re-derive each from the constant where possible; where a literal is
-genuinely required, the change must be justified per test, not applied by find-and-replace.
+**Verification note — measured, not assumed.** `kPixelsPerMinute` is load-bearing for the suite's
+pixel assertions, so the migration was surveyed before planning rather than guessed at. **The blast
+radius is small:** 38 symbolic references to `kPixelsPerMinute` across 4 test files (these follow
+the constant automatically and need no edit), and only **4 hardcoded pixel literals** in the entire
+`test/` tree. Files touched: `today_screen_test.dart`, `today_timeline_model_test.dart`,
+`today_screen_now_state_test.dart`, `today_row_widgets_test.dart`.
+
+An earlier draft of this entry warned that "a large number" of tests hardcode 4.0-derived geometry
+and that a mass update would be dangerous. **That was wrong and is corrected here** — the survey
+found 4 literals, not a large number. The discipline still applies to those four (re-derive from the
+constant; justify any literal that must stay), but this is not a hazardous migration and should not
+be planned as one. Over-engineering a migration strategy against a risk that isn't there costs real
+work.
 
 **This phase MUST end in a human UAT checkpoint,** for the fourth time and with the strongest
 precedent yet: Phase 27 failed 2 of 3 human items after 16/17 automated; Phase 29 went 587-green
@@ -777,6 +795,7 @@ section of the day, not a hairline)
 **Depends on:** Phase 31 (owns the constants and the swipe machinery this phase retires, and the
 `LiveRowCard` Skip button it keeps)
 **Plans:** TBD — run `/gsd-plan-phase 32`
+**Decisions already ruled by the owner (do not re-ask):** D-32-01 (`kPixelsPerMinute` 6.0), D-32-02 (button-only, retire the swipe machinery), D-32-03 (~64×30dp Skip button).
 
 
 ## Progress
