@@ -1,13 +1,13 @@
 ---
 gsd_state_version: 1.0
 milestone: none
-current_phase: 31
-current_phase_name: Breaks You Can Skip
-status: verification_deferred_human
-stopped_at: Phase 31 gap closure — round-two UAT served on 8143, awaiting owner verdict
-last_updated: "2026-08-26T00:00:00.000Z"
-last_activity: 2026-08-26
-last_activity_desc: Phase 31 gap closure code-complete (639/639 green) — blocking round-two UAT awaiting the owner's thumb
+current_phase: 32
+current_phase_name: Breaks You Can Tap
+status: superseded
+stopped_at: Phase 31 round-two UAT judged — swipe approach rejected, work routed to Phase 32
+last_updated: "2026-08-27T00:00:00.000Z"
+last_activity: 2026-08-27
+last_activity_desc: Phase 31 round-two UAT judged — icon means the wrong verb; owner ruled D-32-01/D-32-02, Phase 32 created
 state_head: 493e890d3d57822c2ab31f6ce62f23769fe69d5f
 progress:
   total_phases: 5
@@ -27,15 +27,50 @@ milestone_name: milestone
 
 ## Current Position
 
-Phase: 31 (Breaks You Can Skip) — GAP CLOSURE CODE-COMPLETE, BLOCKING UAT AWAITING THE OWNER
-Plan: 5 of 5 executed; gap closure 31-06 and 31-07 executed, 31-08 at its blocking human checkpoint
+Phase: 32 (Breaks You Can Tap) — CREATED 2026-08-27, NOT YET PLANNED
+Plan: none yet. **Resume with `/gsd-plan-phase 32`.**
 
-**Served at `http://danserver:8143/` right now, awaiting a real thumb.** Both gap-closure code plans
-landed: `kBreakHitSlop` 24.0 (68dp band) plus a pinned `Icons.drag_indicator` grip at zero painted
-cost, and a live break that can now be skipped (Skip-only button at the compact tier,
-`SwipeableRowShell` swipe at the 20dp tier). Suite went 625 → **639/639**, `flutter analyze` clean,
-both re-run by the orchestrator on the merged tree rather than taken on the executors' word.
-**Resume by reading `31-GAPS-UAT.md` and recording the owner's verdicts.**
+Phase 31 is **superseded, not failed**: 31-06 and 31-07 shipped and are green, 31-08's UAT was
+judged, and the owner replaced the approach rather than repairing it.
+
+**Round-two UAT judged 2026-08-27, and it found something no test could.** The owner used his thumb
+on the served build and reported: *"the icon you're using makes it look like you can drag and drop
+the short break, not hold and slide. Let's just make the thing 50% bigger, have a skip button on the
+side, and make it look like a small section similar to work."*
+
+**The defect is semantic, not dimensional.** `Icons.drag_indicator` is Material's six-dot *reorder*
+grip — it means "pick this up and move it," while the wired gesture was swipe-to-dismiss. The glyph
+was picked for fitting inside a 20dp row, which was the constraint under optimisation, and **nobody
+asked what it says.** It was perfectly legible and completely wrong. This class of defect is
+invisible to the entire suite by construction: `flutter test` can assert an `Icon` with codepoint
+`0xe207` renders and has no opinion on what a human thinks it means. **Item 2 therefore split — PASS
+on visibility, FAIL on meaning.**
+
+**Item 1 was superseded, not scored, and that is recorded honestly.** The owner rejected the swipe
+approach rather than counting five attempts, so whether 68dp beat 52dp for raw acquisition is
+**permanently unmeasured**. It is not written up as a PASS just because a redesign followed it.
+**Item 3 (D-31-07, live-break skip) was never reached** — code-complete, test-proven at 639/639
+including verification truth #14's composition, and still never confirmed by a human on a device.
+
+**Two owner rulings, both reversing standing decisions, both asked rather than assumed:**
+
+- **D-32-01 — `kPixelsPerMinute` 4.0 → 6.0**, reversing Phase 29 D-03. Chosen over three
+  alternatives *because it keeps the grid honest*: every row still renders at exactly
+  `durationMinutes × kPixelsPerMinute`, so nothing lies about its duration. Accepted cost: the day
+  is 50% taller to scroll. The rejected options all bought a bigger break by making some row lie.
+- **D-32-02 — breaks become button-only**, reversing D-31-01's `Dismissible` for breaks and making
+  **all of D-31-06 dead** — slop, drag target, Layer 1b pass, grip glyph. Phase 32 must *retire*
+  that machinery, not merely stop calling it. Accepted inconsistency: work chunks stay swipeable, so
+  breaks and work no longer share a gesture vocabulary; the owner was shown that and took it.
+
+**The sharpest trap waiting in Phase 32:** `kPixelsPerMinute` is load-bearing for every pixel
+assertion in a 639-test suite, and many hardcode geometry derived from 4.0. **A find-and-replace of
+those expected values is exactly how a suite stops being able to fail** — the carried-forward defect
+class of this whole project. Re-derive from the constant; justify each remaining literal per test.
+Second trap: `kSubCompactBreakMinHeight` (32.0), `kMinBreakDragTarget` (48.0) and
+`kCompactLiveMinHeight` (88.0) were all tuned against 4.0. At 6.0 a 5-min break is 30dp — **still
+under the 32dp sub-compact threshold, so it would still render as the hairline the owner is trying
+to get rid of** unless the thresholds move too.
 
 **The stale-server trap fired again, one round later.** Round one found a two-day-old server
 squatting port 8143 and nearly judged the wrong bundle. That same server (PID 2357258, started

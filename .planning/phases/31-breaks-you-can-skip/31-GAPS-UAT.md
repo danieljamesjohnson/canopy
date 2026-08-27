@@ -152,8 +152,16 @@ This exact omission happened on **2026-08-21**: a UAT judged a pre-fix day, repo
 failure, and let the real defect survive three more days until the owner reported the identical
 symptom again on **2026-08-24**. Do not repeat it.
 
-**Step 0 performed:** _pending_
-**Date:** _pending_
+**Step 0 performed:** **not recorded.** The owner reported using his thumb on the served build but
+did not state whether he tapped ⟳ Re-check-in first, and it is not inferred here.
+
+**Does it invalidate anything?** For **Item 2** — the one item that produced a verdict — no. That
+finding is about what an icon *means*, which is a pure render concern: the glyph is present in the
+bundle (codepoint `0xe207`, verified above) and paints identically on a pre- or post-change day.
+Item 3 is the one that genuinely needed Step 0, and Item 3 went unanswered anyway. So no verdict
+recorded below rests on an unperformed Step 0 — stated explicitly rather than left as a loose end,
+because trap #4 has already cost this project one false failure and three lost days.
+**Date:** 2026-08-27 (verdicts recorded)
 
 An unrecorded Step 0 invalidates every item below and must be re-run, not assumed — the
 orchestrator cannot perform this step; it requires tapping the control in the running app.
@@ -200,16 +208,18 @@ work blocks. With a **thumb**, not a fingernail and not a stylus, swipe it **lef
   break, versus grabbed the work block above or below it. Round one's answer was *"hard to do this
   with a thumb"* — this is the number that has to move.
 
-  **Attempts (round two):** _pending_ / 5 grabbed the break.
+  **Attempts (round two):** **not counted — the owner rejected the approach rather than scoring
+  the increment.** He confirmed he used his thumb (*"Ok I used my thumb"*) but gave no attempt
+  count, and none is inferred here. See the round-two verdict below.
 
 - **(b) Did the swipe complete?** A red panel with a right-pointing arrow, and the break marked
   skipped.
 
-  **Verdict:** _pending_
+  **Verdict:** **unanswered.** Not reported either way.
 
 - **(c) Did skipping the break ever accidentally complete or skip the work chunk next to it?**
 
-  **Verdict:** _pending_
+  **Verdict:** **unanswered.** Not reported either way.
 
 **The new geometry, stated honestly.** The reachable band is now **24dp above and 24dp below** the
 visible hairline — roughly **68dp** against the 20dp painted row, up from roughly 52dp in round
@@ -222,7 +232,23 @@ block above" and "nothing happens at all" are different defects with different f
 fix this time would have to be structural (a different affordance, not a bigger invisible band),
 not a repeat of the D-31-06 slop increase.
 
-**Round-two verdict:** _pending_
+**Round-two verdict: ⊘ SUPERSEDED — the owner rejected the swipe approach itself, 2026-08-27.**
+
+Not a PASS and not a FAIL: he did not score the increment, he replaced the question. His words, in
+full: *"Ok I used my thumb. I think the icon you're using makes it look like you can drag and drop
+the short break, not hold and slide. Let's just make the thing 50% bigger, have a skip button on
+the side, and make it look like a small section similar to work. If that should be another phase
+thats fine."*
+
+**Whether 68dp beat 52dp for raw acquisition is now unknown and will stay unknown** — it stopped
+mattering the moment breaks became button-only. Recorded as unmeasured rather than quietly
+converted into a PASS by the redesign that followed it.
+
+**This is exactly the escape hatch this item wrote for itself.** The paragraph above says: *"if
+Item 1 fails again... the fix this time would have to be structural (a different affordance, not a
+bigger invisible band)."* That is precisely what the owner chose. The prediction was right; the
+remaining headroom was correctly described as gone; the structural answer arrived on schedule. See
+**D-32-01** and **D-32-02** in ROADMAP Phase 32.
 
 ---
 
@@ -236,22 +262,36 @@ nothing to look at.
 
 - **(a) Is there a small grip glyph visible at the left end of the `Short break` label?**
 
-  **Verdict:** _pending_
+  **Verdict: ✅ PASS.** He saw it, identified it specifically, and described what it communicates —
+  none of which is possible if it were invisible. The visibility half of D-31-06 part 2 worked.
 
 - **(b) Does it read as "grab here" — or as decoration, an artifact, or a rendering glitch?**
 
-  **Verdict:** _pending_
+  **Verdict: ❌ FAIL — and this is the finding of round two.** Owner, 2026-08-27: *"the icon you're
+  using makes it look like you can drag and drop the short break, not hold and slide."*
+
+  Not decoration and not a glitch — **the wrong verb.** `Icons.drag_indicator` is Material's
+  six-dot reorder grip, whose established meaning is *pick this up and move it somewhere else* (the
+  drag handle in a reorderable list). The gesture actually wired to it is a horizontal
+  swipe-to-dismiss. The glyph was chosen for being *visible and small enough to fit a 20dp row* —
+  the constraint everyone was optimising against — and nobody checked what it *says*. It was
+  legible and it was wrong, which is a harder failure to catch than an invisible one and is
+  invisible to every test in the suite: `flutter test` can assert an `Icon` with codepoint `0xe207`
+  renders, and has no opinion whatsoever about what a human thinks that icon means.
 
 - **(c) At arm's length, can you find the break's grab point without hunting for it?**
 
-  **Verdict:** _pending_
+  **Verdict: unanswered.** Not reported separately; (b)'s finding overtook it.
 
 - **(d) It deliberately disappears once a break is already skipped.** Does that read as correct,
   or does its absence look like something is missing/broken?
 
-  **Verdict:** _pending_
+  **Verdict: unanswered.** Not reported.
 
-**Round-two verdict:** _pending_
+**Round-two verdict: ❌ FAIL on meaning, PASS on visibility.** The glyph is plainly visible and the
+owner read it instantly — but read it as the wrong gesture. D-31-06 part 2 solved *findability* and
+introduced a *semantics* defect in its place. The whole affordance is superseded by **D-32-02**
+(a labelled Skip button, no glyph, no swipe).
 
 ---
 
@@ -271,19 +311,19 @@ Reset the dev clock in Settings when you are done.
   button to fit, so there the gesture is the **same leftward swipe** used everywhere else — this is
   intentional, not a missing button; don't hunt for one that cannot fit in a 20dp row.
 
-  **Verdict:** _pending_
+  **Verdict: unanswered.**
 
 - **(b) Skip it. Does the row stay exactly where it was on the timeline, at the same height?**
 
-  **Verdict:** _pending_
+  **Verdict: unanswered.**
 
 - **(c) Does the red now-line stay in the same place, or does it jump?**
 
-  **Verdict:** _pending_
+  **Verdict: unanswered.**
 
 - **(d) Is there any visible sign the skip landed — the title struck through?**
 
-  **Verdict:** _pending_
+  **Verdict: unanswered.**
 
 **A behaviour to judge honestly, flagged in advance rather than left for you to stumble on.** When
 a live break is skipped, `resolveNowState`'s pre-existing "advance past resolved chunks" loop
@@ -298,9 +338,13 @@ it is pre-existing.
 
 **Does the "Up next" transition read as correct for a skipped live break?**
 
-**Verdict:** _pending_
+**Verdict: unanswered.** Flagged in advance precisely so it would not be stumbled on later, and it
+still needs a ruling. Carried into Phase 32 rather than assumed either way.
 
-**Round-two verdict:** _pending_
+**Round-two verdict: ⊘ UNJUDGED.** The owner did not reach Item 3. D-31-07's live-break skip is
+code-complete and test-proven (639/639, including truth #14's composition) but **has never been
+confirmed by a human on a device**. Phase 32 changes this surface again — the compact-tier Skip
+button survives D-32-02, the live-break *swipe* does not — so Phase 32's UAT must re-ask it.
 
 ---
 
@@ -351,58 +395,71 @@ approach. If Item 3 fails on the "Up next" transition reading wrong, that is a p
 ```
 total: 3
 passed: 0
-issues: 0
-pending: 3
+issues: 1
+pending: 0
 skipped: 0
-blocked: 0
+blocked: 2
 ```
 
-(Counts above reflect the state at the time this document was written by the executor — all three
-items pending a human verdict. The orchestrator/owner should update this block once verdicts are
-recorded.)
+Judged by the owner **2026-08-27**. One real verdict, and it is not the one this round expected.
+
+- **Item 1 — SUPERSEDED, not scored.** The owner rejected the swipe approach rather than measuring
+  whether 68dp beat 52dp. That number is now permanently unknown, and is recorded as unmeasured
+  rather than quietly upgraded to a PASS by the redesign that replaced it.
+- **Item 2 — the finding. Visible (PASS) but semantically wrong (FAIL).** `Icons.drag_indicator`
+  reads as *reorder*, not *swipe away*. D-31-06 part 2 fixed findability and introduced a meaning
+  defect in its place.
+- **Item 3 — UNJUDGED.** Never reached. D-31-07 is code-complete and test-proven but has still
+  never been confirmed by a human on a device.
 
 ## Gaps
 
-<!-- YAML for /gsd-plan-phase 31 --gaps consumption -->
+<!-- YAML for gap consumption. NOTE: these do NOT route to `/gsd-plan-phase 31 --gaps`.
+     The owner's ruling replaces the mechanism rather than repairing it, and one of the two
+     decisions reverses a locked Phase 29 constraint, so the work is Phase 32. -->
 
-- truth: "A real thumb, on a real touch device, can reliably GRAB a 5-minute break's row (SKIPBREAK-01, D-31-06 round two)"
-  status: pending
-  reason: "Awaiting human verdict — round two of the Item 1 five-attempt test, re-asked in the same form as round one for direct before/after comparison."
+- truth: "A real thumb can reliably GRAB a 5-minute break's row by swiping (SKIPBREAK-01, D-31-06 round two)"
+  status: superseded
+  reason: "Owner, 2026-08-27, after testing with his thumb: he did not score the five attempts, he replaced the approach. Breaks become button-only (D-32-02), so raw swipe-acquisition on a 20dp row stops being a question this project needs answered."
   severity: major
   test: 1
-  root_cause: ""
+  root_cause: "Not established, and now never will be. Whether kBreakHitSlop 24.0's 68dp band outperformed 16.0's 52dp is unmeasured. Recorded as unmeasured rather than inferred."
   artifacts:
     - path: "lib/screens/today/timeline_geometry.dart"
-      issue: "kBreakHitSlop raised 16.0 -> 24.0 (31-06); this is the change under judgment"
-  owner_ruling: ""
-  missing: []
+      issue: "kBreakHitSlop = 24.0 and kMinBreakDragTarget become dead code once breaks are button-only (D-32-02). Retire deliberately in Phase 32; do not leave an unused invisible-band mechanism in the tree."
+  owner_ruling: "SUPERSEDED by D-32-01/D-32-02. Scale the whole timeline 50% and replace the swipe with a visible Skip button."
+  missing:
+    - "Phase 32 must retire the slop machinery it makes dead, not merely stop using it."
   debug_session: ""
 
 - truth: "The grip glyph is findable by eye and reads as a grab affordance (D-31-06 part 2)"
-  status: pending
-  reason: "Awaiting human verdict — new question round one could not ask, addressing the root cause (an invisible target met platform minimums on paper but still failed)."
+  status: failed
+  reason: "Owner, 2026-08-27: 'the icon you're using makes it look like you can drag and drop the short break, not hold and slide.' Findability PASSED - he saw it and named it unprompted. Meaning FAILED."
   severity: major
   test: 2
-  root_cause: ""
+  root_cause: "Icons.drag_indicator is Material's six-dot REORDER grip; its established meaning is 'pick this up and move it', while the wired gesture is horizontal swipe-to-dismiss. The glyph was selected for fitting inside a 20dp row - the constraint under optimisation - and its semantics were never evaluated. No test in the suite can catch this: flutter test asserts an Icon with codepoint 0xe207 renders and has no opinion on what a human thinks it means."
   artifacts:
     - path: "lib/screens/schedule/widgets/chunk_card.dart"
-      issue: "kSubCompactGripSize / Icons.drag_indicator glyph added inside _SubCompactRow (31-06); this is the change under judgment"
-  owner_ruling: ""
-  missing: []
+      issue: "kSubCompactGripSize / Icons.drag_indicator inside _SubCompactRow. Removed entirely by D-32-02 - a labelled Skip button needs no grip glyph."
+  owner_ruling: "RULED 2026-08-27 (D-32-02): drop the glyph and the swipe. A visible Skip button on the side, breaks styled as a small section like work."
+  missing:
+    - "Remove the grip glyph and its tests along with the swipe path."
+    - "Carry the lesson, not just the fix: an affordance can be perfectly legible and still say the wrong verb, and this class of defect is invisible to the entire test suite by construction."
   debug_session: ""
 
 - truth: "A break that is currently running can be skipped, and the now-line does not move when it is (D-31-07)"
-  status: pending
-  reason: "Awaiting human verdict — including whether the pre-existing 'Up next' delisting transition reads as correct for a skipped live break, not just whether the skip itself works."
+  status: unjudged
+  reason: "The owner never reached Item 3. Code-complete and test-proven (639/639, including verification truth #14's composition proof) but never confirmed by a human on a device."
   severity: minor
   test: 3
   root_cause: ""
   artifacts:
     - path: "lib/screens/today/widgets/live_row_card.dart"
-      issue: "showComplete/isSkipped added (31-07); this is the change under judgment"
+      issue: "showComplete/isSkipped - the compact-tier Skip button SURVIVES D-32-02 and is closer to what the owner asked for than the swipe ever was."
     - path: "lib/screens/schedule/widgets/swipeable_chunk_card.dart"
-      issue: "SwipeableRowShell extraction and live-break wiring (31-07); this is the change under judgment"
+      issue: "SwipeableRowShell live-break wiring - the live-break SWIPE path does NOT survive D-32-02."
   owner_ruling: ""
-  missing: []
+  missing:
+    - "Phase 32's UAT must re-ask this. It was never answered, and Phase 32 changes the surface underneath it."
+    - "The 'Up next' delisting transition (now_state.dart:176) still needs an explicit owner ruling - flagged in advance, still unanswered."
   debug_session: ""
-</content>

@@ -676,12 +676,108 @@ Plans:
 
 **Gap-closure Wave 3** *(blocked on Gap-closure Wave 2)*
 
-- [ ] 31-08-PLAN.md — Blocking human UAT round two on a real touch device, port 8143 debug build, stale-server kill + served-bytes pre-flight, mandatory ⟳ Re-check-in Step 0, Item 1 re-asked in the same five-attempts form (gap-closure wave 3) — **written, built, served on 8143 and byte-verified; awaiting the owner's verdict**
+- [x] 31-08-PLAN.md — Blocking human UAT round two — **judged 2026-08-27: Item 2 FAIL (icon means the wrong verb), Item 1 SUPERSEDED, Item 3 UNJUDGED. Approach replaced; work routed to Phase 32.**
 
 **Cross-cutting constraints:**
 
 - A break that is currently in progress (the now-line falls inside its slot) can also be skipped, and the live-row treatment must compose with the skipped treatment rather than fight it — the row keeps its slot height, stays on the timeline, and does not move the now-line.
 - This phase adds no text length at any tier — strikethrough is a decoration flag, and the full-tier swap shortens the string. Inherited large-text-scale behaviour at the 20dp sub-compact tier is Phase 29's surface and is unchanged here.
+
+### Phase 32: Breaks You Can Tap
+
+Standalone phase, no milestone. Raised by the owner on **2026-08-27**, judging Phase 31's round-two
+UAT on a real device: *"I think the icon you're using makes it look like you can drag and drop the
+short break, not hold and slide. Let's just make the thing 50% bigger, have a skip button on the
+side, and make it look like a small section similar to work. If that should be another phase thats
+fine."*
+
+**Goal:** A break is skipped by tapping a button you can see, on a row big enough to read as a real
+section of the day — with the timeline still telling the exact truth about how long everything takes.
+
+**This phase reverses two standing decisions. Both reversals are deliberate, owner-ruled, and
+recorded here rather than performed silently.**
+
+- **D-32-01 — `kPixelsPerMinute` 4.0 → 6.0. This reverses Phase 29 D-03**, which rejected raising it.
+  That rejection was made on *legibility* evidence and is not wrong on its own terms; it is
+  overturned by evidence that did not exist then — two rounds of a real thumb failing on a 20dp row.
+  Chosen over three alternatives specifically **because it keeps the grid honest**: every row still
+  renders at exactly `durationMinutes × kPixelsPerMinute`, so nothing lies about its length. A 5-min
+  break becomes 30dp, a 25-min work chunk 150dp. **The known cost, accepted by the owner: the day is
+  50% taller to scroll** (an 8-hour day goes 1920dp → 2880dp). The rejected alternatives all bought
+  a bigger break by making some row lie about its duration — a per-break minimum height, or letting
+  the next work chunk absorb the difference.
+
+- **D-32-02 — breaks become button-only. The swipe is removed from break rows.** The owner chose
+  this over keeping both. **This reverses D-31-01's one-directional `Dismissible` for breaks and
+  makes D-31-06 dead** — both halves of it. `kBreakHitSlop`, `kMinBreakDragTarget`, the Layer 1b
+  Stack pass, and the `Icons.drag_indicator` grip glyph all exist solely to serve a gesture breaks
+  will no longer have. **Retire them deliberately; do not leave an unused invisible-band mechanism
+  in the tree.** Note the accepted inconsistency: work chunks stay swipeable, so breaks and work no
+  longer share a gesture vocabulary. The owner was shown that trade-off and took it.
+
+**What the phase must build:**
+
+1. `kPixelsPerMinute` 4.0 → 6.0, with every derived constant re-derived rather than restated.
+   `kSubCompactBreakMinHeight` (32.0), `kMinBreakDragTarget` (48.0), `kCompactLiveMinHeight` (88.0)
+   and the density-tier thresholds were all tuned against 4.0 and **all of them shift meaning at
+   6.0** — a 5-min break at 30dp is still under the 32dp sub-compact threshold, so it would *still*
+   render as a hairline unless the thresholds move too. **Getting this wrong ships a 50%-taller
+   timeline that still has the hairline the owner is trying to get rid of.**
+
+2. Break rows styled as *a small section similar to work* — a real card with a background and
+   border, not a hairline between two `Divider`s. This retires Phase 29's `_SubCompactRow`
+   treatment for breaks at the 5-minute tier.
+
+3. A visible, labelled **Skip** button on the break card. Sized to a real tap target: at 30dp of row
+   the button will need to be the full row height and lean on horizontal width for its target area,
+   since 30dp is still under Material's 48dp minimum. **This is the same too-small-target problem in
+   a new place — solve it with a visible target rather than an invisible band, which is the entire
+   lesson of Phase 31.**
+
+4. Remove the swipe path for breaks and retire the machinery it leaves dead (D-32-02 above),
+   including the grip glyph and its tests.
+
+**What this phase must NOT do:**
+
+- **Do not make any row lie about its duration.** SKIPBREAK-02's spirit survives D-32-01 intact and
+  is the reason that option was chosen: rows get bigger, the mapping stays exact.
+- **Do not remove the swipe from work chunks.** Only breaks become button-only.
+- **Do not remove `LiveRowCard`'s compact-tier Skip button** (D-31-07). It is closer to what the
+  owner asked for than the swipe ever was, and it survives.
+- **Do not re-litigate** skipped-break legibility at `Opacity(0.5)` or D-31-03's
+  "skipping a break does not hand the minutes back." Both PASSED human UAT and are settled.
+
+**Two things Phase 31 left unanswered, which this phase inherits rather than closes:**
+
+- **D-31-07 was never judged by a human.** The owner did not reach Item 3 of the round-two UAT. It
+  is code-complete and test-proven (639/639, including verification truth #14's composition) but has
+  never been confirmed on a device, and this phase changes the surface underneath it.
+- **The "Up next" transition still needs a ruling.** When a live break is skipped,
+  `resolveNowState`'s pre-existing advance-past-resolved loop (`now_state.dart:176`) delists it from
+  "current," so the header switches from the break to the next chunk. The now-line itself does not
+  move. Flagged in advance in the round-two UAT; still unanswered.
+
+**Verification note — and this is the phase's real risk.** `kPixelsPerMinute` is load-bearing for
+every pixel assertion in the suite. Phase 31 ended at 639 green tests, and a large number of them
+hardcode geometry derived from 4.0. **A mass update of those expected values is exactly how a suite
+stops being able to fail.** Re-derive each from the constant where possible; where a literal is
+genuinely required, the change must be justified per test, not applied by find-and-replace.
+
+**This phase MUST end in a human UAT checkpoint,** for the fourth time and with the strongest
+precedent yet: Phase 27 failed 2 of 3 human items after 16/17 automated; Phase 29 went 587-green
+while the owner saw no breaks at all; Phase 31 went 625-green then 639-green and was contradicted by
+a thumb **twice** — the second time finding a defect (an icon that means the wrong verb) that no
+assertion in the suite could ever have caught. Reuse port 8143, kill whatever is squatting it first,
+and re-ask D-31-07 alongside the new questions.
+
+**Requirements:** TAPBREAK-01 (a break is skipped by a visible, labelled button — no swipe, no
+invisible target), TAPBREAK-02 (the grid still tells the exact truth: every row renders at
+`durationMinutes × kPixelsPerMinute`, at the new 6.0), TAPBREAK-03 (a 5-minute break reads as a
+section of the day, not a hairline)
+**Depends on:** Phase 31 (owns the constants and the swipe machinery this phase retires, and the
+`LiveRowCard` Skip button it keeps)
+**Plans:** TBD — run `/gsd-plan-phase 32`
+
 
 ## Progress
 
@@ -701,4 +797,5 @@ Plans:
 | 28. The Day Is a Lattice | — (standalone) | 3/3 | Complete   | 2026-08-19 |
 | 29. Breaks You Can See | — (standalone) | 4/4 | Complete    | 2026-08-25 |
 | 30. Breaks In Committed Time | — (standalone) | 5/5 | Complete    | 2026-08-25 |
-| 31. Breaks You Can Skip | — (standalone) | 5/8 | Gap closure planned (UAT Item 1 FAILED 2026-08-26) |  |
+| 31. Breaks You Can Skip | — (standalone) | 7/8 | Superseded by Phase 32 (round-two UAT 2026-08-27: swipe approach rejected) |  |
+| 32. Breaks You Can Tap | — (standalone) | 0/TBD | Not planned |  |
