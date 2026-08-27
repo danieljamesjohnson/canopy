@@ -69,7 +69,19 @@ import '../../utils/time_format.dart';
 /// SEED-005's 126dp was the `flutter test` placeholder-font bound its own
 /// caveat said it was, not a real on-device defect. No code change made;
 /// this constant and the slot height are unchanged (D-03).
-const double kPixelsPerMinute = 4.0;
+///
+/// **4.0 -> 6.0 (D-32-01, LOCKED, owner-ruled, 2026-08-27).** Reverses this
+/// constant's own D-03 verdict above — not because D-03 was wrong on its
+/// terms (it was legibility evidence, and it held), but because a real thumb
+/// failed twice on a 20dp break row (`31-UAT.md`, both rounds) and D-03
+/// predates that evidence entirely. Chosen over three alternatives
+/// specifically because it keeps the grid honest: every row still renders at
+/// exactly `durationMinutes * kPixelsPerMinute` — a 5-min break becomes
+/// 30dp (was 20dp), a 25-min work chunk becomes 150dp (was 100dp). The
+/// rejected alternatives all bought a bigger break by making some row lie
+/// about its duration. **Accepted cost, taken by the owner with eyes open:
+/// the day is 50% taller to scroll** (an 8-hour day ~1920dp -> ~2880dp).
+const double kPixelsPerMinute = 6.0;
 
 /// Full-tier density threshold for a work-chunk row, expressed in pixels
 /// (PD-3), not minutes.
@@ -168,6 +180,20 @@ const double kFullBreakMinHeight = 88.0;
 /// `measure_card_extent.py` against a fresh screenshot — never from
 /// `flutter test`.
 const double kSubCompactBreakMinHeight = 32.0;
+
+/// **The Skip rail's fixed width (D-32-03, LOCKED, owner-ruled, 2026-08-27).**
+/// `64.0` sits on the existing 8-pt spacing scale (`64 = 8 x 8`). At the
+/// smallest reachable break slot (a 5-minute break, 30dp at [kPixelsPerMinute]
+/// = 6.0) this yields a **64 x 30 = 1920dp^2** rail — under Material's
+/// 48 x 48 = 2304dp^2 touch-target guideline, and deliberately so: the owner's
+/// own reasoning (ROADMAP, D-32-03) is that every pixel of a visible,
+/// fixed-width rail is *painted*, and meeting a spec number with an invisible
+/// hit-test envelope (this codebase's own Phase 31 approach, twice) is a
+/// weaker guarantee than missing it slightly with a target the user can see.
+/// Do not "fix" this by adding hit-test slop or a vertical overhang — that is
+/// re-litigating a settled decision (see [kBreakHitSlop]/[kMinBreakDragTarget]
+/// below, both retired by the same ruling this constant replaces them with).
+const double kBreakSkipButtonWidth = 64.0;
 
 /// Extra invisible hit-test reach added above AND below a break's own slot
 /// (D-31-02, phase 31), before any clamp against a short neighbor. On-grid

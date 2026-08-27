@@ -20,6 +20,7 @@ import 'package:canopy/providers/theme_notifier.dart';
 import 'package:canopy/screens/commitments/commitment_form_sheet.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_card.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_detail_sheet.dart';
+import 'package:canopy/screens/schedule/widgets/swipeable_chunk_card.dart';
 import 'package:canopy/screens/today/timeline_geometry.dart';
 import 'package:canopy/screens/today/today_screen.dart';
 import 'package:canopy/screens/today/widgets/breathing_pulse_cta.dart';
@@ -29,6 +30,7 @@ import 'package:canopy/screens/today/widgets/live_row_card.dart';
 import 'package:canopy/screens/today/widgets/now_line.dart';
 import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
 import 'package:canopy/utils/time_format.dart';
+import 'package:canopy/widgets/break_skip_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -3139,5 +3141,148 @@ void main() {
         },
       );
     });
+  });
+
+  group('Phase 32 — TAPBREAK: breaks you can tap', () {
+    // Fixture shape mirrors the Phase 31 group's own skipTracerFixture
+    // above (an unresolved 25-minute work chunk, a 5-minute short break,
+    // and a following 25-minute work chunk) — duplicated here rather than
+    // shared across groups because Dart closures scope a group's own
+    // helper functions to that group's testWidgets callback. Pumped
+    // shortly after the fixture's own end (9:00 AM, not 18:00) for the
+    // identical reason the Phase 31 group documents at its own first test:
+    // CAL-03's scroll-on-open centres on `now`, and centring nine hours
+    // past this tiny fixture would scroll the break entirely off the
+    // default test viewport, making a synthetic tap land on nothing.
+    DailySchedule tapBreakTracerFixture() {
+      return DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: [
+          _workChunk(
+            id: 'w1',
+            syntheticStartMinutes: 480,
+            durationMinutes: 25,
+            rationale: 'Preceding work',
+          ),
+          _breakChunk(id: 'b1', syntheticStartMinutes: 505, durationMinutes: 5),
+          _workChunk(
+            id: 'w2',
+            syntheticStartMinutes: 510,
+            durationMinutes: 25,
+            rationale: 'Following work',
+          ),
+        ],
+      );
+    }
+
+    testWidgets(
+      'TAPBREAK-01 tracer: a tap on the Skip rail skips exactly that '
+      'break, end to end, with no swipe anywhere in its tree',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        final fake = _FakeScheduleNotifierWithSchedule(tapBreakTracerFixture());
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: fake,
+          now: () => DateTime(2026, 8, 7, 9, 0), // DayComplete
+        );
+        // Let CAL-03's scroll-to-now-on-open animation fully settle before
+        // computing rects or tapping. Without this, a synthetic tap's
+        // down/up pair can straddle an in-flight scroll frame: the row
+        // shifts between them, the gesture arena reads that as movement,
+        // and the InkWell's tap never resolves — silently, with no thrown
+        // exception. Discovered empirically while building this test.
+        await tester.pumpAndSettle();
+
+        // The break row's own confined paint boundary — the same finder
+        // pattern every prior phase's geometry assertions in this file use.
+        final breakClipRect = find
+            .ancestor(
+              of: find.text('Short break'),
+              matching: find.byType(ClipRect),
+            )
+            .first;
+
+        // TAPBREAK-02: the break's painted extent is still exactly its
+        // duration, derived symbolically from the scale constant — this is
+        // not one of the suite's deliberate bare-literal canaries.
+        expect(
+          tester.getSize(breakClipRect).height,
+          5 * kPixelsPerMinute,
+          reason:
+              'a break row must still occupy exactly duration x '
+              'kPixelsPerMinute of slot after this phase',
+        );
+
+        // TAPBREAK-01/D-32-03: the Skip rail measures exactly
+        // kBreakSkipButtonWidth wide by the row's own full height, and is
+        // exactly one InkWell — one tappable unit, not two zones.
+        final skipButton = find.descendant(
+          of: breakClipRect,
+          matching: find.byType(BreakSkipButton),
+        );
+        expect(skipButton, findsOneWidget);
+        final skipButtonSize = tester.getSize(skipButton);
+        expect(skipButtonSize.width, kBreakSkipButtonWidth);
+        expect(skipButtonSize.height, 5 * kPixelsPerMinute);
+        expect(
+          find.descendant(of: breakClipRect, matching: find.byType(InkWell)),
+          findsOneWidget,
+        );
+
+        // TAPBREAK-03: the compact tier renders a real bordered Card, not
+        // the retired hairline treatment.
+        expect(
+          find.descendant(of: breakClipRect, matching: find.byType(Card)),
+          findsOneWidget,
+        );
+
+        // Companion invariant (assumption-delta decision, 32-01-PLAN.md): a
+        // break never reaches SwipeableRowShell, and no Dismissible exists
+        // anywhere in its tree. This assertion goes red the instant a
+        // future phase reintroduces the singular gesture-vocabulary
+        // assumption D-32-02 just retired.
+        expect(
+          find.descendant(
+            of: breakClipRect,
+            matching: find.byType(SwipeableRowShell),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: breakClipRect,
+            matching: find.byType(Dismissible),
+          ),
+          findsNothing,
+        );
+
+        // The Skip button carries its own reachable Semantics(button: true,
+        // ...) node — proof that no outer excludeSemantics wrapper swallows
+        // it, the single easiest accessibility regression a straight
+        // copy-paste of the retired tier's pattern would have introduced.
+        expect(find.bySemanticsLabel('Skip Short break'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        await tester.tap(skipButton);
+        await tester.pumpAndSettle();
+
+        expect(
+          fake.lastSkippedId,
+          'b1',
+          reason:
+              'a tap on the Skip rail must call markSkipped for the '
+              'break\'s own chunk id',
+        );
+        expect(
+          fake.lastCompletedId,
+          isNull,
+          reason: 'the Skip rail must never call markComplete',
+        );
+
+        handle.dispose();
+      },
+    );
   });
 }

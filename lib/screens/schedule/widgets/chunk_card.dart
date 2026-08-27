@@ -4,6 +4,8 @@ import '../../../data/models/energy_valence.dart';
 import '../../../data/models/scheduled_chunk.dart';
 import '../../../providers/schedule_notifier.dart';
 import '../../../utils/time_format.dart';
+import '../../../widgets/break_skip_button.dart';
+import '../../today/timeline_geometry.dart';
 
 /// Phase 26 (CAL-01) row content density. `ChunkCard` renders three distinct
 /// content sets depending on how much vertical room its (now duration-sized,
@@ -168,49 +170,92 @@ class ChunkCard extends StatelessWidget {
       );
     }
 
-    // Compact tier (density-driven, CAL-01): label only, no leading icon,
-    // no duration text, no completed check icon — D-02 forbids inflating the
-    // box, so at a 5-minute break's 27.5px slot the only lever is content.
+    // Compact tier (density-driven, CAL-01). Phase 32 (TAPBREAK-01/02/03,
+    // D-32-02): rebuilt as a real bordered Card carrying a visible Skip
+    // rail — the load-bearing analog is `_WorkChunkContent.build`'s own
+    // discretionary-goal Card (color/shape/clipBehavior copied verbatim,
+    // no left accent bar since a break has no goal color). Superseded: the
+    // dashed-outline treatment above (D-06's original break vocabulary,
+    // now confined to the `subCompact`/full branches) and the D-31-04
+    // Semantics(excludeSemantics: true) wrapper this tier used to carry.
+    //
+    // **No outer excluding Semantics wrapper here, deliberately.** Every
+    // previous break tier wrapped its row in
+    // `Semantics(excludeSemantics: true, ...)` because none of them had a
+    // focusable child. This one does — the Skip button below owns a real
+    // `Semantics(button: true, ...)` node — so an outer excluding wrapper
+    // would swallow that button's own semantics entirely: visibly rendered,
+    // tappable, and invisible to a screen reader. The label `Text` exposes
+    // its own implicit semantics; `BreakSkipButton` exposes its own.
     if (density == ChunkCardDensity.compact) {
-      // D-31-04 (phase 31): this tier had NO Semantics wrapper at all before
-      // this phase — strikethrough/opacity convey nothing to a screen
-      // reader, so this wrapper closes a pre-existing accessibility gap
-      // rather than adding decoration on top of an existing one.
-      return Semantics(
-        label:
-            '$title, ${chunk.durationMinutes} min'
-            '${chunk.isSkipped ? ", skipped" : ""}',
-        excludeSemantics: true,
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          child: Opacity(
-            opacity: chunk.isSkipped ? 0.5 : 1.0,
-            child: CustomPaint(
-              painter: _DashedBorderPainter(
-                color: theme.colorScheme.outlineVariant,
-                strokeWidth: 1,
-                dashWidth: 2,
-                dashGap: 2,
-                radius: 6,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 0,
-                ),
+      // **Deviation (Rule 1 — bug), recorded here rather than silently
+      // fixed.** `32-UI-SPEC.md`'s widget tree puts `Row(crossAxisAlignment:
+      // stretch)` directly as the Card's child with no explicit height.
+      // That throws `BoxConstraints forces an infinite height` at layout
+      // time: every non-live chunk card (this one included, via
+      // `today_screen.dart`'s unchanged `ClipRect`/`OverflowBox(minHeight:
+      // 0, maxHeight: double.infinity)` PD-10 pattern) is laid out with an
+      // AMBIENT UNBOUNDED height so it can size to its own natural content
+      // — `CrossAxisAlignment.stretch` asks Flutter to give every Row child
+      // a TIGHT constraint equal to the Row's own incoming max height, and
+      // "tight at infinity" is not a size any RenderBox can report. Fixed
+      // by giving this Card an EXPLICIT height computed the same way
+      // `TimelineGeometry.heightFor` computes this row's own slot —
+      // `chunk.durationMinutes * kPixelsPerMinute` — which the app's own
+      // D-02/GRID-01 duration-exact invariant guarantees equals the slot
+      // this card is rendered into (proven by the tracer test's own
+      // painted-extent assertion). This also delivers the UI-SPEC's stated
+      // intent more precisely than the literal tree would have: the rail is
+      // now provably exactly the full SLOT height (30dp/180dp), not merely
+      // whatever height the card's own content happens to want.
+      return SizedBox(
+        height: chunk.durationMinutes * kPixelsPerMinute,
+        child: Card(
+          // Deliberate exception, not an oversight — same justification the
+          // `subCompact` tier above already carries: the smallest reachable
+          // break slot (30dp @ kPixelsPerMinute = 6.0) cannot spend any of
+          // itself on margin and still leave comfortable room for the
+          // border, the label, and the rail's own icon+text. The
+          // neighbouring work chunk's own 4dp margin alone preserves the
+          // visible seam — Flutter margins do not collapse.
+          margin: EdgeInsets.zero,
+          color: theme.colorScheme.surfaceContainer,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
                 child: Center(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      decoration: chunk.isSkipped
-                          ? TextDecoration.lineThrough
-                          : null,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        decoration: chunk.isSkipped
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+              SizedBox(
+                width: kBreakSkipButtonWidth,
+                child: chunk.isSkipped
+                    ? const BreakSkippedIndicator()
+                    : BreakSkipButton(
+                        chunkId: chunk.id,
+                        accessibleTitle: title,
+                      ),
+              ),
+            ],
           ),
         ),
       );
@@ -287,20 +332,24 @@ class ChunkCard extends StatelessWidget {
 ///
 /// [strokeWidth] defaults to the original 1dp; a long break (G-02) passes
 /// 1.5 for a slightly heavier outline within the same dashed vocabulary.
+///
+/// **Phase 32 (TAPBREAK-01/03):** `dashWidth`/`dashGap`/`radius` were
+/// constructor parameters until this phase's compact-tier rewrite removed
+/// their one and only non-default call site (the old compact break tier,
+/// which passed `dashWidth: 2, dashGap: 2, radius: 6`). With no remaining
+/// caller ever overriding them, `flutter analyze` flags them as unused
+/// parameters — inlined here as fixed values instead, matching this file's
+/// own instruction to leave this painter's behavior for the surviving full
+/// tier unchanged (the full tier never overrode these three, so its
+/// rendering is byte-for-byte identical before and after this edit).
 class _DashedBorderPainter extends CustomPainter {
-  const _DashedBorderPainter({
-    required this.color,
-    this.strokeWidth = 1,
-    this.dashWidth = 4,
-    this.dashGap = 4,
-    this.radius = 12,
-  });
+  const _DashedBorderPainter({required this.color, this.strokeWidth = 1});
 
   final Color color;
   final double strokeWidth;
-  final double dashWidth;
-  final double dashGap;
-  final double radius;
+  static const double _dashWidth = 4;
+  static const double _dashGap = 4;
+  static const double _radius = 12;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -311,30 +360,26 @@ class _DashedBorderPainter extends CustomPainter {
 
     final rrect = RRect.fromRectAndRadius(
       Offset.zero & size,
-      Radius.circular(radius),
+      Radius.circular(_radius),
     );
     final path = Path()..addRRect(rrect);
     final metrics = path.computeMetrics();
     for (final metric in metrics) {
       var distance = 0.0;
       while (distance < metric.length) {
-        final next = distance + dashWidth;
+        final next = distance + _dashWidth;
         canvas.drawPath(
           metric.extractPath(distance, next.clamp(0, metric.length)),
           paint,
         );
-        distance = next + dashGap;
+        distance = next + _dashGap;
       }
     }
   }
 
   @override
   bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
-      oldDelegate.color != color ||
-      oldDelegate.strokeWidth != strokeWidth ||
-      oldDelegate.dashWidth != dashWidth ||
-      oldDelegate.dashGap != dashGap ||
-      oldDelegate.radius != radius;
+      oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
 }
 
 /// D-31-06 part 2 (phase 31 gap closure). The sub-compact break row's grip
