@@ -2250,111 +2250,103 @@ void main() {
     }
 
     testWidgets(
-      'SEEBREAK-01 tier boundary: a break slot below '
-      'kSubCompactBreakMinHeight renders sub-compact; at the threshold it '
-      'renders compact',
+      'SEEBREAK-01 tier boundary (Phase 32, TAPBREAK-03 rewrite): a '
+      '5-minute break renders one Card and no Divider; a 30-minute break '
+      'renders the full tier',
       (tester) async {
-        // Derived from the constant, not hardcoded, so this test survives
-        // 29-03's real-browser measurement instead of being invalidated by
-        // it. At today's UNMEASURED PLACEHOLDER (24.0 / 4.0 px-per-minute)
-        // this is 6 and 5.
-        final atMinutes = (kSubCompactBreakMinHeight / kPixelsPerMinute)
-            .ceil();
-        final belowMinutes = atMinutes - 1;
-
-        // Vacuity guards: announce it rather than pass hollowly if a future
-        // measurement moves kSubCompactBreakMinHeight out from under this
-        // fixture's assumptions.
-        expect(
-          belowMinutes,
-          greaterThanOrEqualTo(1),
-          reason:
-              'belowMinutes must be a real, positive break duration — a '
-              'derived value below 1 means kSubCompactBreakMinHeight moved '
-              'below one minute worth of pixels and this fixture is no '
-              'longer constructible',
-        );
-        expect(
-          belowMinutes * kPixelsPerMinute,
-          lessThan(kSubCompactBreakMinHeight),
-          reason:
-              'belowMinutes must actually land below the threshold, or this '
-              'test compares two densities that are both sub-compact — '
-              'vacuously true',
-        );
-        expect(
-          atMinutes * kPixelsPerMinute,
-          greaterThanOrEqualTo(kSubCompactBreakMinHeight),
-          reason:
-              'atMinutes must actually land at/above the threshold, or this '
-              'test compares two densities that are both sub-compact — '
-              'vacuously true',
-        );
-        expect(
-          atMinutes * kPixelsPerMinute,
-          lessThan(kFullBreakMinHeight),
-          reason:
-              'atMinutes must stay below kFullBreakMinHeight, or the "at '
-              'threshold" case renders full (not compact) and this test '
-              'asserts the wrong flip',
-        );
-
+        // Phase 32 (D-32-02) retires the sub-compact tier's reachability
+        // through TodayScreen entirely — the screen's own density ternary
+        // (today_screen.dart) is now a two-way split, matching the work
+        // ternary immediately below it. This test used to derive a
+        // three-way boundary against kSubCompactBreakMinHeight; that
+        // premise no longer holds, so the test is rewritten against the
+        // new two-way split rather than merely re-deriving its old
+        // boundary math. `ChunkCardDensity.subCompact` itself still exists
+        // (retired outright by 32-02, not this plan) and is still directly
+        // constructible in `today_row_widgets_test.dart`'s own unit tests —
+        // only its reachability THROUGH the screen is gone, which is
+        // exactly what this test now proves.
         await _pumpTodayScreen(
           tester,
           scheduleNotifier: _FakeScheduleNotifierWithSchedule(
-            breakBoundaryFixture(belowMinutes),
+            breakBoundaryFixture(5),
           ),
           now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
         );
-        // grep -rn "Divider" lib/screens/today/
-        // lib/screens/schedule/widgets/chunk_card.dart returned nothing
-        // before this phase's scaffold, so any Divider a pumped TodayScreen
-        // renders comes from _SubCompactRow.
+        // Scoped to the break's own confined ClipRect, not "any ChunkCard"
+        // — the fixture's two work chunks (w1/w2) are ChunkCards too, and
+        // each renders its own Card.
+        final shortBreakClipRect = find
+            .ancestor(
+              of: find.text('Short break'),
+              matching: find.byType(ClipRect),
+            )
+            .first;
         expect(
-          find.byType(Divider),
-          findsNWidgets(2),
-          reason: 'below the threshold the break must render sub-compact — '
-              'two Dividers',
+          find.descendant(
+            of: shortBreakClipRect,
+            matching: find.byType(Divider),
+          ),
+          findsNothing,
+          reason:
+              'a 5-minute break must never render the retired sub-compact '
+              "tier's Dividers through the screen any more",
+        );
+        expect(
+          find.descendant(
+            of: shortBreakClipRect,
+            matching: find.byType(Card),
+          ),
+          findsOneWidget,
+          reason:
+              'a 5-minute break must render the new compact tier\'s '
+              'bordered Card',
         );
 
         // TodayScreenState._nowFn is late final, set once in initState — a
         // second pumpWidget with a different clock is silently ignored
-        // without a full unmount first. Both pumps in this test use the
-        // same clock (18:00), so this unmount is not load-bearing here, but
-        // stated per the plan's own note.
+        // without a full unmount first.
         await tester.pumpWidget(const SizedBox.shrink());
 
         await _pumpTodayScreen(
           tester,
           scheduleNotifier: _FakeScheduleNotifierWithSchedule(
-            breakBoundaryFixture(atMinutes),
+            breakBoundaryFixture(30),
           ),
           now: () => DateTime(2026, 8, 7, 18, 0),
         );
+        // breakBoundaryFixture builds a shortBreak-typed chunk regardless
+        // of duration — its title stays 'Short break' even at 30 minutes
+        // (title is keyed to chunk TYPE, tier is keyed to slot HEIGHT).
+        // At 30 min (180dp @ 6.0), the slot clears kFullBreakMinHeight
+        // (88.0), so this proves the full tier specifically, not a
+        // long-break title.
         expect(
-          find.byType(Divider),
+          find.text('Short break'),
+          findsOneWidget,
+          reason: 'a 30-minute break must still render its title',
+        );
+        final fullTierClipRect = find
+            .ancestor(
+              of: find.text('Short break'),
+              matching: find.byType(ClipRect),
+            )
+            .first;
+        expect(
+          find.descendant(
+            of: fullTierClipRect,
+            matching: find.byType(Divider),
+          ),
           findsNothing,
-          reason: 'at the threshold the break must render compact — no '
-              'Divider',
+          reason: 'the full tier has never rendered a Divider',
         );
       },
     );
 
     testWidgets(
-      'SEEBREAK-02: a 5-minute break occupies exactly 20.0dp of slot at '
-      'sub-compact density',
+      'SEEBREAK-02: a 5-minute break occupies exactly 30.0dp of slot at '
+      'compact density (Phase 32 rewrite — was sub-compact at 20.0dp)',
       (tester) async {
-        // Canary: if this fails, the measured threshold has dropped below a
-        // 5-minute break's own slot, the short break renders compact again,
-        // and the phase's premise ("breaks you can see") is broken.
-        expect(
-          5 * kPixelsPerMinute,
-          lessThan(kSubCompactBreakMinHeight),
-          reason:
-              'a 5-minute break must still land below '
-              'kSubCompactBreakMinHeight for this GUARD to mean anything',
-        );
-
         await _pumpTodayScreen(
           tester,
           scheduleNotifier: _FakeScheduleNotifierWithSchedule(
@@ -2363,15 +2355,19 @@ void main() {
           now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
         );
 
-        // D-05 in its most direct form: five minutes is twenty pixels. A
-        // literal, not 5 * kPixelsPerMinute re-derived.
+        // D-05 in its most direct form: five minutes is thirty pixels at
+        // kPixelsPerMinute = 6.0. A deliberate bare literal, NOT
+        // `5 * kPixelsPerMinute` re-derived — this is one of the suite's
+        // canaries against kPixelsPerMinute itself silently drifting (see
+        // the identical discipline in today_timeline_model_test.dart's
+        // ground-truth test).
         final breakClipRect = find
             .ancestor(
               of: find.text('Short break'),
               matching: find.byType(ClipRect),
             )
             .first;
-        expect(tester.getSize(breakClipRect).height, 20.0);
+        expect(tester.getSize(breakClipRect).height, 30.0);
       },
     );
   });
@@ -2413,391 +2409,39 @@ void main() {
       );
     }
 
-    testWidgets(
-      'SKIPBREAK-01 tracer: a drag started inside the break\'s top slop '
-      'band resolves to that break',
-      (tester) async {
-        // Uses the file's own _FakeScheduleNotifierWithSchedule directly —
-        // it already overrides markSkipped/markComplete to record ids
-        // without calling super (see class definition above), which is
-        // exactly the recording-fake shape this tracer needs: the real
-        // markSkipped reads a private field this fake does not populate, so
-        // letting it run would silently prove nothing.
-        final fake = _FakeScheduleNotifierWithSchedule(skipTracerFixture());
-        // 9:00 AM, not 18:00 — DEVIATION from the plan's literal clock
-        // (Rule 1, auto-fixed): the fixture's day ends at 8:55 AM, so any
-        // "now" past that is DayComplete (no live row) exactly as the plan
-        // requires. But CAL-03 ("elapsed time recedes") auto-scrolls the
-        // Stack to centre on `now` on open, and at 18:00 that centres nine
-        // hours past this tiny fixture — scrolling the whole day, break
-        // included, entirely off the SingleChildScrollView's viewport. A
-        // drag computed from `tester.getRect` (which returns geometrically
-        // correct coordinates regardless of scroll) then targets a point
-        // outside the actual rendered surface and silently misses every
-        // widget — this is what produced Test A's initial `null` (not
-        // `'w1'` or `'b1'`) during RED-to-GREEN iteration. Pumping shortly
-        // after the fixture's own end keeps DayComplete true while keeping
-        // the break within the default test viewport.
-        await _pumpTodayScreen(
-          tester,
-          scheduleNotifier: fake,
-          now: () => DateTime(2026, 8, 7, 9, 0), // DayComplete
-        );
-
-        // Locate the break's painted band via the confined, slot-sized
-        // ClipRect — not the outer Positioned, which is deliberately taller
-        // than the slot once this phase's hit-test envelope lands
-        // (31-UI-SPEC.md § Verification item 1).
-        final breakClipRect = find
-            .ancestor(
-              of: find.text('Short break'),
-              matching: find.byType(ClipRect),
-            )
-            .first;
-        final paintedRect = tester.getRect(breakClipRect);
-        final origin = Offset(
-          paintedRect.center.dx,
-          paintedRect.top - kBreakHitSlop + 2,
-        );
-        await tester.dragFrom(origin, const Offset(-400, 0));
-        await tester.pumpAndSettle();
-
-        expect(
-          fake.lastSkippedId,
-          'b1',
-          reason:
-              'SKIPBREAK-01/D-31-02: a drag starting inside the grown '
-              'hit-test envelope above a break\'s painted top edge must '
-              'still resolve to that break\'s Dismissible and call '
-              'markSkipped.',
-        );
-      },
-    );
-
-    testWidgets(
-      'SKIPBREAK-01 vacuity guard: a 5-minute break\'s slot is genuinely '
-      'under the drag-target minimum',
-      (tester) async {
-        expect(
-          5 * kPixelsPerMinute,
-          lessThan(kMinBreakDragTarget),
-          reason:
-              'a 5-minute break must actually land below '
-              'kMinBreakDragTarget, or the tracer test above compares '
-              'against a slot that never needed slop in the first place — '
-              'a failure here means the constants moved out from under '
-              'Test A\'s premise.',
-        );
-        expect(
-          kBreakHitSlop,
-          greaterThan(0.0),
-          reason:
-              'kBreakHitSlop must be positive, or the tracer test above '
-              'passes vacuously (a zero slop still "passes" a drag started '
-              'at the painted edge itself) — a failure here means the '
-              'constant moved out from under Test A\'s premise.',
-        );
-      },
-    );
-
-    // Plan 31-03, Task 1: the two computed origins below (the break's
-    // bottom-slop-band point and the following work chunk's own,
-    // unambiguously-inside-its-content point) are shared by both of the
-    // next two cases — each case independently re-pumps the fixture and
-    // re-derives both points, then asserts they are genuinely distinct
-    // before trusting either drag's result. If the fixture ever drifted so
-    // both points landed on (or near) the same pixel, both cases could
-    // start passing by coincidence rather than by proving the ordering
-    // claim — this guard makes that drift announce itself instead.
-    testWidgets(
-      'SKIPBREAK-01: a drag started inside the break\'s BOTTOM slop band '
-      'resolves to that break, not the following work chunk',
-      (tester) async {
-        final fake = _FakeScheduleNotifierWithSchedule(skipTracerFixture());
-        await _pumpTodayScreen(
-          tester,
-          scheduleNotifier: fake,
-          now: () => DateTime(2026, 8, 7, 9, 0), // DayComplete, see Case A's
-          // clock-choice comment above for why 9:00 (not 18:00) keeps the
-          // fixture inside the default test viewport.
-        );
-
-        final breakRect = tester.getRect(
-          find
-              .ancestor(
-                of: find.text('Short break'),
-                matching: find.byType(ClipRect),
-              )
-              .first,
-        );
-        final followingRect = tester.getRect(
-          find
-              .ancestor(
-                of: find.text('Following work'),
-                matching: find.byType(ClipRect),
-              )
-              .first,
-        );
-
-        final bottomBandOrigin = Offset(
-          breakRect.center.dx,
-          breakRect.bottom + kBreakHitSlop - 2,
-        );
-        final negativeCaseOrigin = Offset(
-          followingRect.center.dx,
-          followingRect.top + kBreakHitSlop * 2,
-        );
-        // Vacuity guard (both cases lean on the fixture placing the break
-        // and its following neighbour where they think they do): the two
-        // origins must be genuinely distinct points, and the break's own
-        // painted slot must actually be the 5-minute (20.0dp) fixture both
-        // this and the negative case below assume.
-        expect(
-          (bottomBandOrigin.dy - negativeCaseOrigin.dy).abs(),
-          greaterThan(1.0),
-          reason:
-              'the bottom-slop-band origin and the negative-case origin '
-              'must be genuinely distinct points, or this pair of tests '
-              'could pass by landing somewhere convenient rather than by '
-              'proving the ordering claim',
-        );
-        expect(breakRect.height, 5 * kPixelsPerMinute);
-
-        await tester.dragFrom(bottomBandOrigin, const Offset(-400, 0));
-        await tester.pumpAndSettle();
-
-        expect(
-          fake.lastSkippedId,
-          'b1',
-          reason:
-              '31-RESEARCH.md Pitfall 1: if the slop-bearing break is '
-              'emitted in the chronological Layer 1a loop instead of its '
-              'own later Layer 1b pass, the following work chunk (added '
-              'to the Stack later) wins the contested bottom-slop pixels '
-              'and the effective touch target is roughly 36dp, not 52dp.',
-        );
-        expect(fake.lastCompletedId, isNull);
-        expect(
-          fake.lastSkippedId,
-          isNot('w2'),
-          reason:
-              'a failure here means the following work chunk stole the '
-              'touch, not just that the break missed it — names the thief.',
-        );
-      },
-    );
-
-    testWidgets(
-      'SKIPBREAK-01 negative case: a drag started well inside the '
-      'following work chunk\'s own painted content still resolves to that '
-      'work chunk',
-      (tester) async {
-        final fake = _FakeScheduleNotifierWithSchedule(skipTracerFixture());
-        await _pumpTodayScreen(
-          tester,
-          scheduleNotifier: fake,
-          now: () => DateTime(2026, 8, 7, 9, 0), // DayComplete
-        );
-
-        final breakRect = tester.getRect(
-          find
-              .ancestor(
-                of: find.text('Short break'),
-                matching: find.byType(ClipRect),
-              )
-              .first,
-        );
-        final followingRect = tester.getRect(
-          find
-              .ancestor(
-                of: find.text('Following work'),
-                matching: find.byType(ClipRect),
-              )
-              .first,
-        );
-
-        final bottomBandOrigin = Offset(
-          breakRect.center.dx,
-          breakRect.bottom + kBreakHitSlop - 2,
-        );
-        // At least kBreakHitSlop * 2 below the following chunk's own top
-        // edge, so this point is unambiguously outside any slop band.
-        final negativeCaseOrigin = Offset(
-          followingRect.center.dx,
-          followingRect.top + kBreakHitSlop * 2,
-        );
-        expect(
-          (bottomBandOrigin.dy - negativeCaseOrigin.dy).abs(),
-          greaterThan(1.0),
-          reason:
-              'see the matching guard on the bottom-slop-band case above — '
-              'both cases must target genuinely distinct points',
-        );
-        expect(breakRect.height, 5 * kPixelsPerMinute);
-
-        await tester.dragFrom(negativeCaseOrigin, const Offset(-400, 0));
-        await tester.pumpAndSettle();
-
-        expect(
-          fake.lastSkippedId,
-          'w2',
-          reason:
-              'a touch that lands inside a neighbouring work chunk\'s own '
-              'painted content must resolve to that neighbour and steal '
-              'nothing from the break — this is the one thing flutter '
-              'test\'s exact-coordinate synthetic gestures can genuinely '
-              'settle (SKIPBREAK-01 negative/no-theft proof).',
-        );
-      },
-    );
-
-    testWidgets(
-      'SKIPBREAK-01: a below-threshold drag resolves nothing (UI-SPEC E1 '
-      'partial)',
-      (tester) async {
-        final fake = _FakeScheduleNotifierWithSchedule(skipTracerFixture());
-        await _pumpTodayScreen(
-          tester,
-          scheduleNotifier: fake,
-          now: () => DateTime(2026, 8, 7, 9, 0), // DayComplete
-        );
-
-        final breakRect = tester.getRect(
-          find
-              .ancestor(
-                of: find.text('Short break'),
-                matching: find.byType(ClipRect),
-              )
-              .first,
-        );
-
-        // dismissThresholds is a fraction of the row's WIDTH
-        // (31-RESEARCH.md Pattern 2), not its height — this case is about
-        // the gesture completing (a small horizontal drag well under the
-        // dismiss threshold), not about the row's height.
-        await tester.dragFrom(breakRect.center, const Offset(-8, 0));
-        await tester.pumpAndSettle();
-
-        expect(fake.lastSkippedId, isNull);
-        expect(fake.lastCompletedId, isNull);
-
-        final opacity = tester.widget<Opacity>(
-          find
-              .ancestor(
-                of: find.text('Short break'),
-                matching: find.byType(Opacity),
-              )
-              .first,
-        );
-        expect(
-          opacity.opacity,
-          1.0,
-          reason:
-              'the break must still render unresolved after a '
-              'below-threshold drag',
-        );
-      },
-    );
-
-    group('D-31-06 — a bigger, findable acquisition band', () {
-      // Reuses skipTracerFixture() and the group's established
-      // _FakeScheduleNotifierWithSchedule recording fake and 9:00 AM
-      // DayComplete clock (see Case A's clock-choice comment above the
-      // parent group's first test — the fixture's day ends at 8:55 AM, so
-      // 9:00 keeps DayComplete true while keeping the break inside the
-      // default test viewport CAL-03's auto-scroll would otherwise carry it
-      // out of).
-
-      testWidgets(
-        'D-31-06 Case A: a drag started 22dp above the painted top edge — '
-        'outside the shipped 16dp band — resolves to the break, not the '
-        'preceding work chunk',
-        (tester) async {
-          final fake = _FakeScheduleNotifierWithSchedule(skipTracerFixture());
-          await _pumpTodayScreen(
-            tester,
-            scheduleNotifier: fake,
-            now: () => DateTime(2026, 8, 7, 9, 0), // DayComplete
-          );
-
-          final breakClipRect = find
-              .ancestor(
-                of: find.text('Short break'),
-                matching: find.byType(ClipRect),
-              )
-              .first;
-          final paintedRect = tester.getRect(breakClipRect);
-          // Deliberately a bare numeric literal, NOT an expression involving
-          // kBreakHitSlop: an origin computed from the constant moves with
-          // the constant and therefore cannot discriminate a 52dp band from
-          // a 68dp one — which is exactly how 625 green tests stayed green
-          // through the defect a real thumb found (31-UAT.md Item 1).
-          final origin = Offset(paintedRect.center.dx, paintedRect.top - 22);
-          await tester.dragFrom(origin, const Offset(-400, 0));
-          await tester.pumpAndSettle();
-
-          expect(
-            fake.lastSkippedId,
-            'b1',
-            reason:
-                'D-31-06: a drag 22dp above the break\'s painted top edge — '
-                'outside the OLD 16dp band (52dp total) but inside the NEW '
-                '24dp band (68dp total) — must resolve to the break. A '
-                'failure here that names w1 is the specific regression this '
-                'gap closure fixes, not a generic miss.',
-          );
-          expect(
-            fake.lastSkippedId,
-            isNot('w1'),
-            reason:
-                'a failure here means the preceding work chunk stole the '
-                'touch, not just that the break missed it — names the '
-                'thief.',
-          );
-        },
-      );
-
-      testWidgets(
-        'D-31-06 Case B: a 25-minute work chunk with a break on both sides '
-        'retains at least kMinBreakDragTarget of its own band at the '
-        'shipped slop value',
-        (tester) async {
-          // Pure-constant ceiling guard, no pump — the guard that makes a
-          // future "just bump it again" fail loudly instead of silently
-          // moving Item 1's defect onto the neighbouring work chunk.
-          expect(
-            25 * kPixelsPerMinute - 2 * kBreakHitSlop,
-            greaterThanOrEqualTo(kMinBreakDragTarget),
-            reason:
-                'D-31-06\'s ceiling: raising kBreakHitSlop past ~26dp would '
-                'push the neighbouring 25-minute work chunk\'s own retained '
-                'band below kMinBreakDragTarget (48dp), moving the '
-                'acquisition defect onto the work chunk instead of fixing '
-                'it on the break.',
-          );
-          expect(
-            kBreakHitSlop,
-            lessThanOrEqualTo(26.0),
-            reason:
-                'D-31-06\'s re-derived ceiling is ~24-26dp — a value above '
-                '26.0 provably drops the neighbour below '
-                'kMinBreakDragTarget for a standard 25-minute work chunk.',
-          );
-        },
-      );
-    });
+    // Phase 32 (D-32-02, Task 2 — Kind A, retired-mechanism deletion):
+    // every test that used to live here drove a synthetic horizontal drag
+    // against a break row's `Dismissible` — the SKIPBREAK-01 tracer, its
+    // vacuity guard, the bottom-slop-band case, the negative case, the
+    // below-threshold case, and both cases of the `D-31-06 — a bigger,
+    // findable acquisition band` subgroup (acquisition-band Case A/B).
+    // Breaks no longer have a `Dismissible` at all (button-only, D-32-02),
+    // so a drag against a break row resolves nothing — these tests would
+    // not merely need their literals updated, they assert a mechanism that
+    // no longer exists. Deleted outright, per this task's own instruction
+    // not to migrate a Kind A test. Phase 32's replacement coverage for
+    // "tap the Skip rail" lives in the 'Phase 32 — TAPBREAK' group below,
+    // and the button-vs-Dismissible companion invariant is asserted
+    // directly in that group's own tracer test.
 
     group('SKIPBREAK-02 — the grid is unchanged', () {
-      // 2026-08-26 (plan 31-06, D-31-06 part 2): this group proves the
-      // break's own SLOT never grew, by measuring the confined ClipRect
-      // that SwipeableChunkCard's `visualHeight` produces — and that
-      // ClipRect is exactly `visualHeight` tall BY CONSTRUCTION regardless
-      // of its child (`_confineContent`/`_confineReveal`,
-      // swipeable_chunk_card.dart). It is therefore structurally incapable
-      // of detecting an inflated CHILD, such as an oversized grip glyph
-      // inside `_SubCompactRow` — a glyph 10dp too tall would still measure
-      // exactly `visualHeight` here and this group would stay green. The
-      // grip's own zero-extent proof lives in
+      // 2026-08-26 (plan 31-06, D-31-06 part 2). Phase 32 (D-32-02) note:
+      // this group's own historical mechanism ("the confined ClipRect
+      // that SwipeableChunkCard's `visualHeight` produces, BY
+      // CONSTRUCTION") no longer applies to a non-live break — the
+      // restored early return (`swipeable_chunk_card.dart`) sends a
+      // break straight to `ChunkCard`, never through `SwipeableRowShell`/
+      // `_confineContent`/`visualHeight` at all. The ClipRect these
+      // assertions measure now comes directly from `today_screen.dart`'s
+      // own `Positioned`/`ClipRect`/`OverflowBox` chain — the identical,
+      // unconfined mechanism a work chunk has always used. The
+      // assertions below are unaffected by this and needed no changes:
+      // they only ever measured the ClipRect's own painted size, never
+      // the confinement mechanism producing it. It is therefore
+      // structurally incapable of detecting an inflated CHILD, such as an
+      // oversized grip glyph inside `_SubCompactRow` — a glyph 10dp too
+      // tall would still measure exactly the row's own slot here and this
+      // group would stay green. The grip's own zero-extent proof lives in
       // test/screens/today_row_widgets_test.dart's "D-31-06 — the
       // sub-compact grip glyph" group (Case C), which measures the
       // unresolved and skipped rows' natural, UNCLIPPED height directly. A
@@ -2844,8 +2488,8 @@ void main() {
         'resolved state, at every density',
         (tester) async {
           const cases = [
-            (durationMinutes: 5, isSkipped: false), // sub-compact, unresolved
-            (durationMinutes: 5, isSkipped: true), // sub-compact, skipped
+            (durationMinutes: 5, isSkipped: false), // compact, unresolved
+            (durationMinutes: 5, isSkipped: true), // compact, skipped
             (durationMinutes: 30, isSkipped: false), // full tier, unresolved
             (durationMinutes: 30, isSkipped: true), // full tier, skipped
           ];
@@ -2867,15 +2511,17 @@ void main() {
               now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
             );
 
-            // Assert against the confined ClipRect that SwipeableChunkCard's
-            // `visualHeight` parameter creates (PD-31-02/PD-31-03) — NEVER
-            // the enclosing Positioned, which is deliberately taller for a
-            // sub-48dp break. Asserting the Positioned's height would
-            // assert the wrong thing: it could falsely fail a correct
-            // implementation (a slop-bearing break's Positioned IS
-            // legitimately duration + 2*slop tall) or falsely pass a
-            // broken one that grew the visible box instead of just the
-            // hit-test box.
+            // Phase 32 (D-32-02): a non-live break's outer ClipRect now
+            // comes directly from `today_screen.dart`'s own
+            // `Positioned`/`ClipRect`/`OverflowBox` chain — the same
+            // unconfined mechanism a work chunk has always used — since
+            // the restored early return sends a break straight to
+            // `ChunkCard`, never through `SwipeableChunkCard`'s
+            // `visualHeight`/confinement machinery at all. The finder
+            // below still resolves correctly (it only ever located the
+            // ClipRect by type, not by which mechanism produced it), and
+            // the assertion's CLAIM is unaffected: a break's painted
+            // extent must still be exactly duration-exact.
             final breakClipRect = find
                 .ancestor(
                   of: find.text('Short break'),
@@ -2887,8 +2533,7 @@ void main() {
               c.durationMinutes * kPixelsPerMinute,
               reason:
                   'duration=${c.durationMinutes} isSkipped=${c.isSkipped}: '
-                  'painted height must stay exactly duration-exact '
-                  'regardless of the grown hit-test envelope',
+                  'painted height must stay exactly duration-exact',
             );
           }
         },
@@ -2915,21 +2560,24 @@ void main() {
           final breakRect = paintedRectFor('Short break');
           final followingRect = paintedRectFor('Following work');
 
+          // Phase 32 (D-32-02): a non-live break no longer has any
+          // hit-test envelope at all (button-only, no slop, no confined
+          // paint vs. grown hit-test distinction) — a break's Positioned
+          // is now structurally identical to a work chunk's. These
+          // adjacency assertions predate that mechanism and are
+          // unaffected by its removal: they only ever measured painted
+          // rects, never the (now-gone) slop band.
           expect(
             breakRect.top,
             closeTo(precedingRect.bottom, 0.5),
             reason:
-                'only hit-testing overlaps in this phase; paint does not — '
-                'a non-zero gap here means the symmetric-slop centring '
-                'assumption (PD-31-01) has drifted',
+                'a non-zero gap here means the rows are not truly adjacent',
           );
           expect(
             followingRect.top,
             closeTo(breakRect.bottom, 0.5),
             reason:
-                'only hit-testing overlaps in this phase; paint does not — '
-                'a non-zero gap here means the symmetric-slop centring '
-                'assumption (PD-31-01) has drifted',
+                'a non-zero gap here means the rows are not truly adjacent',
           );
 
           // Independent authority check: the break's own painted top must
@@ -2975,15 +2623,14 @@ void main() {
             lastEndMinutes: 535,
           );
 
-          // A slop-bearing break's Positioned deliberately extends
-          // kBreakHitSlop beyond its own slot at both ends (Layer 1b) —
-          // the Stack's own SizedBox must NOT have grown to accommodate
-          // that; only the break's own child box grows. Located by the
-          // derived height value itself, not a GlobalKey —
-          // today_screen.dart's own `_timelineStackKey` is private to that
-          // library and unreachable from this test file — this is the
-          // only SizedBox in this tree configured with exactly
-          // `height: geometry.totalHeight`.
+          // Phase 32 (D-32-02): no break has any hit-test envelope any
+          // more, so there is nothing left that could grow the Stack's
+          // own size beyond geometry.totalHeight. Located by the derived
+          // height value itself, not a GlobalKey — today_screen.dart's
+          // own `_timelineStackKey` is private to that library and
+          // unreachable from this test file — this is the only SizedBox
+          // in this tree configured with exactly `height:
+          // geometry.totalHeight`.
           final timelineStack = find.byWidgetPredicate(
             (widget) =>
                 widget is SizedBox && widget.height == geometry.totalHeight,
@@ -2992,10 +2639,8 @@ void main() {
             timelineStack,
             findsOneWidget,
             reason:
-                'edge-probe row 5: if the Stack grew to accommodate the '
-                'slop-bearing break\'s hit-test envelope, no SizedBox in '
-                'this tree would carry exactly geometry.totalHeight any '
-                'more',
+                'if the Stack grew for any reason, no SizedBox in this '
+                'tree would carry exactly geometry.totalHeight any more',
           );
           expect(tester.getSize(timelineStack).height, geometry.totalHeight);
         },
@@ -3083,10 +2728,12 @@ void main() {
             now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
           );
 
-          // The gesture is attached per-row by chunk.id (SwipeableChunkCard's
-          // Dismissible key) — break count has no bearing on it, and no
-          // list-level affordance/header/count exists.
-          expect(chunkDismissibles(), findsNWidgets(5));
+          // Phase 32 (D-32-02, Task 2 — Kind C rewrite): the gesture used
+          // to be attached per-row by chunk.id regardless of chunk type,
+          // so break count had no bearing on the Dismissible count. Now
+          // breaks never reach `Dismissible` at all (button-only) — only
+          // the 3 work chunks (w1, w2, w3) have one; b1/b2 have none.
+          expect(chunkDismissibles(), findsNWidgets(3));
 
           final shortBreakRect = tester.getSize(
             find
@@ -3108,19 +2755,32 @@ void main() {
           );
           expect(longBreakRect.height, 30 * kPixelsPerMinute);
 
-          final shortBreakOpacity = tester.widget<Opacity>(
-            find
-                .ancestor(
-                  of: find.text('Short break'),
-                  matching: find.byType(Opacity),
-                )
-                .first,
+          // Phase 32 (Kind C rewrite): the compact tier (the skipped
+          // short break, b1) no longer renders an Opacity(0.5) mute — the
+          // UI-SPEC's redesigned compact tier signals "resolved" via the
+          // title's strikethrough plus the rail swapping from
+          // BreakSkipButton to BreakSkippedIndicator's 'skipped' text,
+          // not via a dimmed whole-row Opacity. The full tier (the
+          // unresolved long break, b2) is unchanged and still uses
+          // Opacity — asserted below, unchanged from before this phase.
+          final shortBreakTitle = tester.widget<Text>(
+            find.text('Short break'),
           );
           expect(
-            shortBreakOpacity.opacity,
-            0.5,
+            shortBreakTitle.style?.decoration,
+            TextDecoration.lineThrough,
             reason:
-                'the skipped short break must render the resolved treatment',
+                'the skipped short break must still render struck through',
+          );
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: find.byType(BreakSkippedIndicator),
+            ),
+            findsOneWidget,
+            reason:
+                'the skipped short break\'s rail must show the resolved '
+                'indicator, not the Skip button',
           );
 
           final longBreakOpacity = tester.widget<Opacity>(

@@ -18,6 +18,7 @@ import 'package:canopy/screens/today/widgets/hour_axis.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
 import 'package:canopy/screens/today/widgets/now_line.dart';
 import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
+import 'package:canopy/widgets/break_skip_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -759,43 +760,23 @@ void main() {
         },
       );
 
-      testWidgets(
-        'SEEBREAK-01 non-vacuity: compact short break still renders the '
-        'dashed painter and no Divider',
-        (tester) async {
-          // GUARD — proves Test 1's finders are not vacuous (a predicate
-          // that matches nothing anywhere would make that test pass for the
-          // wrong reason). Must stay GREEN before and after the wiring.
-          await pumpWithMood(
-            tester,
-            ChunkCard(
-              chunk: _breakChunk(type: ChunkType.shortBreak),
-              density: ChunkCardDensity.compact,
-            ),
-          );
-          expect(
-            find.byWidgetPredicate(
-              (w) =>
-                  w is CustomPaint &&
-                  w.painter != null &&
-                  w.painter.runtimeType.toString().contains('DashedBorder'),
-            ),
-            findsOneWidget,
-          );
-          expect(
-            find.descendant(
-              of: find.byType(ChunkCard),
-              matching: find.byType(Divider),
-            ),
-            findsNothing,
-          );
-        },
-      );
+      // Phase 32 (D-32-02, Task 2 — Kind A, retired-mechanism deletion):
+      // 'SEEBREAK-01 non-vacuity: compact short break still renders the
+      // dashed painter and no Divider' asserted the OLD compact tier's
+      // dashed-outline `CustomPaint` treatment, which this phase replaced
+      // outright with a bordered Card + Skip rail (TAPBREAK-01/03). The
+      // compact tier no longer renders any dashed painter at all — the
+      // test's premise is gone, not merely its expected value. Deleted
+      // rather than migrated, per this task's own instruction not to
+      // repoint a Kind A test at a mechanism that no longer exists.
 
-      // D-31-04 (Phase 31, SKIPBREAK-01): skipped-break rendering at every
-      // density tier, reusing _WorkChunkContent's existing resolved-state
-      // vocabulary (Opacity(0.5) + TextDecoration.lineThrough) rather than
-      // inventing a break-specific one.
+      // D-31-04 (Phase 31, SKIPBREAK-01): skipped-break rendering, reusing
+      // _WorkChunkContent's existing resolved-state vocabulary
+      // (Opacity(0.5) + TextDecoration.lineThrough) rather than inventing
+      // a break-specific one. Phase 32 (D-32-02) note: this holds for the
+      // full and sub-compact tiers below, unchanged — the redesigned
+      // compact tier (TAPBREAK-01/03) is the one exception, and carries
+      // its own updated test further down documenting why.
       testWidgets(
         "D-31-04: a skipped full-tier break is muted, struck through, and "
         "reads 'skipped'",
@@ -853,10 +834,20 @@ void main() {
       );
 
       testWidgets(
-        "D-31-04: a skipped compact break is muted and struck through, and "
-        "its new Semantics label carries ', skipped'",
+        // Phase 32 (D-32-02, Task 2 — Kind C rewrite). The old assertions
+        // (a whole-row Opacity(0.5) mute, and a single combined
+        // Semantics(excludeSemantics: true) label restating title +
+        // duration + ", skipped") both described the retired dashed-tier
+        // treatment. The redesigned compact tier (TAPBREAK-01/03) signals
+        // "resolved" differently: the title keeps its strikethrough, but
+        // there is no whole-row mute, and the rail swaps from
+        // BreakSkipButton to BreakSkippedIndicator's 'skipped' text
+        // instead of carrying an extra combined semantics string — this
+        // rewrite asserts the new signal, not a weakened version of the
+        // old one.
+        'D-31-04: a skipped compact break is struck through and its rail '
+        'shows the resolved indicator, not the Skip button',
         (tester) async {
-          final handle = tester.ensureSemantics();
           await pumpWithMood(
             tester,
             ChunkCard(
@@ -864,23 +855,26 @@ void main() {
               density: ChunkCardDensity.compact,
             ),
           );
-          final mutedOpacity = find.byWidgetPredicate(
-            (w) => w is Opacity && w.opacity == 0.5,
+          final titleText = tester.widget<Text>(find.text('Short break'));
+          expect(titleText.style?.decoration, TextDecoration.lineThrough);
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: find.byType(BreakSkippedIndicator),
+            ),
+            findsOneWidget,
+            reason: 'a skipped compact break must show the resolved '
+                'indicator in its rail',
           );
           expect(
             find.descendant(
               of: find.byType(ChunkCard),
-              matching: mutedOpacity,
+              matching: find.byType(BreakSkipButton),
             ),
-            findsOneWidget,
+            findsNothing,
+            reason: 'a skipped break must never still show a tappable '
+                'Skip button',
           );
-          final titleText = tester.widget<Text>(find.text('Short break'));
-          expect(titleText.style?.decoration, TextDecoration.lineThrough);
-          expect(
-            find.bySemanticsLabel('Short break, 5 min, skipped'),
-            findsOneWidget,
-          );
-          handle.dispose();
         },
       );
 
@@ -1163,24 +1157,19 @@ void main() {
       );
     }
 
-    testWidgets("a break's Dismissible offers only the skip direction", (
-      tester,
-    ) async {
-      await pumpWithMood(
-        tester,
-        SwipeableChunkCard(chunk: _breakChunk(type: ChunkType.shortBreak)),
-        extraProviders: [
-          ChangeNotifierProvider<ScheduleNotifier>.value(
-            value: _FakeScheduleNotifier(),
-          ),
-        ],
-      );
-      final dismissible = tester.widget<Dismissible>(
-        find.byType(Dismissible),
-      );
-      expect(dismissible.direction, DismissDirection.endToStart);
-    });
-
+    // Phase 32 (D-32-02, Task 2 — Kind A, retired-mechanism deletion):
+    // three tests used to live here — "a break's Dismissible offers only
+    // the skip direction", "a skipped break cannot be re-swiped", and "a
+    // break never reaches markComplete" — all three constructing or
+    // dragging a break's `Dismissible`. A break's `SwipeableChunkCard` no
+    // longer builds a `Dismissible` at all (the restored early return
+    // sends it straight to `ChunkCard`), so `find.byType(Dismissible)`
+    // finds nothing for any of them — not a value change, a vanished
+    // widget. Deleted outright, per this task's own instruction not to
+    // migrate a Kind A test. The work-chunk-only invariants immediately
+    // below (which use a WORK chunk, unaffected by this phase) are kept
+    // unchanged, and the "never tappable" loop above them is also kept —
+    // neither depends on the retired mechanism.
     testWidgets(
       "an unresolved WORK chunk's Dismissible still offers the full "
       "horizontal direction (paired guard — the break case above cannot "
@@ -1202,44 +1191,6 @@ void main() {
         expect(dismissible.direction, DismissDirection.horizontal);
       },
     );
-
-    testWidgets('a skipped break cannot be re-swiped', (tester) async {
-      await pumpWithMood(
-        tester,
-        SwipeableChunkCard(
-          chunk: _breakChunk(type: ChunkType.shortBreak, skipped: true),
-        ),
-        extraProviders: [
-          ChangeNotifierProvider<ScheduleNotifier>.value(
-            value: _FakeScheduleNotifier(),
-          ),
-        ],
-      );
-      final dismissible = tester.widget<Dismissible>(
-        find.byType(Dismissible),
-      );
-      expect(dismissible.direction, DismissDirection.none);
-    });
-
-    testWidgets('a break never reaches markComplete', (tester) async {
-      final fake = _FakeScheduleNotifier();
-      await pumpWithMood(
-        tester,
-        SwipeableChunkCard(chunk: _breakChunk(type: ChunkType.shortBreak)),
-        extraProviders: [
-          ChangeNotifierProvider<ScheduleNotifier>.value(value: fake),
-        ],
-      );
-      // D-31-01's executable form: chunk.isCompleted stays permanently
-      // false for every break. direction: endToStart with no startToEnd
-      // arm means a rightward drag has no enabled direction to resolve to
-      // — it consumes the gesture and springs back without calling
-      // either notifier method.
-      await tester.drag(find.byType(Dismissible), const Offset(400, 0));
-      await tester.pumpAndSettle();
-      expect(fake.lastCompletedId, isNull);
-      expect(fake.lastSkippedId, isNull);
-    });
   });
 
   group('LiveRowCard — two density tiers (GRID-02)', () {
