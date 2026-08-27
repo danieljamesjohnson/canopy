@@ -794,7 +794,13 @@ invisible target), TAPBREAK-02 (the grid still tells the exact truth: every row 
 section of the day, not a hairline)
 **Depends on:** Phase 31 (owns the constants and the swipe machinery this phase retires, and the
 `LiveRowCard` Skip button it keeps)
-**Plans:** TBD — run `/gsd-plan-phase 32`
+**Plans:** 3 plans in 3 waves (strictly sequential — every plan overlaps the previous plan's files)
+
+Plans:
+- [ ] 32-01-PLAN.md — tracer: a 5-minute break at 6.0 renders as a card you tap, proven end to end; then the suite reconciled by classification rather than by retyping numbers
+- [ ] 32-02-PLAN.md — expansion: the long break and the running break join the same shape (the live 5-minute break's rail and its de-swipe land in one commit), then the dead mechanism is deleted rather than left uncalled
+- [ ] 32-03-PLAN.md — the real-browser fit measurement and the blocking human UAT, with a mandatory Re-check-in first and D-31-07 re-asked
+
 **Decisions already ruled by the owner (do not re-ask):** D-32-01 (`kPixelsPerMinute` 6.0), D-32-02 (button-only, retire the swipe machinery), D-32-03 (~64×30dp Skip button).
 
 
@@ -817,4 +823,4 @@ section of the day, not a hairline)
 | 29. Breaks You Can See | — (standalone) | 4/4 | Complete    | 2026-08-25 |
 | 30. Breaks In Committed Time | — (standalone) | 5/5 | Complete    | 2026-08-25 |
 | 31. Breaks You Can Skip | — (standalone) | 7/8 | Superseded by Phase 32 (round-two UAT 2026-08-27: swipe approach rejected) |  |
-| 32. Breaks You Can Tap | — (standalone) | 0/TBD | Not planned |  |
+| 32. Breaks You Can Tap | — (standalone) | 0/3 | Planned |  |

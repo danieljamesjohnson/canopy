@@ -1,0 +1,1 @@
+No external API integration: this phase is a client-only Flutter presentation change — one scale constant, one new button widget, and the retirement of a gesture — with no network call, SDK, or external service anywhere in its scope (`32-RESEARCH.md` § "Standard Stack": no new package, no `pubspec.yaml` change).
