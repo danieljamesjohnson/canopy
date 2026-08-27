@@ -797,12 +797,12 @@ invisible target), TAPBREAK-02 (the grid still tells the exact truth: every row 
 section of the day, not a hairline)
 **Depends on:** Phase 31 (owns the constants and the swipe machinery this phase retires, and the
 `LiveRowCard` Skip button it keeps)
-**Plans:** 3 plans in 3 waves (strictly sequential — every plan overlaps the previous plan's files)
+**Plans:** 1/3 plans executed in 3 waves (strictly sequential — every plan overlaps the previous plan's files)
 
 Plans:
 **Wave 1**
 
-- [ ] 32-01-PLAN.md — tracer: a 5-minute break at 6.0 renders as a card you tap, proven end to end; then the suite reconciled by classification rather than by retyping numbers
+- [x] 32-01-PLAN.md — tracer: a 5-minute break at 6.0 renders as a card you tap, proven end to end; then the suite reconciled by classification rather than by retyping numbers
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -833,4 +833,4 @@ Plans:
 | 29. Breaks You Can See | — (standalone) | 4/4 | Complete    | 2026-08-25 |
 | 30. Breaks In Committed Time | — (standalone) | 5/5 | Complete    | 2026-08-25 |
 | 31. Breaks You Can Skip | — (standalone) | 7/8 | Superseded by Phase 32 (round-two UAT 2026-08-27: swipe approach rejected) |  |
-| 32. Breaks You Can Tap | — (standalone) | 0/3 | Planned |  |
+| 32. Breaks You Can Tap | — (standalone) | 1/3 | In Progress|  |
