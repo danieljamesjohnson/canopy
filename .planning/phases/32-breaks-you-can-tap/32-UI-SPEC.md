@@ -530,9 +530,22 @@ this is a reviewed judgment call, not a gap the checker had to catch.
 > this phase introduces: **E1 — the non-live break card's Skip button** and **E2 — the live break's
 > single-line-tier Skip button**. The retired swipe surface (E1/E2 from `31-UI-SPEC.md`) is not
 > re-probed — it no longer exists.
+>
+> **Engine run, 2026-08-27.** The probe raised the full 8-category taxonomy for **both** elements —
+> `applicable: 16, resolved: 0, unresolved: 16` before resolution. Nothing was filtered out by the
+> prose classifier, so there is no missed-kind risk to correct at the kind-confirmation step: every
+> category below was put on the table by the engine, not selected by the author. Resolutions were
+> then authored under autonomous mode's `--auto` convention (Claude writes the recommended
+> resolution instead of prompting); each one upgraded to `explicit` carries a concrete acceptance
+> criterion, and the two that could not are held at `backstop` rather than being talked into
+> looking resolved.
 
-**Coverage: 14 applicable — 10 resolved (explicit), 2 resolved (backstop), 2 dismissed with reason,
+**Coverage: 16 applicable — 8 resolved (explicit), 2 resolved (backstop), 6 dismissed with reason,
 0 unresolved.**
+
+*An earlier draft of this line read "14 applicable — 10 explicit, 2 backstop, 2 dismissed," which
+matched neither the engine's count nor this document's own table below (16 rows: 8 explicit, 2
+backstop, 6 dismissed). Corrected against the actual engine report.*
 
 ### E1 — non-live break card's Skip button
 
