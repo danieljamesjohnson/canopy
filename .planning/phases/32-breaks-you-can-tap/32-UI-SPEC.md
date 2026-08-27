@@ -284,7 +284,8 @@ class BreakSkipButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Semantics(
       button: true,
       label: 'Skip $accessibleTitle',
@@ -456,14 +457,26 @@ already-declared exception, not a new one).
 
 ## Typography
 
-No new type roles, no new weights beyond what already exists in this file's 2-weight maximum (400
-body, 600 emphasis).
+**Correction (post-checker): this file carries THREE weights in active use, not two — 400, 500, and
+600 — and that is an accepted, pre-existing exception, not something this phase introduces.** An
+earlier draft of this section claimed "no new weights beyond this file's 2-weight maximum," which was
+wrong on inspection: `chunk_card.dart`'s long-break title has rendered at `titleMedium` **`w500`**
+since Phase 22/26 (G-02, "a long break scales up in weight ... a heavier title style"), well before
+this phase existed. That row is unchanged here — verified directly against the shipped source before
+writing this correction, per the checker's own instruction not to silently restyle a row this phase
+was never asked to touch. Rewriting the long-break title to 400 or 600 just to make a "2 weights"
+claim true would be exactly that: an unrequested restyle to satisfy a number, not a design decision.
+**The honest count is 3.** Of those, **only 600 is new** (the Skip button label) — and 600 is not a
+new *value* to the app, only a new *use site* within this file (it already matches
+`FilledButton`/`OutlinedButton`'s own default emphasis weight elsewhere in the codebase). This
+document records 3 as the accepted total for `chunk_card.dart`'s break rows, rather than
+under-reporting it to preserve a stale "2-weight maximum" claim.
 
 | Role | Size | Weight | Usage |
 |------|------|--------|-------|
 | Break label, compact | `bodySmall` (~12sp) | 400 | Unchanged from the pre-existing compact tier |
-| Break label, full (long break) | `titleMedium` (~16sp) | 500 | Unchanged from the pre-existing full tier |
-| Skip button label ("Skip") | `labelSmall` (~11sp) | **600** | New — button text needs to read as actionable, matching the weight this codebase's other button labels use (`FilledButton`/`OutlinedButton` defaults) |
+| Break label, full (long break) | `titleMedium` (~16sp) | **500 (pre-existing, unchanged by this phase — see correction above)** | Unchanged from the pre-existing full tier |
+| Skip button label ("Skip") | `labelSmall` (~11sp) | **600 (new use site, not a new value — see correction above)** | New — button text needs to read as actionable, matching the weight this codebase's other button labels use (`FilledButton`/`OutlinedButton` defaults) |
 | Trailing "skipped" text (rail, resolved state) | `bodySmall` | 400 | Verbatim reuse of D-31-04's existing string/style, relocated |
 
 ---
@@ -498,6 +511,16 @@ in this app, never `primary`.
 | Empty state | Not applicable — no list/collection UI introduced |
 | Error state | Not applicable — `markSkipped`'s existing revert-and-rethrow path is reused unchanged, invoked from a button instead of a gesture callback (behaviorally identical) |
 | Destructive confirmation | Not applicable — skipping a break has no confirmation step, unchanged from every prior phase's posture |
+
+**Sign-off, not a silent pass: the visible "Skip" label is a single word with no object noun** — a
+checker FLAG for single-word CTAs, correctly raised, and deliberately kept rather than corrected.
+This is a conscious reuse of the app's existing skip vocabulary: the work-chunk `OutlinedButton`
+already reads bare `'Skip'`, not `'Skip this chunk'`, and the owner's own framing of this phase was
+literally "have a skip button" — inventing a longer label for the break's button alone would create
+two dialects for the identical action on two adjacent controls. The FLAG is compensated, not ignored:
+the accessibility label (`'Skip $accessibleTitle'`, above) supplies the object noun a screen reader
+needs, while a sighted user already has it from the card's own adjacent title text. Recorded here so
+this is a reviewed judgment call, not a gap the checker had to catch.
 
 ---
 
