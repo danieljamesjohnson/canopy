@@ -797,7 +797,7 @@ invisible target), TAPBREAK-02 (the grid still tells the exact truth: every row 
 section of the day, not a hairline)
 **Depends on:** Phase 31 (owns the constants and the swipe machinery this phase retires, and the
 `LiveRowCard` Skip button it keeps)
-**Plans:** 1/3 plans executed in 3 waves (strictly sequential — every plan overlaps the previous plan's files)
+**Plans:** 2/3 plans executed in 3 waves (strictly sequential — every plan overlaps the previous plan's files)
 
 Plans:
 **Wave 1**
@@ -806,7 +806,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 32-02-PLAN.md — expansion: the long break and the running break join the same shape (the live 5-minute break's rail and its de-swipe land in one commit), then the dead mechanism is deleted rather than left uncalled
+- [x] 32-02-PLAN.md — expansion: the long break and the running break join the same shape (the live 5-minute break's rail and its de-swipe land in one commit), then the dead mechanism is deleted rather than left uncalled
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -833,4 +833,4 @@ Plans:
 | 29. Breaks You Can See | — (standalone) | 4/4 | Complete    | 2026-08-25 |
 | 30. Breaks In Committed Time | — (standalone) | 5/5 | Complete    | 2026-08-25 |
 | 31. Breaks You Can Skip | — (standalone) | 7/8 | Superseded by Phase 32 (round-two UAT 2026-08-27: swipe approach rejected) |  |
-| 32. Breaks You Can Tap | — (standalone) | 1/3 | In Progress|  |
+| 32. Breaks You Can Tap | — (standalone) | 2/3 | In Progress|  |
