@@ -134,38 +134,10 @@ Future<void> _pumpChunkCard(
   );
 }
 
-/// Phase 29 (SEEBREAK-01). Pumps [ChunkCard] wrapped in an unbounded-height
-/// `OverflowBox`, mirroring `today_screen.dart`'s production wrapper (lines
-/// ~807-811: `ClipRect` -> `OverflowBox(minHeight: 0, maxHeight:
-/// double.infinity, alignment: topCenter)` -> `TimelineRowTile`).
-///
-/// Required for any height COMPARISON between densities: `pumpWithMood`
-/// alone puts the card in `Scaffold(body:)`, which hands it a **bounded**
-/// maxHeight — the compact tier's `Center` then expands to fill the whole
-/// viewport, so `tester.getSize(find.byType(ChunkCard))` returns the screen
-/// height at every density and any height comparison is silently
-/// meaningless. Unbounded vertical constraints are also what production
-/// actually gives the card, so this helper is the faithful harness, not a
-/// workaround.
-Future<void> _pumpBreakCardUnbounded(
-  WidgetTester tester, {
-  required ChunkCardDensity density,
-  ChunkType type = ChunkType.shortBreak,
-  bool skipped = false,
-}) async {
-  await pumpWithMood(
-    tester,
-    OverflowBox(
-      minHeight: 0,
-      maxHeight: double.infinity,
-      alignment: Alignment.topCenter,
-      child: ChunkCard(
-        chunk: _breakChunk(type: type, skipped: skipped),
-        density: density,
-      ),
-    ),
-  );
-}
+// Phase 32 (D-32-02, Task 1): `_pumpBreakCardUnbounded` (Phase 29,
+// SEEBREAK-01) is deleted — its only callers were the retired
+// `ChunkCardDensity.subCompact` tests (the sub-compact-vs-compact height
+// comparison and the D-31-06 grip-glyph group), all deleted with the tier.
 
 void main() {
   group('TimelineRowTile (Phase 26 CAL-01, PD-5: pure inset wrapper)', () {
@@ -508,22 +480,46 @@ void main() {
       },
     );
 
-    testWidgets('short break: "Short break" label, no Card, dashed outline', (
-      tester,
-    ) async {
-      await _pumpChunkCard(tester, _breakChunk(type: ChunkType.shortBreak));
-      expect(find.text('Short break'), findsOneWidget);
-      expect(find.byType(Card), findsNothing);
-      expect(find.byType(CustomPaint), findsWidgets);
-    });
+    // Phase 32 (D-32-02, Task 1 — Kind C rewrite): both tests below used to
+    // assert "no Card, dashed outline" — exactly the premise TAPBREAK-03
+    // reverses (D-32-02: "make it look like a small section similar to
+    // work"). Rewritten to assert the inverse: a bordered Card, no dashed
+    // painter, rather than deleted — the assertion still has a subject, it
+    // just flipped.
+    testWidgets(
+      'short break: "Short break" label, a bordered Card, no dashed painter',
+      (tester) async {
+        await _pumpChunkCard(tester, _breakChunk(type: ChunkType.shortBreak));
+        expect(find.text('Short break'), findsOneWidget);
+        expect(find.byType(Card), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (w) =>
+                w is CustomPaint &&
+                w.painter != null &&
+                w.painter.runtimeType.toString().contains('DashedBorder'),
+          ),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets(
-      'long break: "Long break" label, same dashed vocabulary at greater weight (G-02)',
+      'long break: "Long break" label, the same bordered Card at greater '
+      'weight (G-02)',
       (tester) async {
         await _pumpChunkCard(tester, _breakChunk(type: ChunkType.longBreak));
         expect(find.text('Long break'), findsOneWidget);
-        expect(find.byType(Card), findsNothing);
-        expect(find.byType(CustomPaint), findsWidgets);
+        expect(find.byType(Card), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (w) =>
+                w is CustomPaint &&
+                w.painter != null &&
+                w.painter.runtimeType.toString().contains('DashedBorder'),
+          ),
+          findsNothing,
+        );
       },
     );
 
@@ -550,27 +546,37 @@ void main() {
     );
 
     testWidgets(
-      'no new interaction is added to the break row (G-02 prohibition)',
+      // Phase 32 (D-32-02, TAPBREAK-01) supersedes this test's original
+      // premise for the button axis: the break row now DOES gain a real
+      // interactive child (the Skip rail), by owner ruling. What survives
+      // from the original G-02 prohibition is the narrower, still-true
+      // claim it was actually guarding — no collapse/accordion affordance,
+      // and no whole-row tap/expand behaviour was added alongside the Skip
+      // rail. The retired dashed-painter assertion (`CustomPaint`
+      // `isNotEmpty`) is dropped with the painter it described.
+      'no collapse/accordion affordance is added to the break row — the '
+      'Skip rail is its only interactive child (G-02 prohibition, narrowed)',
       (tester) async {
         await _pumpChunkCard(tester, _breakChunk(type: ChunkType.longBreak));
-        expect(find.byType(GestureDetector), findsNothing);
         expect(find.byType(ExpansionTile), findsNothing);
-        final customPaints = tester.widgetList<CustomPaint>(
-          find.byType(CustomPaint),
+        expect(
+          find.byType(InkWell),
+          findsOneWidget,
+          reason: 'the Skip rail is the row\'s only interactive child — no '
+              'whole-row tap/expand affordance was added alongside it',
         );
-        // None of the break row's CustomPaint ancestors carry a GestureDetector
-        // — the row remains a plain, non-interactive Container + CustomPaint.
-        expect(customPaints, isNotEmpty);
       },
     );
 
-    testWidgets('completed break also renders the check icon', (tester) async {
-      await _pumpChunkCard(
-        tester,
-        _breakChunk(type: ChunkType.shortBreak, completed: true),
-      );
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-    });
+    // Phase 32 (D-32-02, Task 1 — Kind A, retired-mechanism deletion):
+    // 'completed break also renders the check icon' pumped an artificial
+    // fixture (`_breakChunk(completed: true)`) that can never occur in
+    // production — a break's `isCompleted` is permanently false (D-31-01).
+    // The `Icons.check_circle` completed-branch it asserted was already
+    // documented dead code in the pre-Phase-32 full tier, and this task's
+    // rebuild does not carry it forward (the trailing content is now the
+    // Skip rail, gated only on `isSkipped`). Deleted with the branch it
+    // tested, not repointed at a state the app can never produce.
 
     testWidgets(
       'commitment work chunk uses tertiaryContainer, no outline, no left bar',
@@ -654,7 +660,13 @@ void main() {
       );
 
       testWidgets(
-        'full short break renders both the label and its duration text',
+        // Phase 32 (D-32-02, Task 1 — Kind C rewrite): the full tier used
+        // to render a trailing "N min"/"skipped" duration text (the old
+        // Spacer()-then-Text arrangement); that trailing content is now the
+        // same Skip rail structure the compact tier uses, so the premise
+        // ("renders its duration text") is exactly what this phase reverses.
+        'full short break renders the label and a Skip rail, not duration '
+        'text',
         (tester) async {
           await pumpWithMood(
             tester,
@@ -664,101 +676,28 @@ void main() {
             ),
           );
           expect(find.text('Short break'), findsOneWidget);
-          expect(find.text('5 min'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'SEEBREAK-01: sub-compact short break renders two Dividers and the '
-        'label, no dashed border, no duration text',
-        (tester) async {
-          await pumpWithMood(
-            tester,
-            ChunkCard(
-              chunk: _breakChunk(type: ChunkType.shortBreak),
-              density: ChunkCardDensity.subCompact,
-            ),
-          );
-          expect(find.text('Short break'), findsOneWidget);
           expect(find.text('5 min'), findsNothing);
           expect(
             find.descendant(
               of: find.byType(ChunkCard),
-              matching: find.byType(Divider),
+              matching: find.byType(BreakSkipButton),
             ),
-            findsNWidgets(2),
-          );
-          // PD-29-08: do NOT also assert find.byType(Card), findsNothing —
-          // breaks never build a Card at any density, so that assertion
-          // could not fail (STATE.md's "assertion that could not fail"
-          // class).
-          expect(
-            find.byWidgetPredicate(
-              (w) =>
-                  w is CustomPaint &&
-                  w.painter != null &&
-                  w.painter.runtimeType.toString().contains('DashedBorder'),
-            ),
-            findsNothing,
-          );
-        },
-      );
-
-      testWidgets(
-        'SEEBREAK-01: sub-compact short break restates the duration in its '
-        'semantics label',
-        (tester) async {
-          final handle = tester.ensureSemantics();
-          await pumpWithMood(
-            tester,
-            ChunkCard(
-              chunk: _breakChunk(type: ChunkType.shortBreak),
-              density: ChunkCardDensity.subCompact,
-            ),
-          );
-          expect(
-            find.bySemanticsLabel('Short break, 5 min'),
             findsOneWidget,
           );
-          handle.dispose();
         },
       );
 
-      testWidgets(
-        'SEEBREAK-01: sub-compact renders shorter than compact for the same '
-        'break',
-        (tester) async {
-          // Relative claim, deliberately (PD-29-06): both numbers come from
-          // the same placeholder-font harness so the bias cancels, whereas
-          // an absolute "fits in 20dp" assertion here would be optimistic —
-          // the harness's line box is fontSize-tall with no real Roboto
-          // ascent/descent, so it would pass while a real device clips.
-          // Absolute fit is 29-04's real-browser job.
-          await _pumpBreakCardUnbounded(
-            tester,
-            density: ChunkCardDensity.compact,
-          );
-          final compactHeight = tester
-              .getSize(find.byType(ChunkCard))
-              .height;
-
-          await _pumpBreakCardUnbounded(
-            tester,
-            density: ChunkCardDensity.subCompact,
-          );
-          final subCompactHeight = tester
-              .getSize(find.byType(ChunkCard))
-              .height;
-
-          expect(
-            subCompactHeight,
-            lessThan(compactHeight),
-            reason:
-                'harness bounds (placeholder font, NOT a device requirement): '
-                'compact=$compactHeight subCompact=$subCompactHeight',
-          );
-        },
-      );
+      // Phase 32 (D-32-02, Task 1 — Kind A, retired-mechanism deletion):
+      // three tests used to live here — 'SEEBREAK-01: sub-compact short
+      // break renders two Dividers and the label...', '...restates the
+      // duration in its semantics label', and '...renders shorter than
+      // compact for the same break' — all three pumping
+      // `ChunkCardDensity.subCompact`, the tier this task deletes outright
+      // (not merely stops calling). There is no value to migrate: the
+      // `_SubCompactRow` widget these tests asserted against no longer
+      // exists, and the enum value itself is gone, so keeping any of them
+      // would be asserting against a mechanism this phase's own charter
+      // requires deleting, not weakening or repointing.
 
       // Phase 32 (D-32-02, Task 2 — Kind A, retired-mechanism deletion):
       // 'SEEBREAK-01 non-vacuity: compact short break still renders the
@@ -774,9 +713,11 @@ void main() {
       // _WorkChunkContent's existing resolved-state vocabulary
       // (Opacity(0.5) + TextDecoration.lineThrough) rather than inventing
       // a break-specific one. Phase 32 (D-32-02) note: this holds for the
-      // full and sub-compact tiers below, unchanged — the redesigned
-      // compact tier (TAPBREAK-01/03) is the one exception, and carries
-      // its own updated test further down documenting why.
+      // full tier below, unchanged — the redesigned compact tier
+      // (TAPBREAK-01/03) is the one exception, and carries its own updated
+      // test further down documenting why. The sub-compact tier's own pair
+      // of D-31-04 tests are retired along with the tier itself (Task 1,
+      // Kind A) — see below.
       testWidgets(
         "D-31-04: a skipped full-tier break is muted, struck through, and "
         "reads 'skipped'",
@@ -806,8 +747,15 @@ void main() {
       );
 
       testWidgets(
+        // Phase 32 (D-32-02, Task 1 — Kind C rewrite): "still reads its
+        // duration" described the retired trailing-duration-text
+        // arrangement. The full tier's own container/mute mechanism
+        // (Opacity(0.5) + strikethrough) is unchanged by this phase — only
+        // the trailing content changed, from duration/status text to the
+        // same Skip rail the compact tier uses.
         'D-31-04: an unresolved full-tier break is unchanged — no muting, '
-        'no strikethrough, still reads its duration',
+        'no strikethrough, and a tappable Skip rail instead of duration '
+        'text',
         (tester) async {
           await pumpWithMood(
             tester,
@@ -828,8 +776,15 @@ void main() {
           );
           final titleText = tester.widget<Text>(find.text('Short break'));
           expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
-          expect(find.text('5 min'), findsOneWidget);
+          expect(find.text('5 min'), findsNothing);
           expect(find.text('skipped'), findsNothing);
+          expect(
+            find.descendant(
+              of: find.byType(ChunkCard),
+              matching: find.byType(BreakSkipButton),
+            ),
+            findsOneWidget,
+          );
         },
       );
 
@@ -878,187 +833,19 @@ void main() {
         },
       );
 
-      testWidgets(
-        'D-31-04: a skipped sub-compact break is muted and struck through '
-        'and still renders exactly two Dividers',
-        (tester) async {
-          final handle = tester.ensureSemantics();
-          await pumpWithMood(
-            tester,
-            ChunkCard(
-              chunk: _breakChunk(type: ChunkType.shortBreak, skipped: true),
-              density: ChunkCardDensity.subCompact,
-            ),
-          );
-          final mutedOpacity = find.byWidgetPredicate(
-            (w) => w is Opacity && w.opacity == 0.5,
-          );
-          expect(
-            find.descendant(
-              of: find.byType(ChunkCard),
-              matching: mutedOpacity,
-            ),
-            findsOneWidget,
-          );
-          final titleText = tester.widget<Text>(find.text('Short break'));
-          expect(titleText.style?.decoration, TextDecoration.lineThrough);
-          expect(
-            find.descendant(
-              of: find.byType(ChunkCard),
-              matching: find.byType(Divider),
-            ),
-            findsNWidgets(2),
-          );
-          expect(
-            find.bySemanticsLabel('Short break, 5 min, skipped'),
-            findsOneWidget,
-          );
-          handle.dispose();
-        },
-      );
-
-      testWidgets(
-        "D-31-04: an unresolved sub-compact break is byte-for-byte Phase "
-        "29's treatment",
-        (tester) async {
-          final handle = tester.ensureSemantics();
-          await pumpWithMood(
-            tester,
-            ChunkCard(
-              chunk: _breakChunk(type: ChunkType.shortBreak),
-              density: ChunkCardDensity.subCompact,
-            ),
-          );
-          final mutedOpacity = find.byWidgetPredicate(
-            (w) => w is Opacity && w.opacity == 0.5,
-          );
-          expect(
-            find.descendant(
-              of: find.byType(ChunkCard),
-              matching: mutedOpacity,
-            ),
-            findsNothing,
-          );
-          final titleText = tester.widget<Text>(find.text('Short break'));
-          expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
-          expect(
-            find.descendant(
-              of: find.byType(ChunkCard),
-              matching: find.byType(Divider),
-            ),
-            findsNWidgets(2),
-          );
-          expect(
-            find.bySemanticsLabel('Short break, 5 min'),
-            findsOneWidget,
-          );
-          handle.dispose();
-        },
-      );
-
-      // D-31-06 part 2 (phase 31 gap closure, SKIPBREAK-02). This proof
-      // lives HERE, not in today_screen_test.dart's "SKIPBREAK-02 — the
-      // grid is unchanged" group: that group measures the confined
-      // ClipRect that SwipeableChunkCard's `visualHeight` creates, which is
-      // exactly `visualHeight` tall BY CONSTRUCTION regardless of its
-      // child (`_confineContent`/`_confineReveal`,
-      // swipeable_chunk_card.dart) — it would stay green even if this
-      // glyph inflated the row by 10dp. Only a widget-level, unclipped,
-      // natural-height measurement (Case C below) can actually prove the
-      // glyph's zero-extent claim.
-      group('D-31-06 — the sub-compact grip glyph', () {
-        testWidgets(
-          'Case A: an unresolved sub-compact break renders exactly one '
-          'drag_indicator icon',
-          (tester) async {
-            await _pumpBreakCardUnbounded(
-              tester,
-              density: ChunkCardDensity.subCompact,
-            );
-            expect(
-              find.descendant(
-                of: find.byType(ChunkCard),
-                matching: find.byWidgetPredicate(
-                  (w) => w is Icon && w.icon == Icons.drag_indicator,
-                ),
-              ),
-              findsOneWidget,
-            );
-          },
-        );
-
-        testWidgets(
-          'Case B: a skipped sub-compact break renders no grip — a '
-          'resolved chunk is not swipeable, so the glyph must not '
-          'advertise a gesture that no longer exists',
-          (tester) async {
-            await _pumpBreakCardUnbounded(
-              tester,
-              density: ChunkCardDensity.subCompact,
-              skipped: true,
-            );
-            expect(
-              find.descendant(
-                of: find.byType(ChunkCard),
-                matching: find.byWidgetPredicate(
-                  (w) => w is Icon && w.icon == Icons.drag_indicator,
-                ),
-              ),
-              findsNothing,
-              reason:
-                  'a resolved break gets DismissDirection.none from '
-                  'SwipeableChunkCard; a grip here would advertise a '
-                  'swipe that no longer exists',
-            );
-          },
-        );
-
-        testWidgets(
-          'Case C (load-bearing, SKIPBREAK-02): the grip changes the '
-          'row\'s natural, unclipped height by exactly zero pixels',
-          (tester) async {
-            await _pumpBreakCardUnbounded(
-              tester,
-              density: ChunkCardDensity.subCompact,
-            );
-            final unresolvedHeight = tester
-                .getSize(find.byType(ChunkCard))
-                .height;
-
-            await tester.pumpWidget(const SizedBox.shrink());
-            await _pumpBreakCardUnbounded(
-              tester,
-              density: ChunkCardDensity.subCompact,
-              skipped: true,
-            );
-            final skippedHeight = tester
-                .getSize(find.byType(ChunkCard))
-                .height;
-
-            expect(
-              unresolvedHeight,
-              skippedHeight,
-              reason:
-                  'SKIPBREAK-02: the grip-bearing (unresolved) row and the '
-                  'grip-free (skipped) row must measure the identical '
-                  'natural height — unresolved=$unresolvedHeight '
-                  'skipped=$skippedHeight. A difference here means the '
-                  'glyph inflated the row.',
-            );
-            // Harness bound, NOT a device requirement (PD-29-06's standing
-            // caveat, same file) — a weaker, secondary sanity check that
-            // the unresolved row's placeholder-font height stays inside a
-            // generous multiple of a 5-minute break's own slot.
-            expect(
-              unresolvedHeight,
-              lessThanOrEqualTo(5 * kPixelsPerMinute),
-              reason:
-                  'harness bound (placeholder font, NOT a device '
-                  'requirement): unresolved=$unresolvedHeight',
-            );
-          },
-        );
-      });
+      // Phase 32 (D-32-02, Task 1 — Kind A, retired-mechanism deletion):
+      // 'D-31-04: a skipped sub-compact break...' and '...an unresolved
+      // sub-compact break is byte-for-byte Phase 29's treatment' — both
+      // pumped `ChunkCardDensity.subCompact`, the tier this task deletes.
+      // Deleted with the tier, not repointed at the compact tier's own
+      // already-covered assertions.
+      //
+      // The whole 'D-31-06 — the sub-compact grip glyph' group (3 cases)
+      // is deleted for the same reason: `Icons.drag_indicator` inside
+      // `_SubCompactRow` is gone with the class it lived in. Case C's own
+      // load-bearing claim (the grip changes the row's height by exactly
+      // zero pixels) has no subject left to prove once the grip and the
+      // row it decorated are both retired.
     });
 
     testWidgets(
@@ -1082,50 +869,21 @@ void main() {
       },
     );
 
-    testWidgets(
-      'SEEBREAK-01: SwipeableChunkCard forwards subCompact for a break',
-      (tester) async {
-        // Phase 31 note: this comment used to describe TWO density-forwarding
-        // sites — the break early-return and the Dismissible's
-        // `child: ChunkCard(...)`. Phase 31's `promote` decision (D3) deleted
-        // the early return, so there is now exactly ONE forwarding site: the
-        // single unconditional `Dismissible`. The assertions below are
-        // unchanged and still hold — a break at subCompact still gets its
-        // density forwarded, it just arrives by the one remaining path.
-        await pumpWithMood(
-          tester,
-          SwipeableChunkCard(
-            chunk: _breakChunk(type: ChunkType.shortBreak),
-            density: ChunkCardDensity.subCompact,
-          ),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(
-              value: _FakeScheduleNotifier(),
-            ),
-          ],
-        );
-        expect(find.text('Short break'), findsOneWidget);
-        expect(find.text('5 min'), findsNothing);
-        expect(
-          find.descendant(
-            of: find.byType(SwipeableChunkCard),
-            matching: find.byType(Divider),
-          ),
-          findsNWidgets(2),
-        );
-      },
-    );
+    // Phase 32 (D-32-02, Task 1 — Kind A, retired-mechanism deletion):
+    // 'SEEBREAK-01: SwipeableChunkCard forwards subCompact for a break'
+    // pumped `ChunkCardDensity.subCompact` and asserted the retired
+    // `_SubCompactRow`'s two Dividers. Deleted with the tier.
   });
 
   group('Phase 31 — what a break still is not', () {
     // D-31-01 (locked, 31-UI-SPEC.md): a break is never tappable, never
     // completable, and never re-swipeable once skipped — the owner's
     // 2026-08-21 instruction, made checkable here rather than assumed.
-    for (final density in [
-      ChunkCardDensity.full,
-      ChunkCardDensity.compact,
-      ChunkCardDensity.subCompact,
-    ]) {
+    // Phase 32 (D-32-02, Task 1): `ChunkCardDensity.subCompact` dropped from
+    // this list — the tier is retired, and this loop's own subject (a
+    // break's onTap stays null regardless of density) is still fully
+    // covered by the two remaining tiers.
+    for (final density in [ChunkCardDensity.full, ChunkCardDensity.compact]) {
       testWidgets(
         "a break's ChunkCard receives a null onTap even when the caller "
         'supplies one (density: $density)',
