@@ -57,9 +57,11 @@ kill, per this plan's division-of-labour instruction. **Orchestrator: kill this 
 PID holds 8143 by the time you run this) before building anything, and record here what you
 killed and when:**
 
-- **Killed PID:** `[TODO]`
-- **Killed server's start time:** `[TODO]`
-- **Replacement PID (this build's server):** `[TODO]`
+- **Killed PID:** `3484010`
+- **Killed server's start time:** `Wed Aug 26 08:06:46 2026` — confirmed by `ps -o pid,lstart,cmd -p 3484010` immediately before the kill, matching the PID and start time recorded above. It was still serving Phase 31's bundle, i.e. the exact build the owner already judged FAIL.
+- **Replacement PID (this build's server):** `1100897` — `python3 tools/serve-uat.py 8143 --dir build/web`, started 2026-08-27 from the merged `master` tree at commit `1e9864b`.
+
+*Third time this trap has fired on this project. It is no longer a surprise; it is a step.*
 
 Build command (verbatim — never `flutter run -d web-server`, never a release build on this port):
 
@@ -77,20 +79,28 @@ Byte-verification (paste every command with its verbatim output):
 
 ```
 $ sha256sum build/web/main.dart.js
-[TODO]
+3ec894695b56acfe417aa8657b45a6af4bfa277b029c0ba29c0ddeabda7af943  build/web/main.dart.js
 
 $ curl -s http://danserver:8143/main.dart.js | sha256sum
-[TODO]
+3ec894695b56acfe417aa8657b45a6af4bfa277b029c0ba29c0ddeabda7af943  -
 
 $ curl -s http://danserver:8143/main.dart.js | grep -c BreakSkipButton
-[TODO — expect non-zero; see "Why BreakSkipButton and not kBreakSkipButtonWidth" below]
+11
 
 $ curl -sI http://danserver:8143/main.dart.js | grep -i cache-control
-[TODO — expect: Cache-Control: no-store, max-age=0]
+Cache-Control: no-store, max-age=0
 ```
 
-**[TODO: state VERIFIED once the two sha256 digests match, the grep is non-zero, and cache-control
-is no-store. Do not let the owner look at anything until this line is filled in and true.]**
+**VERIFIED — 2026-08-27.** The two sha256 digests are identical (`3ec8946…af943`), so the bytes on
+the wire are the bytes just built from the merged `master` tree; `BreakSkipButton` appears **11**
+times in the served bundle, matching the scratch-build count exactly; and `Cache-Control` is
+`no-store, max-age=0`, so a cache entry created before this build cannot win a `304`.
+
+**What this does and does not prove.** It proves the *code* shipped and that the browser cannot
+serve you a stale copy of it. It proves **nothing** about what the schedule on screen was generated
+by — that is Step 0's job, and Step 0 is not optional. Reading a clean pre-flight as "the feature is
+present on screen" is precisely the mistake that produced a false FAILURE on 2026-08-21 and let a
+real defect survive three more days.
 
 ### Why `BreakSkipButton`, not `kBreakSkipButtonWidth` — the presence-probe trap, again
 
@@ -227,6 +237,33 @@ pixel buffer, not inferred from `flutter test`'s placeholder-font metrics.
 or whether the Skip rail "reads as one tappable unit" — those are the two perceptual judgments
 Task 2 exists for. This block only closes the geometric half of TAPBREAK-03 (does it fit), not the
 perceptual half (does it read right).
+
+---
+
+## Two orchestrator observations — stated so you don't meet them cold
+
+Recorded from the served build before handing this over. **Neither is a verdict** — both are exactly
+the kind of perceptual call this document exists to put to you, and saying "I noticed it looks fine"
+would be me judging an item I am not allowed to judge. Flagging them so Items 1–2 start from what is
+actually on screen.
+
+1. **The Skip rail is a different colour from the card body** — the label sits on the card's grey
+   `surfaceContainer` fill, the rail on a pink `errorContainer` fill, meeting at a hard vertical
+   edge. That is the design contract working as written (D-32-03's rail is meant to be visible), and
+   it is also precisely the thing Item 2 asks about: a two-tone split can read as *one control with
+   an action end*, or as *two separate zones*. You are the only one who can say which. Look before
+   you read Item 2's wording.
+
+2. **The break's Skip and a work chunk's Skip use the same icon and word but different layouts** —
+   both are `skip_next` (▶|) + "Skip", but the break stacks them (icon above label, to fit 30dp)
+   while the work chunk sets them inline. Same vocabulary, different arrangement. Possibly
+   invisible in use; possibly reads as two different controls. Not covered by any numbered item, so
+   mention it under Item 2 if it bothers you.
+
+**What is NOT in doubt:** the glyph is no longer `Icons.drag_indicator`. Phase 31's round-two defect
+was a six-dot *reorder grip* on a control that could not be reordered — an icon that meant the wrong
+verb. `skip_next` means skip. That specific defect is gone; whether the new arrangement has its own
+is what Item 2 is for.
 
 ---
 
