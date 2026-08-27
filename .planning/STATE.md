@@ -4,16 +4,16 @@ milestone: none
 current_phase: 32
 current_phase_name: Breaks You Can Tap
 status: executing
-stopped_at: Phase 32 UI-SPEC approved
-last_updated: "2026-08-27T13:23:06.264Z"
+stopped_at: Phase 32 wave 3 halted at blocking human UAT — build served on 8143, pre-flight verified
+last_updated: "2026-08-27T15:22:43.672Z"
 last_activity: 2026-08-27
 last_activity_desc: Phase 32 execution started
-state_head: 4aa3598567cdad8a92154a9d1dbaa9e6ff261246
+state_head: 0534c9abe33b2805fb6e6088b070ca4daf544f15
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 27
-  completed_plans: 24
+  completed_plans: 27
 milestone_name: milestone
 ---
 
@@ -21,7 +21,7 @@ milestone_name: milestone
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-27T12:44:10.262Z
+**Last session:** 2026-08-27T15:22:43.488Z
 
 ---
 
@@ -539,10 +539,10 @@ Carried from earlier milestones (v1.0–v1.2), still open:
 
 ## Session Continuity
 
-**Resume file:** .planning/phases/32-breaks-you-can-tap/32-UI-SPEC.md
+**Resume file:** .planning/phases/32-breaks-you-can-tap/32-UAT.md
 
 Last session: 2026-08-25
-Stopped at: Phase 32 UI-SPEC approved
+Stopped at: Phase 32 wave 3 halted at blocking human UAT — build served on 8143, pre-flight verified
 Resume at: open `http://danserver:8143/` **on a phone or tablet** (not a desktop pointer — the whole
 question is fingertip size). Tap **⟳ Re-check-in first** — mandatory, trap #4, Item 3 is meaningless
 without it. Then walk `31-UAT.md`'s three items, rule on its two deliberate exclusions, record each
