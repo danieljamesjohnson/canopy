@@ -18,6 +18,7 @@ import 'package:canopy/screens/today/timeline_geometry.dart';
 import 'package:canopy/screens/today/today_screen.dart';
 import 'package:canopy/screens/today/widgets/live_row_card.dart';
 import 'package:canopy/screens/today/widgets/now_line.dart';
+import 'package:canopy/widgets/break_skip_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -1233,53 +1234,57 @@ void main() {
       // 8:27 AM = minute 507 — inside b1's 505-510 window.
       DateTime liveSkipNow() => DateTime(2026, 6, 13, 8, 27);
 
-      testWidgets('Case A — a live short break can be swiped', (
-        tester,
-      ) async {
-        final fake = _FakeScheduleNotifierWithSchedule(liveSkipFixture());
-        await _pumpTodayScreen(
-          tester,
-          scheduleNotifier: fake,
-          now: liveSkipNow,
-        );
-        await tester.pumpAndSettle();
-        // b1 renders at the single-line tier (20dp < kCompactLiveMinHeight):
-        // its title is the live present-continuous form, not "Short break".
-        final liveClipRect = find
-            .ancestor(
-              of: find.text('Taking a break'),
-              matching: find.byType(ClipRect),
-            )
-            .first;
-        final paintedRect = tester.getRect(liveClipRect);
-        final origin = Offset(
-          paintedRect.center.dx,
-          paintedRect.top - kBreakHitSlop + 2,
-        );
-        await tester.dragFrom(origin, const Offset(-400, 0));
-        await tester.pumpAndSettle();
+      testWidgets(
+        // Phase 32 (D-32-02, Task 2 — rewrite in place, per
+        // `32-RESEARCH.md`'s own resolved recommendation). Only the
+        // trigger changes, from a synthetic `dragFrom` to `tester.tap()`
+        // on the live single-line tier's new `BreakSkipButton` rail — the
+        // assertions (skip fires, complete never fires, the correct chunk
+        // id is named) are unchanged and still the valuable part of this
+        // test.
+        'Case A — a live short break can be skipped by its Skip rail',
+        (tester) async {
+          final fake = _FakeScheduleNotifierWithSchedule(liveSkipFixture());
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: fake,
+            now: liveSkipNow,
+          );
+          await tester.pumpAndSettle();
+          // b1 renders at the single-line tier (30dp < kCompactLiveMinHeight):
+          // its title is the live present-continuous form, not "Short
+          // break". Its Skip rail is the same shared BreakSkipButton the
+          // non-live break card uses.
+          final liveRow = find.ancestor(
+            of: find.text('Taking a break'),
+            matching: find.byType(LiveRowCard),
+          );
+          await tester.tap(
+            find.descendant(of: liveRow, matching: find.byType(BreakSkipButton)),
+          );
+          await tester.pumpAndSettle();
 
-        expect(
-          fake.lastSkippedId,
-          'b1',
-          reason:
-              'D-31-07: a drag started inside a LIVE short break\'s grown '
-              'hit-test envelope must still resolve to that break\'s '
-              'SwipeableRowShell and call markSkipped.',
-        );
-        expect(
-          fake.lastCompletedId,
-          isNull,
-          reason: 'D-31-07: a break must never call markComplete.',
-        );
-        expect(
-          fake.lastSkippedId,
-          isNot('w2'),
-          reason:
-              'a failure here must name the thief (the following work '
-              'chunk), not merely report a wrong id.',
-        );
-      });
+          expect(
+            fake.lastSkippedId,
+            'b1',
+            reason:
+                'D-32-02/TAPBREAK-01: tapping a LIVE short break\'s Skip '
+                'rail must call markSkipped for that break\'s own chunk id.',
+          );
+          expect(
+            fake.lastCompletedId,
+            isNull,
+            reason: 'D-31-07: a break must never call markComplete.',
+          );
+          expect(
+            fake.lastSkippedId,
+            isNot('w2'),
+            reason:
+                'a failure here must name the thief (the following work '
+                'chunk), not merely report a wrong id.',
+          );
+        },
+      );
 
       // Case B — truth #14's composition, proven.
       //
@@ -1436,17 +1441,20 @@ void main() {
       });
 
       testWidgets(
+        // Phase 32 (D-32-02, Task 2 — rewrite in place). Same correction
+        // as Case B: an "already-skipped LIVE break" is unreachable
+        // through resolveNowState — the reachable state is a break that
+        // WAS live and, once skipped, is delisted from live status and
+        // rendered by the non-live arm. The trigger changes because the
+        // mechanism changed: a resolved break never reaches `Dismissible`
+        // at all any more (breaks are button-only, D-32-02), so there is
+        // no drag to attempt in the first place. The claim this test still
+        // proves — a resolved chunk must not advertise a gesture it no
+        // longer accepts — now means: its rail shows the resolved
+        // indicator, never a re-tappable Skip button.
         'Case C — a break that was live and is now resolved-and-delisted '
-        'offers no Skip affordance and cannot be re-swiped',
+        'offers no re-tappable Skip button, only the resolved indicator',
         (tester) async {
-          // Same correction as Case B: an "already-skipped LIVE break" is
-          // unreachable through resolveNowState (see Case B's comment) — the
-          // reachable state is a break that WAS live and, once skipped, is
-          // delisted from live status and rendered by the non-live arm.
-          // This proves non-negotiable #5 ("a resolved chunk must not
-          // advertise a gesture it no longer accepts") against exactly that
-          // reachable state, at the geometric position the live row
-          // previously occupied.
           final fake = _FakeScheduleNotifierWithSchedule(
             liveSkipFixture(breakSkipped: true),
           );
@@ -1462,20 +1470,25 @@ void main() {
                 matching: find.byType(ClipRect),
               )
               .first;
-          final resolvedRect = tester.getRect(resolvedClipRect);
-          final origin = Offset(
-            resolvedRect.center.dx,
-            resolvedRect.top - kBreakHitSlop + 2,
-          );
-          await tester.dragFrom(origin, const Offset(-400, 0));
-          await tester.pumpAndSettle();
           expect(
-            fake.lastSkippedId,
-            isNull,
-            reason:
-                'an already-skipped break has DismissDirection.none — a '
-                'drag inside its grown envelope must resolve nothing.',
+            find.descendant(
+              of: resolvedClipRect,
+              matching: find.byType(BreakSkippedIndicator),
+            ),
+            findsOneWidget,
+            reason: 'an already-skipped break must show the resolved '
+                'indicator in its rail',
           );
+          expect(
+            find.descendant(
+              of: resolvedClipRect,
+              matching: find.byType(BreakSkipButton),
+            ),
+            findsNothing,
+            reason: 'an already-skipped break must never still show a '
+                'tappable Skip button — there is no way to re-skip it',
+          );
+          expect(fake.lastSkippedId, isNull);
         },
       );
 

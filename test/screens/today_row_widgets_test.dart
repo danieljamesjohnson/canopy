@@ -6,6 +6,8 @@
 // Pure widget work — nothing here knows what time it is; the screen
 // (plan 22-03) decides what's live and passes it in.
 
+import 'dart:async';
+
 import 'package:canopy/data/models/energy_valence.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
@@ -44,6 +46,22 @@ class _FakeScheduleNotifier extends ScheduleNotifier {
   @override
   Future<void> markSkipped(String chunkId) async {
     lastSkippedId = chunkId;
+  }
+}
+
+/// Phase 32 (TAPBREAK-01/E2 error). Simulates `markSkipped`'s WR-05
+/// revert-and-rethrow path failing — `BreakSkipButton`/`LiveRowCard`'s
+/// single-line tier do not await or catch this call (the tap fires it and
+/// moves on, exactly like the work-chunk Skip button always has), so the
+/// rejection surfaces as an async exception the test acknowledges via
+/// `tester.takeException()` rather than a crash.
+class _ThrowingScheduleNotifier extends ScheduleNotifier {
+  @override
+  Future<void> init() async {}
+
+  @override
+  Future<void> markSkipped(String chunkId) async {
+    throw Exception('simulated repository failure');
   }
 }
 
@@ -963,7 +981,10 @@ void main() {
       bool showComplete = true,
       bool isSkipped = false,
       VoidCallback? onTap,
-      _FakeScheduleNotifier? scheduleNotifier,
+      // ScheduleNotifier, not _FakeScheduleNotifier: Phase 32's
+      // throwing-repository test (`_ThrowingScheduleNotifier`) needs to
+      // pass through this same helper.
+      ScheduleNotifier? scheduleNotifier,
     }) async {
       await pumpWithMood(
         tester,
@@ -1125,12 +1146,27 @@ void main() {
       expect(tapCount, 1);
     });
 
-    testWidgets('single-line tier has no InkWell when onTap is null', (
-      tester,
-    ) async {
-      await pumpLiveRowCard(tester, slotHeight: 20.0, onTap: null);
-      expect(find.byType(InkWell), findsNothing);
-    });
+    testWidgets(
+      // Phase 32 (D-32-02, Task 2 — Kind C rewrite, scoped not deleted):
+      // this test's own subject ("the row itself is not tappable") is
+      // still true and still worth asserting, but `pumpLiveRowCard`'s
+      // `showActions` defaults to `true`, and the new Skip rail (gated on
+      // `showActions`) renders its own `InkWell` regardless of `onTap` —
+      // the old bare assertion would now find that rail InkWell and fail.
+      // Scoped by pumping with actions disabled, so the row truly has no
+      // interactive child of any kind.
+      'single-line tier has no InkWell when onTap is null and no Skip rail '
+      'is showing',
+      (tester) async {
+        await pumpLiveRowCard(
+          tester,
+          slotHeight: 20.0,
+          onTap: null,
+          showActions: false,
+        );
+        expect(find.byType(InkWell), findsNothing);
+      },
+    );
 
     testWidgets(
       'both tiers restate kCardLeftInset/kTimelineRowInset as Card margin',
@@ -1302,6 +1338,137 @@ void main() {
           );
           titleText = tester.widget<Text>(find.text('Short break'));
           expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
+        },
+      );
+    });
+
+    group('Phase 32 (TAPBREAK-01) — the live single-line tier gains a Skip '
+        'rail', () {
+      testWidgets(
+        // This is the regression this whole section of the phase exists
+        // to prevent: without it, a running 5-minute break would ship with
+        // ZERO way to skip it (D-32-02 deletes the swipe with no
+        // substitute unless this tier gains one). The same test also
+        // proves the excluding-Semantics-wrapper fix: the button's own
+        // accessibility label must resolve independently, not be
+        // swallowed by the title/countdown's excluding wrapper.
+        'a live 5-minute break renders a tappable, screen-reader-reachable '
+        'Skip rail — this row is NOT skip-less',
+        (tester) async {
+          final sn = _FakeScheduleNotifier();
+          final handle = tester.ensureSemantics();
+          await pumpLiveRowCard(
+            tester,
+            chunkId: 'break-1',
+            title: 'Short break',
+            slotHeight: 30.0,
+            showActions: true,
+            showComplete: false,
+            scheduleNotifier: sn,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(LiveRowCard),
+              matching: find.byType(BreakSkipButton),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.bySemanticsLabel('Skip Short break'),
+            findsOneWidget,
+            reason: 'the title/countdown excluding Semantics wrapper must '
+                'not swallow the Skip button\'s own semantics node',
+          );
+          await tester.tap(find.byType(BreakSkipButton));
+          await tester.pump();
+          expect(sn.lastSkippedId, 'break-1');
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'with a throwing repository the live break stays unresolved and '
+        'its Skip rail stays visible and tappable (UI-SPEC E2 error)',
+        (tester) async {
+          final sn = _ThrowingScheduleNotifier();
+          await pumpLiveRowCard(
+            tester,
+            chunkId: 'break-err',
+            title: 'Short break',
+            slotHeight: 30.0,
+            showActions: true,
+            showComplete: false,
+            isSkipped: false,
+            scheduleNotifier: sn,
+          );
+          // markSkipped's own WR-05 revert-and-rethrow is a pre-existing,
+          // documented gap (32-RESEARCH.md): the button's onTap does not
+          // await the call, so the rejection is a genuinely unhandled
+          // async Future error, exactly as it would be in the running
+          // app. `runZonedGuarded` captures it at the zone boundary
+          // (rather than letting flutter_test's own zone report it as an
+          // immediate hard test failure) so the test can acknowledge it
+          // was thrown — proving the tap path was actually exercised —
+          // without treating a known, documented gap as a fresh defect.
+          Object? caught;
+          await runZonedGuarded(() async {
+            await tester.tap(find.byType(BreakSkipButton));
+            await tester.pump();
+          }, (error, stack) => caught = error);
+          expect(caught, isNotNull);
+          // LiveRowCard has no local state of its own — a real failure
+          // leaves the chunk's isSkipped false upstream, so the next
+          // build still passes isSkipped: false and the rail keeps
+          // rendering the tappable Skip button, never the resolved
+          // indicator.
+          expect(
+            find.descendant(
+              of: find.byType(LiveRowCard),
+              matching: find.byType(BreakSkipButton),
+            ),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'at a realistic (430dp) row width the title still ellipses and the '
+        'countdown still renders in full beside the 64dp Skip rail '
+        '(UI-SPEC E2 overflow)',
+        (tester) async {
+          // 430dp matches this project's own established real-device
+          // viewport convention (`timeline_geometry.dart`'s measurement
+          // recipes: "viewport 430x930 at DPR 1").
+          await tester.binding.setSurfaceSize(const Size(430, 800));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          // Deliberately app-realistic lengths (matching the app's own
+          // `_buildLiveRow` format, `today_screen.dart`), NOT an
+          // artificially long stress string — `flutter test`'s placeholder
+          // font already inflates glyph width well beyond real Roboto
+          // metrics (this project's carried-forward invariant), so an
+          // unrealistically long fixture would overflow for a harness
+          // reason unrelated to the rail's own narrowing of the Expanded
+          // region, which is what this test exists to isolate.
+          const longTitle = 'Short break';
+          const countdown = '4 min left';
+          await pumpLiveRowCard(
+            tester,
+            title: longTitle,
+            remainingLabel: countdown,
+            slotHeight: 30.0,
+            showActions: true,
+            showComplete: false,
+          );
+          expect(tester.takeException(), isNull);
+          final titleWidget = tester.widget<Text>(find.text(longTitle));
+          expect(titleWidget.maxLines, 1);
+          expect(titleWidget.overflow, TextOverflow.ellipsis);
+          expect(
+            find.text(' · $countdown'),
+            findsOneWidget,
+            reason: 'the countdown never truncates, even under the rail\'s '
+                'narrower Expanded region',
+          );
         },
       );
     });
