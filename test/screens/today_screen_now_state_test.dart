@@ -1242,6 +1242,7 @@ void main() {
           scheduleNotifier: fake,
           now: liveSkipNow,
         );
+        await tester.pumpAndSettle();
         // b1 renders at the single-line tier (20dp < kCompactLiveMinHeight):
         // its title is the live present-continuous form, not "Short break".
         final liveClipRect = find

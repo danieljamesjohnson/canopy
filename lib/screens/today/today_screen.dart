@@ -880,71 +880,37 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         final isBreak =
             chunk.chunkType == ChunkType.shortBreak ||
             chunk.chunkType == ChunkType.longBreak;
-        // Phase 29 (SEEBREAK-01): break rows get a third, lower density band.
-        // Under Phase 28's lattice this is slot-height-driven, not
-        // chunk-type-driven: a 5-minute break (20dp) always lands in
-        // `subCompact`, a 30-minute long break (120dp) always lands in
-        // `full`, and the `compact` band is unreachable at today's two
-        // generated durations — kept because a future cadence change could
-        // reach it. The work branch below is UNCHANGED (byte-identical) —
-        // this phase changes breaks only (29-UI-SPEC.md § Scope boundary).
+        // Phase 32 (TAPBREAK-02, D-32-01): the break density ternary
+        // collapses to the same two-way shape the work ternary below it
+        // already uses. Phase 29's third `subCompact` band is retired
+        // outright, not re-thresholded — at kPixelsPerMinute = 6.0 a
+        // 5-minute break's 30dp slot would still have landed under the old
+        // 32dp `kSubCompactBreakMinHeight` threshold, reproducing the exact
+        // hairline defect this phase exists to remove, had the threshold
+        // simply moved with the scale instead of being deleted along with
+        // the tier it gated. The `compact` tier below is a real bordered
+        // Card with a Skip rail now (TAPBREAK-01/03), not a hairline. The
+        // work branch below is UNCHANGED (byte-identical).
         final density = isBreak
             ? (slot >= kFullBreakMinHeight
                   ? ChunkCardDensity.full
-                  : slot >= kSubCompactBreakMinHeight
-                  ? ChunkCardDensity.compact
-                  : ChunkCardDensity.subCompact)
+                  : ChunkCardDensity.compact)
             : (slot >= kFullTierMinHeight
                   ? ChunkCardDensity.full
                   : ChunkCardDensity.compact);
-        // Phase 31 (D-31-02/SKIPBREAK-02): a break under kMinBreakDragTarget
-        // grows its OWN Positioned/Dismissible hit-test box by kBreakHitSlop
-        // on both top and bottom, while everything that paints stays
-        // confined to exactly `slot` inside it (SwipeableChunkCard's
-        // `visualHeight`, PD-31-02). The grown box is the direct child of
-        // this Positioned — NOT wrapped in the row's usual outer ClipRect —
-        // because `RenderBox.hitTest` bounds every render box to its own
-        // `size` regardless of any clip (31-RESEARCH.md, verified against
-        // the Flutter SDK): a ClipRect wrapped around the whole grown
-        // Positioned would reject the slop-band touch before the
-        // Dismissible inside it ever saw it. ClipRect instead moved down
-        // inside SwipeableChunkCard, confined to `slot` only. Slop is
-        // symmetric with no per-neighbour clamp (PD-31-01, kBreakHitSlop's
-        // own doc comment) — an asymmetric grown box would shift the
-        // Align(center)-confined painted content off geometry.yFor(start).
-        // Every break takes this arm (PD-31-04); only a sub-48dp one gets
-        // non-zero slop, so a full/compact-tier break's `slop` is 0.0 and
-        // this Positioned is byte-for-byte the pre-existing one.
+        // Phase 32 (TAPBREAK-01, D-32-02): the break arm collapses into
+        // exactly the shape the work arm immediately below already uses —
+        // no enlarged hit-test envelope, no `visualHeight` confinement
+        // argument. Phase 31's grown-`Positioned`/slop mechanism existed
+        // solely to widen a break's `Dismissible` hit-test box beyond its
+        // painted slot; breaks have no swipe target to widen any more
+        // (button-only, D-32-02), so a break's `Positioned` is now
+        // structurally identical to a work chunk's — the shared return
+        // below handles both, differing only in which `ChunkCardDensity`
+        // the ternary above picked and which card `_buildChunkCard`
+        // constructs (`SwipeableChunkCard`'s restored early return sends a
+        // break straight to `ChunkCard`, never through `Dismissible`).
         //
-        // A slop-bearing break's grown box is emitted here but is NEVER
-        // reached by THIS loop at render time — Layer 1a below excludes any
-        // row `_needsSlop` calls true for, and Layer 1b (Step 3, the
-        // load-bearing fix) re-invokes this same function for exactly those
-        // rows, later in the Stack's children list. That later position is
-        // what wins the bottom slop band against the following work
-        // chunk's own, unenlarged Positioned — see the Layer 1b comment at
-        // this file's Stack-children site for the full z-order argument
-        // (31-RESEARCH.md Pitfall 1). This function does not know or care
-        // which pass invoked it; it always returns the same grown box for a
-        // slop-bearing break, so the two loops staying mutually exclusive on
-        // `_needsSlop` is what actually enforces the ordering.
-        if (isBreak) {
-          final slop = slot < kMinBreakDragTarget ? kBreakHitSlop : 0.0;
-          return Positioned(
-            top: geometry.yFor(start) - slop,
-            left: 0,
-            right: 0,
-            height: slot + 2 * slop,
-            child: TimelineRowTile(
-              child: _buildChunkCard(
-                context,
-                chunk,
-                density,
-                visualHeight: slot,
-              ),
-            ),
-          );
-        }
         // PD-10: ClipRect + OverflowBox is a safety net, not a min/max
         // clamp — the slot is always exactly `durationMinutes *
         // kPixelsPerMinute`. OverflowBox lets the card lay out at its

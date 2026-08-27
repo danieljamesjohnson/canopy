@@ -496,8 +496,16 @@ void main() {
       );
       // Phase 28's lattice emits exactly two break durations: a 5-minute
       // short break and a 30-minute long break.
-      expect(geometry.heightFor(540, 5), 20.0);
-      expect(geometry.heightFor(600, 30), 120.0);
+      //
+      // Phase 32 (D-32-01): re-derived for kPixelsPerMinute = 6.0 (was
+      // 4.0), so both expected values below moved up proportionally.
+      // Deliberately kept as bare literals with this comment — this is
+      // one of the suite's canaries against kPixelsPerMinute itself
+      // silently drifting, and deriving it from the constant would give
+      // it the exact self-referential blindness the comment above
+      // already warns against.
+      expect(geometry.heightFor(540, 5), 30.0);
+      expect(geometry.heightFor(600, 30), 180.0);
     });
   });
 }

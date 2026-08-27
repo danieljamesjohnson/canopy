@@ -254,6 +254,22 @@ class SwipeableChunkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Phase 32 (TAPBREAK-01, D-32-02): RESTORED — this is a revert of
+    // Phase 31's `promote` decision, which deleted this exact early return
+    // so every chunk type reached `Dismissible`. Breaks no longer use any
+    // swipe mechanism at all (button-only, D-32-02), so this early return
+    // comes back verbatim: a break renders through `ChunkCard` directly and
+    // never reaches `SwipeableRowShell`/`Dismissible`. `onTap` stays null —
+    // tappable is still out of scope (owner, 2026-08-21, unchanged).
+    if (chunk.chunkType != ChunkType.work) {
+      return ChunkCard(
+        chunk: chunk,
+        goalColor: goalColor,
+        density: density,
+        showStartTime: showStartTime,
+      );
+    }
+
     final isWork = chunk.chunkType == ChunkType.work;
     // A break can never be isCompleted (D-31-01) — this term is defensive
     // for breaks and load-bearing for work chunks (a completed work chunk
