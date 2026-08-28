@@ -321,7 +321,31 @@ roughly 40dp of fingertip, so a trackpad or mouse verdict does not answer it.
 - **(d)** The whole day is now 50% taller to scroll — an 8-hour day goes from roughly 1920dp to
   roughly 2880dp. Does that trade feel right in the hand, not just on paper?
 
-**Verdict:** _______________
+**Verdict: FAIL (d), and a defect this item did not think to ask about.** Judged by the owner
+2026-08-28 on the served build: *"it does appear to be working, but the ui looks much worse. there's
+huge gaps and the long break has too big of a skip. this should all be designed to be pretty."*
+
+- **(a)/(b)/(c) — not separately scored, and that is recorded rather than inferred.** The owner's
+  objection was to the *whole screen*, not to the short break's own card. Nothing he said
+  contradicts (a), (b) or (c), and nothing he said confirms them either. **Do not write these up as
+  PASS because the complaint landed elsewhere** — that is the "superseded ≠ passed" error this
+  project already made once, on Phase 31's Item 1.
+- **(d) — FAIL.** The 50%-taller day was accepted on paper as "more scrolling." What it actually
+  produced is **dead space inside the day**, which is a different cost than the one that was
+  approved, and it is the dominant visual defect.
+
+**Root cause, found in code the same day (not eyeballed).** `today_screen.dart:840` wraps every
+timeline row in `OverflowBox(alignment: Alignment.topCenter, minHeight: 0, maxHeight:
+double.infinity)` — the card lays out at its **natural** height and is top-aligned inside the slot;
+`ClipRect` only prevents overflow, it never fills. A 25-minute work chunk's card is ~83dp of content
+in what is now a 150dp slot, so **~67dp of empty background trails every work chunk.** At
+`kPixelsPerMinute = 4.0` the same mechanism left ~17dp and read as ordinary card spacing; D-32-01
+did not create this, it **made it visible everywhere at once**.
+
+**This was foreseeable and nobody looked.** The phase re-derived every *break* constant against 6.0
+with real care, and never asked what a 50%-taller slot does to a card whose content height does not
+scale. The phase's own real-browser measurement measured a single 30dp break card **in a tight
+crop** — the thing under optimisation — and never rendered a full day and looked at it.
 
 ---
 
@@ -347,8 +371,16 @@ not an invisible slop band. The previous approach (Phase 31) met the 48×48 numb
 acquisition band and still failed a thumb twice. This trades some area for total visibility; whether
 that trade actually works is exactly what (c) above measures.
 
-**Verdict:** _______________ **Five-attempt count:** _____ / 5 **One button or two zones (verbatim
-in the owner's own words):** _______________
+**Verdict: UNMEASURED — explicitly not a PASS.** The owner's 2026-08-28 report was *"it does appear
+to be working"*, which speaks to the mechanism functioning, **not** to acquisition. He gave no
+five-attempt count and no one-button-or-two-zones answer, and neither is inferable from "it works."
+
+**Five-attempt count:** not taken. **One button or two zones:** not answered.
+
+**This is the third consecutive round in which this project's central touch question has gone
+unmeasured** (Phase 31 round one superseded it, round two never reached it, this round returned
+"works" without a count). **It must be asked again, first, in the next round** — a redesign that
+follows a complaint is not evidence the underlying target was ever acquirable.
 
 ---
 
@@ -366,7 +398,21 @@ never a *smaller* target, only a more generous one.
 **A "looks odd" answer here is new evidence, not a contradiction of anything settled** — record it
 plainly either way.
 
-**Verdict:** _______________
+**Verdict: FAIL.** Owner, 2026-08-28: *"the long break has too big of a skip."*
+
+The planner's own reasoning is what failed, and it is worth naming precisely. D-32-03 fixed the rail
+at 64dp wide and let `CrossAxisAlignment.stretch` take the height from whatever row it lands in.
+That was derived entirely from the **worst case** — the 30dp short break, where the rail has to earn
+its touch area from width because it cannot get it from height. Applying the identical shape to the
+30-minute break was justified as "never a *smaller* target, only a more generous one," which is true
+about **touch** and says nothing about **appearance**. A 64dp-wide error-coloured slab running the
+full height of a 180dp row is not a generous button; it is a large red panel that outweighs the
+break it belongs to. **"Never worse for the thumb" was silently treated as "never worse," and the
+two are not the same claim.**
+
+Routed, not noted: the remedy is a tier-specific rail treatment for the long break, folded into the
+same visual pass Item 1(d) requires — not a re-litigation of the short break's 64×30 geometry, which
+nothing in this round contradicted.
 
 ---
 
@@ -397,7 +443,16 @@ assumed still correct.
 - **(c)** When you skip a running break, does the row stay exactly where it was on the timeline (same
   height, same position), and does the red now-line stay put rather than jumping?
 
-**Verdict:** _______________ **(30-min case):** _______________ **(5-min case):** _______________
+**Verdict: NOT REACHED — for the third round running.** The owner's 2026-08-28 report stopped at the
+visual defects and does not mention the time-travel route, a live break, or the now-line. Reaching
+this item requires deliberately shifting the simulated clock in Settings, and nothing in his report
+indicates that happened. **(30-min case):** not reached. **(5-min case):** not reached.
+
+**D-31-07 has now been code-complete and test-proven since 2026-08-26 and confirmed by a human
+zero times, across three UAT rounds** (Phase 31 round two stopped before it; this round stopped
+before it). It is not failing — it is simply never being got to, because it sits behind the items
+that keep failing. **In the next round it must move above them**, or it will be skipped a fourth
+time for the same structural reason.
 
 ---
 
@@ -481,17 +536,80 @@ a full plan cycle, and it is exactly what this phase's own `must_haves.prohibiti
 ```
 total: 4
 passed: 0
-issues: 0
-pending: 4
+issues: 2
+pending: 2
 skipped: 0
 blocked: 0
 ```
 
-*Counts above reflect the state as written by Task 1 — no verdict has been recorded yet. The human
-verifier (Task 2) must update this block to match the recorded verdicts before this phase can be
-considered closed, per this plan's own acceptance criteria.*
+**Judged 2026-08-28 by the owner on the served build (port 8143).** Item 1 FAIL (on (d); (a)–(c)
+deliberately unscored, not passed), Item 2 UNMEASURED (mechanism reported working; acquisition never
+counted), Item 3 FAIL, Item 4 NOT REACHED. **Zero items passed.** The mechanism works; the result is
+not something the owner wants to look at.
+
+**The one-line summary, in his words:** *"it does appear to be working, but the ui looks much worse
+... this should all be designed to be pretty."*
 
 ## Gaps
 
-<!-- YAML for gap consumption by a later gap-closure run. Populate one entry per FAIL recorded
-     above; leave empty if every item PASSes. Do not leave a FAIL unrouted — see "Remedies" above. -->
+```yaml
+- id: G-32-01
+  item: 1(d)
+  severity: high
+  summary: >
+    Every timeline row is top-aligned at its card's NATURAL height inside a duration-exact slot
+    (today_screen.dart:840, OverflowBox alignment topCenter / maxHeight infinity), so a ~83dp
+    work card sits in a 150dp slot and trails ~67dp of dead background. D-32-01's 4.0 -> 6.0
+    did not create this; it made a pre-existing 17dp slack into a 67dp hole on every work chunk.
+  not_a_fix: >
+    Reverting kPixelsPerMinute alone. That re-hides the defect at the cost of the 30dp break the
+    owner asked for, and returns the short break to the hairline two prior phases existed to fix.
+  route: visual gap-closure — decide by looking, not by arithmetic (see G-32-04)
+
+- id: G-32-02
+  item: 3
+  severity: medium
+  summary: >
+    The Skip rail's one-shape-fits-both-tiers rule (D-32-03 + CrossAxisAlignment.stretch) makes a
+    64dp-wide errorContainer slab run the full 180dp height of a long break. Derived from the 30dp
+    worst case, where the rail must earn touch area from width; never re-examined for appearance
+    at the tall tier.
+  route: tier-specific rail treatment for the full break tier; short break's 64x30 geometry is
+    NOT re-litigated (nothing this round contradicted it)
+
+- id: G-32-03
+  item: 2
+  severity: high
+  summary: >
+    The five-attempt thumb-acquisition count has never been taken, in any round, for any break
+    design. Round one superseded it, round two never reached it, round three reported "it appears
+    to be working" without counting. This is the project's central touch question and it is
+    unmeasured, not passed.
+  route: must be Item 1 of the next UAT, above every visual item, so it cannot be crowded out again
+
+- id: G-32-04
+  item: 1, 3 (method, not a screen)
+  severity: high
+  summary: >
+    This phase's design contract was arithmetic that was never looked at. Every constant was
+    derived and defended in prose; the one real-browser measurement was a TIGHT CROP of the single
+    card under optimisation. No full day at 6.0 was ever rendered and viewed before it shipped to
+    the owner. This is the same failure shape as Phase 31's drag_indicator: locally correct,
+    wrong at the altitude a human actually sees.
+  route: mock the whole screen visually (throwaway HTML, served on the tailnet) and have the owner
+    choose a look BEFORE any Dart changes
+
+- id: G-32-05
+  item: 4
+  severity: medium
+  summary: >
+    D-31-07 (live-break Skip, both the 30-min and the new 5-min case) is code-complete and
+    test-proven since 2026-08-26 and has been confirmed by a human ZERO times across three rounds.
+    It is never reached because it sits behind the items that keep failing.
+  route: move above the visual items in the next UAT's ordering
+```
+
+<!-- Open questions (a) "Up next" transition and (b) free-time vs break styling remain unanswered.
+     Question (b) is now entangled with G-32-01 — the dashed free-time regions are 50% taller too,
+     and are part of what the owner is seeing as "huge gaps." Do not answer it separately from the
+     visual pass. -->
