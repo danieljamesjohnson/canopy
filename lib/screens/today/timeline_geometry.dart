@@ -99,6 +99,33 @@ const double kPixelsPerMinute = 6.0;
 /// the compaction shortens the day without demoting rows to title-only.
 const double kFullTierMinHeight = 88.0;
 
+/// The slot height at or above which a `full`-tier work card has room to
+/// spend on a goal/duration meta line under its title — sketch 002 variant
+/// C's "content adapts to the height it is given" (owner-selected
+/// 2026-08-28), expressed in pixel slot height for the same rot-resistance
+/// reason as [kFullTierMinHeight].
+///
+/// **Why a second threshold rather than reusing [kFullTierMinHeight].** They
+/// answer different questions. `88.0` is *"does the tier's existing content
+/// fit at all"*; this is *"is there spare height worth spending on more
+/// content"*. Collapsing them would put a meta line on an 88dp row that has
+/// no room for it — the same class of mistake as Phase 29's `subCompact`
+/// threshold, which was a fit measurement being asked to make a design
+/// decision.
+///
+/// **Derivation, from the measured natural content this phase already has on
+/// record.** A `full` work card's own content measures ~83dp (`32-UAT.md`'s
+/// root-cause paragraph, read off the shipped build's screenshot). One
+/// `bodySmall` meta line plus its 4dp gap is ~20dp, so a row needs ~103dp
+/// before the line stops competing with the action row for space; `120.0`
+/// rounds that up onto the 8-pt scale (`120 = 8 x 15`) with real slack rather
+/// than sitting on the boundary. At [kPixelsPerMinute] = 6.0 the generator's
+/// only work duration (25 min, 150dp) clears this comfortably; at 4.0 the
+/// same chunk is 100dp and correctly does **not** get the line — so this
+/// constant degrades sensibly if the scale is ever lowered again, instead of
+/// silently crowding the card.
+const double kRoomyWorkMinHeight = 120.0;
+
 /// Full-tier density threshold for a break row, expressed in pixels (PD-3).
 ///
 /// **PD-3.** `88.0` = the measured 80px long-break content height plus

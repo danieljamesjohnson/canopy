@@ -156,94 +156,117 @@ class LiveRowCard extends StatelessWidget {
   /// `kPixelsPerMinute`" — was NOT taken: it would have made the whole day
   /// taller to buy something the existing slack already covered, undoing the
   /// 5.5→4.0 compaction done for the opposite complaint.
+  /// **Phase 32 gap closure (G-32-01): this tier fills its slot too.**
+  ///
+  /// Found by looking at the running app after `chunk_card.dart` was fixed,
+  /// not by reading the code — the work chunks stopped leaving holes and the
+  /// LIVE row was still sitting in one. This tier returned a bare `Card`
+  /// sized by its own `MainAxisSize.min` content (~78dp) inside a 150dp slot,
+  /// the identical defect, in a second widget. Its own sibling
+  /// `_buildSingleLine` already wrapped itself in `SizedBox(height:
+  /// slotHeight)`, so the two tiers of one widget disagreed about whether a
+  /// row owns its slot — which is exactly why the gap survived a phase that
+  /// was explicitly looking for gaps.
+  ///
+  /// Content is **centred** rather than stretched top-to-bottom: this is the
+  /// day's focal row, and a centred kicker/title/countdown stack reads as a
+  /// deliberate block, where pinning the countdown to the bottom edge of a
+  /// 150dp card just relocates the hollow feeling that lost variant A.
   Widget _buildCompact(
     BuildContext context,
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
-    return Card(
-      margin: const EdgeInsets.only(
-        top: 4,
-        bottom: 4,
-        left: kCardLeftInset,
-        right: kTimelineRowInset,
-      ),
-      color: colorScheme.primaryContainer,
-      elevation: 6,
-      shadowColor: colorScheme.shadow,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
+    return SizedBox(
+      height: slotHeight,
+      child: Card(
+        margin: const EdgeInsets.only(
+          top: 4,
+          bottom: 4,
+          left: kCardLeftInset,
+          right: kTimelineRowInset,
+        ),
+        color: colorScheme.primaryContainer,
+        elevation: 6,
+        shadowColor: colorScheme.shadow,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        kicker.toUpperCase(),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onPrimaryContainer.withValues(
-                            alpha: 0.72,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            kicker.toUpperCase(),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onPrimaryContainer.withValues(
+                                alpha: 0.72,
+                              ),
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                          Text(
+                            title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onPrimaryContainer,
+                              decoration: isSkipped
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      Text(
-                        title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onPrimaryContainer,
-                          decoration: isSkipped
-                              ? TextDecoration.lineThrough
-                              : null,
+                    ),
+                    if (showActions) ...[
+                      if (showComplete)
+                        _buildActionIcon(
+                          icon: Icons.check_circle_outline,
+                          color: colorScheme.primary,
+                          tooltip: 'Complete',
+                          onPressed: () => context
+                              .read<ScheduleNotifier>()
+                              .markComplete(chunkId),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      _buildActionIcon(
+                        icon: Icons.skip_next_outlined,
+                        color: colorScheme.error,
+                        tooltip: 'Skip',
+                        onPressed: () => context
+                            .read<ScheduleNotifier>()
+                            .markSkipped(chunkId),
                       ),
                     ],
-                  ),
+                  ],
                 ),
-                if (showActions) ...[
-                  if (showComplete)
-                    _buildActionIcon(
-                      icon: Icons.check_circle_outline,
-                      color: colorScheme.primary,
-                      tooltip: 'Complete',
-                      onPressed: () =>
-                          context.read<ScheduleNotifier>().markComplete(
-                            chunkId,
-                          ),
+                const SizedBox(height: 4),
+                Text(
+                  remainingLabel,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onPrimaryContainer.withValues(
+                      alpha: 0.82,
                     ),
-                  _buildActionIcon(
-                    icon: Icons.skip_next_outlined,
-                    color: colorScheme.error,
-                    tooltip: 'Skip',
-                    onPressed: () =>
-                        context.read<ScheduleNotifier>().markSkipped(chunkId),
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
-                ],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              remainingLabel,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onPrimaryContainer.withValues(alpha: 0.82),
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+          ),
         ),
       ),
     );

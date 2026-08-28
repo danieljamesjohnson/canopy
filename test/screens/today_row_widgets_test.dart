@@ -683,24 +683,55 @@ void main() {
         // Spacer()-then-Text arrangement); that trailing content is now the
         // same Skip rail structure the compact tier uses, so the premise
         // ("renders its duration text") is exactly what this phase reverses.
-        'full short break renders the label and a Skip rail, not duration '
-        'text',
+        // Phase 32 gap closure (G-32-02): repointed twice over, and the
+        // SECOND repoint is the one that matters.
+        //
+        // (1) The mechanism changed again — the full tier's Skip is now the
+        //     shared `OutlinedButton.icon` a work chunk uses, not
+        //     `BreakSkipButton`. The CLAIM ("a tappable Skip, and no duration
+        //     text") is unchanged, so this is a Kind C rewrite.
+        //
+        // (2) **The fixture was wrong and is corrected here.** This pumped a
+        //     5-minute break at `full` density — 30dp — a combination the app
+        //     CANNOT produce: `today_screen.dart` picks `full` only at
+        //     >= kFullBreakMinHeight (88dp), so a 5-minute break always lands
+        //     on the compact tier. Testing the tall tier at its smallest
+        //     *unreachable* size is precisely how "one shape fits both tiers"
+        //     survived review — the assertion never met the 180dp row where
+        //     the shape actually failed. Now uses a long break (reachable at
+        //     this tier) and measures the thing the owner rejected.
+        'full-tier break renders the label and a bounded Skip control, not '
+        'duration text and not a full-height slab',
         (tester) async {
           await pumpWithMood(
             tester,
             ChunkCard(
-              chunk: _breakChunk(type: ChunkType.shortBreak),
+              chunk: _breakChunk(type: ChunkType.longBreak),
               density: ChunkCardDensity.full,
             ),
           );
-          expect(find.text('Short break'), findsOneWidget);
-          expect(find.text('5 min'), findsNothing);
+          expect(find.text('Long break'), findsOneWidget);
+          expect(find.text('25 min'), findsNothing);
+          final skip = find.descendant(
+            of: find.byType(ChunkCard),
+            matching: find.byType(OutlinedButton),
+          );
+          expect(skip, findsOneWidget);
+          expect(find.text('Skip'), findsOneWidget);
+
+          // G-32-02, the assertion the old test could never make. The
+          // shipped rail took its height from `CrossAxisAlignment.stretch`,
+          // so it was EXACTLY the card's height — this comparison goes RED
+          // against that code and green only against a bounded control.
+          final skipHeight = tester.getSize(skip).height;
+          final cardHeight = tester.getSize(find.byType(Card)).height;
           expect(
-            find.descendant(
-              of: find.byType(ChunkCard),
-              matching: find.byType(BreakSkipButton),
-            ),
-            findsOneWidget,
+            skipHeight,
+            lessThan(cardHeight * 0.5),
+            reason:
+                'the tall break\'s Skip must be a bounded control, not a '
+                'slab running the full height of the row (owner FAIL, '
+                '2026-08-28). Card was ${cardHeight}dp, Skip ${skipHeight}dp.',
           );
         },
       );
@@ -771,14 +802,19 @@ void main() {
         // (Opacity(0.5) + strikethrough) is unchanged by this phase — only
         // the trailing content changed, from duration/status text to the
         // same Skip rail the compact tier uses.
+        // Phase 32 gap closure (G-32-02): same two repoints as the test
+        // above — mechanism `BreakSkipButton` -> the shared
+        // `OutlinedButton.icon`, and fixture corrected from the unreachable
+        // 5-min-at-full-tier to a reachable long break. D-31-04's own claim
+        // (an UNRESOLVED break carries no mute and no strikethrough) is
+        // untouched and still the point of this test.
         'D-31-04: an unresolved full-tier break is unchanged — no muting, '
-        'no strikethrough, and a tappable Skip rail instead of duration '
-        'text',
+        'no strikethrough, and a tappable Skip instead of duration text',
         (tester) async {
           await pumpWithMood(
             tester,
             ChunkCard(
-              chunk: _breakChunk(type: ChunkType.shortBreak),
+              chunk: _breakChunk(type: ChunkType.longBreak),
               density: ChunkCardDensity.full,
             ),
           );
@@ -792,14 +828,14 @@ void main() {
             ),
             findsNothing,
           );
-          final titleText = tester.widget<Text>(find.text('Short break'));
+          final titleText = tester.widget<Text>(find.text('Long break'));
           expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
-          expect(find.text('5 min'), findsNothing);
+          expect(find.text('25 min'), findsNothing);
           expect(find.text('skipped'), findsNothing);
           expect(
             find.descendant(
               of: find.byType(ChunkCard),
-              matching: find.byType(BreakSkipButton),
+              matching: find.byType(OutlinedButton),
             ),
             findsOneWidget,
           );

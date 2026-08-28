@@ -279,18 +279,40 @@ class ChunkCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(color: theme.colorScheme.outlineVariant),
         ),
+        // Phase 32 gap closure (G-32-02, sketch 002 variant C). **The tall
+        // break's Skip is a centred pill, not a full-height side rail.**
+        //
+        // D-32-03 fixed the rail at 64dp wide and let
+        // `CrossAxisAlignment.stretch` take its height from whatever row it
+        // landed in. That was derived entirely from the 30dp short break,
+        // where the control can only earn touch area from width. Applying the
+        // same shape here was justified as "never a *smaller* target, only a
+        // more generous one" — true about touch, and silently treated as
+        // "never worse". It is not: at this tier's smallest reachable slot
+        // (a 30-minute break, 180dp) it renders a 64dp-wide errorContainer
+        // slab running the full height of the row, which the owner judged
+        // FAIL on 2026-08-28 — *"the long break has too big of a skip."*
+        //
+        // The short break's 64x30 rail is NOT re-litigated; nothing in that
+        // round contradicted it, and it keeps its own tier above.
+        //
+        // **Why an `OutlinedButton.icon` rather than a new pill widget.**
+        // This is verbatim the control `_buildActionRow` gives a work chunk's
+        // Skip — same icon, same word, same shape. It also closes the
+        // orchestrator observation raised in `32-UAT.md` (a break's Skip and
+        // a work chunk's Skip used the same icon and word in two different
+        // arrangements). One vocabulary, one arrangement, wherever there is
+        // room for it.
         child: Opacity(
           opacity: chunk.isSkipped ? 0.5 : 1.0,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: isLong ? 24 : 12,
-                  ),
-                  child: Row(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       if (isLong) ...[
                         Icon(
@@ -309,15 +331,28 @@ class ChunkCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  if (chunk.isSkipped)
+                    const BreakSkippedIndicator()
+                  else
+                    Tooltip(
+                      message: 'Skip',
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.skip_next_outlined),
+                        label: const Text('Skip'),
+                        onPressed: () => context
+                            .read<ScheduleNotifier>()
+                            .markSkipped(chunk.id),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: theme.colorScheme.error,
+                          side: BorderSide(color: theme.colorScheme.error),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              SizedBox(
-                width: kBreakSkipButtonWidth,
-                child: chunk.isSkipped
-                    ? const BreakSkippedIndicator()
-                    : BreakSkipButton(chunkId: chunk.id, accessibleTitle: title),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -411,7 +446,35 @@ class _WorkChunkContent extends StatelessWidget {
       ),
     };
 
-    return MouseRegion(
+    // Phase 32 gap closure (G-32-01, sketch 002 variant C — owner-selected
+    // 2026-08-28). **The card is sized by its duration, not by its content.**
+    //
+    // Until now this Card laid out at its NATURAL height inside a
+    // duration-exact slot, top-aligned by `today_screen.dart`'s
+    // `OverflowBox(alignment: topCenter, maxHeight: infinity)`. A ~83dp work
+    // card in a 150dp slot therefore trailed ~67dp of dead background on
+    // every work chunk — the "huge gaps" the owner reported on 2026-08-28.
+    // D-32-01 (4.0 -> 6.0) did not introduce this: at 4.0 the same mechanism
+    // left ~17dp and read as ordinary card spacing. Raising the scale only
+    // made a pre-existing flaw visible everywhere at once.
+    //
+    // The fix is the pattern this file ALREADY proves one method up:
+    // `_buildBreak` has given its own Card an explicit
+    // `durationMinutes * kPixelsPerMinute` height since this phase's wave 1,
+    // which is exactly why breaks never showed the defect. Applying it here
+    // is a re-use, not a new mechanism, and it keeps the duration-exact
+    // invariant (D-02/GRID-01) intact rather than working around it — the
+    // card's height IS its duration, so nothing starts lying.
+    //
+    // **`detailed` is deliberately excluded.** That tier renders on the
+    // schedule screen, which is a plain list with no duration-proportional
+    // slot; forcing a duration height there would invent a scale the screen
+    // does not have. `full` and `compact` are the timeline's two tiers and
+    // the only ones laid out against a slot.
+    //
+    // The Card keeps its own `margin: vertical 4`, so the visible seam
+    // between consecutive rows is a deliberate 8dp — not the 67dp hole.
+    final card = MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onTap,
@@ -472,6 +535,13 @@ class _WorkChunkContent extends StatelessWidget {
         ),
       ),
     );
+
+    return density == ChunkCardDensity.detailed
+        ? card
+        : SizedBox(
+            height: chunk.durationMinutes * kPixelsPerMinute,
+            child: card,
+          );
   }
 
   /// Today's unchanged content: title, clock-time-or-duration, rationale,
@@ -564,9 +634,26 @@ class _WorkChunkContent extends StatelessWidget {
     //
     final isFull = density == ChunkCardDensity.full;
 
+    // Phase 32 gap closure (G-32-01, sketch 002 variant C). Now that the
+    // `full` card fills its slot, the extra height has to become something.
+    // Variant C beat variant A on exactly this point: A filled the slot and
+    // left the middle hollow with the buttons floating at the bottom, which
+    // moved the gap inside the card rather than removing it. So the content
+    // responds to the height it is handed — a roomy row earns a goal/duration
+    // line, and the action row is pushed to the bottom edge deliberately
+    // rather than left wherever the content happened to end.
+    //
+    // `detailed` is untouched: it has no slot, so `MainAxisSize.max` there
+    // would try to expand into the schedule screen's unbounded list extent.
+    final slotHeight = chunk.durationMinutes * kPixelsPerMinute;
+    final isRoomy = isFull && slotHeight >= kRoomyWorkMinHeight;
+    final metaStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: isFull ? MainAxisSize.max : MainAxisSize.min,
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -607,10 +694,29 @@ class _WorkChunkContent extends StatelessWidget {
             _buildTrailingStatus(theme),
           ],
         ),
+        // The goal/duration line a roomy row earns. `full` normally
+        // suppresses everything below the title line (PD-4) precisely because
+        // it was fighting for height it did not have; at >= 120dp that
+        // constraint no longer binds, and the suppression becomes an empty
+        // card instead of a saved dp. Only rendered when there is a goal name
+        // to render — a commitment chunk has none and keeps the tighter shape.
+        if (isRoomy && goalName != null && goalName!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            '$goalName · ${chunk.durationMinutes} min',
+            style: metaStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
         // SCHED-03: Always-visible action row for unresolved chunks.
         // Resolved chunks show status icon only (no buttons).
         if (!isResolved) ...[
-          SizedBox(height: isFull ? 8 : 12),
+          // `full` fills its slot, so the gap before the actions is whatever
+          // is left over — the buttons sit on the card's bottom edge instead
+          // of floating mid-card. `detailed` has no slot to fill and keeps
+          // its fixed 12dp.
+          if (isFull) const Spacer() else const SizedBox(height: 12),
           _buildActionRow(context, theme),
         ],
       ],
