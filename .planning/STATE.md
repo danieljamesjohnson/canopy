@@ -4,11 +4,11 @@ milestone: none
 current_phase: 32
 current_phase_name: Breaks You Can Tap
 status: executing
-stopped_at: Phase 32 wave 3 still halted at blocking human UAT — build live on 8143, re-verified 2026-08-28; code review done, no blockers
-last_updated: "2026-08-28T00:00:00.000Z"
+stopped_at: Phase 32 round-one UAT failed on appearance; sketch 002-C chosen, G-32-01/02 fixed and verified visually. Round-two UAT open on 8143 — Items 1 and 2 lead.
+last_updated: "2026-08-28T12:00:00.000Z"
 last_activity: 2026-08-28
-last_activity_desc: Phase 32 code review — no blockers, gate still open on Dan's thumb
-state_head: 959e6d3
+last_activity_desc: Phase 32 visual gap closure shipped — rows fill their slots; round-two UAT waiting
+state_head: 0d9777c
 progress:
   total_phases: 6
   completed_phases: 4
@@ -28,7 +28,64 @@ milestone_name: milestone
 ## Current Position
 
 Phase: 32 (Breaks You Can Tap) — EXECUTING
-Plan: 3 of 3 (32-03, the blocking human UAT — OPEN, all 4 items pending)
+Plan: 3 of 3 executed; gap closure shipped. **Round-two UAT open** (`32-UAT-R2.md`), 4 items
+pending, build live on 8143 with served bytes verified (`cbc90e3…9ad40` both sides).
+
+**Round one failed 0-of-4 on appearance, and the cause was mechanical, not stylistic.** Every
+timeline row was laid out at its card's NATURAL height and top-aligned inside a duration-exact
+slot (`OverflowBox(alignment: topCenter, maxHeight: infinity)`), so a ~83dp work card in a 150dp
+slot trailed ~67dp of dead background. **D-32-01 did not create this** — at 4.0 the same mechanism
+left ~17dp and read as ordinary card spacing. Raising the scale made a pre-existing flaw visible
+everywhere at once, which is why reverting to 4.0 would have hidden the symptom and handed back
+the hairline break two phases existed to remove.
+
+**The process answer, asked and answered on 2026-08-28: `/gsd-sketch`, not a new tool.** Phase 32
+HAD a UI-SPEC — written, reviewed, passed a checker 6/6. Every constant in it was derived and
+defended in prose, and the phase's one "real-browser measurement" was a **tight crop of the single
+card being optimised**. Nobody rendered a full day and looked at it. That is the identical failure
+shape as Phase 31's `drag_indicator`: locally provable, wrong at the altitude a human sees. Sketch
+002 served three whole-screen variants at the real geometry; the owner chose **C · Adaptive fill**.
+
+**What shipped (`0d9777c`).** A row is sized by its duration; its content adapts to the height it
+gets. The fix re-uses the explicit `durationMinutes * kPixelsPerMinute` height that `_buildBreak`
+had already proved in the same file — which is precisely why breaks never showed the defect. `full`
+work cards earn a goal/duration line above `kRoomyWorkMinHeight` (120dp) and pin their actions to
+the bottom edge; the long break's full-height `errorContainer` slab becomes the same centred
+`OutlinedButton.icon` a work chunk uses, which also closes the two-arrangements-one-vocabulary
+observation. The short break's 64×30 rail is untouched — nothing contradicted it.
+
+**Looking, not reading, found the second half of the bug.** After `chunk_card.dart` was fixed the
+work chunks stopped leaving holes and a screenshot showed the LIVE row still sitting in one:
+`LiveRowCard._buildCompact` returned a bare `Card` sized by `MainAxisSize.min` while its own
+sibling `_buildSingleLine` already wrapped itself in `SizedBox(height: slotHeight)` — **two tiers
+of one widget disagreeing about whether a row owns its slot.** Code review had not surfaced it; a
+rebuild-and-look did, on the first pass.
+
+**Two tests repointed, and the second repoint matters more than the first.** Both pumped a
+5-minute break at `full` density — 30dp — a combination the app *cannot produce* (`full` is only
+picked at ≥88dp). **Testing the tall tier at its smallest unreachable size is how "one shape fits
+both tiers" survived review.** They now use a reachable long break and assert the reported defect:
+the Skip must be under half the card's height. Proven non-vacuous by restoring the stretch
+geometry and watching it fail — 142dp Skip in a 150dp card against a 75dp bound.
+
+**Three gaps remain OPEN and are why round two exists.** G-32-03: the five-attempt thumb count has
+**never been taken in any round** — round one superseded it, round two never reached it, round
+three answered "it appears to be working," which is not a count. G-32-05: D-31-07's live-break
+Skip is test-proven since 2026-08-26 and confirmed by a human **zero** times, always because it
+sits behind the items that fail first. **Both now lead `32-UAT-R2.md`, above the visual items** —
+ordering is the fix, since three rounds of good intentions did not get to them. G-32-04 (the
+method gap) is closed by the sketch itself.
+
+**Step 0 is deliberately NOT required this round, and the reason is recorded rather than assumed.**
+Trap #4 binds any UAT judging *scheduling-engine output*; this diff is `chunk_card.dart`,
+`live_row_card.dart` and one geometry constant — all rendering. A previously-generated day renders
+through the new code on load. If a future round touches the generator, the rule returns.
+
+**Code review is clean** (`32-REVIEW.md`, no blockers). One LOW finding stands, deliberately
+unfixed while the UAT gate is open: `live_row_card.dart`'s `BreakSkippedIndicator` branch is
+unreachable because `showActions: isBreak ? !chunk.isSkipped : true` drops the whole `SizedBox`.
+Route it with whatever round two produces.
+
 
 **2026-08-28 — nothing moved, and the reason is not a blocker an agent can clear.** The gate is
 Dan's thumb on `http://danserver:8143/`; every item in `32-UAT.md` is perceptual by construction.
