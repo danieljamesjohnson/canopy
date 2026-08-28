@@ -200,9 +200,9 @@
 <div class="toolbar">
   <div class="group">
     <span class="label">Variant</span>
-    <button data-variant="A" aria-pressed="true">A · Filled calendar</button>
+    <button data-variant="A" aria-pressed="false">A · Filled calendar</button>
     <button data-variant="B" aria-pressed="false">B · Spine</button>
-    <button data-variant="C" aria-pressed="false">C · Adaptive fill</button>
+    <button data-variant="C" aria-pressed="true">C · Adaptive fill ★ Selected</button>
   </div>
   <div class="group">
     <span class="label">px/min</span>
@@ -228,9 +228,9 @@
     </div>
     <div class="moodchip">🌤 Steady day</div>
     <div class="scroller" id="scroller">
-      <div class="variant active" id="variant-A"><div class="timeline vA"></div></div>
+      <div class="variant" id="variant-A"><div class="timeline vA"></div></div>
       <div class="variant" id="variant-B"><div class="timeline vB"></div></div>
-      <div class="variant" id="variant-C"><div class="timeline vC"></div></div>
+      <div class="variant active" id="variant-C"><div class="timeline vC"></div></div>
     </div>
   </div>
 </div>
@@ -264,7 +264,7 @@ const DAY = [
   { t:'free',  s:12*60+25,  d:35, label:'Free · 35m' },
 ];
 
-let ppm = 6, variant = 'A';
+let ppm = 6, variant = 'C';   // ★ C selected by the owner, 2026-08-28
 const skipped = new Set();
 
 const fmt = m => {

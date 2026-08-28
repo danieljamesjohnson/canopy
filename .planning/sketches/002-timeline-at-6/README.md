@@ -2,7 +2,7 @@
 sketch: 002
 name: timeline-at-6
 question: "How should a card occupy a duration-exact slot it under-fills by ~67dp?"
-winner: null
+winner: "C"
 tags: [layout, today, timeline, breaks, phase-32]
 ---
 
@@ -24,6 +24,24 @@ pre-existing flaw visible everywhere at once.**
 
 So the real question is the one nobody asked before shipping: **what is a card supposed to do
 with a slot taller than its content?**
+
+## Outcome — ★ Variant C wins (Dan, 2026-08-28)
+
+**C: Adaptive fill.** Chosen after looking at all three at 6.0 on the served mockup.
+
+What C locks, and what each of these reverses:
+
+| Decision | What it settles | What it replaces |
+|---|---|---|
+| **The card fills its slot** | `OverflowBox(alignment: topCenter, maxHeight: infinity)` stops being how a row meets its slot — the card is sized to the slot, not to its content | the ~67dp dead band under every work chunk (`today_screen.dart:840`) |
+| **Content adapts to the height it is given** | a 150dp work chunk earns a larger title and a goal/duration line; a 30dp break stays one line. The extra height becomes *information*, not padding | A's hollow middle — the reason A lost |
+| **The long break's Skip is a centred pill, not a side rail** | ~120×40, centred in the tall row | the shipped full-height 64dp `errorContainer` slab (Item 3 FAIL) |
+| **The short break keeps its side rail** | 64dp wide at the 30dp tier, where width is the only place touch area can come from | nothing — D-32-03's short-break geometry survives, uncontradicted |
+| **Every break carries its own border; the long break is shaded a step deeper** | two adjacent breaks read as two | the flat shared-edge fill that merged them into one mass |
+
+**Not settled by this sketch, and not to be inferred from it:** `kPixelsPerMinute` stays at 6.0
+(the toggle was available and 6.0 was not rejected), and **nothing here answers Item 2's
+five-attempt thumb count** — that is still unmeasured in every round and must lead the next UAT.
 
 ## How to View
 

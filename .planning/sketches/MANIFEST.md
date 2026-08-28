@@ -22,7 +22,7 @@ and from the app's existing locked design tokens.
 | # | Name | Design Question | Winner | Tags |
 |---|------|----------------|--------|------|
 | 001 | unified-today | Within an inline timeline, how does "now" stay findable while the day stays scannable? | **A · Pure inline** | layout, today, live-state, phase-22 |
-| 002 | timeline-at-6 | How should a card occupy a duration-exact slot it under-fills by ~67dp? | _pending_ | layout, today, timeline, breaks, phase-32 |
+| 002 | timeline-at-6 | How should a card occupy a duration-exact slot it under-fills by ~67dp? | **C · Adaptive fill** | layout, today, timeline, breaks, phase-32 |
 
 ## Locked Decisions
 
@@ -32,4 +32,19 @@ and from the app's existing locked design tokens.
   Settles LIVE-02. (Sketch 001 review, 2026-08-07.)
 - **Free time is named** — "Free until 8:00am", "Free · 1h 40m" — never collapsed to whitespace.
 - **Breaks are a first-class current activity** — a running break names itself and offers no
-  Complete/Skip affordance, because there is nothing to complete.
+  Complete affordance, because there is nothing to complete. *(Amended by D-31-07: it does now
+  offer **Skip**, Skip only. The no-Complete half stands.)*
+
+- **A row fills its slot; its content adapts to the height** — a card is sized by its duration,
+  never by its content, and the height it receives changes what it shows (a 150dp work chunk
+  earns a goal line, a 30dp break stays one line). This retires top-aligned natural-height rows
+  and the dead band they leave. (Sketch 002, variant C, 2026-08-28.)
+
+- **A tall break's Skip is a centred pill, a short break's is a side rail** — one shape does not
+  fit both tiers. Width is the only place a 30dp row can find touch area; a 180dp row has no such
+  constraint and a full-height rail there reads as a slab. (Sketch 002, variant C.)
+
+- **Two adjacent breaks must read as two** — every break carries its own border, and the long
+  break is shaded a step deeper than the short one. The generator emits a short break immediately
+  followed by a long one at every cadence boundary, so this pair is guaranteed, not an edge case.
+  (Sketch 002, found while building.)
