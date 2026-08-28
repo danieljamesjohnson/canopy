@@ -22,6 +22,7 @@ and from the app's existing locked design tokens.
 | # | Name | Design Question | Winner | Tags |
 |---|------|----------------|--------|------|
 | 001 | unified-today | Within an inline timeline, how does "now" stay findable while the day stays scannable? | **A · Pure inline** | layout, today, live-state, phase-22 |
+| 002 | timeline-at-6 | How should a card occupy a duration-exact slot it under-fills by ~67dp? | _pending_ | layout, today, timeline, breaks, phase-32 |
 
 ## Locked Decisions
 

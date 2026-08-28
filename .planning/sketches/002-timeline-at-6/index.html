@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sketch 002 — the timeline at 6.0 px/min</title>
+<link rel="stylesheet" href="../themes/default.css">
+<style>
+/* ─────────────────────────────────────────────────────────────────
+   Sketch 002. Everything below is throwaway. The ONLY thing that is
+   load-bearing is the geometry: every row is absolutely positioned at
+   (start - dayStart) * ppm and is exactly duration * ppm tall — the
+   same rule lib/screens/today/timeline_geometry.dart enforces. If a
+   variant looks good here it is because it looks good under the real
+   constraint, not because the mockup cheated.
+   ───────────────────────────────────────────────────────────────── */
+
+.phone { height: min(760px, 80vh); }
+
+.appbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 16px 10px; flex:0 0 auto;
+}
+.appbar h1 { margin:0; font-size:20px; font-weight:600; letter-spacing:-.01em; }
+.appbar .date { font-size:13px; color:var(--on-surface-variant); }
+
+.moodchip {
+  display:inline-flex; align-items:center; gap:6px;
+  margin:0 16px 10px; padding:5px 12px;
+  background:var(--secondary-container); color:var(--on-secondary-container);
+  border-radius:var(--radius-pill); font-size:12.5px; font-weight:500;
+  flex:0 0 auto; align-self:flex-start;
+}
+
+.scroller { flex:1 1 auto; overflow-y:auto; overflow-x:hidden; position:relative; }
+.scroller::-webkit-scrollbar { width:6px; }
+.scroller::-webkit-scrollbar-thumb { background:var(--outline-variant); border-radius:3px; }
+
+/* the absolutely-positioned stack — mirrors the Flutter Stack exactly */
+.timeline { position:relative; margin:0 16px 40px; }
+
+.row { position:absolute; left:0; right:0; }
+
+/* the hour gutter */
+.hour {
+  position:absolute; left:0; width:40px;
+  font-size:11px; color:var(--on-surface-variant);
+  text-align:right; padding-right:8px; line-height:1;
+}
+.hourline { position:absolute; left:40px; right:0; border-top:1px solid var(--outline-variant); opacity:.35; }
+
+.content { position:absolute; left:40px; right:0; top:0; bottom:0; }
+
+/* now line */
+.nowline { position:absolute; left:0; right:0; height:0; z-index:6; pointer-events:none; }
+.nowline::before {
+  content:''; position:absolute; left:40px; right:0; top:-1px; height:2px;
+  background:#c0392b; border-radius:1px;
+}
+.nowline::after {
+  content:''; position:absolute; left:36px; top:-4px;
+  width:8px; height:8px; border-radius:50%; background:#c0392b;
+}
+
+.card {
+  background:var(--surface-container); border:1px solid var(--outline-variant);
+  border-radius:var(--radius-card); overflow:hidden;
+}
+.title { font-size:15px; font-weight:600; letter-spacing:-.005em; }
+.time  { font-size:12.5px; color:var(--on-surface-variant); font-variant-numeric:tabular-nums; }
+.btn {
+  display:inline-flex; align-items:center; gap:5px; cursor:pointer;
+  font:inherit; font-size:13px; font-weight:600;
+  padding:7px 14px; border-radius:var(--radius-pill);
+  border:1px solid transparent; transition:all .15s ease;
+}
+.btn-complete { background:var(--primary); color:var(--on-primary); }
+.btn-complete:hover { filter:brightness(1.08); }
+.btn-skip { background:transparent; color:#8c3b2f; border-color:#d9b0a8; }
+.btn-skip:hover { background:#f7e9e6; }
+
+.done .title { text-decoration:line-through; opacity:.55; }
+.done { opacity:.72; }
+.skipped .title { text-decoration:line-through; }
+.skipped { opacity:.5; }
+
+/* free time */
+.free {
+  border:1px dashed var(--outline-variant); border-radius:var(--radius-card);
+  color:var(--on-surface-variant); font-size:13px;
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* live row */
+.live { background:var(--primary-container); border-color:transparent; }
+.live .title { color:var(--on-primary-container); }
+.live .kicker {
+  font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--on-primary-container); opacity:.7;
+}
+.live .time { color:var(--on-primary-container); opacity:.85; }
+
+/* ══ VARIANT A — FILLED CALENDAR ═════════════════════════════════ */
+.vA .card { display:flex; flex-direction:column; height:100%; }
+.vA .card-body { padding:10px 14px; display:flex; flex-direction:column; height:100%; }
+.vA .card-actions { margin-top:auto; display:flex; gap:8px; padding-top:8px; }
+/* The generator emits a short break IMMEDIATELY followed by a long break at
+   every cadence boundary (schedule_generator.dart:247 — 5 + 30). With one
+   flat fill and no edge they merge into a single green mass. Each break
+   carries its own border so two adjacent ones read as two, and the long
+   break sits a shade deeper so the pair is legible even at a glance. */
+.vA .brk {
+  background:var(--secondary-container); border:1px solid var(--outline-variant);
+  border-radius:8px; display:flex; align-items:center; height:100%;
+}
+.vA .brk.long { background:color-mix(in srgb, var(--secondary-container) 78%, var(--surface)); }
+.vA .brk-label { flex:1; text-align:center; font-size:12.5px; color:var(--on-secondary-container); }
+.vA .brk-skip {
+  flex:0 0 64px; align-self:center; height:min(100%, 44px);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:1px; margin-right:6px; border-radius:10px;
+  background:rgba(140,59,47,.10); color:#8c3b2f; cursor:pointer;
+  font-size:10.5px; font-weight:700; transition:all .15s ease;
+}
+.vA .brk-skip:hover { background:rgba(140,59,47,.20); }
+.vA .free { height:100%; background:rgba(0,0,0,.015); }
+
+/* ══ VARIANT B — SPINE ═══════════════════════════════════════════ */
+.vB .content { left:40px; }
+.vB .spine {
+  position:absolute; left:5px; top:0; bottom:0; width:5px;
+  background:var(--outline-variant); opacity:.5; border-radius:3px; z-index:0;
+}
+.vB .spine.work { background:var(--primary); opacity:.30; }
+.vB .spine.brk  { background:var(--secondary); opacity:.28; }
+.vB .spine.free { background:transparent; border-left:3px dotted var(--outline-variant); width:0; opacity:.7; }
+.vB .dot {
+  position:absolute; left:2px; top:0; width:11px; height:11px; border-radius:50%;
+  background:var(--surface); border:3px solid var(--primary); z-index:2;
+}
+.vB .card { margin-left:22px; }
+.vB .card-body { padding:10px 14px; }
+.vB .card-actions { display:flex; gap:8px; margin-top:9px; }
+.vB .brk {
+  margin-left:22px; display:flex; align-items:center; gap:8px;
+  padding:5px 6px 5px 12px; background:transparent;
+  border:1px solid var(--outline-variant); border-radius:var(--radius-pill);
+}
+.vB .brk-label { flex:1; font-size:12.5px; color:var(--on-surface-variant); }
+.vB .brk-skip {
+  flex:0 0 auto; padding:4px 12px; border-radius:var(--radius-pill);
+  background:transparent; border:1px solid #d9b0a8; color:#8c3b2f;
+  font-size:11.5px; font-weight:600; cursor:pointer; transition:all .15s ease;
+}
+.vB .brk-skip:hover { background:#f7e9e6; }
+.vB .free { margin-left:22px; border:none; justify-content:flex-start; padding-left:2px; }
+
+/* ══ VARIANT C — ADAPTIVE FILL ═══════════════════════════════════ */
+.vC .card { display:flex; flex-direction:column; height:100%; }
+.vC .card-body { padding:12px 16px; display:flex; flex-direction:column; height:100%; gap:2px; }
+.vC .card-actions { margin-top:auto; display:flex; gap:8px; }
+.vC .meta { font-size:12px; color:var(--on-surface-variant); margin-top:6px; }
+.vC .roomy .title { font-size:17px; }
+.vC .brk {
+  background:var(--secondary-container); border:1px solid var(--outline-variant);
+  border-radius:8px; display:flex; align-items:center; height:100%; position:relative;
+}
+.vC .brk.long { background:color-mix(in srgb, var(--secondary-container) 78%, var(--surface)); }
+.vC .brk-label { flex:1; text-align:center; font-size:12.5px; color:var(--on-secondary-container); }
+.vC .brk.tall { flex-direction:column; justify-content:center; gap:10px; }
+.vC .brk.tall .brk-label { flex:0 0 auto; }
+.vC .brk-skip {
+  flex:0 0 64px; height:100%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  background:rgba(140,59,47,.12); color:#8c3b2f; cursor:pointer;
+  font-size:10.5px; font-weight:700; transition:all .15s ease;
+}
+.vC .brk.tall .brk-skip {
+  flex:0 0 auto; width:120px; height:40px; flex-direction:row; gap:6px;
+  border-radius:var(--radius-pill); font-size:13px;
+}
+.vC .brk-skip:hover { background:rgba(140,59,47,.22); }
+.vC .free { height:100%; background:rgba(0,0,0,.02); border-style:dashed; }
+
+.ico { font-size:13px; line-height:1; }
+
+.variant { display:none; }
+.variant.active { display:block; }
+
+.readout {
+  max-width:430px; margin:0 auto; padding:16px 18px 0;
+  font-size:13px; line-height:1.55; color:#4b5551;
+}
+.readout b { color:#202826; }
+.readout .num { font-variant-numeric:tabular-nums; font-weight:600; color:#202826; }
+</style>
+</head>
+<body data-mood="3">
+
+<div class="toolbar">
+  <div class="group">
+    <span class="label">Variant</span>
+    <button data-variant="A" aria-pressed="true">A · Filled calendar</button>
+    <button data-variant="B" aria-pressed="false">B · Spine</button>
+    <button data-variant="C" aria-pressed="false">C · Adaptive fill</button>
+  </div>
+  <div class="group">
+    <span class="label">px/min</span>
+    <button data-ppm="4" aria-pressed="false">4.0 (old)</button>
+    <button data-ppm="5" aria-pressed="false">5.0</button>
+    <button data-ppm="6" aria-pressed="true">6.0 (shipped)</button>
+  </div>
+  <div class="group">
+    <span class="label">Mood</span>
+    <button data-mood="1" aria-pressed="false">1</button>
+    <button data-mood="3" aria-pressed="true">3</button>
+    <button data-mood="5" aria-pressed="false">5</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="clock" id="dayheight">day = 0px</div>
+</div>
+
+<div class="stage">
+  <div class="phone">
+    <div class="appbar">
+      <h1>Today</h1>
+      <span class="date">Fri 28 Aug</span>
+    </div>
+    <div class="moodchip">🌤 Steady day</div>
+    <div class="scroller" id="scroller">
+      <div class="variant active" id="variant-A"><div class="timeline vA"></div></div>
+      <div class="variant" id="variant-B"><div class="timeline vB"></div></div>
+      <div class="variant" id="variant-C"><div class="timeline vC"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="readout" id="readout"></div>
+
+<script>
+/* ── the real day, from lib/services/schedule_generator.dart ────────
+   mood 3 → longBreakEvery = 3. Work chunks are always durationMinutes:25.
+   _shortBreakMinutes = 5, _longBreakMinutes = 30. At a cadence boundary
+   the generator reserves 5 + 30, i.e. a short break AND a long break.
+   Times below follow that lattice exactly.                          */
+const DAY_START = 8 * 60;
+const DAY_END   = 13 * 60;
+const NOW       = 10 * 60 + 12;   // mid deep-work chunk
+
+const DAY = [
+  { t:'free',  s:8*60,      d:60, label:'Free until 9:00 AM' },
+  { t:'work',  s:9*60,      d:25, title:'Ship Canopy',   goal:'Deep work', state:'done' },
+  { t:'short', s:9*60+25,   d:5 },
+  { t:'work',  s:9*60+30,   d:25, title:'Ship Canopy',   goal:'Deep work', state:'done' },
+  { t:'short', s:9*60+55,   d:5,  state:'skipped' },
+  { t:'work',  s:10*60,     d:25, title:'Ship Canopy',   goal:'Deep work', state:'live' },
+  { t:'short', s:10*60+25,  d:5 },
+  { t:'long',  s:10*60+30,  d:30 },
+  { t:'work',  s:11*60,     d:25, title:'Exercise',      goal:'Move daily' },
+  { t:'short', s:11*60+25,  d:5 },
+  { t:'work',  s:11*60+30,  d:25, title:'Exercise',      goal:'Move daily' },
+  { t:'short', s:11*60+55,  d:5 },
+  { t:'work',  s:12*60,     d:25, title:'Read 20 pages', goal:'Read more' },
+  { t:'free',  s:12*60+25,  d:35, label:'Free · 35m' },
+];
+
+let ppm = 6, variant = 'A';
+const skipped = new Set();
+
+const fmt = m => {
+  const h = Math.floor(m/60), mm = String(m%60).padStart(2,'0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${mm} ${ampm}`;
+};
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function skipRail(key, tall) {
+  return `<div class="brk-skip" data-skip="${key}" role="button" tabindex="0"
+            aria-label="Skip break"><span class="ico">▶|</span><span>Skip</span></div>`;
+}
+
+function renderWork(c, h) {
+  const live = c.state === 'live';
+  const cls = ['card', live ? 'live' : '', c.state === 'done' ? 'done' : ''].join(' ');
+  const roomy = (variant === 'C' && h >= 120) ? ' roomy' : '';
+  const kicker = live ? `<div class="kicker">Right now</div>` : '';
+  const meta = (variant === 'C' && h >= 120)
+    ? `<div class="meta">${esc(c.goal)} · 25 min</div>` : '';
+  const actions = (c.state === 'done') ? '' : `
+      <div class="card-actions">
+        <button class="btn btn-complete"><span class="ico">✓</span>Complete</button>
+        <button class="btn btn-skip"><span class="ico">▶|</span>Skip</button>
+      </div>`;
+  return `<div class="${cls}${roomy}">
+      <div class="card-body">
+        ${kicker}
+        <div class="title">${esc(c.title)}</div>
+        <div class="time">${fmt(c.s)} – ${fmt(c.s + c.d)}${live ? ' · 13 min left' : ''}</div>
+        ${meta}
+        ${actions}
+      </div>
+    </div>`;
+}
+
+function renderBreak(c, h, key) {
+  const isLong = c.t === 'long';
+  const name = isLong ? 'Long break' : 'Short break';
+  const gone = skipped.has(key) || c.state === 'skipped';
+  const tall = (variant === 'C' && h >= 88) ? ' tall' : '';
+  const right = gone
+    ? `<div class="brk-skip" style="background:none;color:var(--on-surface-variant);cursor:default;font-weight:500">skipped</div>`
+    : skipRail(key);
+  return `<div class="brk${tall} ${isLong ? 'long' : 'short'} ${gone ? 'skipped' : ''}">
+      <div class="brk-label">${name}${isLong ? ' · 30 min' : ''}</div>
+      ${right}
+    </div>`;
+}
+
+function render() {
+  const total = (DAY_END - DAY_START) * ppm;
+  document.getElementById('dayheight').textContent =
+    `day = ${Math.round(total)}px @ ${ppm.toFixed(1)}`;
+
+  ['A','B','C'].forEach(v => {
+    const tl = document.querySelector(`#variant-${v} .timeline`);
+    tl.style.height = total + 'px';
+    let html = '';
+
+    // hour axis
+    for (let h = Math.ceil(DAY_START/60); h <= Math.floor(DAY_END/60); h++) {
+      const y = (h*60 - DAY_START) * ppm;
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      html += `<div class="hourline" style="top:${y}px"></div>
+               <div class="hour" style="top:${y - 5}px">${h12} ${h>=12?'PM':'AM'}</div>`;
+    }
+
+    DAY.forEach((c, i) => {
+      const top = (c.s - DAY_START) * ppm;
+      const hgt = c.d * ppm;                       // ← duration-exact. never fudged.
+      const key = 'c' + i;
+      let inner;
+      if (c.t === 'free') {
+        inner = `<div class="free">${esc(c.label)}</div>`;
+      } else if (c.t === 'work') {
+        inner = renderWork(c, hgt);
+      } else {
+        inner = renderBreak(c, hgt, key);
+      }
+      const spine = (v === 'B')
+        ? `<div class="spine ${c.t === 'free' ? 'free' : (c.t === 'work' ? 'work' : 'brk')}"></div>
+           ${c.t === 'work' ? '<div class="dot"></div>' : ''}`
+        : '';
+      html += `<div class="row" style="top:${top}px;height:${hgt}px">
+                 <div class="content">${spine}${inner}</div>
+               </div>`;
+    });
+
+    const nowY = (NOW - DAY_START) * ppm;
+    html += `<div class="nowline" style="top:${nowY}px"></div>`;
+    tl.innerHTML = html;
+  });
+
+  updateReadout();
+}
+
+function updateReadout() {
+  const workH = 25 * ppm, brkH = 5 * ppm, longH = 30 * ppm;
+  const natural = 83;                    // measured: title + time + action row
+  const hole = Math.max(0, workH - natural);
+  const notes = {
+    A: `<b>A · Filled calendar.</b> Every card is stretched to its slot, actions pinned to the
+        bottom. The ~${Math.round(hole)}px hole under each work chunk becomes card. The day reads as
+        solid blocks of time; the only white space left is time that is genuinely free.
+        The long break's Skip is a fixed 64×44 pill centred on the right edge — never a
+        full-height slab.`,
+    B: `<b>B · Spine.</b> Cards stay their natural height, but a continuous rail down the left
+        carries the duration, so the leftover ${Math.round(hole)}px reads as <i>time passing</i>
+        rather than a hole. Breaks shrink to a pill on the rail. Cheapest change to the current
+        look; least "calendar".`,
+    C: `<b>C · Adaptive fill.</b> Cards fill the slot like A, but the content responds to the
+        height it gets — a ${Math.round(workH)}px work chunk earns a bigger title and a goal
+        line; a ${Math.round(brkH)}px break stays one line. The ${Math.round(longH)}px long break
+        turns its rail into a centred pill instead of a side slab.`
+  };
+  document.getElementById('readout').innerHTML = `
+    <p>At <span class="num">${ppm.toFixed(1)} px/min</span>: work chunk
+       <span class="num">${Math.round(workH)}px</span> · short break
+       <span class="num">${Math.round(brkH)}px</span> · long break
+       <span class="num">${Math.round(longH)}px</span>.
+       A work card's natural content is about <span class="num">${natural}px</span>, so today's
+       build leaves <span class="num">${Math.round(hole)}px</span> of dead space under every
+       work chunk.</p>
+    <p>${notes[variant]}</p>`;
+}
+
+document.querySelectorAll('[data-variant]').forEach(b => b.addEventListener('click', () => {
+  variant = b.dataset.variant;
+  document.querySelectorAll('[data-variant]').forEach(x =>
+    x.setAttribute('aria-pressed', String(x === b)));
+  document.querySelectorAll('.variant').forEach(v =>
+    v.classList.toggle('active', v.id === 'variant-' + variant));
+  render();
+}));
+
+document.querySelectorAll('[data-ppm]').forEach(b => b.addEventListener('click', () => {
+  ppm = parseFloat(b.dataset.ppm);
+  document.querySelectorAll('[data-ppm]').forEach(x =>
+    x.setAttribute('aria-pressed', String(x === b)));
+  render();
+}));
+
+document.querySelectorAll('[data-mood]').forEach(b => b.addEventListener('click', () => {
+  document.body.dataset.mood = b.dataset.mood;
+  document.querySelectorAll('[data-mood]').forEach(x =>
+    x.setAttribute('aria-pressed', String(x === b)));
+}));
+
+// skipping a break actually resolves it, so the resolved state is judgeable too
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-skip]');
+  if (!el) return;
+  skipped.add(el.dataset.skip);
+  render();
+});
+
+render();
+// open on "now", the way the real screen does (CAL-03)
+requestAnimationFrame(() => {
+  const s = document.getElementById('scroller');
+  s.scrollTop = (NOW - DAY_START) * ppm - s.clientHeight / 2;
+});
+</script>
+</body>
+</html>
