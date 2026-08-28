@@ -4,11 +4,11 @@ milestone: none
 current_phase: 32
 current_phase_name: Breaks You Can Tap
 status: executing
-stopped_at: Phase 32 wave 3 halted at blocking human UAT — build served on 8143, pre-flight verified
-last_updated: "2026-08-27T15:22:43.672Z"
-last_activity: 2026-08-27
-last_activity_desc: Phase 32 execution started
-state_head: 0534c9abe33b2805fb6e6088b070ca4daf544f15
+stopped_at: Phase 32 wave 3 still halted at blocking human UAT — build live on 8143, re-verified 2026-08-28; code review done, no blockers
+last_updated: "2026-08-28T00:00:00.000Z"
+last_activity: 2026-08-28
+last_activity_desc: Phase 32 code review — no blockers, gate still open on Dan's thumb
+state_head: 959e6d3
 progress:
   total_phases: 6
   completed_phases: 4
@@ -28,7 +28,41 @@ milestone_name: milestone
 ## Current Position
 
 Phase: 32 (Breaks You Can Tap) — EXECUTING
-Plan: 1 of 3
+Plan: 3 of 3 (32-03, the blocking human UAT — OPEN, all 4 items pending)
+
+**2026-08-28 — nothing moved, and the reason is not a blocker an agent can clear.** The gate is
+Dan's thumb on `http://danserver:8143/`; every item in `32-UAT.md` is perceptual by construction.
+Re-verified rather than assumed: the server is still up (PID 1100897, started 2026-08-27 10:20) and
+the bytes on the wire still match the built bundle exactly (sha `3ec8946…af943` both sides), so the
+pre-flight recorded in `32-UAT.md` is still true today and does **not** need re-running. Suite
+re-run on this tree: `flutter analyze` clean, **621/621 green**.
+
+**The one gate that could be closed without him was, and it is now closed.** Phases 29 and 31 each
+got a code review before their human UAT; Phase 32's plan list has no review wave and reached its
+gate without one. `32-REVIEW.md` (2026-08-28) — **no blockers**, one LOW finding, one observation
+routed into the UAT.
+
+- **The LOW finding is dead code this phase added while deleting Phase 31's.**
+  `live_row_card.dart:395-401` gates the whole rail `SizedBox` on `showActions` and *then* branches
+  on `isSkipped` inside it, but the only call site passes
+  `showActions: isBreak ? !chunk.isSkipped : true` — so `BreakSkippedIndicator` there is
+  unreachable, and unreachable for work chunks too (that tier needs <14.67 min; the generator only
+  emits 25). No user-visible failure: `resolveNowState` delists a skipped chunk, which the tests
+  already say out loud in Case C's own name. It matters because `BreakSkippedIndicator`'s class doc
+  claims *"the rail's own 64dp slot keeps its exact width"* — **true in `chunk_card.dart`, false in
+  `live_row_card.dart`**, so a future reader who makes that state reachable inherits a silent
+  reflow. **Deliberately not fixed**: the file is under an open UAT gate and changing served bytes
+  would invalidate the pre-flight Dan is about to judge against. Route it after the verdict.
+
+- **The observation is a surface Dan would otherwise meet cold at Item 4(a).** A *running*
+  30-minute break shows D-31-07's preserved **icon-only** Skip (word only in the tooltip), not the
+  labelled pink rail Items 1–3 show him. That is ruled by the ROADMAP's own "must NOT do" list, not
+  a defect — but the item asks "is there a Skip action," so he is told before he judges. Added as
+  the third orchestrator observation in `32-UAT.md`.
+
+**What review could NOT do, stated plainly:** none of this touches whether the rail reads as one
+button or two zones, or whether a thumb lands it five times out of five. Green suites have been
+contradicted by Dan's thumb in Phase 27, Phase 29, and Phase 31 — twice in 31. The verdict is his.
 
 Phase 31 is **superseded, not failed**: 31-06 and 31-07 shipped and are green, 31-08's UAT was
 judged, and the owner replaced the approach rather than repairing it.
