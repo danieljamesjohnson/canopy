@@ -240,7 +240,7 @@ perceptual half (does it read right).
 
 ---
 
-## Two orchestrator observations — stated so you don't meet them cold
+## Three orchestrator observations — stated so you don't meet them cold
 
 Recorded from the served build before handing this over. **Neither is a verdict** — both are exactly
 the kind of perceptual call this document exists to put to you, and saying "I noticed it looks fine"
@@ -259,6 +259,17 @@ actually on screen.
    while the work chunk sets them inline. Same vocabulary, different arrangement. Possibly
    invisible in use; possibly reads as two different controls. Not covered by any numbered item, so
    mention it under Item 2 if it bothers you.
+
+3. **A *running* 30-minute break's Skip looks different from every other break's Skip — and that is
+   ruled, not broken.** Items 1–3 show you a 64dp pink rail with the word "Skip" under the icon. When
+   you get to Item 4(a), a break that is **running** and is 30 minutes long shows the older
+   **icon-only** button instead (same `skip_next_outlined` glyph, but the word "Skip" lives only in
+   its tooltip, not on screen). That is D-31-07's button, which this phase's own charter explicitly
+   preserves — *"Do not remove `LiveRowCard`'s compact-tier Skip button. It survives."* A running
+   **5-minute** break gets the labelled rail, same as everywhere else. So there are two appearances
+   in play, on purpose. **Flagged so you don't read it as a bug in Item 4** — but if the
+   inconsistency itself bothers you, say so under Item 4 and it becomes its own scoped follow-up.
+   (Found during the 2026-08-28 code review, `32-REVIEW.md`.)
 
 **What is NOT in doubt:** the glyph is no longer `Icons.drag_indicator`. Phase 31's round-two defect
 was a six-dot *reorder grip* on a control that could not be reordered — an icon that meant the wrong
