@@ -72,3 +72,27 @@ Option 1 is the recommendation; 3 is the one to avoid without new evidence.
 Whether this is worth a phase at all. It is cosmetic in the sense that the schedule is correct and
 the times are right — but the whole point of Phase 28 was the owner being able to *see* the 25/5
 rhythm, so a break you cannot see arguably defeats it. Owner's call.
+
+---
+
+## HARVESTED — 2026-08-31
+
+**Closed by four phases, because the first three fixes each turned out to be the wrong shape.**
+
+- **Phase 29 (Breaks You Can See)** gave the 20dp break a sub-compact hairline-with-label tier so
+  it stopped reading as a divider — the literal fix for this seed as written.
+- **Phase 31 (Breaks You Can Skip)** made it skippable via swipe with an invisible 68dp hit band.
+  The owner's thumb failed it twice; the grip glyph turned out to mean the wrong verb.
+- **Phase 32 (Breaks You Can Tap)** raised `kPixelsPerMinute` 4.0 → 6.0 so a 5-minute break is a
+  real 30dp card with a visible Skip rail, and retired the swipe machinery outright.
+- **Phase 32's gap closure** fixed what the scale change exposed: rows were sized by their content,
+  not their duration, leaving ~67dp of dead space under every work chunk.
+
+**Final state, measured not assumed:** a 5-minute break renders as a 30dp bordered card with a
+64×30dp visible Skip rail, and the owner's thumb skipped **5 of 5** on 2026-08-31 (`32-UAT-R2.md`).
+
+**The durable lesson is not about breaks.** This seed took four phases because the first three were
+reasoned about in arithmetic and never looked at — the fix that finally worked came from serving
+three whole-screen mockups and having the owner pick one (`sketches/002-timeline-at-6/`).
+
+**No open work. This seed is closed.**

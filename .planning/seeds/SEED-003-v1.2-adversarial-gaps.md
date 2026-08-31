@@ -1,6 +1,6 @@
 ---
 id: SEED-003
-status: dormant
+status: harvested
 planted: 2026-06-13
 planted_during: v1.2 "Make It Usable" (post-milestone adversarial audit)
 trigger_when: planning the next milestone — review before defining requirements
@@ -44,3 +44,18 @@ Raising priority yields more/earlier chunks **only for time-target goals** (Step
 
 ## Evidence
 Full adversarial audit was run 2026-06-13 against the tagged v1.2 code; suite was 209/209 green and `flutter analyze` clean at the time, which is exactly why these semantic/test-integrity gaps matter — they passed automated verification.
+
+---
+
+## HARVESTED — 2026-08-31
+
+All three findings shipped in v1.3, verified against MILESTONES.md while scoping Phase 33:
+
+1. **Home "Now" not time-anchored** → NOW-01/NOW-02 (`resolveNowState` + 1-min timer, Phase 17).
+2. **Goal sheet viewport claim unproven** → GOALFORM-02, with the true-modal-height reachability
+   tests this finding asked for, for all three goal types.
+3. **Priority count-effect time-target-only, and two divergent priority models** → PRIORITY-02
+   (count demand for habits and outcomes) and PRIORITY-03 (drag-reorder and the Low/Normal/High
+   selector reconciled onto one `priorityWeight`, chip stays correct after a drag).
+
+**No open work. This seed is closed.**

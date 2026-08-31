@@ -1,3 +1,14 @@
+> # ⚠ SUPERSEDED — DO NOT ACT ON THIS DOCUMENT
+>
+> **Marked 2026-08-31.** This proposes **v1.1 "Actually Daily"**, which shipped long ago. Five
+> further milestones (v1.2–v1.5) and Phases 27–32 have shipped since. Its "Reality Check" inventory
+> describes a June 2026 codebase and is **wrong about the current one** — B1 (cold-launch empty
+> schedule), B2 (no day rollover), B3 (chunks show rationale not goal name), B6 (no re-check-in)
+> and most of B5's engine gaps are all fixed.
+>
+> It is kept for provenance only. **For what is actually next, read `ROADMAP.md` Phase 33 and
+> `STATE.md`.** An agent that acts on this file will redo finished work.
+
 # Next Milestone Proposal — v1.1 "Actually Daily"
 
 **Author:** Fable (Claude), at owner's request

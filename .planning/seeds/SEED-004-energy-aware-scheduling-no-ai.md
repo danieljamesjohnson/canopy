@@ -1,6 +1,6 @@
 ---
 id: SEED-004
-status: dormant
+status: harvested
 planted: 2026-06-13
 planted_during: v1.2 dogfooding (regular-time / family-time friction session)
 trigger_when: designing energy-aware scheduling, or the next milestone after "regular time fills open days" lands
@@ -48,3 +48,23 @@ Then the dumb rules become possible:
 1. Is a 3-way valence pick enough, or is the text+image categorizer worth it?
 2. How does valence interact with priority and the mood cap — override, tiebreak, or reserved slots?
 3. Does "energy-giving on low days" risk letting users avoid hard-but-required work? (Required/commitments still run regardless, so probably fine.)
+
+---
+
+## HARVESTED — 2026-08-31
+
+The core design move — **user-declared valence rather than inference** — shipped, and the "dumb app"
+constraint held throughout: no LLM was added.
+
+- **The 3-way gives/neutral/costs pick → shipped** as ENERGY-02/ENERGY-04b (Phase 19 Energy
+  Valence), with the engine acting on it in Phase 20 (Valence-Aware Engine).
+- **The standalone "what gives you energy?" capture → shipped** as the `RestorativeItem` aggregate
+  (Hive typeId 7, schema 8→9) via the Mission Control JTBD loop, deliberately separate from goals:
+  never scheduled, never counted toward budgets or streaks. Surfaces as chips on the Today screen
+  when mood ≤ 2 — which is exactly this seed's "low days should have something good to schedule."
+- **The image categorizer → not built, and the seed's own lean was correct**: the 3-way pick got
+  the value.
+
+**Remaining: two entry-point frictions the owner found while using it** — quick-pick common
+restoratives, and "energizing ≠ goal" (the guitar friction). **Both carried into Phase 33.**
+The scheduling model itself needs nothing further.

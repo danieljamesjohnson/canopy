@@ -1,6 +1,6 @@
 ---
 id: SEED-001
-status: dormant
+status: partially-harvested
 planted: 2026-06-12
 planted_during: v1.1 "Actually Daily" (post-milestone audit)
 trigger_when: planning the next milestone (v1.2) — especially after the developer has dogfooded Canopy for several real mornings
@@ -64,3 +64,26 @@ PROJECT.md "Validated: None yet." The v1.1 audit labels the milestone "complete 
 ## Notes
 
 Captured via /gsd-capture after an adversarial review. The findings are hypotheses ranked by likelihood of being felt; the dogfood log is the arbiter.
+
+---
+
+## Harvest audit — 2026-08-31
+
+**6 of 7 findings are shipped.** Audited against ROADMAP/MILESTONES while scoping Phase 33.
+
+- **#1 lighter-day default → FIXED.** The inline switch is gone (CHECKIN-02,
+  `checkin_screen.dart:303`) and check-in now passes `lighterDay: false` — full capacity is the
+  default, which is what this finding asked for.
+- **#2 low-mood zeroes time-targets → FIXED** by FILL-01's always-run round-robin Step 4.
+- **#3 habits monopolize the cap → FIXED** by CAP-01's `ceil(cap/2)` habit ceiling.
+- **#4 priority nearly inert → FIXED** by PRIORITY-02 (chunk-count demand for all goal types) and
+  PRIORITY-03 (one coherent `priorityWeight` across drag and form).
+- **#5 synthetic times → FIXED** in v1.2 (`syntheticStartMinutes`, schema 6→7). **The "surface
+  dropped/unscheduled goals" half was NOT verified in this audit** — treat as open-unknown, not as
+  shipped.
+- **#6 streaks → FIXED** by STREAK-01's generation-time write-back.
+- **#7 "looks done on paper, isn't in practice" → this is now simply how the project runs.** Every
+  phase since 27 ended in a blocking human UAT, and every one of them was corrected by the owner's
+  thumb. The finding did not get closed; it got institutionalised.
+
+**Remaining value in this seed: #5's unscheduled-goal surfacing only.** Everything else is done.

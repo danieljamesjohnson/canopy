@@ -1,6 +1,6 @@
 ---
 id: SEED-002
-status: dormant
+status: partially-harvested
 planted: 2026-06-12
 planted_during: v1.1 "Actually Daily" (post-milestone dogfood)
 trigger_when: planning the next milestone — this is the dominant signal from the first real dogfood; likely becomes a "UI basics" milestone
@@ -113,3 +113,28 @@ check-in screen, home/schedule information architecture, and chunk row UI.
 ## Notes
 First real-use signal. Points hard at a UI-foundations milestone. Pair with SEED-001 when
 scoping next.
+
+---
+
+## Harvest audit — 2026-08-31
+
+**9 of 12 findings are shipped.** This seed's own scope estimate ("Large — a full milestone") is
+**no longer true** and was the main reason the backlog looked bigger than it is.
+
+- **#1 landing page → FIXED** (v1.2 redirect; now `/today`).
+- **#2 Home vs Schedule redundant → FIXED** by the whole Right Now milestone (v1.5, UNIFY-02) —
+  the two screens were collapsed into one Today. This was the owner's largest complaint here and
+  it got a milestone.
+- **#5 goal sheet too tall → FIXED** (GOALFORM-02 modal-height reachability tests; `_TypeCard`
+  compacted ~168dp → ~92dp).
+- **#6 low-contrast yellow / #7 no hover → FIXED** by CHECKIN-01 (luminance-adaptive contrast +
+  emoji hover/pressed states).
+- **#8 lighter-day toggle → FIXED** (CHECKIN-02 removed it entirely — see SEED-001 #1).
+- **#9 frequency instead of clock time → FIXED** in v1.2 (`_formatTimeRange`).
+- **#10 chunk action affordance → PARTIALLY fixed.** Complete/Skip are now always visible (v1.2),
+  but **the unlabelled circle is still on screen** (`chunk_card.dart:769`,
+  `Icons.radio_button_unchecked`) and is visible in Phase 32's own screenshots.
+- **#11 onboarding fine / #12 unreproduced first-run bug → no action; #12 never recurred.**
+
+**Remaining: #3 (Goals page purpose), #4 (priority colour legibility), #10 (the circle).**
+**All three are carried into Phase 33 — see ROADMAP.** Nothing else in this seed is live.

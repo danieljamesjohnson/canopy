@@ -3,8 +3,9 @@ gsd_state_version: 1.0
 milestone: none
 current_phase: 32
 current_phase_name: Breaks You Can Tap
-status: complete
-stopped_at: Phase 32 COMPLETE — round-two UAT 4/4 on 2026-08-31, thumb count 5/5, D-31-07 confirmed. No phase in progress.
+status: ready
+current_phase_next: 33
+stopped_at: Phase 32 COMPLETE (4/4 UAT). Phase 33 "Make The Obvious Thing Obvious" SCOPED in ROADMAP, not yet planned — run /gsd-autonomous 33.
 last_updated: "2026-08-31T12:00:00.000Z"
 last_activity: 2026-08-31
 last_activity_desc: Phase 32 closed — 4/4 UAT, both long-running gaps closed
@@ -27,7 +28,49 @@ milestone_name: milestone
 
 ## Current Position
 
-Phase: 32 (Breaks You Can Tap) — **COMPLETE 2026-08-31.** No phase in progress.
+Phase: 32 (Breaks You Can Tap) — **COMPLETE 2026-08-31.**
+**Next: Phase 33 "Make The Obvious Thing Obvious" — scoped in ROADMAP, not planned. Run
+`/gsd-autonomous 33`.**
+
+---
+
+## Phase 33 handoff — read this before planning
+
+**How it was scoped, because that matters more than the list.** The owner asked "what's left — is
+it a milestone?" A full audit of the seed backlog answered *no*: **SEED-003 and SEED-004 are fully
+harvested, SEED-005 is closed by Phases 29–32, SEED-001 is 6-of-7 done, and SEED-002 — which
+called itself "Large — a full milestone" — is 9-of-12 done.** Phase 33 is precisely what survived
+that audit, plus two items the owner raised while using the live build. All five annotated seeds
+now carry their own harvest audits; `NEXT-MILESTONE-PROPOSAL.md` is banner-marked SUPERSEDED
+because it proposes v1.1 and would send an agent to redo finished work.
+
+**Run it autonomously to ONE UAT gate.** Every item is perceptual, which is the class this
+project's green suites have missed five times (27, 29, 31, 32×2). Four phases would mean four
+builds to judge; Phase 32 alone took four rounds. **One gate is the deliberate shape.**
+
+**The single most embarrassing item, stated plainly:** the unlabelled circle
+(`chunk_card.dart:769`) has been on screen since the owner complained about it on **2026-06-12**
+and is visible in Phase 32's own screenshots. It survived 2.5 months not because it is hard but
+because no phase ever aimed at it. **Do not let it slip again.**
+
+**Method, non-negotiable and earned:** this phase's defects are all "does a human understand what
+this control is." That cannot be settled by `flutter test` and it cannot be settled by reasoning
+in a spec — Phase 32's UI-SPEC passed a checker 6/6 and still shipped a screen the owner rejected
+on sight. **Sketch the screens first** (`/gsd-sketch`, served on the tailnet — never an Artifact,
+see the global CLAUDE.md), have the owner pick, then build. `sketches/002-timeline-at-6/` is the
+worked example and `sketches/MANIFEST.md` carries the locked visual decisions.
+
+**Look at the running app before claiming anything works.** Phase 32's gap closure was half-wrong
+until a screenshot showed the live row still sitting in a hole that code review had missed twice.
+Driver: `.planning/spikes/001-live-row-in-a-true-grid/tools/drive.cjs` — it onboards a persistent
+Chromium profile, parks at a simulated clock time, and screenshots (`--at=HH:MM`, `--dump` for the
+semantics tree). It is how D-31-07 was finally confirmed after three rounds of asking a human for
+something a browser could answer.
+
+**Carried-forward open questions, none blocking, do not treat silence as consent:** the
+one-button-or-two-zones wording on the break rail; whether the filled work card reads calm or
+hollow; whether a break now reads too much like work sharing the work chunk's Skip; and the "Up
+next" transition (`now_state.dart:176`), still unruled since Phase 31.
 
 **Round two: 4 of 4 PASS** (`32-UAT-R2.md`). Items 1, 3, 4 by the owner; Item 2 agent-verified
 structurally, recorded as such rather than flattened into the count.

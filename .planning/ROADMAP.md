@@ -826,6 +826,74 @@ geometry; the owner chose **C · Adaptive fill**.
 
 **Decisions already ruled by the owner (do not re-ask):** D-32-01 (`kPixelsPerMinute` 6.0), D-32-02 (button-only, retire the swipe machinery), D-32-03 (~64×30dp Skip button).
 
+### Phase 33: Make The Obvious Thing Obvious
+
+Standalone phase, no milestone. **Scoped 2026-08-31 from a full audit of the seed backlog, not
+from a fresh idea** — the audit found the backlog is mostly already built, and this phase is what
+actually survived it. The owner's question was "is this a milestone?" and the answer was no: five
+small items, all one kind of work.
+
+**Goal:** Every control on screen says what it does. No unlabelled affordances, no colour that
+carries meaning it can't express, no screen whose purpose you have to infer.
+
+**Why one phase and not four.** Every item here is *perceptual* — the exact class this project's
+green suites have failed to catch five times (Phases 27, 29, 31, and 32 twice). Four separate
+phases would mean four separate builds for the owner to judge; Phase 32 alone took four rounds.
+**Bundling them behind ONE human UAT gate is the point of this phase's shape**, and it is the
+reason it should be run autonomously up to that gate rather than in pieces.
+
+**What the phase must fix:**
+
+1. **The unlabelled circle** (SEED-002 #10, raised 2026-06-12, still shipping).
+   `chunk_card.dart:769` renders `Icons.radio_button_unchecked` on every unresolved work row.
+   Owner, verbatim: *"there's a little circle next to it — really unclear UI for a human."* It is
+   visible in `phases/32-breaks-you-can-tap/shots/after-gap-closure.png`. **It survived 2.5 months
+   because every phase since aimed somewhere else** — it is not hard, it was never targeted.
+   Decide what it is: a real control, a status glyph that earns its place, or nothing.
+
+2. **The Goals screen doesn't read as a prioritisation view** (SEED-002 #3). Owner: *"I don't know
+   about this goals page."* The drag handles imply reordering without saying the page IS the
+   priority model.
+
+3. **Priority colour doesn't carry priority** (SEED-002 #4). Owner: *"the colors are changing,
+   it's not making a ton of sense."* Note the engine half is already fixed — PRIORITY-02/03
+   reconciled the drag-continuous and form-discrete models in v1.3. **This is legibility only; do
+   not re-open the model.**
+
+4. **Quick-pick common restoratives** (`.mission-control/job-backlog.md`, raised 2026-07-02 on the
+   live build). Offer ~9 tappable common restoratives instead of typing each by hand.
+
+5. **Energizing ≠ a goal — the guitar friction** (same source, same date). Marking something
+   energizing currently assumes it is a goal. Give an explicit choice at entry to capture it as a
+   pure restorative instead. `RestorativeItem` (Hive typeId 7) already exists and is deliberately
+   never scheduled and never counted toward budgets/streaks — this is an entry-point fix, not a
+   new aggregate.
+
+**Also in scope, small:** free time still renders as a dashed outline while breaks are now filled
+cards. Phase 22 deliberately made them match; Phase 32 pulled them apart and the divergence is
+more visible at 6.0 px/min. Left open at the end of Phase 32 rather than ruled on.
+
+**What this phase must NOT do:**
+
+- **Do not re-open the priority model** (item 3 is legibility) or the scheduling engine at all.
+  Nothing here touches `schedule_generator.dart`.
+- **Do not lower `kPixelsPerMinute`.** 6.0 passed round-two UAT and the thumb count came back 5/5.
+- **Do not re-litigate the short break's 64×30dp Skip rail.** Measured, 5/5, settled.
+- **Do not add an LLM or any "smart" suggestion.** See CLAUDE.md — dumb on purpose.
+
+**This phase MUST end in a human UAT checkpoint** — for the fifth time, and every prior one was
+earned. Reuse port 8143, kill whatever is squatting it first. **Trap #4 note: nothing here touches
+the generator, so ⟳ Re-check-in is NOT required unless the plan changes that — state the reason
+either way rather than copying the rule.**
+
+**Requirements:** OBVIOUS-01 (no unlabelled affordance on a chunk row), OBVIOUS-02 (the Goals
+screen states its own purpose and its priority language is legible), OBVIOUS-03 (adding a
+restorative is tappable, and declaring something energizing does not force it to be a goal)
+**Depends on:** Phase 32 (owns the row geometry and the break vocabulary this must not disturb)
+**Plans:** TBD
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -846,3 +914,4 @@ geometry; the owner chose **C · Adaptive fill**.
 | 30. Breaks In Committed Time | — (standalone) | 5/5 | Complete    | 2026-08-25 |
 | 31. Breaks You Can Skip | — (standalone) | 7/8 | Superseded by Phase 32 (round-two UAT 2026-08-27: swipe approach rejected) |  |
 | 32. Breaks You Can Tap | — (standalone) | 3/3 + gap closure | Complete | 2026-08-31 |
+| 33. Make The Obvious Thing Obvious | — (standalone) | 0/TBD | Not started | |
