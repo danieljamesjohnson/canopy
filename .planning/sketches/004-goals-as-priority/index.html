@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sketch 004 — the Goals screen as a priority view</title>
+<link rel="stylesheet" href="../themes/default.css">
+<style>
+/* ─────────────────────────────────────────────────────────────────
+   Sketch 004. Throwaway. What is real: the goal set and its
+   priorityWeight values, the three goal types (timeTarget / outcome /
+   habit) and their display order, and the fact that dragging writes
+   priorityWeight via reorderAllWithPriority(). No variant changes the
+   model — PRIORITY-02/03 settled it in v1.3. These are four ways of
+   SAYING the same model out loud.
+   ───────────────────────────────────────────────────────────────── */
+
+.phone { height: min(770px, 80vh); }
+
+.appbar { display:flex; align-items:flex-start; justify-content:space-between; padding:14px 16px 6px; flex:0 0 auto; }
+.appbar h1 { margin:0; font-size:20px; font-weight:600; letter-spacing:-.01em; }
+.appbar .kebab { font-size:19px; color:var(--on-surface-variant); cursor:pointer; padding:0 4px; }
+
+.quickadd { margin:6px 16px 2px; flex:0 0 auto; }
+.quickadd .field {
+  display:flex; align-items:center; gap:8px; padding:10px 12px;
+  border:1px solid var(--outline-variant); border-radius:12px; background:var(--surface);
+}
+.quickadd input { flex:1 1 auto; border:none; outline:none; font:inherit; font-size:14px; background:transparent; color:var(--on-surface); }
+.quickadd .helper { font-size:11px; color:var(--on-surface-variant); padding:5px 4px 0; }
+
+.heading { padding:14px 16px 6px; flex:0 0 auto; }
+.heading .h { font-size:15px; font-weight:600; }
+.heading .sub { font-size:12px; color:var(--on-surface-variant); margin-top:3px; line-height:1.45; }
+
+.scroller { flex:1 1 auto; overflow-y:auto; padding-bottom:80px; }
+.scroller::-webkit-scrollbar { width:6px; }
+.scroller::-webkit-scrollbar-thumb { background:var(--outline-variant); border-radius:3px; }
+
+.sectionhdr { padding:14px 16px 4px; font-size:12.5px; font-weight:600; color:var(--primary); }
+.sectionhdr .cnt { font-weight:400; color:var(--on-surface-variant); }
+
+/* ── the goal card ────────────────────────────────────────────── */
+.gcard {
+  position:relative; margin:5px 16px; background:var(--surface);
+  border:1px solid var(--outline-variant); border-radius:12px;
+  display:flex; align-items:stretch; overflow:hidden;
+  transition:box-shadow .15s ease, transform .15s ease;
+}
+.gcard:hover { box-shadow:0 2px 8px rgba(0,0,0,.07); }
+.gcard .stripe { flex:0 0 5px; }
+.gcard .main { flex:1 1 auto; padding:11px 4px 11px 12px; min-width:0; }
+.gcard .namerow { display:flex; align-items:center; gap:7px; }
+.gcard .nm { font-size:15px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gcard .tico { font-size:13px; opacity:.85; }
+.gcard .secondrow { display:flex; align-items:center; gap:6px; margin-top:5px; flex-wrap:wrap; }
+.gcard .stat { font-size:11.5px; color:var(--on-surface-variant); }
+.gcard .grip { flex:0 0 40px; display:flex; align-items:center; justify-content:center; color:var(--outline-variant); cursor:grab; font-size:15px; letter-spacing:-2px; }
+.gcard .swatch { width:14px; height:14px; border-radius:50%; flex:0 0 auto; }
+
+.chip { font-size:10.5px; font-weight:600; padding:3px 8px; border-radius:var(--radius-pill); white-space:nowrap; }
+.chip.hi { background:var(--primary-container); color:var(--on-primary-container); }
+.chip.lo { background:var(--surface-container-high); color:var(--on-surface-variant); }
+.chip.val { background:var(--tertiary-container); color:var(--on-tertiary-container); }
+.chip.type { background:var(--surface-container); color:var(--on-surface-variant); border:1px solid var(--outline-variant); font-weight:500; }
+
+/* A — rank badge */
+.rank {
+  flex:0 0 34px; display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:14px; font-weight:600;
+  color:var(--on-surface-variant); background:var(--surface-container);
+  border-right:1px solid var(--outline-variant);
+}
+.rank.top { background:var(--primary-container); color:var(--on-primary-container); }
+
+/* B — tier bands */
+.tier { margin:16px 16px 2px; display:flex; align-items:center; gap:9px; }
+.tier .dot { width:9px; height:9px; border-radius:50%; }
+.tier .nm { font-size:12.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; }
+.tier .hint { font-size:11px; color:var(--on-surface-variant); font-weight:400; text-transform:none; letter-spacing:0; }
+.tierbody { border-left:2px solid var(--outline-variant); margin-left:20px; padding-left:0; }
+.tierbody.hi { border-color:var(--primary); }
+.tierbody.mid { border-color:var(--outline-variant); }
+.tierbody.lo { border-color:var(--outline-variant); opacity:.86; }
+.tierbody .gcard { margin-left:8px; }
+.tier-empty { margin:5px 16px 5px 24px; padding:12px; border:1.5px dashed var(--outline-variant); border-radius:12px; font-size:12px; color:var(--on-surface-variant); }
+
+/* C — priority ribbon replaces identity colour on the stripe.
+   A linear-gradient, NOT a percent-height child in a flex column: percent
+   heights don't resolve reliably against a flex container, and the first
+   draft of this rendered 0.35 and 0.90 as near-identical bars — which would
+   have made the "is 6dp legible?" question unanswerable for the wrong reason.
+   The unfilled track needs real contrast too, or there is nothing to read the
+   fill AGAINST. */
+.ribbon { flex:0 0 6px; }
+
+.fab {
+  position:absolute; right:16px; bottom:16px; z-index:20;
+  display:inline-flex; align-items:center; gap:8px;
+  padding:14px 20px; border-radius:16px; border:none; cursor:pointer;
+  background:var(--primary-container); color:var(--on-primary-container);
+  font:inherit; font-size:14px; font-weight:600;
+  box-shadow:0 3px 10px rgba(0,0,0,.16);
+}
+
+.variant { display:none; }
+.variant.active { display:block; }
+.note { max-width:430px; margin:0 auto; padding:16px 18px 0; font-size:13px; line-height:1.55; color:#4b5551; }
+.note strong { color:#202826; }
+.note .q { color:#8a3b2b; font-weight:600; }
+.toast { position:fixed; left:50%; transform:translateX(-50%); bottom:22px; background:#101614; color:#e7efeb; padding:9px 16px; border-radius:var(--radius-pill); font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:200; }
+.toast.show { opacity:.95; }
+</style>
+</head>
+<body data-mood="3">
+
+<div class="toolbar">
+  <span class="label">Variant</span>
+  <div class="group">
+    <button data-v="a" aria-pressed="true">A · Ranked</button>
+    <button data-v="b" aria-pressed="false">B · Tiers</button>
+    <button data-v="c" aria-pressed="false">C · Ribbon</button>
+    <button data-v="shipped" aria-pressed="false">As shipped</button>
+  </div>
+  <span class="spacer"></span>
+  <span class="label">Mood</span>
+  <div class="group">
+    <button data-mood="1" aria-pressed="false">1</button>
+    <button data-mood="3" aria-pressed="true">3</button>
+    <button data-mood="5" aria-pressed="false">5</button>
+  </div>
+</div>
+
+<div class="note" id="note"></div>
+
+<div class="stage">
+  <div class="phone">
+    <div class="appbar">
+      <div><h1 id="screentitle">Goals</h1></div>
+      <span class="kebab" title="View archived · Commitment blocks · What restores you">⋮</span>
+    </div>
+    <div class="quickadd">
+      <div class="field">
+        <input placeholder="Add another (6 so far)" />
+        <span style="color:var(--primary);font-size:18px;cursor:pointer">＋</span>
+      </div>
+      <div class="helper">Enter after each, or paste a list — refine details later</div>
+    </div>
+    <div class="heading" id="heading"></div>
+    <div class="scroller" id="scroller"></div>
+    <button class="fab">＋ Add goal</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* Real shape: Goal { name, goalType, priorityWeight, color, weeklyHourBudget,
+   streakCount, energyValence }. Display order across types is
+   timeTarget → outcome → habit (goals_screen.dart _buildFullOrderedIds). */
+const TYPE = {
+  timeTarget: { icon:'◷', label:'Regular time', section:'Regular time' },
+  outcome:    { icon:'⚑', label:'Working toward', section:'Working toward' },
+  habit:      { icon:'↻', label:'Daily habit',   section:'Daily habits' },
+};
+
+let goals = [
+  { nm:'Deep work',        ty:'timeTarget', pw:0.90, col:'#3f6375', stat:'10.0 hrs/week', val:null },
+  { nm:'Guitar',           ty:'timeTarget', pw:0.62, col:'#8a5a2b', stat:'3.0 hrs/week',  val:'gives' },
+  { nm:'Admin',            ty:'timeTarget', pw:0.20, col:'#6f7975', stat:'2.5 hrs/week',  val:'costs' },
+  { nm:'Ship the redesign',ty:'outcome',    pw:0.78, col:'#22695b', stat:null,            val:null },
+  { nm:'Tax return',       ty:'outcome',    pw:0.35, col:'#8a3b2b', stat:null,            val:'costs' },
+  { nm:'Morning walk',     ty:'habit',      pw:0.50, col:'#4b8b3b', stat:'12-day streak', val:'gives' },
+];
+
+const NOTES = {
+  a: `<strong>A · Ranked.</strong> The type sections are gone. One list, numbered 1–6, ordered by
+      priority across every type — which is what <code>reorderAllWithPriority()</code> already writes.
+      The heading names the page: <em>this order is your priority order</em>. Type moves to a chip.
+      <span class="q">The question:</span> a number is unambiguous, but it also makes "6th" feel like
+      a verdict. Does an explicit rank help you, or does it make a list of six goals feel like a
+      leaderboard you're losing?`,
+  b: `<strong>B · Tiers.</strong> Three named bands — High, Normal, Low — and dragging a goal across
+      a band boundary is what changes its priority. No goal is ever unlabelled, which kills the dead
+      zone: today a goal at 0.5 shows <em>no chip at all</em>, so most goals say nothing about their
+      own priority. <span class="q">The question:</span> this trades the type sections for tier
+      sections. You lose "all my time-target goals together" — check whether you miss it.`,
+  c: `<strong>C · Ribbon.</strong> Smallest change. Type sections stay exactly as they are. The one
+      move: the 5dp left border stops being the goal's identity colour and becomes a
+      <em>priority ribbon</em> that fills in proportion to <code>priorityWeight</code>. Identity
+      colour survives as the dot beside the name. <span class="q">The question:</span> this is the
+      direct answer to "the colors are changing, it's not making a ton of sense" — colour now means
+      exactly one thing. Is a filled bar legible enough at 6dp, or does it need the words too?`,
+  shipped: `<strong>As shipped, for reference.</strong> Title "Goals". Heading "Your goals" with
+      <em>"Drag to prioritize. Tap to edit."</em> in 12px grey. Three type sections. The loudest
+      thing on each card is a 5dp bar in the goal's own identity colour — which carries no meaning
+      at all. Priority appears only as a chip at the extremes: <code>pw ≥ 0.75</code> → High,
+      <code>pw ≤ 0.25</code> → Low. Guitar (0.62), Ship the redesign… wait — 0.78, so it shows.
+      <strong>Morning walk at 0.50 and Tax return at 0.35 show nothing.</strong>`
+};
+
+const HEADINGS = {
+  a:       { title:'Goals', h:'Priority order', sub:'Everything you want time for, most important first. Drag to change the order — that <em>is</em> how priority is set.' },
+  b:       { title:'Goals', h:'What matters most', sub:'Drag a goal into a different band to change its priority. The scheduler fills High first.' },
+  c:       { title:'Goals', h:'Your goals', sub:'The bar on the left is priority — fuller means the scheduler reaches it sooner. Drag to change it. Tap to edit.' },
+  shipped: { title:'Goals', h:'Your goals', sub:'Drag to prioritize. Tap to edit.' }
+};
+
+let variant = 'a';
+
+function chips(g) {
+  let out = '';
+  if (variant === 'a' || variant === 'shipped') {
+    if (g.pw >= 0.75)      out += `<span class="chip hi">↑ High</span>`;
+    else if (g.pw <= 0.25) out += `<span class="chip lo">↓ Low</span>`;
+  }
+  if (g.val === 'gives') out += `<span class="chip val">⚡ Gives</span>`;
+  if (g.val === 'costs') out += `<span class="chip lo">⧖ Costs</span>`;
+  return out;
+}
+
+function card(g, extra) {
+  const t = TYPE[g.ty];
+  const pct = Math.round(g.pw * 100);
+  const stripe = (variant === 'c')
+    ? `<div class="ribbon" title="Priority ${g.pw.toFixed(2)}" style="background:linear-gradient(
+         to top, var(--primary) 0 ${pct}%, rgba(0,0,0,.10) ${pct}% 100%)"></div>`
+    : `<div class="stripe" style="background:${g.col}"></div>`;
+  const typeChip = (variant === 'a' || variant === 'b') ? `<span class="chip type">${t.icon} ${t.label}</span>` : '';
+  const second = (g.stat || chips(g) || typeChip)
+    ? `<div class="secondrow">
+         ${g.stat ? `<span class="stat">${g.stat}</span>` : ''}
+         ${typeChip}${chips(g)}
+       </div>` : '';
+  return `<div class="gcard">
+    ${extra || ''}${stripe}
+    <div class="main">
+      <div class="namerow">
+        ${variant === 'c' || variant === 'shipped' ? `<span class="tico" style="color:${g.col}">${t.icon}</span>` : ''}
+        <span class="nm" style="flex:1 1 auto">${g.nm}</span>
+        <span class="swatch" style="background:${g.col}"></span>
+      </div>
+      ${second}
+    </div>
+    <div class="grip" title="Drag to reorder">⣿</div>
+  </div>`;
+}
+
+function render() {
+  const H = HEADINGS[variant];
+  document.getElementById('screentitle').textContent = H.title;
+  document.getElementById('heading').innerHTML =
+    `<div class="h">${H.h}</div><div class="sub">${H.sub}</div>`;
+  document.getElementById('note').innerHTML = NOTES[variant];
+
+  const s = document.getElementById('scroller');
+  let html = '';
+
+  if (variant === 'a') {
+    const ordered = [...goals].sort((x,y) => y.pw - x.pw);
+    ordered.forEach((g, i) => {
+      html += card(g, `<div class="rank ${i < 2 ? 'top' : ''}">${i+1}</div>`);
+    });
+  } else if (variant === 'b') {
+    const bands = [
+      { key:'hi',  nm:'High',   dot:'var(--primary)',          hint:'scheduled first',        test:g => g.pw >= 0.67 },
+      { key:'mid', nm:'Normal', dot:'var(--outline)',          hint:'the steady middle',      test:g => g.pw > 0.33 && g.pw < 0.67 },
+      { key:'lo',  nm:'Low',    dot:'var(--outline-variant)',  hint:'only if there is room',  test:g => g.pw <= 0.33 },
+    ];
+    bands.forEach(b => {
+      const inBand = goals.filter(b.test).sort((x,y) => y.pw - x.pw);
+      html += `<div class="tier"><span class="dot" style="background:${b.dot}"></span>
+                 <span class="nm">${b.nm}</span><span class="hint">· ${b.hint}</span></div>`;
+      html += `<div class="tierbody ${b.key}">`;
+      html += inBand.length
+        ? inBand.map(g => card(g)).join('')
+        : `<div class="tier-empty">Nothing here — drag a goal in.</div>`;
+      html += `</div>`;
+    });
+  } else {
+    ['timeTarget','outcome','habit'].forEach(ty => {
+      const inType = goals.filter(g => g.ty === ty).sort((x,y) => y.pw - x.pw);
+      if (!inType.length) return;
+      html += `<div class="sectionhdr">${TYPE[ty].section} <span class="cnt">· ${inType.length}</span></div>`;
+      html += inType.map(g => card(g)).join('');
+    });
+  }
+  s.innerHTML = html;
+}
+
+function toast(m) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1400);
+}
+
+document.addEventListener('click', (e) => {
+  const vb = e.target.closest('[data-v]');
+  if (vb) {
+    variant = vb.dataset.v;
+    document.querySelectorAll('[data-v]').forEach(b => b.setAttribute('aria-pressed', b === vb));
+    render(); return;
+  }
+  const mb = e.target.closest('[data-mood]');
+  if (mb) {
+    document.body.dataset.mood = mb.dataset.mood;
+    document.querySelectorAll('[data-mood]').forEach(b => b.setAttribute('aria-pressed', b === mb));
+    return;
+  }
+  if (e.target.closest('.grip')) { toast('Press and hold to drag — reorder writes priority'); return; }
+  if (e.target.closest('.gcard')) { toast('Opens the goal form'); return; }
+  if (e.target.closest('.fab'))   { toast('Opens the full goal form'); return; }
+});
+
+render();
+</script>
+</body>
+</html>

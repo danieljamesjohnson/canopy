@@ -23,6 +23,9 @@ and from the app's existing locked design tokens.
 |---|------|----------------|--------|------|
 | 001 | unified-today | Within an inline timeline, how does "now" stay findable while the day stays scannable? | **A · Pure inline** | layout, today, live-state, phase-22 |
 | 002 | timeline-at-6 | How should a card occupy a duration-exact slot it under-fills by ~67dp? | **C · Adaptive fill** | layout, today, timeline, breaks, phase-32 |
+| 003 | the-unlabelled-circle | What should an unresolved work row show where the unlabelled circle is now — and should free time stay dashed while breaks are filled? | _pending_ | today, timeline, chunk-card, legibility, phase-33 |
+| 004 | goals-as-priority | How does the Goals screen say it IS the priority order, when identity colour is the loudest signal on the card? | _pending_ | goals, priority, legibility, phase-33 |
+| 005 | restoratives-and-the-fork | How is adding a restorative one tap — and where does "energizing but not a goal" get decided? | _pending_ | restoratives, goals, energy-valence, entry-points, phase-33 |
 
 ## Locked Decisions
 

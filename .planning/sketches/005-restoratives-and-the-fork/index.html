@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sketch 005 — restoratives, and the guitar fork</title>
+<link rel="stylesheet" href="../themes/default.css">
+<style>
+/* ─────────────────────────────────────────────────────────────────
+   Sketch 005. Throwaway. What is real: RestorativeItem (Hive typeId 7)
+   already exists — { id, name, emojiTag, sortOrder } — and is
+   deliberately never scheduled and never counted toward budgets or
+   streaks. EnergyValence.gives is today reachable ONLY from inside a
+   goal (goal_form_sheet.dart:277, onboarding_screen.dart:395). No
+   variant adds an aggregate; all three are entry-point changes.
+   ───────────────────────────────────────────────────────────────── */
+
+.stage { flex-wrap:wrap; gap:22px; align-items:flex-start; }
+.col { display:flex; flex-direction:column; align-items:center; gap:8px; }
+.col .cap { font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:#67716d; font-weight:600; }
+.phone { height: min(700px, 76vh); }
+
+.appbar { display:flex; align-items:center; gap:10px; padding:14px 16px 8px; flex:0 0 auto; }
+.appbar .back { font-size:19px; color:var(--on-surface-variant); cursor:pointer; }
+.appbar h1 { margin:0; font-size:19px; font-weight:600; letter-spacing:-.01em; }
+
+.scroller { flex:1 1 auto; overflow-y:auto; padding-bottom:78px; }
+.scroller::-webkit-scrollbar { width:6px; }
+.scroller::-webkit-scrollbar-thumb { background:var(--outline-variant); border-radius:3px; }
+
+.blurb { padding:2px 16px 10px; font-size:12.5px; line-height:1.5; color:var(--on-surface-variant); }
+.blurb b { color:var(--on-surface); font-weight:600; }
+
+.sechdr { padding:14px 16px 7px; font-size:12.5px; font-weight:600; color:var(--primary); }
+
+/* ── the quick-pick chip grid ─────────────────────────────────── */
+.chipgrid { display:flex; flex-wrap:wrap; gap:8px; padding:0 16px; }
+.pick {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:9px 13px; border-radius:var(--radius-pill);
+  border:1px solid var(--outline-variant); background:var(--surface);
+  font:inherit; font-size:13.5px; color:var(--on-surface);
+  cursor:pointer; transition:all .15s ease;
+}
+.pick:hover { border-color:var(--primary); background:var(--surface-container); }
+.pick.added { background:var(--primary-container); border-color:var(--primary-container); color:var(--on-primary-container); font-weight:600; }
+.pick .e { font-size:15px; }
+
+/* ── restorative rows ─────────────────────────────────────────── */
+.rrow {
+  margin:5px 12px; padding:11px 12px; display:flex; align-items:center; gap:10px;
+  background:var(--surface); border:1px solid var(--outline-variant); border-radius:12px;
+}
+.rrow .e { font-size:19px; width:26px; }
+.rrow .nm { flex:1 1 auto; font-size:15px; font-weight:500; }
+.rrow .del { color:var(--on-surface-variant); cursor:pointer; font-size:15px; opacity:.7; }
+.rrow .del:hover { opacity:1; color:#a13e2e; }
+
+.qadd { margin:8px 16px 2px; }
+.qadd .field { display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid var(--outline-variant); border-radius:12px; background:var(--surface); }
+.qadd input { flex:1 1 auto; border:none; outline:none; font:inherit; font-size:14px; background:transparent; color:var(--on-surface); }
+.qadd .helper { font-size:11px; color:var(--on-surface-variant); padding:5px 4px 0; }
+
+.emptystate { padding:34px 26px; text-align:center; color:var(--on-surface-variant); }
+.emptystate .ico { font-size:42px; opacity:.5; }
+.emptystate .t { font-size:15px; font-weight:600; color:var(--on-surface); margin:12px 0 6px; }
+.emptystate .b { font-size:13px; line-height:1.5; }
+
+/* ── the goal form ────────────────────────────────────────────── */
+.form { padding:4px 16px 20px; }
+.form .lab { font-size:11.5px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--on-surface-variant); margin:16px 0 7px; }
+.form .inp { padding:11px 12px; border:1px solid var(--outline-variant); border-radius:10px; background:var(--surface); font-size:15px; }
+.form .inp.filled { font-weight:500; }
+.seg { display:flex; gap:7px; flex-wrap:wrap; }
+.seg button {
+  font:inherit; font-size:13px; padding:9px 13px; border-radius:var(--radius-pill);
+  border:1px solid var(--outline-variant); background:var(--surface); color:var(--on-surface);
+  cursor:pointer; transition:all .15s ease; display:inline-flex; align-items:center; gap:6px;
+}
+.seg button:hover { background:var(--surface-container); }
+.seg button[aria-pressed="true"] { background:var(--primary-container); border-color:var(--primary-container); color:var(--on-primary-container); font-weight:600; }
+.seg button.restorative[aria-pressed="true"] { background:var(--tertiary-container); border-color:var(--tertiary-container); color:var(--on-tertiary-container); }
+
+/* the inline fork prompt (variant A) */
+.forkbox {
+  margin-top:12px; padding:12px 13px; border-radius:12px;
+  background:var(--tertiary-container); color:var(--on-tertiary-container);
+  font-size:12.5px; line-height:1.5;
+  display:none;
+}
+.forkbox.show { display:block; animation:slidein .18s ease; }
+@keyframes slidein { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+.forkbox b { font-weight:700; }
+.forkbox .acts { display:flex; gap:8px; margin-top:10px; }
+.forkbox button { font:inherit; font-size:12.5px; padding:7px 12px; border-radius:var(--radius-pill); cursor:pointer; border:1px solid rgba(0,0,0,.18); background:rgba(255,255,255,.6); color:inherit; }
+.forkbox button.primary { background:#0d3140; color:#fff; border-color:#0d3140; font-weight:600; }
+
+/* the front-door fork (variant B) */
+.doorwrap { padding:8px 16px 20px; }
+.door {
+  display:flex; gap:12px; align-items:flex-start; width:100%; text-align:left;
+  padding:16px; margin-bottom:11px; border-radius:14px; cursor:pointer;
+  border:1px solid var(--outline-variant); background:var(--surface);
+  font:inherit; color:var(--on-surface); transition:all .15s ease;
+}
+.door:hover { border-color:var(--primary); background:var(--surface-container); transform:translateY(-1px); }
+.door .ico { font-size:24px; flex:0 0 auto; line-height:1.1; }
+/* display:block on both — as inline spans the heading and its description run
+   together on one line and the two doors stop reading as two choices. */
+.door .t { display:block; font-size:15px; font-weight:600; }
+.door .d { display:block; font-size:12.5px; color:var(--on-surface-variant); margin-top:4px; line-height:1.45; }
+.door.b2 .ico { color:var(--tertiary); }
+
+.bottombar { position:absolute; left:0; right:0; bottom:0; padding:12px 16px; background:var(--surface); border-top:1px solid var(--outline-variant); display:flex; gap:9px; justify-content:flex-end; }
+.bottombar button { font:inherit; font-size:14px; padding:11px 18px; border-radius:var(--radius-pill); cursor:pointer; border:1px solid var(--outline-variant); background:transparent; color:var(--on-surface); }
+.bottombar button.primary { background:var(--primary); color:var(--on-primary); border-color:var(--primary); font-weight:600; }
+
+.fab {
+  position:absolute; right:16px; bottom:16px; z-index:20;
+  display:inline-flex; align-items:center; gap:8px;
+  padding:14px 18px; border-radius:16px; border:none; cursor:pointer;
+  background:var(--primary-container); color:var(--on-primary-container);
+  font:inherit; font-size:14px; font-weight:600; box-shadow:0 3px 10px rgba(0,0,0,.16);
+}
+
+.note { max-width:900px; margin:0 auto; padding:16px 18px 0; font-size:13px; line-height:1.55; color:#4b5551; }
+.note strong { color:#202826; }
+.note .q { color:#8a3b2b; font-weight:600; }
+.toast { position:fixed; left:50%; transform:translateX(-50%); bottom:22px; background:#101614; color:#e7efeb; padding:9px 16px; border-radius:var(--radius-pill); font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:200; }
+.toast.show { opacity:.95; }
+</style>
+</head>
+<body data-mood="3">
+
+<div class="toolbar">
+  <span class="label">Variant</span>
+  <div class="group">
+    <button data-v="a" aria-pressed="true">A · Chips + inline nudge</button>
+    <button data-v="b" aria-pressed="false">B · Fork at the front door</button>
+    <button data-v="c" aria-pressed="false">C · A third energy option</button>
+    <button data-v="shipped" aria-pressed="false">As shipped</button>
+  </div>
+  <span class="spacer"></span>
+  <span class="label">Mood</span>
+  <div class="group">
+    <button data-mood="1" aria-pressed="false">1</button>
+    <button data-mood="3" aria-pressed="true">3</button>
+    <button data-mood="5" aria-pressed="false">5</button>
+  </div>
+</div>
+
+<div class="note" id="note"></div>
+
+<div class="stage">
+  <div class="col">
+    <div class="cap">① Adding a restorative</div>
+    <div class="phone" id="left"></div>
+  </div>
+  <div class="col">
+    <div class="cap">② The guitar moment</div>
+    <div class="phone" id="right"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* Nine common restoratives — a hard-coded list, deliberately. Canopy is
+   dumb on purpose (CLAUDE.md): no suggestion engine, no LLM, no ranking. */
+const COMMON = [
+  { e:'🚶', n:'Walk outside' },
+  { e:'🎵', n:'Music' },
+  { e:'😴', n:'Nap' },
+  { e:'🧘', n:'Stretch' },
+  { e:'🚿', n:'Shower' },
+  { e:'📖', n:'Read' },
+  { e:'☕', n:'Tea or coffee' },
+  { e:'📞', n:'Call someone' },
+  { e:'🌤', n:'Sit in the sun' },
+];
+
+let variant = 'a';
+let mine = [{ e:'🎵', n:'Music' }];      // one already saved
+let added = new Set(['Music']);
+let valence = 'gives';                    // neutral | gives | costs | restorative
+let forkOpen = true;                      // variant A opens with its panel showing
+
+const NOTES = {
+  a: `<strong>A · Chips + inline nudge.</strong> ① The restoratives screen opens with the nine
+      common ones as tappable chips — one tap adds, tap again removes, and the typed field stays for
+      anything not on the list. ② The fork is a <em>reaction</em>: choose <em>Gives energy</em> in
+      the goal form and a panel slides in asking whether this is really a goal. Nothing is forced;
+      you can ignore it and carry on.
+      <span class="q">The question:</span> the nudge appears after you have already started filling
+      in a goal, so the escape hatch arrives late. Does catching it there feel helpful or naggy?`,
+  b: `<strong>B · Fork at the front door.</strong> ① Same chip grid. ② The question is asked
+      <em>first</em>, before any form: <em>something to make time for</em>, or <em>something that
+      restores you</em>. Pick the second and you never see a goal form at all — just a name and an
+      emoji. <span class="q">The question:</span> this puts a decision in front of every single
+      add, including the 90% of the time you just want a goal. Is one extra tap on the common path
+      worth making the fork impossible to miss?`,
+  c: `<strong>C · A third energy option.</strong> ① The chip grid, plus a Goals-style quick-add
+      field so restoratives and goals are entered the same way. ② The energy control stops being
+      <em>gives / neutral / costs</em> and becomes four: the fourth is <em>Restores me — not a
+      goal</em>, which converts the whole entry to a <code>RestorativeItem</code> on save (the form
+      collapses to name + emoji as you pick it).
+      <span class="q">The question:</span> this is the smallest diff and keeps one entry point.
+      But it hides the fork inside a control you have to scroll to — check whether you would ever
+      find it.`,
+  shipped: `<strong>As shipped, for reference.</strong> ① Restoratives are reachable only via Goals →
+      ⋮ → "What restores you". Adding one is FAB → dialog → type the name → optionally type an emoji
+      → Add. Nine of them is nine round trips. ② There is no fork anywhere. <code>EnergyValence.gives</code>
+      lives inside the goal form, so "guitar energizes me" makes guitar a goal — with a type, a
+      weekly budget and a priority — or it doesn't get recorded at all.`
+};
+
+/* ── left phone: adding a restorative ─────────────────────────── */
+function leftHTML() {
+  const showChips = variant !== 'shipped';
+  const showQuickAdd = (variant === 'c');
+  let chips = COMMON.map(c =>
+    `<button class="pick ${added.has(c.n) ? 'added' : ''}" data-pick="${c.n}">
+       <span class="e">${c.e}</span>${c.n}${added.has(c.n) ? ' ✓' : ''}</button>`).join('');
+
+  let list = mine.length
+    ? mine.map(m => `<div class="rrow"><span class="e">${m.e || '🌿'}</span>
+         <span class="nm">${m.n}</span><span class="del" data-del="${m.n}">✕</span></div>`).join('')
+    : `<div class="emptystate">
+         <div class="ico">🌿</div><div class="t">Nothing here yet</div>
+         <div class="b">Add the small things that recharge you — like listening to music or a walk.
+           These aren't goals; they only resurface on low-energy days, when you need them most.</div>
+       </div>`;
+
+  return `
+    <div class="appbar"><span class="back">←</span><h1>What restores you</h1></div>
+    <div class="blurb">These <b>aren't goals</b>. They're never scheduled and never counted toward
+      a budget or a streak — they just resurface on low-energy days.</div>
+    <div class="scroller">
+      ${showChips ? `<div class="sechdr">Common ones — tap to add</div>
+                     <div class="chipgrid">${chips}</div>` : ''}
+      ${showQuickAdd ? `<div class="qadd"><div class="field">
+             <input placeholder="Add another (${mine.length} so far)">
+             <span style="color:var(--primary);font-size:18px;cursor:pointer">＋</span></div>
+             <div class="helper">Enter after each, or paste a list</div></div>` : ''}
+      <div class="sechdr">Yours ${mine.length ? `· ${mine.length}` : ''}</div>
+      ${list}
+    </div>
+    <button class="fab" data-toast="Opens the name + emoji dialog">＋ Add restorative</button>`;
+}
+
+/* ── right phone: the guitar moment ───────────────────────────── */
+function rightHTML() {
+  if (variant === 'b' && valence === 'neutral') {
+    return `
+      <div class="appbar"><span class="back">←</span><h1>Add something</h1></div>
+      <div class="blurb">Which of these is <b>guitar</b>?</div>
+      <div class="doorwrap">
+        <button class="door" data-door="goal">
+          <span class="ico">⚑</span>
+          <span><span class="t">Something to make time for</span>
+            <span class="d">A goal. It gets a type, a weekly budget and a priority, and the
+              scheduler puts it in your day.</span></span>
+        </button>
+        <button class="door b2" data-door="rest">
+          <span class="ico">🌿</span>
+          <span><span class="t">Something that restores you</span>
+            <span class="d">Not a goal. Never scheduled, never counted toward a budget or a
+              streak — it just resurfaces on low-energy days.</span></span>
+        </button>
+      </div>`;
+  }
+
+  if (variant === 'b' && valence === 'restorative') {
+    return `
+      <div class="appbar"><span class="back" data-door="reset">←</span><h1>Add a restorative</h1></div>
+      <div class="form">
+        <div class="lab">What restores you?</div>
+        <div class="inp filled">Guitar</div>
+        <div class="lab">Emoji (optional)</div>
+        <div class="inp">🎸</div>
+        <div class="forkbox show" style="margin-top:18px">
+          Saved as a restorative, <b>not a goal</b>. It won't be scheduled, won't count toward a
+          budget, and won't break a streak if you skip it.
+        </div>
+      </div>
+      <div class="bottombar">
+        <button data-door="reset">Cancel</button>
+        <button class="primary" data-toast="Saved as a RestorativeItem — no goal created">Add</button>
+      </div>`;
+  }
+
+  const isFour = (variant === 'c');
+  const collapsed = (variant === 'c' && valence === 'restorative');
+
+  return `
+    <div class="appbar"><span class="back">←</span><h1>${collapsed ? 'New restorative' : 'New goal'}</h1></div>
+    <div class="form">
+      <div class="lab">Name</div>
+      <div class="inp filled">Guitar</div>
+
+      ${collapsed ? `
+        <div class="lab">Emoji (optional)</div>
+        <div class="inp">🎸</div>` : `
+        <div class="lab">Type</div>
+        <div class="seg">
+          <button aria-pressed="true">◷ Regular time</button>
+          <button aria-pressed="false">⚑ Working toward</button>
+          <button aria-pressed="false">↻ Daily habit</button>
+        </div>
+        <div class="lab">Hours per week</div>
+        <div class="inp">3.0</div>`}
+
+      <div class="lab">Energy</div>
+      <div class="seg">
+        <button data-val="gives"   aria-pressed="${valence==='gives'}">⚡ Gives energy</button>
+        <button data-val="neutral" aria-pressed="${valence==='neutral'}">Neutral</button>
+        <button data-val="costs"   aria-pressed="${valence==='costs'}">⧖ Costs energy</button>
+        ${isFour ? `<button class="restorative" data-val="restorative"
+             aria-pressed="${valence==='restorative'}">🌿 Restores me — not a goal</button>` : ''}
+      </div>
+
+      ${variant === 'a' ? `
+        <div class="forkbox ${forkOpen ? 'show' : ''}">
+          <b>Is guitar actually a goal?</b> If you just want it remembered as something that
+          recharges you, it doesn't need a type, a budget or a priority — and it won't be scheduled
+          or counted toward a streak.
+          <div class="acts">
+            <button class="primary" data-toast="Saved as a RestorativeItem — the goal form closes">🌿 Save as a restorative instead</button>
+            <button data-fork="dismiss">Keep it a goal</button>
+          </div>
+        </div>` : ''}
+
+      ${collapsed ? `
+        <div class="forkbox show" style="margin-top:14px">
+          This is now a <b>restorative</b>, not a goal — the type and budget fields are gone because
+          it will never be scheduled.
+        </div>` : ''}
+    </div>
+    <div class="bottombar">
+      <button>Cancel</button>
+      <button class="primary" data-toast="${collapsed ? 'Saved as a RestorativeItem — no goal created' : 'Saved as a Goal'}">Save</button>
+    </div>`;
+}
+
+function render() {
+  document.getElementById('left').innerHTML  = leftHTML();
+  document.getElementById('right').innerHTML = rightHTML();
+  document.getElementById('note').innerHTML  = NOTES[variant];
+}
+
+function toast(m) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1600);
+}
+
+document.addEventListener('click', (e) => {
+  const vb = e.target.closest('[data-v]');
+  if (vb) {
+    variant = vb.dataset.v;
+    // A's whole proposition IS the panel, and it only exists as a reaction to
+    // "Gives energy" — arriving on a resting form would read as "no change".
+    // Pre-open it; tapping Neutral still shows the before.
+    valence = (variant === 'a') ? 'gives' : 'neutral';
+    forkOpen = (variant === 'a');
+    document.querySelectorAll('[data-v]').forEach(b => b.setAttribute('aria-pressed', b === vb));
+    render(); return;
+  }
+  const mb = e.target.closest('[data-mood]');
+  if (mb) {
+    document.body.dataset.mood = mb.dataset.mood;
+    document.querySelectorAll('[data-mood]').forEach(b => b.setAttribute('aria-pressed', b === mb));
+    return;
+  }
+  const pk = e.target.closest('[data-pick]');
+  if (pk) {
+    const n = pk.dataset.pick, c = COMMON.find(x => x.n === n);
+    if (added.has(n)) { added.delete(n); mine = mine.filter(m => m.n !== n); toast('Removed'); }
+    else { added.add(n); mine.push(c); toast(`Added "${n}"`); }
+    render(); return;
+  }
+  const dl = e.target.closest('[data-del]');
+  if (dl) {
+    const n = dl.dataset.del;
+    mine = mine.filter(m => m.n !== n); added.delete(n);
+    render(); toast('Removed'); return;
+  }
+  const vl = e.target.closest('[data-val]');
+  if (vl) {
+    valence = vl.dataset.val;
+    forkOpen = (variant === 'a' && valence === 'gives');
+    render(); return;
+  }
+  const fk = e.target.closest('[data-fork]');
+  if (fk) { forkOpen = false; render(); toast('Stays a goal'); return; }
+  const dr = e.target.closest('[data-door]');
+  if (dr) {
+    if (dr.dataset.door === 'rest') valence = 'restorative';
+    else if (dr.dataset.door === 'reset') valence = 'neutral';
+    else { valence = 'neutral'; toast('Opens the normal goal form'); }
+    render(); return;
+  }
+  const tb = e.target.closest('[data-toast]');
+  if (tb) { toast(tb.dataset.toast); return; }
+});
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sketch 003 — the unlabelled circle</title>
+<link rel="stylesheet" href="../themes/default.css">
+<style>
+/* ─────────────────────────────────────────────────────────────────
+   Sketch 003. Throwaway, except the geometry, which is real:
+   every row is (start - dayStart) * 6.0 px from the top and exactly
+   duration * 6.0 px tall — the rule timeline_geometry.dart enforces
+   (kPixelsPerMinute = 6.0). A 25-min work chunk is 150dp, a 5-min
+   break is 30dp, a 30-min long break is 180dp. No variant is allowed
+   to buy a better look by making a row lie about its duration.
+   ───────────────────────────────────────────────────────────────── */
+
+.phone { height: min(770px, 80vh); }
+
+.appbar { display:flex; align-items:center; justify-content:space-between; padding:14px 16px 10px; flex:0 0 auto; }
+.appbar h1 { margin:0; font-size:20px; font-weight:600; letter-spacing:-.01em; }
+.appbar .date { font-size:13px; color:var(--on-surface-variant); }
+
+.moodchip {
+  display:inline-flex; align-items:center; gap:6px;
+  margin:0 16px 10px; padding:5px 12px;
+  background:var(--secondary-container); color:var(--on-secondary-container);
+  border-radius:var(--radius-pill); font-size:12.5px; font-weight:500;
+  flex:0 0 auto; align-self:flex-start;
+}
+
+.scroller { flex:1 1 auto; overflow-y:auto; overflow-x:hidden; position:relative; }
+.scroller::-webkit-scrollbar { width:6px; }
+.scroller::-webkit-scrollbar-thumb { background:var(--outline-variant); border-radius:3px; }
+
+.timeline { position:relative; margin:0 16px 40px; }
+.row { position:absolute; left:0; right:0; }
+.hour { position:absolute; left:0; width:40px; font-size:11px; color:var(--on-surface-variant); text-align:right; padding-right:8px; line-height:1; }
+.hourline { position:absolute; left:40px; right:0; border-top:1px solid var(--outline-variant); opacity:.35; }
+.content { position:absolute; left:40px; right:0; top:0; bottom:0; }
+
+/* ── the work card ────────────────────────────────────────────── */
+.card {
+  position:absolute; inset:2px 0;
+  background:var(--surface); border:1px solid var(--outline-variant);
+  border-radius:12px; overflow:hidden;
+  display:flex; flex-direction:column;
+}
+.card .accent { position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--primary); }
+.card .body { padding:8px 10px 8px 14px; display:flex; flex-direction:column; height:100%; }
+.card .titlerow { display:flex; align-items:center; gap:8px; }
+.card .title { font-size:14px; font-weight:500; flex:1 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.card .meta { font-size:11.5px; color:var(--on-surface-variant); margin-top:3px; }
+.card .actions { margin-top:auto; display:flex; gap:8px; padding-top:6px; }
+
+.btn {
+  font:inherit; font-size:12.5px; cursor:pointer;
+  display:inline-flex; align-items:center; gap:5px;
+  padding:6px 12px; border-radius:var(--radius-pill);
+  border:1px solid transparent; transition:all .15s ease;
+}
+.btn-filled { background:var(--primary); color:var(--on-primary); }
+.btn-filled:hover { filter:brightness(1.08); }
+.btn-outline { background:transparent; color:#a13e2e; border-color:#d2a79f; }
+.btn-outline:hover { background:#fbeeeb; }
+
+/* ── the thing under test: trailing status ────────────────────── */
+.trail { flex:0 0 auto; display:flex; align-items:center; }
+
+/* A — nothing at all on unresolved */
+.trail-none { width:0; }
+
+/* B — a labelled state chip, one vocabulary for all three states */
+.statechip {
+  font-size:10.5px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+  padding:3px 9px; border-radius:var(--radius-pill); white-space:nowrap;
+}
+.statechip.todo { background:var(--surface-container-high); color:var(--on-surface-variant); border:1px solid var(--outline-variant); }
+.statechip.done { background:var(--primary-container); color:var(--on-primary-container); }
+.statechip.skip { background:transparent; color:var(--on-surface-variant); border:1px dashed var(--outline-variant); }
+
+/* C — the circle becomes a real checkbox */
+.checkbtn {
+  width:40px; height:40px; margin:-8px -4px -8px 0;
+  display:flex; align-items:center; justify-content:center;
+  border:none; background:transparent; cursor:pointer; border-radius:50%;
+  transition:background .15s ease;
+}
+.checkbtn:hover { background:var(--surface-container-high); }
+.checkbtn .ring {
+  width:22px; height:22px; border-radius:50%;
+  border:2px solid var(--outline); display:flex; align-items:center; justify-content:center;
+  color:transparent; font-size:14px; font-weight:700; transition:all .15s ease;
+}
+.checkbtn:hover .ring { border-color:var(--primary); color:var(--outline-variant); }
+.card.is-done .checkbtn .ring { background:var(--primary); border-color:var(--primary); color:var(--on-primary); }
+
+/* the current shipped circle, for the "as shipped" reference column */
+.shipped-circle { width:20px; height:20px; border-radius:50%; border:2px solid var(--outline); opacity:.75; }
+
+/* resolved styling */
+.card.is-done .title, .card.is-skipped .title { text-decoration:line-through; opacity:.6; }
+.card.is-done .actions, .card.is-skipped .actions { display:none; }
+
+/* ── breaks ───────────────────────────────────────────────────── */
+.brk {
+  position:absolute; inset:0 0;
+  background:var(--surface-container); border:1px solid var(--outline-variant);
+  border-radius:12px; overflow:hidden; display:flex; align-items:center;
+}
+.brk.long { background:var(--surface-container-high); flex-direction:column; justify-content:center; gap:12px; }
+.brk .lbl { flex:1 1 auto; padding-left:10px; font-size:12px; color:var(--on-surface-variant); }
+/* flex:0 0 auto, deliberately — with the inherited flex:1 the label grows to fill
+   the 180dp row and shoves the Skip to the bottom edge. Sketch 002's locked
+   decision is "a tall break's Skip is a CENTRED pill"; this is what centres it. */
+.brk.long .lbl { flex:0 0 auto; padding:0; font-size:14px; font-weight:500; color:var(--on-surface); }
+.brk .rail {
+  flex:0 0 64px; align-self:stretch; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:1px;
+  border-left:1px solid var(--outline-variant); background:#f6ecea; color:#a13e2e;
+  font-size:9.5px; font-weight:600; cursor:pointer;
+}
+
+/* ── free time — the small item ───────────────────────────────── */
+.free {
+  position:absolute; inset:2px 0; border-radius:12px;
+  display:flex; align-items:center; padding-left:12px;
+  font-size:12px; color:var(--on-surface-variant);
+}
+.free.dashed { border:1.5px dashed var(--outline-variant); background:transparent; }
+.free.filled { border:1px solid var(--outline-variant); background:repeating-linear-gradient(135deg, transparent 0 7px, rgba(0,0,0,.022) 7px 14px), var(--surface); }
+
+/* now line */
+.nowline { position:absolute; left:0; right:0; height:0; z-index:6; pointer-events:none; }
+.nowline::before { content:''; position:absolute; left:40px; right:0; top:-1px; height:2px; background:#c0392b; border-radius:1px; }
+.nowline::after { content:''; position:absolute; left:36px; top:-4px; width:8px; height:8px; border-radius:50%; background:#c0392b; }
+
+/* ── variant chrome ───────────────────────────────────────────── */
+.variant { display:none; }
+.variant.active { display:block; }
+.note { max-width:430px; margin:0 auto; padding:16px 18px 0; font-size:13px; line-height:1.55; color:#4b5551; }
+.note strong { color:#202826; }
+.note .q { color:#8a3b2b; font-weight:600; }
+.toast {
+  position:fixed; left:50%; transform:translateX(-50%); bottom:22px;
+  background:#101614; color:#e7efeb; padding:9px 16px; border-radius:var(--radius-pill);
+  font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:200;
+}
+.toast.show { opacity:.95; }
+</style>
+</head>
+<body data-mood="3">
+
+<div class="toolbar">
+  <span class="label">Variant</span>
+  <div class="group">
+    <button data-v="a" aria-pressed="true">A · Nothing</button>
+    <button data-v="b" aria-pressed="false">B · Says its state</button>
+    <button data-v="c" aria-pressed="false">C · A real checkbox</button>
+    <button data-v="shipped" aria-pressed="false">As shipped</button>
+  </div>
+  <span class="spacer"></span>
+  <div class="group"><button id="jumpnow">Jump to now</button></div>
+  <span class="label">Free time</span>
+  <div class="group">
+    <button data-free="dashed" aria-pressed="true">Dashed</button>
+    <button data-free="filled" aria-pressed="false">Filled</button>
+  </div>
+  <span class="label">Mood</span>
+  <div class="group">
+    <button data-mood="1" aria-pressed="false">1</button>
+    <button data-mood="3" aria-pressed="true">3</button>
+    <button data-mood="5" aria-pressed="false">5</button>
+  </div>
+</div>
+
+<div class="note" id="note"></div>
+
+<div class="stage">
+  <div class="phone">
+    <div class="appbar">
+      <div>
+        <h1>Today</h1>
+        <div class="date">Sunday, 31 August</div>
+      </div>
+    </div>
+    <div class="moodchip">◐ Steady day · mood 3</div>
+    <div class="scroller" id="scroller">
+      <div class="timeline" id="timeline"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── the real generator's shape for a steady day (mood 3):
+   work 25, short break 5, long break 30 every 3rd chunk. Times are
+   real; heights are duration * PPM with PPM = 6.0. ─────────────── */
+const PPM = 6.0;
+const DAY_START = 8 * 60;          // 8:00am
+const NOW = 10 * 60 + 12;          // 10:12am — mid third chunk
+
+const day = [
+  { t:'free',  start: 8*60,      dur: 30, label:'Free until 8:30 AM' },
+  { t:'work',  start: 8*60+30,   dur: 25, title:'Draft the Q3 memo',      goal:'Deep work',      state:'done' },
+  { t:'sbrk',  start: 8*60+55,   dur: 5 },
+  { t:'work',  start: 9*60,      dur: 25, title:'Inbox to zero',          goal:'Admin',          state:'skipped' },
+  { t:'sbrk',  start: 9*60+25,   dur: 5 },
+  { t:'work',  start: 9*60+30,   dur: 25, title:'Review the pull request',goal:'Deep work',      state:'todo' },
+  { t:'sbrk',  start: 9*60+55,   dur: 5 },
+  { t:'lbrk',  start: 10*60,     dur: 30 },
+  { t:'work',  start: 10*60+30,  dur: 25, title:'Practise guitar',        goal:'Guitar',         state:'todo' },
+  { t:'sbrk',  start: 10*60+55,  dur: 5 },
+  { t:'work',  start: 11*60,     dur: 25, title:'Write the weekly note',  goal:'Deep work',      state:'todo' },
+  { t:'free',  start: 11*60+25,  dur: 65, label:'Free · 1h 5m' },
+];
+
+const NOTES = {
+  a: `<strong>A · Nothing.</strong> The circle is deleted outright. An unresolved row shows no
+      trailing glyph — its state is carried by the fact that <em>Complete</em> and <em>Skip</em> are
+      still there to press. Done still gets its check, skipped still says <em>skipped</em>.
+      <span class="q">The question:</span> with nothing on the right, does an unresolved row still
+      read as unresolved — or does it just read as a card?`,
+  b: `<strong>B · Says its state.</strong> One vocabulary, three words: <em>To do</em>,
+      <em>Done</em>, <em>Skipped</em>. No glyph anywhere carries meaning on its own. The chip is
+      display-only — nothing about it invites a tap.
+      <span class="q">The question:</span> three chips down a column is three more things on screen.
+      Is naming the state worth the noise, or does "To do" state the obvious?`,
+  c: `<strong>C · A real checkbox.</strong> The circle stays and finally does something — 40dp
+      tap target, tick it to complete. The tall card's <em>Complete</em> button is then redundant
+      and goes, leaving <em>Skip</em>. <span class="q">The question:</span> this is the only variant
+      that <em>adds</em> a way to complete a chunk. Two ways to do one thing is the failure Phase 32
+      spent a round on — check the 150dp cards and decide whether losing the labelled Complete is a
+      trade you want.`,
+  shipped: `<strong>As shipped, for reference.</strong> This is what is on screen today and has been
+      since 2026-06-12: <code>Icons.radio_button_unchecked</code> in <code>onSurfaceVariant</code>,
+      on every unresolved row. It looks tappable. It is not. It sits next to a labelled
+      <em>Complete</em> button that does the job it appears to offer.`
+};
+
+const tl = document.getElementById('timeline');
+let variant = 'a', freeStyle = 'dashed';
+const resolved = {};   // id -> 'done' for C's live checkbox
+
+function trailFor(item, id) {
+  const st = resolved[id] || item.state;
+  if (st === 'done')    return variant === 'b'
+      ? `<span class="statechip done">Done</span>`
+      : `<span style="color:var(--primary);font-size:19px;line-height:1">●</span>`;
+  if (st === 'skipped') return variant === 'b'
+      ? `<span class="statechip skip">Skipped</span>`
+      : `<span style="font-size:11.5px;color:var(--on-surface-variant)">skipped</span>`;
+  // unresolved — the item under test
+  if (variant === 'a') return `<span class="trail-none"></span>`;
+  if (variant === 'b') return `<span class="statechip todo">To do</span>`;
+  if (variant === 'c') return `<button class="checkbtn" data-check="${id}" title="Mark complete"
+        aria-label="Mark complete"><span class="ring">✓</span></button>`;
+  return `<span class="shipped-circle"></span>`;
+}
+
+function render() {
+  const lastEnd = day[day.length-1].start + day[day.length-1].dur;
+  tl.style.height = ((lastEnd - DAY_START) * PPM) + 'px';
+  let html = '';
+
+  for (let h = 8; h <= 12; h++) {
+    const y = (h*60 - DAY_START) * PPM;
+    const lbl = (h % 12 === 0 ? 12 : h % 12) + (h < 12 ? 'am' : 'pm');
+    html += `<div class="hour" style="top:${y-4}px">${lbl}</div>
+             <div class="hourline" style="top:${y}px"></div>`;
+  }
+
+  day.forEach((item, i) => {
+    const top = (item.start - DAY_START) * PPM;
+    const h   = item.dur * PPM;
+    const id  = 'r' + i;
+    let inner = '';
+
+    if (item.t === 'free') {
+      inner = `<div class="free ${freeStyle}">${item.label}</div>`;
+    } else if (item.t === 'sbrk') {
+      inner = `<div class="brk">
+                 <span class="lbl">Short break · 5m</span>
+                 <div class="rail" data-skip="${id}"><span style="font-size:13px">⤼</span>Skip</div>
+               </div>`;
+    } else if (item.t === 'lbrk') {
+      inner = `<div class="brk long">
+                 <span class="lbl">Long break · 30m</span>
+                 <button class="btn btn-outline" data-skip="${id}">⤼ Skip</button>
+               </div>`;
+    } else {
+      const st = resolved[id] || item.state;
+      const roomy = h >= 120;                 // kRoomyWorkMinHeight
+      const cls = st === 'done' ? 'is-done' : st === 'skipped' ? 'is-skipped' : '';
+      // C removes the redundant Complete; every other variant keeps both.
+      const acts = (variant === 'c')
+        ? `<button class="btn btn-outline" data-skip="${id}">⤼ Skip</button>`
+        : `<button class="btn btn-filled" data-done="${id}">✓ Complete</button>
+           <button class="btn btn-outline" data-skip="${id}">⤼ Skip</button>`;
+      inner = `<div class="card ${cls}">
+                 <span class="accent"></span>
+                 <div class="body">
+                   <div class="titlerow">
+                     <span class="title">${item.title}</span>
+                     <span class="trail">${trailFor(item, id)}</span>
+                   </div>
+                   ${roomy ? `<div class="meta">${item.goal} · 25m</div>` : ``}
+                   ${st === 'todo' && !resolved[id] ? `<div class="actions">${acts}</div>` : ``}
+                 </div>
+               </div>`;
+    }
+    html += `<div class="row" style="top:${top}px;height:${h}px">
+               <div class="content">${inner}</div>
+             </div>`;
+  });
+
+  html += `<div class="nowline" style="top:${(NOW - DAY_START)*PPM}px"></div>`;
+  tl.innerHTML = html;
+  document.getElementById('note').innerHTML = NOTES[variant];
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1400);
+}
+
+document.addEventListener('click', (e) => {
+  const vb = e.target.closest('[data-v]');
+  if (vb) {
+    variant = vb.dataset.v;
+    document.querySelectorAll('[data-v]').forEach(b => b.setAttribute('aria-pressed', b === vb));
+    render(); return;
+  }
+  const fb = e.target.closest('[data-free]');
+  if (fb) {
+    freeStyle = fb.dataset.free;
+    document.querySelectorAll('[data-free]').forEach(b => b.setAttribute('aria-pressed', b === fb));
+    render(); return;
+  }
+  const mb = e.target.closest('[data-mood]');
+  if (mb) {
+    document.body.dataset.mood = mb.dataset.mood;
+    document.querySelectorAll('[data-mood]').forEach(b => b.setAttribute('aria-pressed', b === mb));
+    return;
+  }
+  const ck = e.target.closest('[data-check]');
+  if (ck) { resolved[ck.dataset.check] = 'done'; render(); toast('Marked complete'); return; }
+  const dn = e.target.closest('[data-done]');
+  if (dn) { resolved[dn.dataset.done] = 'done'; render(); toast('Marked complete'); return; }
+  const sk = e.target.closest('[data-skip]');
+  if (sk) { resolved[sk.dataset.skip] = 'skipped'; render(); toast('Skipped'); return; }
+});
+
+document.getElementById('jumpnow').addEventListener('click', () => {
+  document.getElementById('scroller').scrollTo({ top: (NOW - DAY_START) * PPM - 240, behavior:'smooth' });
+});
+
+render();
+/* Opens at the TOP of the day, not auto-centred on now the way the real screen
+   does. Deliberate: the top 570px is the only place all three states and both
+   free-time blocks are on screen together, and comparing them IS the sketch.
+   "Jump to now" restores the real behaviour. */
+document.getElementById('scroller').scrollTop = 0;
+</script>
+</body>
+</html>
