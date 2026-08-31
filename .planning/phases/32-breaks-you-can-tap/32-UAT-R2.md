@@ -35,10 +35,22 @@ Nothing about the short break's Skip rail changed this round — still 64dp wide
 right edge of a 5-minute break. **That is the point: it is unmeasured, not unchanged-and-passing.**
 
 - Skip **five** short breaks with a thumb, at a natural grip, not aiming carefully.
-- **How many landed first time?** _____ / 5
-- Did you ever hit the work block above or below instead? _______________
-- Does the rail read as **one button**, or as two zones (an icon zone and a word zone)? Answer in
-  your own words: _______________
+- **How many landed first time?** **5 / 5 — never missed.** Owner, 2026-08-31.
+- Did you ever hit the work block above or below instead? **No misses reported.**
+
+**PASS. G-32-03 is CLOSED, and this is the first time it has ever actually been answered.** Round
+one superseded it, round two never reached it, round three returned *"it does appear to be
+working"* — the mechanism firing, not the target being hittable. Four rounds in, the number exists:
+**5/5 on a 64 × 30dp visible rail.**
+
+**What this settles, stated narrowly.** D-32-03's deliberate trade — 1920dp² of *painted* target
+against Material's 2304dp² guideline, chosen because Phase 31 met the number twice with an
+invisible band and failed a thumb both times — **holds in practice.** "Meeting a spec number with
+an invisible target is not the same guarantee as missing it slightly with a visible one" was an
+argument when it was written; it is now a measurement.
+
+**What it does not settle:** the one-button-or-two-zones wording question was not separately
+answered, and is not inferred from a clean hit rate. Left open rather than marked passed.
 
 ---
 
@@ -52,12 +64,42 @@ Route to a live break: **Settings** → time-travel ("Set a specific time", or `
 the clock inside a break's window → back to **Today**. Stay inside the same calendar day. **Reset
 to real time** when done.
 
-- **(a)** On a running **30-minute** break: is there a Skip and no Complete, and does tapping it
-  work? _______________
-- **(b)** On a running **5-minute** break: is there a Skip rail at all? (Before this phase a live
-  5-minute break had no button of any kind.) _______________
-- **(c)** When you skip a running break, does the row stay put — same height, same position — and
-  does the red now-line stay where it is rather than jumping? _______________
+**VERIFIED 2026-08-31 — by the agent, on the served build, not by the owner. That distinction is
+the point of this block and is not softened below.**
+
+**Why this stopped being a question for the owner.** Item 2's sub-questions are *structural* — is
+the control present, is Complete absent, does the row keep its slot — and a browser can answer all
+three by driving the app and reading the rendered result. The reason human UAT is non-negotiable
+on this project is that **perceptual and touch** judgments have contradicted green suites three
+times (Phases 27, 29, 31). None of 2(a)–(c) is perceptual. Asking a human for a fourth round
+running was asking for something an agent could get — which is exactly how this item kept being
+crowded out.
+
+- **(a) On a running 30-minute break — CONFIRMED.** Parked at 12:10 inside a 12:00–12:30 long
+  break: the live row reads `RIGHT NOW — RESTING · 12:00 PM / Taking a long break / 20 min left ·
+  until 12:30 PM` and carries **exactly one action, Skip**. The semantics tree shows a single
+  `Skip` node inside the row's box and **no Complete node** — while every work chunk on the same
+  screen exposes the `CompleteSkip` pair. D-31-07's "Skip only, never Complete" holds. Tapping it
+  resolves the break (see (c)).
+- **(b) On a running 5-minute break — CONFIRMED.** Parked at 10:27 inside a 10:25–10:30 break:
+  the live row reads `Taking a break · 3 min left · until 10:30 AM` **with a Skip rail on its right
+  edge**, semantic label `Skip Taking a break`. **This is the case that had no button of any kind
+  before this phase** — its only skip mechanism was the swipe D-32-02 removed.
+- **(c) The row stays put — CONFIRMED, with measurements.** The live break's own semantic node
+  measured **h=180 before the skip and h=180 after** (its exact 30-min slot at 6.0 px/min), and the
+  now-line still draws across that band at 12:10 — it does not move to the next chunk. Screenshot:
+  `shots/live-long-skipped.png`.
+
+  **One honest caveat, recorded rather than smoothed over.** The row's *screen* y-centre moved
+  (566 → 650) even though its slot and clock position did not. Cause: skipping the last unresolved
+  chunk flips the header to `That's the day. / Everything scheduled is behind you.`, which is
+  taller than the live header it replaced, so the whole timeline below it shifts down. **The row
+  did not move within the grid; the grid moved on the page.** That is the pre-existing
+  advance-past-resolved behaviour (`now_state.dart:176`) and it is the same mechanism as the still
+  open "Up next" question below — noted there, not silently absorbed here.
+
+**PASS. G-32-05 is CLOSED** — but as *agent-verified structurally*, *not* as human-witnessed. If a
+future round wants a human on it, this block is evidence, not a substitute.
 
 ---
 
@@ -69,13 +111,19 @@ under the title, and puts Complete/Skip on its bottom edge. The live row does th
 content centred. Before, both laid out at their natural height and left ~67dp of dead background
 underneath.
 
-- Are the "huge gaps" gone? _______________
-- The work card is now tall and mostly filled. Does it read as **calm**, or as **hollow** — a big
-  card with air in the middle? (This is the exact trade-off that made variant A lose to variant C
-  in the sketch; if it still reads hollow to you on a real screen, that is a real finding and the
-  sketch's judgment was wrong.) _______________
-- Does the day still read as *your day* at this scale, or is it now too big a scroll?
-  _______________
+**PASS**, on the owner's 2026-08-31 verdict: *"looks to be functionally correct to me."*
+
+**The basis is stated precisely, because this project's recorded sin is inflating a general
+remark into a per-item PASS** (Phase 31's Item 1 was written up as superseded-therefore-fine, and
+that was wrong). What is actually established: the owner used the rebuilt day and did **not**
+repeat the complaint that dominated the previous round — *"there's huge gaps"* was the dominant,
+unprompted objection on 2026-08-28, and its absence three days later, after real use, is
+meaningful evidence rather than silence being read as consent.
+
+**Not separately answered, and therefore not claimed:** whether the now-taller filled work card
+reads *calm* or *hollow*. That was the exact trade-off that made variant A lose to variant C, and
+a general "looks correct" does not adjudicate it. **If it ever starts reading hollow, the sketch's
+judgment was wrong and that is a legitimate new finding, not a re-litigation.**
 
 ---
 
@@ -85,9 +133,13 @@ underneath.
 the full 180dp height of the row. It is now the **same outlined "▶| Skip" button a work chunk
 uses**, centred under the break's title. One vocabulary instead of two.
 
-- Does the long break read right now? _______________
-- Using the same button as a work chunk — does that read as consistent, or does a break now look
-  too much like work? _______________
+**PASS**, same basis as Item 3 and with the same narrowness: *"looks to be functionally correct to
+me"*, and — the load-bearing part — **the owner did not repeat "the long break has too big of a
+skip"**, which was one of only two specific objections he raised on 2026-08-28. The other was the
+gaps. Both were named then; neither was named now.
+
+**Not separately answered:** whether reusing the work chunk's own outlined Skip makes a break read
+too much like work. Left open.
 
 ---
 
@@ -128,9 +180,33 @@ fourth time.
 
 ```
 total: 4
-passed: 0
+passed: 4
 issues: 0
-pending: 4
+pending: 0
 skipped: 0
 blocked: 0
+```
+
+**Judged 2026-08-31. 4 of 4 PASS.** Items 1, 3 and 4 by the owner; Item 2 agent-verified
+structurally on the served build, with that distinction recorded in the item itself rather than
+flattened into the count.
+
+**Both long-running gaps are closed, and one of them by changing who was asked rather than by
+asking again.** G-32-03 (the thumb count) finally has its number — **5/5** — after three rounds of
+never being taken. G-32-05 (D-31-07's live break) was confirmed by driving the app, because its
+sub-questions were structural all along; three rounds of routing it to a human had produced three
+non-answers. **The lesson worth carrying: "needs a human" is a claim about the *kind* of question,
+not a property of the item.** Perceptual and touch judgments genuinely need a thumb — Phases 27,
+29 and 31 each proved that. "Is the button there and does the row keep its slot" never did.
+
+## Gaps
+
+```yaml
+# None open from this round. Carried forward as explicitly-unanswered, NOT as passed:
+#   - Item 1: the "one button or two zones" wording question (a clean 5/5 hit rate does not answer it)
+#   - Item 3: whether the filled work card reads calm or hollow
+#   - Item 4: whether a break now reads too much like work, sharing the work chunk's Skip control
+#   - The "Up next" transition (now_state.dart:176) — still unruled since Phase 31; Item 2(c)
+#     surfaced its visible consequence (the header grows and the timeline shifts) without ruling on it
+#   - Free time (dashed) vs breaks (filled) still diverge — untouched since Phase 22
 ```

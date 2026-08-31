@@ -810,7 +810,19 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 32-03-PLAN.md — the real-browser fit measurement and the blocking human UAT, with a mandatory Re-check-in first and D-31-07 re-asked
+- [x] 32-03-PLAN.md — the real-browser fit measurement and the blocking human UAT, with a mandatory Re-check-in first and D-31-07 re-asked — **round one judged 2026-08-28: 0/4, FAIL on appearance (`32-UAT.md`)**
+
+**Wave 4 (unplanned gap closure, added 2026-08-28)** — round one failed on appearance, so the
+route went through `/gsd-sketch` rather than straight to code. **The process finding is the
+durable part: Phase 32 already HAD a UI-SPEC that passed a checker 6/6, and its one
+"real-browser measurement" was a tight crop of the single card being optimised — nobody rendered
+a full day and looked at it.** Sketch 002 served three whole-screen variants at the real
+geometry; the owner chose **C · Adaptive fill**.
+
+- [x] Sketch 002 (`.planning/sketches/002-timeline-at-6/`) — three answers to "what does a card do with a slot taller than its content", with a live 4.0/5.0/6.0 toggle so the scale trade was looked at rather than argued
+- [x] `0d9777c` — a row is sized by its duration, its content by the height it gets. Closes G-32-01 (the ~67dp dead band under every work chunk — pre-existing, made visible by D-32-01, not caused by it) and G-32-02 (the long break's full-height rail → the shared centred `OutlinedButton.icon`)
+- [x] Round-two UAT (`32-UAT-R2.md`) judged 2026-08-31 — **4/4 PASS**, with Items 1 and 2 deliberately moved above the visual items after three rounds of being crowded out
+- [x] `32-REVIEW.md` finding 1 fixed after the gate closed — unreachable `BreakSkippedIndicator` branch deleted, its slot-preserving doc claim corrected
 
 **Decisions already ruled by the owner (do not re-ask):** D-32-01 (`kPixelsPerMinute` 6.0), D-32-02 (button-only, retire the swipe machinery), D-32-03 (~64×30dp Skip button).
 
@@ -833,4 +845,4 @@ Plans:
 | 29. Breaks You Can See | — (standalone) | 4/4 | Complete    | 2026-08-25 |
 | 30. Breaks In Committed Time | — (standalone) | 5/5 | Complete    | 2026-08-25 |
 | 31. Breaks You Can Skip | — (standalone) | 7/8 | Superseded by Phase 32 (round-two UAT 2026-08-27: swipe approach rejected) |  |
-| 32. Breaks You Can Tap | — (standalone) | 2/3 | In Progress|  |
+| 32. Breaks You Can Tap | — (standalone) | 3/3 + gap closure | Complete | 2026-08-31 |

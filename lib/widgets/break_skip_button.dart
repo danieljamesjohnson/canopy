@@ -121,11 +121,22 @@ class BreakSkipButton extends StatelessWidget {
 /// (`chunk_card.dart._buildTrailingStatus`), relocated into this slot rather
 /// than a new copy decision.
 ///
-/// Public (not file-private) because two separate libraries render it —
-/// `chunk_card.dart` (under `screens/schedule/widgets/`) and
-/// `live_row_card.dart` (under `screens/today/widgets/`) — and a
-/// file-private class in a third library cannot be referenced from either
-/// call site.
+/// **Corrected (`32-REVIEW.md` finding 1): the slot-preserving claim above is
+/// about `chunk_card.dart` ONLY.** Both of that file's break tiers keep their
+/// `SizedBox(width: kBreakSkipButtonWidth)` and swap only the child, which is
+/// what makes the sentence true there. `live_row_card.dart` never did — it
+/// gates the whole `SizedBox` on `showActions`, and its call site passes
+/// `showActions: isBreak ? !chunk.isSkipped : true`, so on a break the slot
+/// disappears rather than being preserved. That made this widget's use in
+/// that file unreachable, and the branch has been deleted there. The wording
+/// is fixed here rather than left to imply a guarantee only one of the two
+/// call sites ever offered.
+///
+/// **Sole renderer as of this fix: `chunk_card.dart`** (both the compact and
+/// full break tiers). Still public rather than file-private because it lives
+/// in `lib/widgets/` beside [BreakSkipButton], which two libraries do render,
+/// and splitting the pair across libraries to save one keyword would obscure
+/// that they are two halves of one rail.
 class BreakSkippedIndicator extends StatelessWidget {
   const BreakSkippedIndicator({super.key});
 

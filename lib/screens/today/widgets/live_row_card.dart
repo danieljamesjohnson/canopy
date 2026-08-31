@@ -415,12 +415,29 @@ class LiveRowCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(child: titleAndCountdown),
+        // `32-REVIEW.md` finding 1, fixed now that the UAT gate it was held
+        // behind is closed. This used to read `isSkipped ?
+        // BreakSkippedIndicator() : BreakSkipButton(...)` inside the
+        // `showActions` guard — but the only call site passes
+        // `showActions: isBreak ? !chunk.isSkipped : true`
+        // (`today_screen.dart`), so `isSkipped` is ALWAYS false by the time
+        // this builds, and the indicator branch was unreachable. It was not
+        // reachable through a work chunk either: this tier only renders below
+        // `kCompactLiveMinHeight` (88dp, i.e. under 14.67 min at 6.0) and the
+        // generator emits work chunks at exactly 25 minutes, lengthening the
+        // last one only.
+        //
+        // Deleted rather than left uncalled — the same charter D-32-02
+        // applied to Phase 31's slop machinery applies to code this phase
+        // introduced itself. `BreakSkippedIndicator`'s own doc comment used
+        // to claim the 64dp slot survives a skip; that is true in
+        // `chunk_card.dart` (both tiers keep the `SizedBox`) and was never
+        // true here, and the comment has been corrected rather than the
+        // unreachable branch kept to make it look true.
         if (showActions)
           SizedBox(
             width: kBreakSkipButtonWidth,
-            child: isSkipped
-                ? const BreakSkippedIndicator()
-                : BreakSkipButton(chunkId: chunkId, accessibleTitle: title),
+            child: BreakSkipButton(chunkId: chunkId, accessibleTitle: title),
           ),
       ],
     );

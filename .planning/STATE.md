@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: none
 current_phase: 32
 current_phase_name: Breaks You Can Tap
-status: executing
-stopped_at: Phase 32 round-one UAT failed on appearance; sketch 002-C chosen, G-32-01/02 fixed and verified visually. Round-two UAT open on 8143 — Items 1 and 2 lead.
-last_updated: "2026-08-28T12:00:00.000Z"
-last_activity: 2026-08-28
-last_activity_desc: Phase 32 visual gap closure shipped — rows fill their slots; round-two UAT waiting
-state_head: 0d9777c
+status: complete
+stopped_at: Phase 32 COMPLETE — round-two UAT 4/4 on 2026-08-31, thumb count 5/5, D-31-07 confirmed. No phase in progress.
+last_updated: "2026-08-31T12:00:00.000Z"
+last_activity: 2026-08-31
+last_activity_desc: Phase 32 closed — 4/4 UAT, both long-running gaps closed
+state_head: 62cfa62
 progress:
   total_phases: 6
-  completed_phases: 4
-  total_plans: 27
-  completed_plans: 27
+  completed_phases: 5
+  total_plans: 30
+  completed_plans: 30
 milestone_name: milestone
 ---
 
@@ -27,9 +27,31 @@ milestone_name: milestone
 
 ## Current Position
 
-Phase: 32 (Breaks You Can Tap) — EXECUTING
-Plan: 3 of 3 executed; gap closure shipped. **Round-two UAT open** (`32-UAT-R2.md`), 4 items
-pending, build live on 8143 with served bytes verified (`cbc90e3…9ad40` both sides).
+Phase: 32 (Breaks You Can Tap) — **COMPLETE 2026-08-31.** No phase in progress.
+
+**Round two: 4 of 4 PASS** (`32-UAT-R2.md`). Items 1, 3, 4 by the owner; Item 2 agent-verified
+structurally, recorded as such rather than flattened into the count.
+
+**Two gaps that had survived three rounds are closed, and each closed a different way — the
+difference is the lesson.**
+
+- **G-32-03 (the thumb count) closed by finally asking for the number, in a form that took one
+  tap.** Three rounds returned "it seems to work," which is the mechanism firing, not the target
+  being hittable. The answer is **5/5 on a 64×30dp visible rail**. That turns D-32-03's deliberate
+  trade — 1920dp² of *painted* target against Material's 2304dp² guideline — from an argument into
+  a measurement. Phase 31 met the number twice with an *invisible* band and failed a thumb both
+  times; "a visible target that misses the spec slightly beats an invisible one that meets it" is
+  now evidence rather than reasoning.
+- **G-32-05 (D-31-07's live break) closed by driving the app instead of asking a fourth time.**
+  Its sub-questions were structural — is the control present, is Complete absent, does the row keep
+  its slot — and a browser answers all three. **"Needs a human" is a claim about the *kind* of
+  question, not a property of the item.** Perceptual and touch judgments genuinely need a thumb
+  (Phases 27, 29, 31 each proved it); "is the button there" never did, and routing it to a human
+  three times produced three non-answers. Verified: a live 30-min break exposes exactly one `Skip`
+  node and **no** Complete while work chunks on the same screen expose `CompleteSkip`; a live 5-min
+  break has a rail at all (it had no button of any kind before this phase); and the row measured
+  **h=180 before the skip and h=180 after**, with the now-line staying on its clock position.
+  Screenshots in `shots/`.
 
 **Round one failed 0-of-4 on appearance, and the cause was mechanical, not stylistic.** Every
 timeline row was laid out at its card's NATURAL height and top-aligned inside a duration-exact

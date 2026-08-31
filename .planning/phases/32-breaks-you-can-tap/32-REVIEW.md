@@ -57,7 +57,18 @@ UAT rather than into code.
 
 ---
 
-## Finding 1 — LOW: a dead branch, and a doc comment that is false at one of its two call sites
+## Finding 1 — LOW — **FIXED 2026-08-31** (`live_row_card.dart`, `break_skip_button.dart`)
+
+Held deliberately while the UAT gate was open, because the fix touches a file under judgement and
+changing served bytes mid-UAT invalidates the byte-verification the owner is judging against.
+Applied once round two closed 4/4. The unreachable `BreakSkippedIndicator` branch is **deleted**,
+not left uncalled — the same charter D-32-02 applied to Phase 31's slop machinery, applied to code
+this phase introduced itself. The class doc that claimed the 64dp slot survives a skip is
+**corrected** to say what is actually true: that holds in `chunk_card.dart` (both tiers keep the
+`SizedBox` and swap only the child) and never held in `live_row_card.dart`. 621/621 green,
+`flutter analyze` clean after the change. Original finding preserved below.
+
+### Original finding — a dead branch, and a doc comment that is false at one of its two call sites
 
 **Where:** `lib/screens/today/widgets/live_row_card.dart:395-401`, and the class doc at
 `lib/widgets/break_skip_button.dart:117-122`.
