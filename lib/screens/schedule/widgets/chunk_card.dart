@@ -725,10 +725,17 @@ class _WorkChunkContent extends StatelessWidget {
 
   /// UI-SPEC "Compact" tier: title only. No time text, no rationale, no
   /// chips, no action row — Complete/Skip live in ChunkDetailSheet, reached
-  /// via the row's own tap ([onTap] is still wired by the caller). The
-  /// trailing status indicator stays ONLY for a resolved chunk (T-26-02):
-  /// dropping it for an unresolved chunk removes an empty icon slot; keeping
-  /// it for a resolved one avoids a completed chunk reading as unresolved.
+  /// via the row's own tap ([onTap] is still wired by the caller).
+  ///
+  /// **Phase 33 (OBVIOUS-01, `33-UI-SPEC.md` item 1, sketch 003 variant B):
+  /// the trailing status now renders in ALL THREE states, not just resolved
+  /// ones.** T-26-02's original guard dropped it for an unresolved chunk on
+  /// the reasoning that this "removes an empty icon slot" — true of an
+  /// unlabelled circle, and exactly the rationale this phase overturns. The
+  /// slot is no longer empty: it carries the word `To do`, which is the one
+  /// thing the row was missing. An unresolved compact row that says nothing
+  /// about its state is the 2026-06-12 complaint restated, so the guard is
+  /// gone rather than merely relaxed.
   Widget _buildCompactContent(
     BuildContext context,
     ThemeData theme,
@@ -747,28 +754,26 @@ class _WorkChunkContent extends StatelessWidget {
             maxLines: 1,
           ),
         ),
-        if (isResolved) ...[const SizedBox(width: 8), _buildTrailingStatus(theme)],
+        const SizedBox(width: 8),
+        _buildTrailingStatus(theme),
       ],
     );
   }
 
-  /// Shared trailing status: completed check icon, skipped label, or (for
-  /// unresolved chunks) the unchecked radio icon. Unchanged across densities
-  /// except that compact only calls this for a resolved chunk.
+  /// Shared trailing status: a labelled [_StatusChip] reading `Done`,
+  /// `Skipped` or `To do`. Identical across every density — Phase 33
+  /// (OBVIOUS-01) removed the compact tier's resolved-only guard, so all
+  /// three tiers now call this for all three states.
+  ///
+  /// The chip replaced a three-way ternary of bare marks (a `check_circle`
+  /// icon, the lowercase word `skipped`, and an unlabelled
+  /// `radio_button_unchecked` circle). Every state now carries its word; none
+  /// of them is a control (UI-SPEC item 3).
   Widget _buildTrailingStatus(ThemeData theme) {
-    return chunk.isCompleted
-        ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
-        : chunk.isSkipped
-        ? Text(
-            'skipped',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          )
-        : Icon(
-            Icons.radio_button_unchecked,
-            color: theme.colorScheme.onSurfaceVariant,
-          );
+    return _StatusChip(
+      isCompleted: chunk.isCompleted,
+      isSkipped: chunk.isSkipped,
+    );
   }
 
   /// Shared Complete/Skip action row (SCHED-03), unchanged across densities.
@@ -805,6 +810,153 @@ class _WorkChunkContent extends StatelessWidget {
       ],
     );
   }
+}
+
+/// File-private status chip for a work chunk's trailing slot (OBVIOUS-01,
+/// `33-UI-SPEC.md` items 1-6, sketch 003 variant B — owner's verdict
+/// 2026-09-01 against a served mockup).
+///
+/// **Every state carries its word.** `Done`, `Skipped`, `To do` — one
+/// vocabulary, three labels, never a bare glyph. This replaces a trailing
+/// slot that showed an unlabelled `radio_button_unchecked` circle on every
+/// unresolved row, which the owner complained about on 2026-06-12 and which
+/// survived 2.5 months. Variant A (delete the glyph, show nothing) and
+/// variant C (a real checkbox) were both built, shown, and rejected — A
+/// leaves the row mute, C adds a second way to complete a chunk.
+///
+/// **Display-only, deliberately (item 3).** No `InkWell`, no
+/// `GestureDetector`, no `IconButton`, no `onTap`. `_buildActionRow`'s
+/// `Complete` and `Skip` stay the only completion affordances (item 4).
+///
+/// Geometry is copied verbatim from [_ValenceChip] below so the file's chips
+/// sit at one visual weight. Colours follow the container-role convention and
+/// **never the error slot** (item 5) — `colorScheme.error` is reserved for
+/// the destructive Skip *button*.
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.isCompleted, required this.isSkipped});
+
+  final bool isCompleted;
+  final bool isSkipped;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final IconData icon;
+    final Color onColor;
+    final String label;
+    // Null, not `Colors.transparent`: a null `BoxDecoration.color` paints
+    // nothing, and this file's own test gate forbids a hardcoded `Colors`
+    // literal reaching the widget tree.
+    Color? chipColor;
+    BoxBorder? border;
+    // The skipped state is the only one whose border is dashed; it is drawn
+    // by a painter rather than a `BoxBorder`, so it needs its own flag.
+    final dashedBorder = !isCompleted && isSkipped;
+
+    // Branch order mirrors the three-way ternary this chip replaced —
+    // completed, then skipped, then the unresolved default — so the state
+    // precedence cannot drift from what shipped before.
+    if (isCompleted) {
+      icon = Icons.check;
+      chipColor = colorScheme.primaryContainer;
+      onColor = colorScheme.onPrimaryContainer;
+      label = 'Done';
+    } else if (isSkipped) {
+      icon = Icons.remove;
+      onColor = colorScheme.onSurfaceVariant;
+      label = 'Skipped';
+    } else {
+      icon = Icons.schedule;
+      chipColor = colorScheme.surfaceContainerHighest;
+      onColor = colorScheme.onSurfaceVariant;
+      label = 'To do';
+      border = Border.all(color: colorScheme.outlineVariant);
+    }
+
+    final chip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: chipColor,
+        borderRadius: BorderRadius.circular(8),
+        border: border,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: onColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: textTheme.labelSmall?.copyWith(
+              color: onColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (!dashedBorder) return chip;
+    return CustomPaint(
+      painter: _DashedChipBorderPainter(color: colorScheme.outlineVariant),
+      child: chip,
+    );
+  }
+}
+
+/// File-private dashed rounded border for [_StatusChip]'s `Skipped` state.
+///
+/// **A deliberate file-private duplicate**, per the duplication charter this
+/// file already states for [_ValenceChip] below: visual chip and painter
+/// mechanics live beside the widget that uses them rather than in a shared
+/// module. Do not extract this into a common painter.
+///
+/// It carries forward the dash rhythm of `_DashedRegionPainter`, the free-time
+/// painter Phase 33 retires from `free_time_row.dart` — `strokeWidth = 1`,
+/// 2.0 dash, 2.0 gap, walked with `path.computeMetrics()` so the rhythm stays
+/// even around the corners instead of restarting at each edge. The radius is
+/// `Radius.circular(8)` rather than that painter's 8-for-a-region, matching
+/// this chip's own `BorderRadius.circular(8)`.
+class _DashedChipBorderPainter extends CustomPainter {
+  const _DashedChipBorderPainter({required this.color});
+
+  final Color color;
+
+  static const double _radius = 8.0;
+  static const double _dashWidth = 2.0;
+  static const double _dashGap = 2.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      const Radius.circular(_radius),
+    );
+    final path = Path()..addRRect(rrect);
+
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = distance + _dashWidth;
+        canvas.drawPath(
+          metric.extractPath(distance, next.clamp(0.0, metric.length)),
+          paint,
+        );
+        distance = next + _dashGap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedChipBorderPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 /// File-private valence chip widget for ChunkCard (ENERGY-04b).
