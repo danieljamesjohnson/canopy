@@ -86,19 +86,56 @@ Future<AddKind?> showAddKindFork(BuildContext context) {
 /// There is no goal form on this path at any point — that absence is the
 /// promise each door makes, and it is pinned by
 /// `test/screens/goals_add_fork_test.dart` (threat register T-33-12).
-Future<void> showRestorativeQuickAdd(BuildContext context) async {
-  final notifier = context.read<RestorativesNotifier>();
-  // Captured before the dialog opens: the dialog's own context is gone by the
-  // time the confirmation is shown.
-  final messenger = ScaffoldMessenger.of(context);
-  final nameController = TextEditingController();
-  final emojiController = TextEditingController();
-  final formKey = GlobalKey<FormState>();
+Future<void> showRestorativeQuickAdd(BuildContext context) {
+  return showDialog<void>(
+    context: context,
+    builder: (ctx) => const _RestorativeQuickAddDialog(),
+  );
+}
 
-  Future<void> submit(BuildContext dialogContext) async {
-    if (!(formKey.currentState?.validate() ?? false)) return;
-    final name = nameController.text.trim();
-    final emojiRaw = emojiController.text.trim();
+/// The quick-add dialog's body, as a `StatefulWidget` so it owns and disposes
+/// its two [TextEditingController]s.
+///
+/// The controllers must NOT be created in the `showDialog` builder closure and
+/// disposed when the returned future completes: `showDialog`'s future resolves
+/// the moment `Navigator.pop` is called, while the route is still running its
+/// exit transition and still rebuilding the fields — which throws
+/// `A TextEditingController was used after being disposed`. Observed here, not
+/// theorised. `adaptive_form_modal.dart:55-67` records the same lesson for its
+/// `ScrollController` (WR-01), and this is that fix applied to controllers that
+/// are read during the exit frame.
+class _RestorativeQuickAddDialog extends StatefulWidget {
+  const _RestorativeQuickAddDialog();
+
+  @override
+  State<_RestorativeQuickAddDialog> createState() =>
+      _RestorativeQuickAddDialogState();
+}
+
+class _RestorativeQuickAddDialogState
+    extends State<_RestorativeQuickAddDialog> {
+  final _nameController = TextEditingController();
+  final _emojiController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emojiController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    // Capture every provider/inherited ref BEFORE the await (Pitfall 6, as
+    // stated in quarterly_review_screen.dart:73-75) — this route is popped
+    // mid-method, so `context` is not safe to read afterwards.
+    final notifier = context.read<RestorativesNotifier>();
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    final name = _nameController.text.trim();
+    final emojiRaw = _emojiController.text.trim();
     await notifier.saveItem(
       RestorativeItem(
         name: name,
@@ -106,58 +143,53 @@ Future<void> showRestorativeQuickAdd(BuildContext context) async {
         sortOrder: notifier.items.length,
       ),
     );
-    if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    navigator.pop();
     messenger.showSnackBar(
       SnackBar(content: Text('Saved "$name" — a restorative, never scheduled.')),
     );
   }
 
-  try {
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add restorative'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nameController,
-                autofocus: true,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'What restores you?',
-                  hintText: 'e.g. Play guitar',
-                ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Give it a name' : null,
-                onFieldSubmitted: (_) => submit(ctx),
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add restorative'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _nameController,
+              autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                labelText: 'What restores you?',
+                hintText: 'e.g. Play guitar',
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: emojiController,
-                decoration: const InputDecoration(
-                  labelText: 'Emoji (optional)',
-                  hintText: '🎸',
-                ),
-                maxLength: 2,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Give it a name' : null,
+              onFieldSubmitted: (_) => _submit(),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _emojiController,
+              decoration: const InputDecoration(
+                labelText: 'Emoji (optional)',
+                hintText: '🎸',
               ),
-            ],
-          ),
+              maxLength: 2,
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(onPressed: () => submit(ctx), child: const Text('Add')),
-        ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Add')),
+      ],
     );
-  } finally {
-    nameController.dispose();
-    emojiController.dispose();
   }
 }
 
