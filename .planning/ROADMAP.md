@@ -898,7 +898,7 @@ Plans:
 - [ ] 33-02-PLAN.md — `WeeklyProgressService`, the one pure helper that turns `CompletionLog` rows into this week's progress *(wave 1)*
 - [ ] 33-03-PLAN.md — Goals as one ranked `Priority order` list; the left border becomes a fixed-geometry progress line *(wave 2)*
 - [ ] 33-04-PLAN.md — nine one-tap restoratives, and the goal/restorative fork at the front door *(wave 3)*
-- [ ] 33-05-PLAN.md — drive the running app for evidence, then the one human UAT gate on port 8143 *(wave 4)*
+- [ ] 33-05-PLAN.md — seed a real fixture, drive the running app for evidence, then the one human UAT gate on port 8143 *(wave 4)*
 
 ---
 
