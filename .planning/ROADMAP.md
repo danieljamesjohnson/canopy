@@ -890,7 +890,15 @@ either way rather than copying the rule.**
 screen states its own purpose and its priority language is legible), OBVIOUS-03 (adding a
 restorative is tappable, and declaring something energizing does not force it to be a goal)
 **Depends on:** Phase 32 (owns the row geometry and the break vocabulary this must not disturb)
-**Plans:** TBD
+**Plans:** 5 plans in 4 waves (planned 2026-09-01 against `33-UI-SPEC.md`, which transcribes the
+owner's verdicts on sketches 003/004/005 — the design is settled, the plans implement it)
+
+Plans:
+- [ ] 33-01-PLAN.md — the chunk row says its own state (`To do`/`Done`/`Skipped`), free time becomes a filled card *(wave 1)*
+- [ ] 33-02-PLAN.md — `WeeklyProgressService`, the one pure helper that turns `CompletionLog` rows into this week's progress *(wave 1)*
+- [ ] 33-03-PLAN.md — Goals as one ranked `Priority order` list; the left border becomes a fixed-geometry progress line *(wave 2)*
+- [ ] 33-04-PLAN.md — nine one-tap restoratives, and the goal/restorative fork at the front door *(wave 3)*
+- [ ] 33-05-PLAN.md — drive the running app for evidence, then the one human UAT gate on port 8143 *(wave 4)*
 
 ---
 
