@@ -220,12 +220,69 @@ void main() {
       expect(find.text('Free · 1h 40m'), findsOneWidget);
     });
 
-    testWidgets('neither form renders a Card', (tester) async {
+    // Phase 33 (OBVIOUS-01, UI-SPEC item 7, sketch 003 — Kind C rewrite).
+    // This test was 'neither form renders a Card' and asserted exactly the
+    // mechanism this phase retires. Its PREMISE inverted rather than its
+    // expected value, so it is rewritten rather than deleted — the assertion
+    // still has a subject, it just flipped. Same treatment, and same reason,
+    // as the Phase 32 break-row inversion at lines ~501-506 of this file.
+    //
+    // Why it flipped: Phase 22 gave free time and breaks one visual language;
+    // Phase 32 rebuilt breaks as filled bordered cards and left free time on
+    // the dashed outline, silently breaking the match. An outline reads as
+    // absence where a fill reads as "this is yours".
+    testWidgets('both forms render a Card', (tester) async {
       await pumpWithMood(tester, const FreeTimeRow.until(untilMinutes: 480));
-      expect(find.byType(Card), findsNothing);
+      expect(find.byType(Card), findsOneWidget);
 
       await pumpWithMood(tester, const FreeTimeRow.gap(durationMinutes: 100));
-      expect(find.byType(Card), findsNothing);
+      expect(find.byType(Card), findsOneWidget);
+    });
+
+    // Phase 33 (OBVIOUS-01, UI-SPEC item 7). The non-collapse guard: a [Card]
+    // sizes to its child, so swapping the old full-bleed `CustomPaint` for a
+    // `Card` can silently collapse the row to label height and hand back the
+    // "weird long stretch of white space" UAT 2026-08-18 rejected.
+    //
+    // **The harness pumps through [TimelineRowTile] deliberately, and a bare
+    // `SizedBox(height: 240, child: FreeTimeRow.gap(...))` is forbidden
+    // here.** A `SizedBox` imposes a TIGHT height; `FreeTimeRow`'s own
+    // `Container` deflates it by its 4dp margins and passes tight 232 straight
+    // down, so the `Card` would measure 232 whether its child is a `Center` or
+    // a bare `Text` — the test would pass over the exact defect it exists to
+    // catch. The production path is loose, and only a loose harness tells a
+    // filling child from a collapsing one. The chain, verified:
+    // `today_screen.dart:697` `Positioned(height: geometry.heightFor(...))` →
+    // `TimelineRowTile` → `timeline_row_tile.dart:106-115`
+    // `Row(crossAxisAlignment: CrossAxisAlignment.start)` → `Expanded(child:
+    // child)`; `CrossAxisAlignment.start` is what makes the child's height
+    // loose. Using `TimelineRowTile` itself means the harness cannot drift
+    // from the production shape.
+    //
+    // **Observed, not asserted.** With the card's `Center` replaced by a bare
+    // `Text` — i.e. the defect this test exists to catch, deliberately
+    // introduced — the two harnesses were measured side by side on
+    // 2026-09-01:
+    //
+    //   bare `SizedBox(height: 240, ...)`  → Card height 232.0  (PASSES)
+    //   `TimelineRowTile` (this harness)   → Card height  20.0  (FAILS)
+    //
+    // The forbidden harness reports the correct number for the wrong reason
+    // and sails straight over a collapsed row. That is this project's
+    // fifth-time failure mode verbatim (STATE.md: "two defects behind green
+    // tests, both assertions that could not fail"), so the shape above is not
+    // a stylistic preference — it is the entire test.
+    testWidgets('the card fills its allocated slot, it does not collapse to '
+        'label height', (tester) async {
+      await pumpWithMood(
+        tester,
+        const SizedBox(
+          height: 240,
+          child: TimelineRowTile(child: FreeTimeRow.gap(durationMinutes: 40)),
+        ),
+      );
+      // 232 = 240 less the row's own 4dp top and 4dp bottom margin.
+      expect(tester.getSize(find.byType(Card)).height, 232.0);
     });
   });
 
@@ -424,35 +481,51 @@ void main() {
   });
 
   group('ChunkCard row vocabulary (D-06, D-07, P10)', () {
-    testWidgets('completed work chunk: struck through + primary check icon', (
+    // Phase 33 (OBVIOUS-01, UI-SPEC items 1-2, sketch 003 variant B — Kind C
+    // repoints). The three tests below asserted the trailing status this
+    // phase retires: a bare `Icons.check_circle`, the lowercase word
+    // `skipped`, and `Icons.radio_button_unchecked`. All three now read the
+    // labelled `_StatusChip` instead. Task 1 could not delete the unchecked
+    // circle and leave this group green — one of the two had to move, and it
+    // is the tests, because the phase exists to delete that icon. The
+    // strikethrough and Complete/Skip assertions are untouched: they live in
+    // the content builder and the action row, not in the trailing status, and
+    // the Complete/Skip pair is the standing guard on UI-SPEC item 4.
+    testWidgets('completed work chunk: struck through + Done chip', (
       tester,
     ) async {
       await _pumpChunkCard(tester, _workChunk(completed: true));
       final titleText = tester.widget<Text>(find.text('Deep work'));
       expect(titleText.style?.decoration, TextDecoration.lineThrough);
 
-      final context = tester.element(find.byType(ChunkCard));
-      final icon = tester.widget<Icon>(find.byIcon(Icons.check_circle));
-      expect(icon.color, Theme.of(context).colorScheme.primary);
+      // The completed branch is now a labelled chip whose glyph is
+      // `Icons.check`, so the old `Icons.check_circle` finder cannot match and
+      // its `colorScheme.primary` assertion was reading the wrong element.
+      expect(find.text('Done'), findsOneWidget);
     });
 
-    testWidgets('skipped work chunk: struck through + literal "skipped" text', (
+    testWidgets('skipped work chunk: struck through + Skipped chip', (
       tester,
     ) async {
       await _pumpChunkCard(tester, _workChunk(skipped: true));
       final titleText = tester.widget<Text>(find.text('Deep work'));
       expect(titleText.style?.decoration, TextDecoration.lineThrough);
-      expect(find.text('skipped'), findsOneWidget);
+      // Expected value AND casing both changed: UI-SPEC item 1 replaces the
+      // bare lowercase word with the capitalised chip label.
+      expect(find.text('Skipped'), findsOneWidget);
       expect(find.byIcon(Icons.arrow_forward), findsNothing);
     });
 
     testWidgets(
-      'unresolved work chunk: no strikethrough, unchecked icon, Complete/Skip present',
+      'unresolved work chunk: no strikethrough, To do chip, Complete/Skip present',
       (tester) async {
         await _pumpChunkCard(tester, _workChunk());
         final titleText = tester.widget<Text>(find.text('Deep work'));
         expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
-        expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
+        // This line used to assert `Icons.radio_button_unchecked` — the exact
+        // icon this phase exists to delete, and the owner's 2026-06-12
+        // complaint. The row says its state in words now.
+        expect(find.text('To do'), findsOneWidget);
         expect(find.widgetWithText(FilledButton, 'Complete'), findsOneWidget);
         expect(find.widgetWithText(OutlinedButton, 'Skip'), findsOneWidget);
       },
