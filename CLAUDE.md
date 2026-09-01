@@ -136,6 +136,30 @@ out before concluding the build is broken:
    must ⟳ Re-check-in first, and any plan that writes such a UAT must put that step
    — first, marked mandatory — in the UAT's own instructions.
 
+## Assertions that cannot fail — the recurring failure mode
+
+This project's green suites have been contradicted by the owner's own eyes five times (Phases 27,
+29, 31, and 32 twice). The cause is almost never a missing test; it is a test that **passes for a
+reason unrelated to the defect**. Two concrete traps have been measured here, both worth checking
+before you trust a new regression test:
+
+1. **`find.byType(X)` does not match subclasses.** It compares `runtimeType` exactly. A test
+   asserting `find.byType(Flexible), findsNothing` stays green when the widget is wrapped in
+   `Expanded` — which *is* a `Flexible`. Use `find.byWidgetPredicate((w) => w is Flexible)` when
+   you mean "any subtype". Found in Phase 33 by mutation-testing an assertion that had just been
+   written.
+
+2. **A tight-constrained harness reports the right number for the wrong reason.** Pumping a
+   height-filling widget inside `SizedBox(height: N)` hands it a *tight* constraint, so it measures
+   N whether or not it would have collapsed in production — where `TimelineRowTile`'s
+   `Row(crossAxisAlignment: start)` + `Expanded` hands it **loose** constraints instead. Measured in
+   Phase 33 with the collapse defect deliberately introduced: the tight harness read 232.0 and
+   **passed**; the loose harness read 20.0 and **failed**. Pump through the real production widget.
+
+**The rule:** when a plan says "observe this RED first", actually introduce the defect and watch the
+test fail. A compile error is a weak form of red — it proves the API is missing, not that the
+assertion discriminates. Mutation-test the load-bearing assertion and revert.
+
 ## Architecture
 
 This is a Flutter app targeting Android, iOS, Web, Windows, Linux, and macOS. Code is organized in layers under `lib/`:
