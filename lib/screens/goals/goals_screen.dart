@@ -15,6 +15,7 @@ import '../../services/weekly_progress_service.dart';
 import '../../widgets/adaptive_form_modal.dart';
 import '../../widgets/quick_add_field.dart';
 import 'goal_form_sheet.dart';
+import 'widgets/add_kind_fork.dart';
 import 'widgets/goal_card.dart';
 
 /// Encouraging placeholder for the quick-add field; "8" is the reference the
@@ -117,9 +118,24 @@ class _GoalsScreenState extends State<GoalsScreen> {
     if (mounted) setState(() => _weekProgress = next);
   }
 
-  void _openAddSheet(BuildContext context) {
+  /// The FAB's add path. Asks which kind is being added BEFORE any form
+  /// exists (UI-SPEC item 24): the restorative door records a `RestorativeItem`
+  /// from a name and an emoji and never shows a goal form.
+  ///
+  /// Scope, deliberate and surfaced: the fork is in front of the FAB **only**.
+  /// The quick-add field above the list stays a goal-only path — typing into a
+  /// field labelled "Add a goal" has already answered the question, and the
+  /// round-two UAT asks the owner to rule on whether that narrowing is right.
+  Future<void> _openAddSheet(BuildContext context) async {
+    final kind = await showAddKindFork(context);
+    if (kind == null || !context.mounted) return;
+    if (kind == AddKind.restorative) {
+      await showRestorativeQuickAdd(context);
+      return;
+    }
+    if (!context.mounted) return;
     final isDesktop = MediaQuery.of(context).size.width >= 720;
-    showAdaptiveFormModal(
+    await showAdaptiveFormModal(
       context: context,
       builder: (scrollController) => GoalFormSheet(
         scrollController: scrollController,
@@ -128,6 +144,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
     );
   }
 
+  /// Editing an existing goal has already answered the fork's question, so this
+  /// path must NOT fork (UI-SPEC item 24's boundary).
   void _openEditSheet(BuildContext context, Goal goal) {
     final isDesktop = MediaQuery.of(context).size.width >= 720;
     showAdaptiveFormModal(
