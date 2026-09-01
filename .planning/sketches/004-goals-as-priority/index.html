@@ -78,13 +78,22 @@
 
 /* D — progress. The arithmetic is the engine's own: completed chunks this week
    × 25/60 (schedule_generator._remainingHours). Read from CompletionLog, which
-   the Goals screen can reach without touching the generator. */
-.prog { margin-top:7px; }
-.prog .bar { height:3px; border-radius:2px; background:rgba(0,0,0,.09); overflow:hidden; }
-.prog .bar i { display:block; height:100%; background:var(--primary); border-radius:2px; }
-.prog .txt { font-size:11px; color:var(--on-surface-variant); margin-top:4px; }
+   the Goals screen can reach without touching the generator.
+   NO horizontal bar any more (Dan, 2026-09-01: "shouldn't double up on
+   progress. just the line on the left going up and down. and color coded") —
+   two bars on one card read as two progress meters whatever they encode. The
+   numbers stay as text; the left line is the only bar. */
+.prog { margin-top:5px; }
+.prog .txt { font-size:11px; color:var(--on-surface-variant); }
 .prog .txt b { color:var(--on-surface); font-weight:600; }
 .prog.none .txt { font-style:italic; opacity:.75; }
+
+/* The legend. Colour that carries meaning it cannot express is the exact defect
+   this phase exists to remove, so a colour-coded line has to name its own
+   colours somewhere. */
+.legend { display:flex; flex-wrap:wrap; gap:10px; padding:8px 16px 2px; }
+.legend span { display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--on-surface-variant); }
+.legend i { width:9px; height:9px; border-radius:2px; display:inline-block; }
 
 /* B — tier bands */
 .tier { margin:16px 16px 2px; display:flex; align-items:center; gap:9px; }
@@ -159,6 +168,11 @@
     <button data-group="typed" aria-pressed="false">Type sections</button>
     <button id="progtoggle" aria-pressed="true">Progress</button>
   </div>
+  <span class="label">Left line</span>
+  <div class="group">
+    <button data-line="priority" aria-pressed="true">= Priority</button>
+    <button data-line="progress" aria-pressed="false">= Progress</button>
+  </div>
   <span class="label">Outcome rows</span>
   <div class="group">
     <button data-out="due" aria-pressed="true">Due in 12 days</button>
@@ -223,22 +237,48 @@ let goals = [
 let dGroup = 'flat';      // flat | typed
 let dProgress = true;
 let dOutcome = 'due';     // due | gap
+let dLine = 'priority';   // priority | progress  — what the LEFT LINE encodes
+
+/* Day 5 of a 7-day week, so "expected by now" is 5/7 = 71%. Fixed, not a clock
+   read — sketches must render identically every time. */
+const WEEK_ELAPSED = 5 / 7;
+
+/* Colours are the app's own roles, and deliberately NOT the error slot — the
+   codebase already forbids it for non-errors (goal_card.dart's _ValenceBadge
+   doc). Behind is amber, not red: being behind on a goal is information, not a
+   fault. */
+const STATE = {
+  done:    { c:'var(--primary)',        nm:'Done'      },
+  ontrack: { c:'#2f8f6b',               nm:'On track'  },
+  behind:  { c:'#c08a2e',               nm:'Behind'    },
+  none:    { c:'var(--outline-variant)',nm:'Not started / no data' },
+};
+
+/** Fraction complete this week, or null when the model has no progress at all. */
+function doneFraction(g) {
+  if (g.ty === 'timeTarget') return Math.min(1, (g.doneChunks * 25 / 60) / g.budget);
+  if (g.ty === 'habit')      return Math.min(1, g.doneDays / g.freq);
+  return null;                       // outcome — no progress field exists
+}
+
+function stateOf(g) {
+  const f = doneFraction(g);
+  if (f === null) return 'none';
+  if (f >= 0.999) return 'done';
+  return f >= WEEK_ELAPSED ? 'ontrack' : 'behind';
+}
 
 function progressBlock(g) {
   if (!dProgress) return '';
   if (g.ty === 'timeTarget') {
     const hrs = g.doneChunks * 25 / 60;
-    const pct = Math.min(100, Math.round(hrs / g.budget * 100));
     const label = (g.budget - hrs) < 0.1
-      ? `<b>On track</b> — ${hrs.toFixed(1)} of ${g.budget.toFixed(1)} hrs this week`
+      ? `<b>Done</b> — ${hrs.toFixed(1)} of ${g.budget.toFixed(1)} hrs this week`
       : `<b>${hrs.toFixed(1)}</b> of ${g.budget.toFixed(1)} hrs this week`;
-    return `<div class="prog"><div class="bar"><i style="width:${pct}%"></i></div>
-              <div class="txt">${label}</div></div>`;
+    return `<div class="prog"><div class="txt">${label}</div></div>`;
   }
   if (g.ty === 'habit') {
-    const pct = Math.round(g.doneDays / g.freq * 100);
-    return `<div class="prog"><div class="bar"><i style="width:${pct}%"></i></div>
-              <div class="txt"><b>${g.doneDays} of ${g.freq}</b> days this week · ${g.stat}</div></div>`;
+    return `<div class="prog"><div class="txt"><b>${g.doneDays} of ${g.freq}</b> days this week · ${g.stat}</div></div>`;
   }
   // Outcome goals have NO progress field anywhere in the model — only `deadline`
   // and `outcomeDescription`. Inventing a percentage would be new state, which is
@@ -246,6 +286,15 @@ function progressBlock(g) {
   return dOutcome === 'due'
     ? `<div class="prog"><div class="txt">Due in <b>${g.dueDays} days</b></div></div>`
     : `<div class="prog none"><div class="txt">No progress to show — due in ${g.dueDays} days</div></div>`;
+}
+
+function legendHTML() {
+  const keys = dLine === 'progress' ? ['done','ontrack','behind','none'] : ['done','ontrack','behind','none'];
+  const what = dLine === 'progress'
+    ? 'Line height = how much of this week is done. Colour ='
+    : 'Line height = priority weight. Colour =';
+  return `<div class="legend"><span style="font-weight:600;color:var(--on-surface)">${what}</span>` +
+    keys.map(k => `<span><i style="background:${STATE[k].c}"></i>${STATE[k].nm}</span>`).join('') + `</div>`;
 }
 
 const NOTES = {
@@ -289,7 +338,8 @@ const HEADINGS = {
   a:       { title:'Goals', h:'Priority order', sub:'Everything you want time for, most important first. Drag to change the order — that <em>is</em> how priority is set.' },
   b:       { title:'Goals', h:'What matters most', sub:'Drag a goal into a different band to change its priority. The scheduler fills High first.' },
   c:       { title:'Goals', h:'Your goals', sub:'The bar on the left is priority — fuller means the scheduler reaches it sooner. Drag to change it. Tap to edit.' },
-  d:       { title:'Goals', h:'Priority order', sub:'Most important first. The number is the order; the bar beside it is how much weight that goal carries. Drag to change both.' },
+  // D's subtitle depends on what the left line encodes — resolved in render().
+  d:       { title:'Goals', h:'Priority order', sub:null },
   shipped: { title:'Goals', h:'Your goals', sub:'Drag to prioritize. Tap to edit.' }
 };
 
@@ -313,12 +363,25 @@ function chips(g) {
 
 function card(g, extra) {
   const t = TYPE[g.ty];
-  const pct = Math.round(g.pw * 100);
-  const ribbon = (variant === 'c' || variant === 'd');
-  const stripe = ribbon
-    ? `<div class="ribbon" title="Priority ${g.pw.toFixed(2)}" style="background:linear-gradient(
-         to top, var(--primary) 0 ${pct}%, rgba(0,0,0,.10) ${pct}% 100%)"></div>`
-    : `<div class="stripe" style="background:${g.col}"></div>`;
+  let stripe;
+  if (variant === 'd') {
+    // ONE line. Its height is whichever dimension dLine selects; its colour is
+    // always the progress state. No horizontal bar anywhere — no doubling up.
+    const f = doneFraction(g);
+    const pct = Math.round((dLine === 'progress' ? (f === null ? 0 : f) : g.pw) * 100);
+    const col = STATE[stateOf(g)].c;
+    const tip = dLine === 'progress'
+      ? `${STATE[stateOf(g)].nm} — ${pct}% of this week`
+      : `Priority ${g.pw.toFixed(2)} · ${STATE[stateOf(g)].nm}`;
+    stripe = `<div class="ribbon" title="${tip}" style="background:linear-gradient(
+         to top, ${col} 0 ${pct}%, rgba(0,0,0,.09) ${pct}% 100%)"></div>`;
+  } else if (variant === 'c') {
+    const pct = Math.round(g.pw * 100);
+    stripe = `<div class="ribbon" title="Priority ${g.pw.toFixed(2)}" style="background:linear-gradient(
+         to top, var(--primary) 0 ${pct}%, rgba(0,0,0,.10) ${pct}% 100%)"></div>`;
+  } else {
+    stripe = `<div class="stripe" style="background:${g.col}"></div>`;
+  }
   // D shows the type chip only in flat mode — under type sections it repeats the header.
   const typeChip = (variant === 'a' || variant === 'b' ||
                     (variant === 'd' && dGroup === 'flat'))
@@ -359,9 +422,12 @@ function setNote(html) {
 
 function render() {
   const H = HEADINGS[variant];
+  const sub = H.sub !== null ? H.sub : (dLine === 'progress'
+    ? 'Most important first — the number is the order. The line beside it is how much of this week you have done.'
+    : 'Most important first. The number is the order; the line beside it is how much weight that goal carries. Drag to change both.');
   document.getElementById('screentitle').textContent = H.title;
   document.getElementById('heading').innerHTML =
-    `<div class="h">${H.h}</div><div class="sub">${H.sub}</div>`;
+    `<div class="h">${H.h}</div><div class="sub">${sub}</div>`;
   setNote(NOTES[variant]);
 
   const s = document.getElementById('scroller');
@@ -389,6 +455,7 @@ function render() {
       html += `</div>`;
     });
   } else if (variant === 'd') {
+    html += legendHTML();
     // Rank is GLOBAL — it is the one order reorderAllWithPriority() writes.
     const ordered = [...goals].sort((x,y) => y.pw - x.pw);
     const rankOf = g => ordered.indexOf(g) + 1;
@@ -437,6 +504,13 @@ document.addEventListener('click', (e) => {
   if (gb) {
     dGroup = gb.dataset.group;
     document.querySelectorAll('[data-group]').forEach(b => b.setAttribute('aria-pressed', b === gb));
+    if (variant !== 'd') { variant = 'd'; syncVariantButtons(); }
+    render(); return;
+  }
+  const lb = e.target.closest('[data-line]');
+  if (lb) {
+    dLine = lb.dataset.line;
+    document.querySelectorAll('[data-line]').forEach(b => b.setAttribute('aria-pressed', b === lb));
     if (variant !== 'd') { variant = 'd'; syncVariantButtons(); }
     render(); return;
   }
