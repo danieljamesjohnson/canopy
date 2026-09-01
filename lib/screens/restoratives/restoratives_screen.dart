@@ -6,6 +6,27 @@ import 'package:provider/provider.dart';
 import '../../data/models/restorative_item.dart';
 import '../../providers/restoratives_notifier.dart';
 
+/// The nine common restoratives offered as one-tap chips (UI-SPEC item 22).
+///
+/// **Deliberately hard-coded, and it stays that way** (UI-SPEC item 23).
+/// `CLAUDE.md`'s product position is that Canopy is a dumb app on purpose, so
+/// this is a literal list and not a query: no suggestion engine, no ranking,
+/// no frequency- or recency-weighting, no personalisation, and no LLM call —
+/// now or later. The nine names come verbatim from sketch 005, which says out
+/// loud that nine is a guess and that changing the guess is free precisely
+/// because the list is hard-coded.
+const List<(String name, String emoji)> kCommonRestoratives = [
+  ('Walk outside', '🚶'),
+  ('Music', '🎵'),
+  ('Nap', '😴'),
+  ('Stretch', '🧘'),
+  ('Shower', '🚿'),
+  ('Read', '📖'),
+  ('Tea or coffee', '☕'),
+  ('Call someone', '📞'),
+  ('Sit in the sun', '🌞'),
+];
+
 /// Manage the user's restorative activities — the things that recharge them,
 /// kept deliberately separate from goals. These never get scheduled; they only
 /// resurface as gentle suggestions on low-energy days.
@@ -188,20 +209,25 @@ class _RestorativesScreenState extends State<RestorativesScreen> {
       appBar: AppBar(title: const Text('What restores you')),
       body: Consumer<RestorativesNotifier>(
         builder: (ctx, notifier, _) {
-          final body = notifier.isEmpty
-              ? _emptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 88),
-                  itemCount: notifier.items.length,
-                  itemBuilder: (ctx, i) {
-                    final item = notifier.items[i];
-                    return _RestorativeRow(
-                      item: item,
-                      onEdit: () => _openEditDialog(context, item),
-                      onDelete: () => _confirmDelete(context, item),
-                    );
-                  },
-                );
+          // One ListView across both states, not an `isEmpty ? … : …` split:
+          // the quick-pick grid matters MOST when the list is empty, which is
+          // the case the FAB-and-dialog flow made expensive (UI-SPEC item 22).
+          final body = ListView(
+            padding: const EdgeInsets.only(bottom: 88),
+            children: [
+              _QuickPickSection(notifier: notifier),
+              if (notifier.isEmpty)
+                _emptyState()
+              else
+                ...notifier.items.map(
+                  (item) => _RestorativeRow(
+                    item: item,
+                    onEdit: () => _openEditDialog(context, item),
+                    onDelete: () => _confirmDelete(context, item),
+                  ),
+                ),
+            ],
+          );
           return Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
@@ -216,6 +242,89 @@ class _RestorativesScreenState extends State<RestorativesScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Add restorative'),
       ),
+    );
+  }
+}
+
+/// The one-tap quick-pick grid that sits above the list (UI-SPEC item 22):
+/// tapping an unselected chip adds that restorative with its emoji, tapping a
+/// selected one removes it.
+///
+/// These are Material [FilterChip]s rather than the `_ValenceBadge`-style
+/// `Container` chips used elsewhere in this codebase, and the difference is not
+/// cosmetic: those chips are display-only badges, while a quick-pick chip **is**
+/// tappable and needs a real tap target carrying its own selected/unselected
+/// semantics. 33-PATTERNS §5 draws exactly that line between the two families.
+///
+/// Every chip is glyph **plus** word — never a bare glyph (UI-SPEC item 30,
+/// which is the same rule as item 2). An emoji-only chip would recreate the
+/// unlabelled-circle defect this phase exists to remove.
+class _QuickPickSection extends StatelessWidget {
+  const _QuickPickSection({required this.notifier});
+
+  final RestorativesNotifier notifier;
+
+  /// The already-saved item matching [name], or null. Case-insensitive on the
+  /// trimmed name so a hand-typed "music" and the `Music` chip are one thing,
+  /// using the `.where(...).firstOrNull` lookup idiom this codebase already
+  /// uses for id/name matching (`goals_notifier.dart:150`).
+  RestorativeItem? _matchFor(String name) {
+    final needle = name.trim().toLowerCase();
+    return notifier.items
+        .where((i) => i.name.trim().toLowerCase() == needle)
+        .firstOrNull;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Common', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final (name, emoji) in kCommonRestoratives)
+                _buildChip(name, emoji),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChip(String name, String emoji) {
+    final match = _matchFor(name);
+    return FilterChip(
+      avatar: Text(emoji),
+      label: Text(name),
+      selected: match != null,
+      onSelected: (selected) {
+        if (selected) {
+          // saveItem, NOT quickAddItems: the bulk helper sets no emoji and
+          // these chips carry one, so a chip-added item would otherwise fall
+          // back to the generic 🌿 in the row below.
+          notifier.saveItem(
+            RestorativeItem(
+              name: name,
+              emojiTag: emoji,
+              sortOrder: notifier.items.length,
+            ),
+          );
+        } else if (match != null) {
+          // No confirmation dialog on purpose. One tap adds, one tap removes
+          // (UI-SPEC item 22) — a confirm on a toggle would defeat the item,
+          // and re-adding costs exactly one tap. The heavier `_confirmDelete`
+          // stays on the list rows below, which can hold user-typed items the
+          // chips cannot restore (threat register T-33-11).
+          notifier.deleteItem(match.id);
+        }
+      },
     );
   }
 }
