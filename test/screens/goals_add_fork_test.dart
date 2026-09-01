@@ -29,6 +29,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import '../test_helpers/mood_pump.dart';
+import '../test_helpers/viewport.dart';
 
 // ---------------------------------------------------------------------------
 // In-memory GoalRepository — no Hive I/O.
@@ -204,6 +205,25 @@ void main() {
       // (item 24's boundary) — neither door may appear on this path.
       expect(find.text(_goalDoor), findsNothing);
       expect(find.text(_restorativeDoor), findsNothing);
+      expect(find.byType(GoalFormSheet), findsOneWidget);
+    });
+
+    testWidgets('on a phone both doors and both consequence lines still fit',
+        (tester) async {
+      // Below the 720dp breakpoint the goal door leads to a bottom sheet
+      // rather than a dialog, and the fork itself has ~40dp less width than
+      // its own 360dp cap. An overflow on either fails this test.
+      setViewport(tester, const Size(390, 844));
+      await _pumpGoals(tester);
+
+      await _tapFab(tester);
+      expect(find.text(_goalDoor), findsOneWidget);
+      expect(find.text(_restorativeDoor), findsOneWidget);
+      expect(find.text(_goalConsequence), findsOneWidget);
+      expect(find.text(_restorativeConsequence), findsOneWidget);
+
+      await tester.tap(find.text(_goalDoor));
+      await tester.pumpAndSettle();
       expect(find.byType(GoalFormSheet), findsOneWidget);
     });
   });

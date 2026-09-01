@@ -26,6 +26,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import '../test_helpers/mood_pump.dart';
+import '../test_helpers/viewport.dart';
 
 /// Pumps the screen over a fresh in-memory repository and returns the notifier
 /// so tests can assert on what was actually persisted, not just what rendered.
@@ -148,6 +149,18 @@ void main() {
         expect(find.text(name), findsOneWidget, reason: 'no word for $emoji');
         expect(find.text(emoji), findsOneWidget, reason: 'no glyph for $name');
       }
+    });
+
+    testWidgets('nine chips lay out on a phone without overflowing',
+        (tester) async {
+      // The 800x600 default viewport is wide enough to hide a layout defect
+      // the owner would meet first on a phone, and this phase's whole subject
+      // is what a screen looks like. An overflow here fails the test.
+      setViewport(tester, const Size(390, 844));
+      await _pumpScreen(tester);
+
+      expect(find.byType(FilterChip), findsNWidgets(9));
+      expect(_chip('Sit in the sun'), findsOneWidget);
     });
   });
 }
