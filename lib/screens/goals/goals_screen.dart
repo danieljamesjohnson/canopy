@@ -4,8 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/models/completion_log.dart';
 import '../../data/models/goal.dart';
+import '../../data/repositories/completion_log_repository.dart';
+import '../../data/repositories/hive_completion_log_repository.dart';
+import '../../dev/dev_clock.dart';
 import '../../providers/goals_notifier.dart';
+import '../../providers/schedule_notifier.dart';
+import '../../services/weekly_progress_service.dart';
 import '../../widgets/adaptive_form_modal.dart';
 import '../../widgets/quick_add_field.dart';
 import 'goal_form_sheet.dart';
@@ -19,20 +25,96 @@ String _quickAddHint(int count) => count == 0
     ? 'Add another ($count so far)'
     : 'Add another ($count goals)';
 
+/// The Goals screen: one list, ordered by priority, headed `Priority order`.
+///
+/// [completionLogRepository] is an optional injectable repository so widget
+/// tests can exercise the progress line without bootstrapping Hive — the same
+/// seam `QuarterlyReviewScreen` uses (`quarterly_review_screen.dart:25-36`).
+/// The screen owns the *read*; the arithmetic lives in the pure
+/// [WeeklyProgressService] (UI-SPEC item 21).
 class GoalsScreen extends StatefulWidget {
-  const GoalsScreen({super.key});
+  const GoalsScreen({
+    super.key,
+    CompletionLogRepository? completionLogRepository,
+  }) : _completionLogRepository = completionLogRepository;
+
+  final CompletionLogRepository? _completionLogRepository;
 
   @override
   State<GoalsScreen> createState() => _GoalsScreenState();
 }
 
 class _GoalsScreenState extends State<GoalsScreen> {
+  /// Week-to-date progress per goal id. A null *value* means the goal has no
+  /// weekly target (grey track); a missing *key* means not loaded yet.
+  Map<String, double?> _weekProgress = {};
+
+  ScheduleNotifier? _schedule;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => context.read<GoalsNotifier>().loadGoals(),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await context.read<GoalsNotifier>().loadGoals();
+      await _loadWeekProgress();
+    });
+
+    // Refresh progress whenever the schedule changes. This is not polish:
+    // `router.dart` uses StatefulShellRoute.indexedStack, so this screen
+    // stays mounted across tab switches — a mount-only read would keep
+    // showing a stale bar after a chunk is completed on Today, which is the
+    // class of false-failure CLAUDE.md trap #4 documents.
+    try {
+      _schedule = context.read<ScheduleNotifier>()
+        ..addListener(_loadWeekProgress);
+    } on ProviderNotFoundException {
+      // The notifier is absent from the tree (widget tests that provide only
+      // a GoalsNotifier). The refresh listener is simply not registered;
+      // progress still loads once from the post-frame callback. Caught
+      // narrowly on purpose — a bare `Exception` here would hide a real
+      // production wiring failure behind a silent no-refresh.
+      _schedule = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _schedule?.removeListener(_loadWeekProgress);
+    super.dispose();
+  }
+
+  /// Reads the completion log once and recomputes every goal's week fraction.
+  ///
+  /// One `getAll()` per refresh, not one `getByGoalId` per goal.
+  Future<void> _loadWeekProgress() async {
+    if (!mounted) return;
+    // Capture provider refs and the repository BEFORE any await (Pitfall 6,
+    // as stated in quarterly_review_screen.dart:73-75).
+    final goals = context.read<GoalsNotifier>().goals;
+    final repo =
+        widget._completionLogRepository ?? HiveCompletionLogRepository();
+
+    final List<CompletionLog> logs;
+    try {
+      logs = await repo.getAll();
+    } catch (_) {
+      // Hive boxes not yet open (test environment or cold start before init)
+      // — today_screen.dart:259 catches the same thing for the same reason.
+      // _weekProgress stays as it was; every track simply renders grey.
+      return;
+    }
+
+    // DevClock.now() is DateTime.now() in release builds (DEV-03); using it
+    // keeps the progress line consistent with the app's other clock-gated
+    // surfaces, so time travel moves the week window too
+    // (quarterly_review_screen.dart:98-100).
+    final today = DevClock.now();
+    const service = WeeklyProgressService();
+    final next = <String, double?>{
+      for (final g in goals) g.id: service.weekFractionFor(g, logs, today),
+    };
+    if (mounted) setState(() => _weekProgress = next);
   }
 
   void _openAddSheet(BuildContext context) {
@@ -93,15 +175,25 @@ class _GoalsScreenState extends State<GoalsScreen> {
       body: Consumer<GoalsNotifier>(
         builder: (context, notifier, _) {
           final theme = Theme.of(context);
-          final colorScheme = theme.colorScheme;
-          final timeTargetGoals = notifier.timeTargetGoals;
-          final outcomeGoals = notifier.outcomeGoals;
-          final habitGoals = notifier.habitGoals;
 
-          final allEmpty =
-              timeTargetGoals.isEmpty &&
-              outcomeGoals.isEmpty &&
-              habitGoals.isEmpty;
+          // One list, not three type sections (UI-SPEC item 11). The
+          // sortOrder tie-break is load-bearing, not decoration:
+          // quickAddGoals leaves priorityWeight null (→ 0.5) for every goal
+          // it creates, so a freshly-laid slate is entirely ties, and Dart's
+          // List.sort is not documented as stable. Without the tie-break the
+          // rank numbers could reshuffle between rebuilds — a worse
+          // legibility defect than the one this screen is fixing.
+          final ranked = [...notifier.goals]
+            ..sort((a, b) {
+              final byPriority = (b.priorityWeight ?? 0.5).compareTo(
+                a.priorityWeight ?? 0.5,
+              );
+              return byPriority != 0
+                  ? byPriority
+                  : a.sortOrder.compareTo(b.sortOrder);
+            });
+
+          final allEmpty = notifier.goals.isEmpty;
 
           return Align(
             alignment: Alignment.topCenter,
@@ -120,72 +212,31 @@ class _GoalsScreenState extends State<GoalsScreen> {
                         autofocus: allEmpty,
                         multiAddNoun: 'goals',
                         addTooltip: 'Add goal',
-                        helperText:
-                            'Enter after each, or paste a list — refine details later',
-                        hintText: _quickAddHint(
-                          timeTargetGoals.length +
-                              outcomeGoals.length +
-                              habitGoals.length,
-                        ),
+                        // No helperText (UI-SPEC item 28 — instructions go).
+                        // hintText stays: a placeholder is a label, not an
+                        // instruction (item 29).
+                        hintText: _quickAddHint(notifier.goals.length),
                       ),
                     ),
                   ),
                   if (allEmpty)
                     const SliverToBoxAdapter(child: _EmptyState())
                   else ...[
-                    // Heading sliver (GOALS-01): purpose + affordance hint.
-                    // Only shown on the non-empty path.
+                    // Heading sliver: the screen names its own purpose, and
+                    // nothing else. No explanatory sub-line — it was deleted,
+                    // not reworded (OBVIOUS-02, UI-SPEC items 10, 28).
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Your goals',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Drag to prioritize. Tap to edit.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          'Priority order',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
-                    if (timeTargetGoals.isNotEmpty) ...[
-                      _buildSectionHeader(context, 'Regular time'),
-                      _buildReorderableSection(
-                        context,
-                        notifier,
-                        timeTargetGoals,
-                        GoalType.timeTarget,
-                      ),
-                    ],
-                    if (outcomeGoals.isNotEmpty) ...[
-                      _buildSectionHeader(context, 'Working toward'),
-                      _buildReorderableSection(
-                        context,
-                        notifier,
-                        outcomeGoals,
-                        GoalType.outcome,
-                      ),
-                    ],
-                    if (habitGoals.isNotEmpty) ...[
-                      _buildSectionHeader(context, 'Daily habits'),
-                      _buildReorderableSection(
-                        context,
-                        notifier,
-                        habitGoals,
-                        GoalType.habit,
-                      ),
-                    ],
+                    _buildReorderableList(context, notifier, ranked),
                   ],
                 ],
               ),
@@ -201,26 +252,10 @@ class _GoalsScreenState extends State<GoalsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-        child: Text(
-          title,
-          style: Theme.of(
-            context,
-          ).textTheme.titleSmall?.copyWith(color: colorScheme.primary),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReorderableSection(
+  Widget _buildReorderableList(
     BuildContext context,
     GoalsNotifier notifier,
-    List<Goal> group,
-    GoalType type,
+    List<Goal> ranked,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     // Phase 14 Plan 01 (GOALS-01): drag handle visible on BOTH desktop and
@@ -235,13 +270,15 @@ class _GoalsScreenState extends State<GoalsScreen> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         buildDefaultDragHandles: false,
-        itemCount: group.length,
+        itemCount: ranked.length,
         itemBuilder: (ctx, i) => GoalCard(
-          key: ValueKey(group[i].id),
-          goal: group[i],
-          onTap: () => _openEditSheet(context, group[i]),
-          onEdit: () => _openEditSheet(context, group[i]),
-          onArchive: () => notifier.archiveGoal(group[i].id),
+          key: ValueKey(ranked[i].id),
+          goal: ranked[i],
+          rank: i + 1,
+          weekProgress: _weekProgress[ranked[i].id],
+          onTap: () => _openEditSheet(context, ranked[i]),
+          onEdit: () => _openEditSheet(context, ranked[i]),
+          onArchive: () => notifier.archiveGoal(ranked[i].id),
           trailing: isMobileTouch
               ? ReorderableDelayedDragStartListener(
                   index: i,
@@ -283,42 +320,22 @@ class _GoalsScreenState extends State<GoalsScreen> {
                   ),
                 ),
         ),
-        // Phase 14 Plan 01 (GOALS-01): reorder writes priorityWeight via
-        // reorderAllWithPriority (not sortOrder-only via reorder).
+        // Phase 14 Plan 01 (GOALS-01): a drag writes priorityWeight via the
+        // notifier call below, not sortOrder-only via `reorder`.
         // newIndex is post-removal — NO >oldIndex adjustment (Pitfall 1).
+        // With one list the reordered ids ARE the full order — no splicing
+        // back into a three-group display order, so this is a straight
+        // pass-through.
         onReorderItem: (oldIndex, newIndex) async {
-          final reorderedGroup = [...group];
-          final item = reorderedGroup.removeAt(oldIndex);
-          reorderedGroup.insert(newIndex, item);
-          final allOrdered = _buildFullOrderedIds(
-            notifier,
-            type,
-            reorderedGroup,
+          final reordered = [...ranked];
+          final item = reordered.removeAt(oldIndex);
+          reordered.insert(newIndex, item);
+          await notifier.reorderAllWithPriority(
+            reordered.map((g) => g.id).toList(),
           );
-          await notifier.reorderAllWithPriority(allOrdered);
         },
       ),
     );
-  }
-
-  /// Reconstructs the flat goal ID list across all three type groups when a
-  /// drag completes within one type group (Pitfall 2: order must match display
-  /// order — timeTarget → outcome → habit).
-  List<String> _buildFullOrderedIds(
-    GoalsNotifier notifier,
-    GoalType type,
-    List<Goal> reorderedGroup,
-  ) {
-    final timeTargetIds = type == GoalType.timeTarget
-        ? reorderedGroup.map((g) => g.id).toList()
-        : notifier.timeTargetGoals.map((g) => g.id).toList();
-    final outcomeIds = type == GoalType.outcome
-        ? reorderedGroup.map((g) => g.id).toList()
-        : notifier.outcomeGoals.map((g) => g.id).toList();
-    final habitIds = type == GoalType.habit
-        ? reorderedGroup.map((g) => g.id).toList()
-        : notifier.habitGoals.map((g) => g.id).toList();
-    return [...timeTargetIds, ...outcomeIds, ...habitIds];
   }
 }
 
