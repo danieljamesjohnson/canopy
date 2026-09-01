@@ -166,16 +166,50 @@ void main() {
           TextOverflow.ellipsis,
         );
 
-        // The chip is flex 0 0 auto, so it must stay a small fraction of the
-        // 220dp row rather than growing to eat it.
+        // **`flex: 0 0 auto` is asserted structurally, not only by width.**
+        // The chip must have no flex ancestor. Note the predicate rather than
+        // `find.byType(Flexible)`: `find.byType` compares `runtimeType`
+        // exactly and so does NOT match the `Expanded` subclass — a
+        // `byType(Flexible)` version of this assertion stayed green against
+        // the very `Expanded` mutation described below, which is precisely
+        // the un-failable assertion this project has shipped defects behind
+        // five times. `w is Flexible` covers both.
         //
-        // **This ceiling is a harness bound, not a device requirement.**
-        // `flutter test` renders with a placeholder font that draws every
-        // glyph as a fixed `fontSize`-wide box, so 'To do' measures far wider
-        // here than in real Roboto (the same trap `kGutterWidth`'s doc comment
-        // documents). Keep it generous — it exists to catch a chip that grew
-        // to fill the row, not to pin a pixel-exact width.
-        expect(tester.getSize(_chipBox('To do')).width, lessThan(80.0));
+        // The width bound below cannot carry this on its own, and that is a
+        // measured fact rather than a caution: wrapping the chip in
+        // `Expanded` at the compact call site makes the Row's two flex
+        // children split the band evenly at **92.0dp each** — barely above
+        // the chip's own natural 91.5dp, and under any ceiling loose enough
+        // to survive the harness font. A width-only backstop would have
+        // passed straight over that regression. This finder fails on it.
+        expect(
+          find.ancestor(
+            of: find.text('To do'),
+            matching: find.byWidgetPredicate((w) => w is Flexible),
+          ),
+          findsNothing,
+        );
+
+        // The coarse companion: the chip must stay a small part of the row
+        // rather than growing to fill it. The content band inside a 220dp
+        // card is 192dp (220 less the 4dp accent-bar inset and the compact
+        // tier's 12dp horizontal padding either side), so a chip given a
+        // fixed oversize width lands near that and trips this.
+        //
+        // **This ceiling is a harness bound, not a device requirement, and
+        // 110 is deliberately not the plan's original 80.** `flutter test`
+        // renders with a placeholder font that draws every glyph as a fixed
+        // `fontSize`-wide box (the trap `kGutterWidth`'s doc comment
+        // documents at length), so the five glyphs of 'To do' measure far
+        // wider here than in real Roboto. Measured 2026-09-01 with the chip
+        // built to spec: **91.5dp** = 16 padding + 12 icon + 4 gap + 59.5 of
+        // placeholder-font text. The plan's 80 was a pre-measurement estimate
+        // of that same harness number and was simply too low to be met by a
+        // correct implementation. Raising it is not weakening it: the
+        // structural finder above is what actually pins item 6.
+        // Verified able to fail: a chip wrapped in `SizedBox(width: 150)`
+        // measures 150.0 and trips this bound.
+        expect(tester.getSize(_chipBox('To do')).width, lessThan(110.0));
       },
     );
   });
