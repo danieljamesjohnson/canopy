@@ -3,8 +3,65 @@ import '../../../data/models/energy_valence.dart';
 import '../../../data/models/goal.dart';
 import '../../../utils/time_format.dart';
 
-/// A Material Card displaying a goal with a colored left border, type icon,
-/// name, and an optional secondary stat (weekly hours or streak count).
+/// Fixed height of the goal card's left progress track, in logical pixels.
+///
+/// **This constant is the whole of UI-SPEC item 18.** The track lives inside a
+/// `Positioned(top: 0, bottom: 0)` whose height is set by the [Stack], i.e. by
+/// the card's own content — and card heights vary with the secondary line and
+/// the chip run. A fill expressed as a *fraction of that* makes a 90% line on a
+/// short card render shorter in real pixels than a 62% line on a tall one,
+/// which is the defect the sketch found. The eye compares pixels, not
+/// percentages, so the fill is `kGoalProgressTrackHeight * progress` and never
+/// a fraction of the card. Do not reintroduce `FractionallySizedBox` here and
+/// do not tie the fill to the card's height by any other route.
+const double kGoalProgressTrackHeight = 40.0;
+
+/// Red/yellow/green is a universally-read scale and is deliberately NOT
+/// sourced from the mood-seeded ColorScheme: `ColorScheme.fromSeed` moves
+/// every role with the seed, and mood 5's yellow seed (#E8C547) would make a
+/// theme-derived "green" and "yellow" nearly indistinguishable — which is
+/// exactly the legibility failure this line exists to fix. There is no key on
+/// screen (UI-SPEC item 15), so the scale must carry itself in every mood.
+const Color _kProgressRed = Color(0xFFE53935);
+const Color _kProgressAmber = Color(0xFFFFB300);
+const Color _kProgressGreen = Color(0xFF43A047);
+
+/// Band boundaries, verbatim from the owner via UI-SPEC item 14: *"red when
+/// just started, yellow when below 70%, 70% and above green."*
+Color _bandColor(double progress) {
+  if (progress < 0.20) return _kProgressRed;
+  if (progress < 0.70) return _kProgressAmber;
+  return _kProgressGreen;
+}
+
+/// The single source of the goal-type icon mapping, read by [_TypeChip].
+IconData _typeIcon(GoalType type) {
+  switch (type) {
+    case GoalType.timeTarget:
+      return Icons.access_time_outlined;
+    case GoalType.outcome:
+      return Icons.flag_outlined;
+    case GoalType.habit:
+      return Icons.repeat_outlined;
+  }
+}
+
+/// Plain-language type labels. A chip is a glyph **and** a word, never a bare
+/// glyph (UI-SPEC items 29-30).
+String _typeLabel(GoalType type) {
+  switch (type) {
+    case GoalType.timeTarget:
+      return 'Regular time';
+    case GoalType.outcome:
+      return 'Working toward';
+    case GoalType.habit:
+      return 'Daily habit';
+  }
+}
+
+/// A Material Card displaying a goal with a left-hand weekly-progress line, an
+/// optional rank number, the name, an identity swatch, a labelled type chip,
+/// and an optional secondary stat (weekly hours or streak count).
 ///
 /// When [trailing] is null and the pointer hovers (desktop), the hover-revealed
 /// edit + archive icons fade in via [AnimatedOpacity] (120ms easeOut). On mobile
@@ -16,6 +73,8 @@ class GoalCard extends StatefulWidget {
   const GoalCard({
     super.key,
     required this.goal,
+    this.rank,
+    this.weekProgress,
     this.trailing,
     this.onTap,
     this.onEdit,
@@ -23,6 +82,22 @@ class GoalCard extends StatefulWidget {
   });
 
   final Goal goal;
+
+  /// 1-based position in the priority order; null renders no rank gutter.
+  ///
+  /// Optional because `archived_goals_screen.dart` builds a [GoalCard] with
+  /// neither of the two new parameters, and an archived list is not a priority
+  /// order.
+  final int? rank;
+
+  /// Progress through this week's target in `0.0..1.0`, or null when the model
+  /// carries no target to measure against.
+  ///
+  /// Null and `0.0` are a real distinction and must not be collapsed: null is
+  /// "no weekly target" (an outcome goal — an empty grey track, never red,
+  /// UI-SPEC item 16), while `0.0` is a budgeted goal with nothing done yet.
+  final double? weekProgress;
+
   final Widget? trailing;
   final VoidCallback? onTap;
 
@@ -38,17 +113,6 @@ class GoalCard extends StatefulWidget {
 
 class _GoalCardState extends State<GoalCard> {
   bool _hovered = false;
-
-  IconData _typeIcon(GoalType type) {
-    switch (type) {
-      case GoalType.timeTarget:
-        return Icons.access_time_outlined;
-      case GoalType.outcome:
-        return Icons.flag_outlined;
-      case GoalType.habit:
-        return Icons.repeat_outlined;
-    }
-  }
 
   String? _secondaryLine(Goal g) {
     switch (g.goalType) {
@@ -76,8 +140,6 @@ class _GoalCardState extends State<GoalCard> {
         : theme.colorScheme.primary;
     final secondary = _secondaryLine(goal);
     final showHoverIcons = widget.trailing == null;
-    final pw = goal.priorityWeight ?? 0.5;
-    final showPriorityChip = pw >= 0.75 || pw <= 0.25;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -89,20 +151,17 @@ class _GoalCardState extends State<GoalCard> {
         onHover: (hovered) => setState(() => _hovered = hovered),
         child: Stack(
           children: [
-            // Colored left border — sized by Stack to match content height
+            // Weekly progress line (UI-SPEC item 13). This Positioned is
+            // still sized by the Stack — i.e. by content — so the track it
+            // holds is CENTRED at a fixed height rather than stretched.
+            // See kGoalProgressTrackHeight for why (item 18).
             Positioned(
               left: 0,
               top: 0,
               bottom: 0,
               width: 5,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: goalColor,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
-                  ),
-                ),
+              child: Center(
+                child: _ProgressLine(progress: widget.weekProgress),
               ),
             ),
             // Content — determines Stack size
@@ -110,6 +169,22 @@ class _GoalCardState extends State<GoalCard> {
               padding: const EdgeInsets.only(left: 5),
               child: Row(
                 children: [
+                  // Rank gutter, on the LEADING side: `trailing` holds the
+                  // drag handle and `showHoverIcons` keys off it, so a rank in
+                  // the trailing slot would silently kill the hover icons.
+                  if (widget.rank != null)
+                    SizedBox(
+                      width: 32,
+                      child: Center(
+                        child: Text(
+                          '${widget.rank}',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -120,15 +195,13 @@ class _GoalCardState extends State<GoalCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Title row: icon + emoji (optional) + name + color swatch
+                          // Title row: emoji (optional) + name + color swatch.
+                          // The bare 16dp type glyph that used to lead this
+                          // row is gone — an unlabelled glyph in an identity
+                          // colour is precisely the shape UI-SPEC item 30
+                          // forbids. It is now the labelled _TypeChip below.
                           Row(
                             children: [
-                              Icon(
-                                _typeIcon(goal.goalType),
-                                size: 16,
-                                color: goalColor,
-                              ),
-                              const SizedBox(width: 6),
                               if (goal.emojiTag != null) ...[
                                 Text(
                                   goal.emojiTag!,
@@ -165,32 +238,26 @@ class _GoalCardState extends State<GoalCard> {
                                 ),
                             ],
                           ),
-                          // Priority chip + valence badge in secondary row (GOALS-02, ENERGY-04a)
-                          if (secondary != null ||
-                              showPriorityChip ||
-                              goal.energyValence != EnergyValence.neutral) ...[
+                          // Secondary stat on its own line — it no longer
+                          // shares a row, so no Expanded.
+                          if (secondary != null) ...[
                             const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                if (secondary != null)
-                                  Expanded(
-                                    child: Text(
-                                      secondary,
-                                      style: theme.textTheme.bodySmall,
-                                    ),
-                                  ),
-                                if (showPriorityChip)
-                                  _PriorityChip(
-                                    priorityWeight: goal.priorityWeight ?? 0.5,
-                                  ),
-                                if (goal.energyValence !=
-                                    EnergyValence.neutral) ...[
-                                  const SizedBox(width: 4),
-                                  _ValenceBadge(valence: goal.energyValence),
-                                ],
-                              ],
-                            ),
+                            Text(secondary, style: theme.textTheme.bodySmall),
                           ],
+                          // Chip run. The type chip is unconditional, so every
+                          // card carries one (ENERGY-04a keeps the valence
+                          // badge conditional). Priority is carried by the
+                          // rank number alone now (UI-SPEC item 17).
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: [
+                              _TypeChip(type: goal.goalType),
+                              if (goal.energyValence != EnergyValence.neutral)
+                                _ValenceBadge(valence: goal.energyValence),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -297,58 +364,96 @@ class _ValenceBadge extends StatelessWidget {
   }
 }
 
-/// File-private priority chip widget for GoalCard (GOALS-02).
+/// File-private goal-type chip for GoalCard (UI-SPEC item 12).
 ///
-/// Renders a colored container chip with an icon and label for Low (0.25) and
-/// High (0.75) priority tiers. Returns [SizedBox.shrink] for Normal (0.5) or
-/// any value between 0.25 and 0.75. Display-only — no tap handlers.
-class _PriorityChip extends StatelessWidget {
-  const _PriorityChip({required this.priorityWeight});
+/// Deliberately duplicates [_ValenceBadge]'s geometry rather than extracting a
+/// shared chip widget: file-private chips per file is this codebase's recorded
+/// convention (see the same note on `chunk_card.dart`'s own chips). Neutral
+/// container role — the type is a label, not a signal, and the one strong
+/// colour on this card belongs to [_ProgressLine].
+class _TypeChip extends StatelessWidget {
+  const _TypeChip({required this.type});
 
-  final double priorityWeight;
+  final GoalType type;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-
-    final IconData icon;
-    final Color chipColor;
-    final Color onColor;
-    final String label;
-
-    if (priorityWeight >= 0.75) {
-      icon = Icons.arrow_upward;
-      chipColor = colorScheme.primaryContainer;
-      onColor = colorScheme.onPrimaryContainer;
-      label = 'High';
-    } else if (priorityWeight <= 0.25) {
-      icon = Icons.arrow_downward;
-      chipColor = colorScheme.surfaceContainerHighest;
-      onColor = colorScheme.onSurfaceVariant;
-      label = 'Low';
-    } else {
-      return const SizedBox.shrink(); // Normal (0.5) — no chip
-    }
+    final onColor = colorScheme.onSurfaceVariant;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: chipColor,
-        borderRadius: BorderRadius.circular(10),
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: onColor),
+          Icon(_typeIcon(type), size: 12, color: onColor),
           const SizedBox(width: 4),
           Text(
-            label,
-            style: textTheme.labelMedium?.copyWith(
+            _typeLabel(type),
+            style: textTheme.labelSmall?.copyWith(
               color: onColor,
               fontWeight: FontWeight.w600,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// File-private weekly-progress line for GoalCard (UI-SPEC items 13-18).
+///
+/// A grey track of [kGoalProgressTrackHeight] logical pixels holding a fill
+/// that grows **bottom-up** to `kGoalProgressTrackHeight * progress`. The
+/// geometry is fixed on purpose: see [kGoalProgressTrackHeight].
+///
+/// A null [progress] renders the bare grey track and no fill at all — the
+/// model has no weekly target to measure against, so a coloured line would
+/// assert a claim the data cannot support (item 16).
+class _ProgressLine extends StatelessWidget {
+  const _ProgressLine({required this.progress});
+
+  final double? progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final p = progress;
+
+    return SizedBox(
+      width: 5,
+      height: kGoalProgressTrackHeight,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              key: const ValueKey('goal-progress-track'),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(2.5),
+              ),
+            ),
+          ),
+          if (p != null && p > 0)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                width: 5,
+                height: kGoalProgressTrackHeight * p.clamp(0.0, 1.0),
+                child: DecoratedBox(
+                  key: const ValueKey('goal-progress-fill'),
+                  decoration: BoxDecoration(
+                    color: _bandColor(p),
+                    borderRadius: BorderRadius.circular(2.5),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
