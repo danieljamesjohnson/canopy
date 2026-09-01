@@ -21,7 +21,7 @@
 .appbar h1 { margin:0; font-size:20px; font-weight:600; letter-spacing:-.01em; }
 .appbar .kebab { font-size:19px; color:var(--on-surface-variant); cursor:pointer; padding:0 4px; }
 
-.quickadd { margin:6px 16px 2px; flex:0 0 auto; }
+.quickadd { margin:6px 16px 0; flex:0 0 auto; }
 .quickadd .field {
   display:flex; align-items:center; gap:8px; padding:10px 12px;
   border:1px solid var(--outline-variant); border-radius:12px; background:var(--surface);
@@ -29,7 +29,7 @@
 .quickadd input { flex:1 1 auto; border:none; outline:none; font:inherit; font-size:14px; background:transparent; color:var(--on-surface); }
 .quickadd .helper { font-size:11px; color:var(--on-surface-variant); padding:5px 4px 0; }
 
-.heading { padding:14px 16px 6px; flex:0 0 auto; }
+.heading { padding:16px 16px 6px; flex:0 0 auto; }
 .heading .h { font-size:15px; font-weight:600; }
 .heading .sub { font-size:12px; color:var(--on-surface-variant); margin-top:3px; line-height:1.45; }
 
@@ -88,12 +88,6 @@
 .prog .txt b { color:var(--on-surface); font-weight:600; }
 .prog.none .txt { font-style:italic; opacity:.75; }
 
-/* The legend. Colour that carries meaning it cannot express is the exact defect
-   this phase exists to remove, so a colour-coded line has to name its own
-   colours somewhere. */
-.legend { display:flex; flex-wrap:wrap; gap:10px; padding:8px 16px 2px; }
-.legend span { display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--on-surface-variant); }
-.legend i { width:9px; height:9px; border-radius:2px; display:inline-block; }
 
 /* B — tier bands */
 .tier { margin:16px 16px 2px; display:flex; align-items:center; gap:9px; }
@@ -166,17 +160,6 @@
   <div class="group">
     <button data-group="flat" aria-pressed="true">One list</button>
     <button data-group="typed" aria-pressed="false">Type sections</button>
-    <button id="progtoggle" aria-pressed="true">Progress</button>
-  </div>
-  <span class="label">Left line</span>
-  <div class="group">
-    <button data-line="priority" aria-pressed="true">= Priority</button>
-    <button data-line="progress" aria-pressed="false">= Progress</button>
-  </div>
-  <span class="label">Outcome rows</span>
-  <div class="group">
-    <button data-out="due" aria-pressed="true">Due in 12 days</button>
-    <button data-out="gap" aria-pressed="false">Say the gap</button>
   </div>
   <span class="label">Mood</span>
   <div class="group">
@@ -196,10 +179,9 @@
     </div>
     <div class="quickadd">
       <div class="field">
-        <input placeholder="Add another (6 so far)" />
+        <input placeholder="Add a goal" />
         <span style="color:var(--primary);font-size:18px;cursor:pointer">＋</span>
       </div>
-      <div class="helper">Enter after each, or paste a list — refine details later</div>
     </div>
     <div class="heading" id="heading"></div>
     <div class="scroller" id="scroller"></div>
@@ -243,16 +225,17 @@ let dLine = 'priority';   // priority | progress  — what the LEFT LINE encodes
    read — sketches must render identically every time. */
 const WEEK_ELAPSED = 5 / 7;
 
-/* Colours are the app's own roles, and deliberately NOT the error slot — the
-   codebase already forbids it for non-errors (goal_card.dart's _ValenceBadge
-   doc). Behind is amber, not red: being behind on a goal is information, not a
-   fault. */
-const STATE = {
-  done:    { c:'var(--primary)',        nm:'Done'      },
-  ontrack: { c:'#2f8f6b',               nm:'On track'  },
-  behind:  { c:'#c08a2e',               nm:'Behind'    },
-  none:    { c:'var(--outline-variant)',nm:'Not started / no data' },
-};
+/* Dan, 2026-09-01: "red when just started, yellow when below 70%, 70% and above
+   green. just a progress gradient. kill all the text and the key blah blah."
+   Three discrete bands, no legend — red/yellow/green is the one colour scale
+   that does not need a key, which is why it can carry meaning with no text.
+   Band edges are recorded in the README, not on screen. */
+const BANDS = [
+  { max: 0.20, c:'#c0392b' },   // just started
+  { max: 0.70, c:'#d9a327' },   // under way
+  { max: 1.01, c:'#2f8f4e' },   // 70%+
+];
+const NO_DATA = 'var(--outline-variant)';
 
 /** Fraction complete this week, or null when the model has no progress at all. */
 function doneFraction(g) {
@@ -261,41 +244,15 @@ function doneFraction(g) {
   return null;                       // outcome — no progress field exists
 }
 
-function stateOf(g) {
-  const f = doneFraction(g);
-  if (f === null) return 'none';
-  if (f >= 0.999) return 'done';
-  return f >= WEEK_ELAPSED ? 'ontrack' : 'behind';
+function colourFor(f) {
+  if (f === null) return NO_DATA;
+  return BANDS.find(b => f < b.max).c;
 }
 
-function progressBlock(g) {
-  if (!dProgress) return '';
-  if (g.ty === 'timeTarget') {
-    const hrs = g.doneChunks * 25 / 60;
-    const label = (g.budget - hrs) < 0.1
-      ? `<b>Done</b> — ${hrs.toFixed(1)} of ${g.budget.toFixed(1)} hrs this week`
-      : `<b>${hrs.toFixed(1)}</b> of ${g.budget.toFixed(1)} hrs this week`;
-    return `<div class="prog"><div class="txt">${label}</div></div>`;
-  }
-  if (g.ty === 'habit') {
-    return `<div class="prog"><div class="txt"><b>${g.doneDays} of ${g.freq}</b> days this week · ${g.stat}</div></div>`;
-  }
-  // Outcome goals have NO progress field anywhere in the model — only `deadline`
-  // and `outcomeDescription`. Inventing a percentage would be new state, which is
-  // out of scope. So the only real choice is what this row says instead.
-  return dOutcome === 'due'
-    ? `<div class="prog"><div class="txt">Due in <b>${g.dueDays} days</b></div></div>`
-    : `<div class="prog none"><div class="txt">No progress to show — due in ${g.dueDays} days</div></div>`;
-}
-
-function legendHTML() {
-  const keys = dLine === 'progress' ? ['done','ontrack','behind','none'] : ['done','ontrack','behind','none'];
-  const what = dLine === 'progress'
-    ? 'Line height = how much of this week is done. Colour ='
-    : 'Line height = priority weight. Colour =';
-  return `<div class="legend"><span style="font-weight:600;color:var(--on-surface)">${what}</span>` +
-    keys.map(k => `<span><i style="background:${STATE[k].c}"></i>${STATE[k].nm}</span>`).join('') + `</div>`;
-}
+/* No per-card text at all. An outcome goal has no progress in the model, so it
+   gets an empty grey track rather than a red one — red would say "you have
+   barely started", which is a claim the data cannot support. */
+function progressBlock() { return ''; }
 
 const NOTES = {
   a: `<strong>A · Ranked.</strong> The type sections are gone. One list, numbered 1–6, ordered by
@@ -365,16 +322,12 @@ function card(g, extra) {
   const t = TYPE[g.ty];
   let stripe;
   if (variant === 'd') {
-    // ONE line. Its height is whichever dimension dLine selects; its colour is
-    // always the progress state. No horizontal bar anywhere — no doubling up.
+    // ONE line: height = progress this week, colour = which band that lands in.
+    // No text, no key.
     const f = doneFraction(g);
-    const pct = Math.round((dLine === 'progress' ? (f === null ? 0 : f) : g.pw) * 100);
-    const col = STATE[stateOf(g)].c;
-    const tip = dLine === 'progress'
-      ? `${STATE[stateOf(g)].nm} — ${pct}% of this week`
-      : `Priority ${g.pw.toFixed(2)} · ${STATE[stateOf(g)].nm}`;
-    stripe = `<div class="ribbon" title="${tip}" style="background:linear-gradient(
-         to top, ${col} 0 ${pct}%, rgba(0,0,0,.09) ${pct}% 100%)"></div>`;
+    const pct = Math.round((f === null ? 0 : f) * 100);
+    stripe = `<div class="ribbon" style="background:linear-gradient(
+         to top, ${colourFor(f)} 0 ${pct}%, rgba(0,0,0,.09) ${pct}% 100%)"></div>`;
   } else if (variant === 'c') {
     const pct = Math.round(g.pw * 100);
     stripe = `<div class="ribbon" title="Priority ${g.pw.toFixed(2)}" style="background:linear-gradient(
@@ -422,12 +375,10 @@ function setNote(html) {
 
 function render() {
   const H = HEADINGS[variant];
-  const sub = H.sub !== null ? H.sub : (dLine === 'progress'
-    ? 'Most important first — the number is the order. The line beside it is how much of this week you have done.'
-    : 'Most important first. The number is the order; the line beside it is how much weight that goal carries. Drag to change both.');
+  const sub = H.sub;   // D passes null — heading only, no explanatory copy
   document.getElementById('screentitle').textContent = H.title;
   document.getElementById('heading').innerHTML =
-    `<div class="h">${H.h}</div><div class="sub">${sub}</div>`;
+    `<div class="h">${H.h}</div>` + (sub ? `<div class="sub">${sub}</div>` : '');
   setNote(NOTES[variant]);
 
   const s = document.getElementById('scroller');
@@ -455,7 +406,6 @@ function render() {
       html += `</div>`;
     });
   } else if (variant === 'd') {
-    html += legendHTML();
     // Rank is GLOBAL — it is the one order reorderAllWithPriority() writes.
     const ordered = [...goals].sort((x,y) => y.pw - x.pw);
     const rankOf = g => ordered.indexOf(g) + 1;
@@ -504,26 +454,6 @@ document.addEventListener('click', (e) => {
   if (gb) {
     dGroup = gb.dataset.group;
     document.querySelectorAll('[data-group]').forEach(b => b.setAttribute('aria-pressed', b === gb));
-    if (variant !== 'd') { variant = 'd'; syncVariantButtons(); }
-    render(); return;
-  }
-  const lb = e.target.closest('[data-line]');
-  if (lb) {
-    dLine = lb.dataset.line;
-    document.querySelectorAll('[data-line]').forEach(b => b.setAttribute('aria-pressed', b === lb));
-    if (variant !== 'd') { variant = 'd'; syncVariantButtons(); }
-    render(); return;
-  }
-  const ob = e.target.closest('[data-out]');
-  if (ob) {
-    dOutcome = ob.dataset.out;
-    document.querySelectorAll('[data-out]').forEach(b => b.setAttribute('aria-pressed', b === ob));
-    if (variant !== 'd') { variant = 'd'; syncVariantButtons(); }
-    render(); return;
-  }
-  if (e.target.closest('#progtoggle')) {
-    dProgress = !dProgress;
-    document.getElementById('progtoggle').setAttribute('aria-pressed', dProgress);
     if (variant !== 'd') { variant = 'd'; syncVariantButtons(); }
     render(); return;
   }

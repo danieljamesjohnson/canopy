@@ -24,10 +24,25 @@ and from the app's existing locked design tokens.
 | 001 | unified-today | Within an inline timeline, how does "now" stay findable while the day stays scannable? | **A · Pure inline** | layout, today, live-state, phase-22 |
 | 002 | timeline-at-6 | How should a card occupy a duration-exact slot it under-fills by ~67dp? | **C · Adaptive fill** | layout, today, timeline, breaks, phase-32 |
 | 003 | the-unlabelled-circle | What should an unresolved work row show where the unlabelled circle is now — and should free time stay dashed while breaks are filled? | **B · Says its state** (+ free time FILLED) | today, timeline, chunk-card, legibility, phase-33 |
-| 004 | goals-as-priority | How does the Goals screen say it IS the priority order, when identity colour is the loudest signal on the card? | _pending_ | goals, priority, legibility, phase-33 |
+| 004 | goals-as-priority | How does the Goals screen say it IS the priority order, when identity colour is the loudest signal on the card? | **D · Rank + progress line** (synthesis) | goals, priority, legibility, phase-33 |
 | 005 | restoratives-and-the-fork | How is adding a restorative one tap — and where does "energizing but not a goal" get decided? | **B · Fork at the front door** | restoratives, goals, energy-valence, entry-points, phase-33 |
 
 ## Locked Decisions
+
+- **A goal row is: rank number, name, glyph+word chips, one coloured line.** Rank carries priority
+  order; the left line carries *progress this week* and is coloured red <20% / yellow 20–69% /
+  green ≥70%, with no key on screen. Identity colour is demoted to a dot. Outcome goals, which have
+  no progress field in the model, show an empty grey track rather than red. (Sketch 004, variant D,
+  2026-09-01.)
+- **Instructions go, labels stay.** No legends, no explanatory sub-lines, no field helper text. Chips
+  keep glyph + word — a bare glyph recreates the unlabelled-circle defect on another screen.
+  (Sketch 004, 2026-09-01.)
+- **A chunk row names its own state** — `To do` / `Done` / `Skipped`, one vocabulary, no glyph
+  carrying meaning alone. Retires `Icons.radio_button_unchecked`. (Sketch 003, variant B, 2026-09-01.)
+- **Free time is a filled card, not a dashed outline** — restores the Phase 22 match that Phase 32
+  broke. Copy unchanged. (Sketch 003, 2026-09-01.)
+- **The goal/restorative fork is asked at the front door**, before any form — not as a correction
+  inside the goal form. (Sketch 005, variant B, 2026-09-01.)
 
 - **Inline timeline, no separate now-card** — the day is one list; the current row swells into a
   live card in place and auto-centres on open. (Sketch 001, variant A.)
