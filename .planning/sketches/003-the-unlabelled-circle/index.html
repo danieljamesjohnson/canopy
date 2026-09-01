@@ -147,6 +147,22 @@
   font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:200;
 }
 .toast.show { opacity:.95; }
+
+/* The note used to print in full above the mockup. On a 390px phone that put
+   ~750px of prose between the toolbar and the first card — you had to scroll
+   past an essay to reach the thing you were being asked to judge. Collapsed
+   by default; the headline stays, the reasoning is one tap away. */
+.note details { border:1px solid #d8e0dc; border-radius:12px; background:#fff; padding:0; }
+.note summary { cursor:pointer; padding:12px 14px; list-style:none; font-size:13px; line-height:1.5; }
+.note summary::-webkit-details-marker { display:none; }
+.note summary .more {
+  display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px;
+  background:#eef3f1; color:color:#57635e; vertical-align:1px;
+}
+.note details[open] summary .more::after { content:'\2212'; }
+.note details:not([open]) summary .more::after { content:'+'; }
+.note details[open] summary { border-bottom:1px solid #e8eeeb; }
+.note .body { padding:12px 14px 14px; font-size:13px; line-height:1.55; }
 </style>
 </head>
 <body data-mood="3">
@@ -154,8 +170,8 @@
 <div class="toolbar">
   <span class="label">Variant</span>
   <div class="group">
-    <button data-v="a" aria-pressed="true">A · Nothing</button>
-    <button data-v="b" aria-pressed="false">B · Says its state</button>
+    <button data-v="a" aria-pressed="false">A · Nothing</button>
+    <button data-v="b" aria-pressed="false">B · Says its state ★</button>
     <button data-v="c" aria-pressed="false">C · A real checkbox</button>
     <button data-v="shipped" aria-pressed="false">As shipped</button>
   </div>
@@ -163,8 +179,8 @@
   <div class="group"><button id="jumpnow">Jump to now</button></div>
   <span class="label">Free time</span>
   <div class="group">
-    <button data-free="dashed" aria-pressed="true">Dashed</button>
-    <button data-free="filled" aria-pressed="false">Filled</button>
+    <button data-free="dashed" aria-pressed="false">Dashed</button>
+    <button data-free="filled" aria-pressed="true">Filled ★</button>
   </div>
   <span class="label">Mood</span>
   <div class="group">
@@ -240,7 +256,7 @@ const NOTES = {
 };
 
 const tl = document.getElementById('timeline');
-let variant = 'a', freeStyle = 'dashed';
+let variant = 'b', freeStyle = 'filled';   // ★ the chosen pair
 const resolved = {};   // id -> 'done' for C's live checkbox
 
 function trailFor(item, id) {
@@ -257,6 +273,18 @@ function trailFor(item, id) {
   if (variant === 'c') return `<button class="checkbtn" data-check="${id}" title="Mark complete"
         aria-label="Mark complete"><span class="ring">✓</span></button>`;
   return `<span class="shipped-circle"></span>`;
+}
+
+
+/* Split the note at the first </strong> so the headline is the summary and the
+   reasoning is the collapsed body. */
+function setNote(html) {
+  const i = html.indexOf('</strong>');
+  const head = i > -1 ? html.slice(0, i + 9) : 'About this variant';
+  const body = i > -1 ? html.slice(i + 9) : html;
+  document.getElementById('note').innerHTML =
+    '<details><summary>' + head + '<span class="more"></span></summary>' +
+    '<div class="body">' + body + '</div></details>';
 }
 
 function render() {
@@ -317,7 +345,7 @@ function render() {
 
   html += `<div class="nowline" style="top:${(NOW - DAY_START)*PPM}px"></div>`;
   tl.innerHTML = html;
-  document.getElementById('note').innerHTML = NOTES[variant];
+  setNote(NOTES[variant]);
 }
 
 function toast(msg) {
@@ -339,7 +367,10 @@ document.addEventListener('click', (e) => {
     document.querySelectorAll('[data-free]').forEach(b => b.setAttribute('aria-pressed', b === fb));
     render(); return;
   }
-  const mb = e.target.closest('[data-mood]');
+  // `button[data-mood]`, NOT `[data-mood]`: <body data-mood="3"> carries the same
+  // attribute, so a bare selector matches the body on EVERY click and this branch
+  // silently eats every handler below it — Complete, Skip and the checkbox included.
+  const mb = e.target.closest('button[data-mood]');
   if (mb) {
     document.body.dataset.mood = mb.dataset.mood;
     document.querySelectorAll('[data-mood]').forEach(b => b.setAttribute('aria-pressed', b === mb));

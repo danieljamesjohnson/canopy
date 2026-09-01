@@ -2,11 +2,29 @@
 sketch: 003
 name: the-unlabelled-circle
 question: "What should an unresolved work row show where the unlabelled circle is now — and should free time stay dashed while breaks are filled cards?"
-winner: null
+winner: "B"
 tags: [today, timeline, chunk-card, legibility, phase-33]
 ---
 
 # Sketch 003: The unlabelled circle
+
+## Outcome — ★ Variant B wins, and free time becomes FILLED (Dan, 2026-09-01)
+
+**B · Says its state.** One vocabulary, three words — `To do` / `Done` / `Skipped`. No glyph on a
+chunk row carries meaning on its own any more, which is the whole of OBVIOUS-01.
+
+**A was not chosen, and the reason matters for the build:** deleting the circle would have removed
+the *wrong* thing. The complaint was never "there is something on the right of the row", it was
+"that something does not say what it is." B answers the complaint; A dodges it.
+
+**C was rejected on a known failure shape** — it was the only variant that added a second way to
+complete a chunk, and its tick is itself an unlabelled glyph. Phase 32 already spent a round
+learning that two arrangements of one vocabulary is a defect.
+
+**Free time: FILLED.** The Phase 22 match is restored — free time is a filled card like a break,
+not a dashed outline. Unscheduled time being visibly *yours* is part of the product's promise, and
+an outline reads as absence. The locked copy is unchanged: `Free until 8:30 AM` / `Free · 1h 5m`.
+
 
 ## Design Question
 

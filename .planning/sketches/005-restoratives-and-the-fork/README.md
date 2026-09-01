@@ -2,11 +2,28 @@
 sketch: 005
 name: restoratives-and-the-fork
 question: "How is adding a restorative one tap — and where does 'this energizes me but isn't a goal' get decided?"
-winner: null
+winner: "B"
 tags: [restoratives, goals, energy-valence, entry-points, phase-33]
 ---
 
 # Sketch 005: Restoratives, and the guitar fork
+
+## Outcome — ★ Variant B wins (Dan, 2026-09-01)
+
+**B · Fork at the front door.** The kind is asked *first* — *something to make time for* or
+*something that restores you* — before any form exists. Choosing the second never shows a goal form
+at all: name, emoji, done.
+
+**Why the front door and not the cheaper options.** A's nudge and C's fourth option both put the
+fork somewhere you have to already be *inside a goal* to find, which is the exact shape of the
+original friction: the app assumes goal, and the escape hatch is a correction. B makes the two kinds
+peers at the moment of entry rather than making restoratives a special case of a goal.
+
+**The cost is real and accepted:** one extra tap on every add, including the common case where you
+did just want a goal.
+
+**The nine quick-pick restoratives ship in every variant** and are unaffected by this choice.
+
 
 ## Design Question
 

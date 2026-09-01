@@ -73,6 +73,19 @@
 }
 .rank.top { background:var(--primary-container); color:var(--on-primary-container); }
 
+/* D — rank and ribbon read as ONE priority gutter, not two decorations */
+.rank.d { border-right:none; background:transparent; font-size:15px; color:var(--on-surface); }
+
+/* D — progress. The arithmetic is the engine's own: completed chunks this week
+   × 25/60 (schedule_generator._remainingHours). Read from CompletionLog, which
+   the Goals screen can reach without touching the generator. */
+.prog { margin-top:7px; }
+.prog .bar { height:3px; border-radius:2px; background:rgba(0,0,0,.09); overflow:hidden; }
+.prog .bar i { display:block; height:100%; background:var(--primary); border-radius:2px; }
+.prog .txt { font-size:11px; color:var(--on-surface-variant); margin-top:4px; }
+.prog .txt b { color:var(--on-surface); font-weight:600; }
+.prog.none .txt { font-style:italic; opacity:.75; }
+
 /* B — tier bands */
 .tier { margin:16px 16px 2px; display:flex; align-items:center; gap:9px; }
 .tier .dot { width:9px; height:9px; border-radius:50%; }
@@ -110,6 +123,22 @@
 .note .q { color:#8a3b2b; font-weight:600; }
 .toast { position:fixed; left:50%; transform:translateX(-50%); bottom:22px; background:#101614; color:#e7efeb; padding:9px 16px; border-radius:var(--radius-pill); font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:200; }
 .toast.show { opacity:.95; }
+
+/* The note used to print in full above the mockup. On a 390px phone that put
+   ~750px of prose between the toolbar and the first card — you had to scroll
+   past an essay to reach the thing you were being asked to judge. Collapsed
+   by default; the headline stays, the reasoning is one tap away. */
+.note details { border:1px solid #d8e0dc; border-radius:12px; background:#fff; padding:0; }
+.note summary { cursor:pointer; padding:12px 14px; list-style:none; font-size:13px; line-height:1.5; }
+.note summary::-webkit-details-marker { display:none; }
+.note summary .more {
+  display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px;
+  background:#eef3f1; color:color:#57635e; vertical-align:1px;
+}
+.note details[open] summary .more::after { content:'\2212'; }
+.note details:not([open]) summary .more::after { content:'+'; }
+.note details[open] summary { border-bottom:1px solid #e8eeeb; }
+.note .body { padding:12px 14px 14px; font-size:13px; line-height:1.55; }
 </style>
 </head>
 <body data-mood="3">
@@ -117,12 +146,24 @@
 <div class="toolbar">
   <span class="label">Variant</span>
   <div class="group">
-    <button data-v="a" aria-pressed="true">A · Ranked</button>
+    <button data-v="a" aria-pressed="false">A · Ranked</button>
     <button data-v="b" aria-pressed="false">B · Tiers</button>
     <button data-v="c" aria-pressed="false">C · Ribbon</button>
+    <button data-v="d" aria-pressed="false">D · Rank + ribbon ★</button>
     <button data-v="shipped" aria-pressed="false">As shipped</button>
   </div>
   <span class="spacer"></span>
+  <span class="label">D only</span>
+  <div class="group">
+    <button data-group="flat" aria-pressed="true">One list</button>
+    <button data-group="typed" aria-pressed="false">Type sections</button>
+    <button id="progtoggle" aria-pressed="true">Progress</button>
+  </div>
+  <span class="label">Outcome rows</span>
+  <div class="group">
+    <button data-out="due" aria-pressed="true">Due in 12 days</button>
+    <button data-out="gap" aria-pressed="false">Say the gap</button>
+  </div>
   <span class="label">Mood</span>
   <div class="group">
     <button data-mood="1" aria-pressed="false">1</button>
@@ -164,14 +205,48 @@ const TYPE = {
   habit:      { icon:'↻', label:'Daily habit',   section:'Daily habits' },
 };
 
+/* `budget` / `doneChunks` are the real plumbing: CompletionLog rows with
+   event == completed, this week, for this goal. Hours = chunks × 25/60, which
+   is schedule_generator._remainingHours' own arithmetic. `dueDays` is the
+   outcome goal's deadline. Outcome goals have NO progress field anywhere in
+   the model — that gap is real and variant D shows it rather than inventing a
+   percentage. */
 let goals = [
-  { nm:'Deep work',        ty:'timeTarget', pw:0.90, col:'#3f6375', stat:'10.0 hrs/week', val:null },
-  { nm:'Guitar',           ty:'timeTarget', pw:0.62, col:'#8a5a2b', stat:'3.0 hrs/week',  val:'gives' },
-  { nm:'Admin',            ty:'timeTarget', pw:0.20, col:'#6f7975', stat:'2.5 hrs/week',  val:'costs' },
-  { nm:'Ship the redesign',ty:'outcome',    pw:0.78, col:'#22695b', stat:null,            val:null },
-  { nm:'Tax return',       ty:'outcome',    pw:0.35, col:'#8a3b2b', stat:null,            val:'costs' },
-  { nm:'Morning walk',     ty:'habit',      pw:0.50, col:'#4b8b3b', stat:'12-day streak', val:'gives' },
+  { nm:'Deep work',        ty:'timeTarget', pw:0.90, col:'#3f6375', stat:'10.0 hrs/week', val:null,    budget:10.0, doneChunks:15 },
+  { nm:'Guitar',           ty:'timeTarget', pw:0.62, col:'#8a5a2b', stat:'3.0 hrs/week',  val:'gives', budget:3.0,  doneChunks:2  },
+  { nm:'Admin',            ty:'timeTarget', pw:0.20, col:'#6f7975', stat:'2.5 hrs/week',  val:'costs', budget:2.5,  doneChunks:6  },
+  { nm:'Ship the redesign',ty:'outcome',    pw:0.78, col:'#22695b', stat:null,            val:null,    dueDays:12 },
+  { nm:'Tax return',       ty:'outcome',    pw:0.35, col:'#8a3b2b', stat:null,            val:'costs', dueDays:40 },
+  { nm:'Morning walk',     ty:'habit',      pw:0.50, col:'#4b8b3b', stat:'12-day streak', val:'gives', freq:7, doneDays:5 },
 ];
+
+let dGroup = 'flat';      // flat | typed
+let dProgress = true;
+let dOutcome = 'due';     // due | gap
+
+function progressBlock(g) {
+  if (!dProgress) return '';
+  if (g.ty === 'timeTarget') {
+    const hrs = g.doneChunks * 25 / 60;
+    const pct = Math.min(100, Math.round(hrs / g.budget * 100));
+    const label = (g.budget - hrs) < 0.1
+      ? `<b>On track</b> — ${hrs.toFixed(1)} of ${g.budget.toFixed(1)} hrs this week`
+      : `<b>${hrs.toFixed(1)}</b> of ${g.budget.toFixed(1)} hrs this week`;
+    return `<div class="prog"><div class="bar"><i style="width:${pct}%"></i></div>
+              <div class="txt">${label}</div></div>`;
+  }
+  if (g.ty === 'habit') {
+    const pct = Math.round(g.doneDays / g.freq * 100);
+    return `<div class="prog"><div class="bar"><i style="width:${pct}%"></i></div>
+              <div class="txt"><b>${g.doneDays} of ${g.freq}</b> days this week · ${g.stat}</div></div>`;
+  }
+  // Outcome goals have NO progress field anywhere in the model — only `deadline`
+  // and `outcomeDescription`. Inventing a percentage would be new state, which is
+  // out of scope. So the only real choice is what this row says instead.
+  return dOutcome === 'due'
+    ? `<div class="prog"><div class="txt">Due in <b>${g.dueDays} days</b></div></div>`
+    : `<div class="prog none"><div class="txt">No progress to show — due in ${g.dueDays} days</div></div>`;
+}
 
 const NOTES = {
   a: `<strong>A · Ranked.</strong> The type sections are gone. One list, numbered 1–6, ordered by
@@ -191,6 +266,17 @@ const NOTES = {
       colour survives as the dot beside the name. <span class="q">The question:</span> this is the
       direct answer to "the colors are changing, it's not making a ton of sense" — colour now means
       exactly one thing. Is a filled bar legible enough at 6dp, or does it need the words too?`,
+  d: `<strong>D · Rank + ribbon — the synthesis (Dan, 2026-09-01).</strong> A's number and C's bar
+      do different jobs, so they compose: <em>rank</em> says the order, <em>ribbon</em> says the
+      distance. 3rd and 4th could be 0.62 and 0.60 — a hair — or 0.62 and 0.21, a chasm; rank alone
+      cannot tell you which, and the ribbon can. Identity colour stays demoted to the dot.
+      <br><br><strong>Progress is on, per "showing what's complete can help you re-rank".</strong>
+      The numbers are real plumbing, not new engine work: <code>CompletionLog</code> rows for this
+      week × 25/60 is exactly what <code>schedule_generator._remainingHours</code> already computes.
+      <span class="q">But look at the two Working-toward goals.</span> Outcome goals have <em>no
+      progress field anywhere in the model</em> — only a deadline. So a third of your list can only
+      say "no progress to show", and that row is louder about the gap than it is useful. Toggle
+      <em>Progress</em> off and decide whether the honest version earns its space.`,
   shipped: `<strong>As shipped, for reference.</strong> Title "Goals". Heading "Your goals" with
       <em>"Drag to prioritize. Tap to edit."</em> in 12px grey. Three type sections. The loudest
       thing on each card is a 5dp bar in the goal's own identity colour — which carries no meaning
@@ -203,10 +289,16 @@ const HEADINGS = {
   a:       { title:'Goals', h:'Priority order', sub:'Everything you want time for, most important first. Drag to change the order — that <em>is</em> how priority is set.' },
   b:       { title:'Goals', h:'What matters most', sub:'Drag a goal into a different band to change its priority. The scheduler fills High first.' },
   c:       { title:'Goals', h:'Your goals', sub:'The bar on the left is priority — fuller means the scheduler reaches it sooner. Drag to change it. Tap to edit.' },
+  d:       { title:'Goals', h:'Priority order', sub:'Most important first. The number is the order; the bar beside it is how much weight that goal carries. Drag to change both.' },
   shipped: { title:'Goals', h:'Your goals', sub:'Drag to prioritize. Tap to edit.' }
 };
 
-let variant = 'a';
+let variant = 'd';   // opens on the synthesis — it is the one under review
+
+function syncVariantButtons() {
+  document.querySelectorAll('[data-v]').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.v === variant));
+}
 
 function chips(g) {
   let out = '';
@@ -222,14 +314,20 @@ function chips(g) {
 function card(g, extra) {
   const t = TYPE[g.ty];
   const pct = Math.round(g.pw * 100);
-  const stripe = (variant === 'c')
+  const ribbon = (variant === 'c' || variant === 'd');
+  const stripe = ribbon
     ? `<div class="ribbon" title="Priority ${g.pw.toFixed(2)}" style="background:linear-gradient(
          to top, var(--primary) 0 ${pct}%, rgba(0,0,0,.10) ${pct}% 100%)"></div>`
     : `<div class="stripe" style="background:${g.col}"></div>`;
-  const typeChip = (variant === 'a' || variant === 'b') ? `<span class="chip type">${t.icon} ${t.label}</span>` : '';
-  const second = (g.stat || chips(g) || typeChip)
+  // D shows the type chip only in flat mode — under type sections it repeats the header.
+  const typeChip = (variant === 'a' || variant === 'b' ||
+                    (variant === 'd' && dGroup === 'flat'))
+    ? `<span class="chip type">${t.icon} ${t.label}</span>` : '';
+  // D moves the stat into the progress line, so don't print it twice.
+  const stat = (variant === 'd' && dProgress) ? null : g.stat;
+  const second = (stat || chips(g) || typeChip)
     ? `<div class="secondrow">
-         ${g.stat ? `<span class="stat">${g.stat}</span>` : ''}
+         ${stat ? `<span class="stat">${stat}</span>` : ''}
          ${typeChip}${chips(g)}
        </div>` : '';
   return `<div class="gcard">
@@ -241,9 +339,22 @@ function card(g, extra) {
         <span class="swatch" style="background:${g.col}"></span>
       </div>
       ${second}
+      ${variant === 'd' ? progressBlock(g) : ''}
     </div>
     <div class="grip" title="Drag to reorder">⣿</div>
   </div>`;
+}
+
+
+/* Split the note at the first </strong> so the headline is the summary and the
+   reasoning is the collapsed body. */
+function setNote(html) {
+  const i = html.indexOf('</strong>');
+  const head = i > -1 ? html.slice(0, i + 9) : 'About this variant';
+  const body = i > -1 ? html.slice(i + 9) : html;
+  document.getElementById('note').innerHTML =
+    '<details><summary>' + head + '<span class="more"></span></summary>' +
+    '<div class="body">' + body + '</div></details>';
 }
 
 function render() {
@@ -251,7 +362,7 @@ function render() {
   document.getElementById('screentitle').textContent = H.title;
   document.getElementById('heading').innerHTML =
     `<div class="h">${H.h}</div><div class="sub">${H.sub}</div>`;
-  document.getElementById('note').innerHTML = NOTES[variant];
+  setNote(NOTES[variant]);
 
   const s = document.getElementById('scroller');
   let html = '';
@@ -277,6 +388,22 @@ function render() {
         : `<div class="tier-empty">Nothing here — drag a goal in.</div>`;
       html += `</div>`;
     });
+  } else if (variant === 'd') {
+    // Rank is GLOBAL — it is the one order reorderAllWithPriority() writes.
+    const ordered = [...goals].sort((x,y) => y.pw - x.pw);
+    const rankOf = g => ordered.indexOf(g) + 1;
+    if (dGroup === 'flat') {
+      ordered.forEach(g => {
+        html += card(g, `<div class="rank d ${rankOf(g) <= 2 ? 'top' : ''}">${rankOf(g)}</div>`);
+      });
+    } else {
+      ['timeTarget','outcome','habit'].forEach(ty => {
+        const inType = ordered.filter(g => g.ty === ty);
+        if (!inType.length) return;
+        html += `<div class="sectionhdr">${TYPE[ty].section} <span class="cnt">· ${inType.length}</span></div>`;
+        html += inType.map(g => card(g, `<div class="rank d ${rankOf(g) <= 2 ? 'top' : ''}">${rankOf(g)}</div>`)).join('');
+      });
+    }
   } else {
     ['timeTarget','outcome','habit'].forEach(ty => {
       const inType = goals.filter(g => g.ty === ty).sort((x,y) => y.pw - x.pw);
@@ -296,16 +423,35 @@ function toast(m) {
 
 document.addEventListener('click', (e) => {
   const vb = e.target.closest('[data-v]');
-  if (vb) {
-    variant = vb.dataset.v;
-    document.querySelectorAll('[data-v]').forEach(b => b.setAttribute('aria-pressed', b === vb));
-    render(); return;
-  }
-  const mb = e.target.closest('[data-mood]');
+  if (vb) { variant = vb.dataset.v; syncVariantButtons(); render(); return; }
+  // `button[data-mood]`, NOT `[data-mood]`: <body data-mood="3"> carries the same
+  // attribute, so a bare selector matches the body on EVERY click and this branch
+  // silently eats every handler below it.
+  const mb = e.target.closest('button[data-mood]');
   if (mb) {
     document.body.dataset.mood = mb.dataset.mood;
     document.querySelectorAll('[data-mood]').forEach(b => b.setAttribute('aria-pressed', b === mb));
     return;
+  }
+  const gb = e.target.closest('[data-group]');
+  if (gb) {
+    dGroup = gb.dataset.group;
+    document.querySelectorAll('[data-group]').forEach(b => b.setAttribute('aria-pressed', b === gb));
+    if (variant !== 'd') { variant = 'd'; syncVariantButtons(); }
+    render(); return;
+  }
+  const ob = e.target.closest('[data-out]');
+  if (ob) {
+    dOutcome = ob.dataset.out;
+    document.querySelectorAll('[data-out]').forEach(b => b.setAttribute('aria-pressed', b === ob));
+    if (variant !== 'd') { variant = 'd'; syncVariantButtons(); }
+    render(); return;
+  }
+  if (e.target.closest('#progtoggle')) {
+    dProgress = !dProgress;
+    document.getElementById('progtoggle').setAttribute('aria-pressed', dProgress);
+    if (variant !== 'd') { variant = 'd'; syncVariantButtons(); }
+    render(); return;
   }
   if (e.target.closest('.grip')) { toast('Press and hold to drag — reorder writes priority'); return; }
   if (e.target.closest('.gcard')) { toast('Opens the goal form'); return; }
