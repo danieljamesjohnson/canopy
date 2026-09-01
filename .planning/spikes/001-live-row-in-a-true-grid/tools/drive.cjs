@@ -18,6 +18,25 @@
 //     --scroll=N        scroll the timeline by N px before shooting
 //     --full            full-page screenshot
 //     --dump            print the semantics tree as JSON to stdout
+//
+//   Interaction (Phase 33). These are ADDITIVE — an invocation using none of
+//   them behaves exactly as before. They run AFTER the clock is set and BEFORE
+//   --scroll/--dump/screenshot, and they execute in COMMAND-LINE ORDER, so a
+//   tap/type sequence reads left to right:
+//     --tap=<label>         click the semantic node with that exact label
+//     --tapbig=<label>      ...but pick the LARGEST match, not the smallest
+//     --tap=~<label>        ...contains match (list rows carry the whole row's text)
+//     --tap=<label>*        ...prefix match (Flutter concatenates subtitle text
+//                           into a control's label, so the title is the stable part)
+//     --tap=<label>@<role>  ...restricted to that ARIA role (e.g. @button)
+//     --type=<text>         type into whatever currently has focus
+//     --key=<Key>           press a key (e.g. Enter, Tab, Escape)
+//     --tapxy=<x>,<y>       tap raw coordinates (last resort — no semantic text)
+//     --wheel=<x>,<y>,<dy>  scroll dy px with the pointer over (x,y)
+//     --wait=<ms>           pause
+//   Why order matters and why they are not collected per-flag: seeding a
+//   fixture is a sequence ("open Goals, tap the goal, type a budget, save"),
+//   and a per-flag bucket would silently reorder it.
 const { chromium } = require('playwright');
 
 const args = process.argv.slice(2);
@@ -56,15 +75,68 @@ async function semantics(page) {
 // screen carries the concatenated text of its children), so match on an exact
 // label and prefer the smallest box — that's the leaf that actually handles
 // the tap.
-async function clickLabel(page, label, { role = null } = {}) {
+// `biggest` picks the LARGEST matching node instead of the smallest. Needed
+// where one label is carried by two real controls: on the Goals screen both the
+// quick-add's 40x40 "+" and the 124x56 extended FAB are `button` + "Add goal",
+// and smallest-wins silently hits the "+" (submitting an empty field, a no-op
+// that looks like a successful tap).
+// A trailing `*` on the label switches to prefix matching. Flutter concatenates
+// a node's descendant text into its label, so a control whose visible title has
+// a subtitle under it carries BOTH — the add-kind fork's doors are labelled
+// "Something to make time for\nGets a type, a weekly budget and a priority.
+// Canopy schedules it." Requiring callers to reproduce that verbatim makes
+// scripts break on any copy edit; a prefix is the stable part.
+async function clickLabel(page, label, { role = null, biggest = false } = {}) {
   const nodes = await semantics(page);
+  const prefix = label.endsWith('*');
+  // A leading `~` matches any node CONTAINING the text. Needed for list rows,
+  // whose label is the whole row concatenated and begins with the drag handle's
+  // "Drag to reorder" rather than with anything identifying.
+  const contains = label.startsWith('~');
+  const want = prefix ? label.slice(0, -1) : contains ? label.slice(1) : label;
+  const match = (t) => contains ? t.includes(want) : prefix ? t.startsWith(want) : t === want;
   const hits = nodes
-    .filter((n) => n.t === label && (role === null || n.role === role))
+    .filter((n) => match(n.t) && (role === null || n.role === role))
     .sort((a, b) => a.w * a.h - b.w * b.h);
   if (!hits.length) return false;
-  await page.mouse.click(hits[0].x, hits[0].y);
+  let pick = biggest ? hits[hits.length - 1] : hits[0];
+
+  // A semantic node reports real coordinates even when it is scrolled out of
+  // the viewport, so tapping it "succeeds" and does nothing. Measured on this
+  // build (Phase 33): six Complete/Skip taps all reported a hit and only the
+  // two above the fold actually resolved a chunk. Scroll it into view and
+  // re-resolve before tapping — and if it still will not come into view, fail
+  // rather than pretend.
+  const vh = page.viewportSize().height;
+  if (pick.y < 0 || pick.y > vh - 8) {
+    await page.mouse.move(215, Math.round(vh / 2));
+    await page.mouse.wheel(0, pick.y - Math.round(vh / 2));
+    await page.waitForTimeout(1200);
+    const again = (await semantics(page))
+      .filter((n) => match(n.t) && (role === null || n.role === role))
+      .sort((a, b) => a.w * a.h - b.w * b.h);
+    if (!again.length) return false;
+    pick = biggest ? again[again.length - 1] : again[0];
+    if (pick.y < 0 || pick.y > vh - 8) return false;
+  }
+
+  await tapAt(page, pick.x, pick.y);
   await page.waitForTimeout(900);
   return true;
+}
+
+// A pointer sequence with a real dwell between down and up, NOT `mouse.click`.
+// Measured on this build (Phase 33): `page.mouse.click()` on the Goals
+// quick-add field leaves `document.activeElement` at BODY and Flutter never
+// creates its editing element, so a following `keyboard.type` goes nowhere and
+// the step silently does nothing. The same coordinates with a ~120ms hold focus
+// the field's TEXTAREA every time — Flutter's tap recognizer wants the dwell.
+// Note the editing element is a TEXTAREA, not an INPUT; query for both.
+async function tapAt(page, x, y) {
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.waitForTimeout(120);
+  await page.mouse.up();
 }
 
 async function enableSemantics(page) {
@@ -180,6 +252,63 @@ async function dismissSplash(page) {
     await enableSemantics(page);
     await dismissSplash(page);
     await page.waitForTimeout(2500);
+  }
+
+  // Interaction sequence, in command-line order. Anything that is not one of
+  // these four verbs is left alone, so existing flags are unaffected.
+  for (const a of args) {
+    const m = /^--(tapxy|tapbig|tap|type|key|wait|wheel)=(.*)$/.exec(a);
+    if (!m) continue;
+    const [, verb, raw] = m;
+    if (verb === 'wheel') {
+      // Scroll a specific region — a bottom sheet's submit button sits below
+      // the fold, and a semantic node whose y is outside the viewport still
+      // reports coordinates, so tapping it silently does nothing.
+      const [wx, wy, dy] = raw.split(',').map(Number);
+      await page.mouse.move(wx, wy);
+      await page.mouse.wheel(0, dy);
+      await page.waitForTimeout(1200);
+      console.error(`[drive] wheel ${wx},${wy} dy=${dy}`);
+    } else if (verb === 'tapxy') {
+      // Last resort for a control that carries no semantic text at all — the
+      // goal form's "Goal name" TextField is one. Prefer a label whenever there
+      // is one; coordinates rot the moment the layout moves.
+      const [cx, cy] = raw.split(',').map(Number);
+      await tapAt(page, cx, cy);
+      await page.waitForTimeout(900);
+      console.error(`[drive] tapxy ${cx},${cy}`);
+    } else if (verb === 'tap' || verb === 'tapbig') {
+      const at = raw.lastIndexOf('@');
+      const label = at > 0 ? raw.slice(0, at) : raw;
+      const role = at > 0 ? raw.slice(at + 1) : null;
+      const biggest = verb === 'tapbig';
+      const ok = await clickLabel(page, label, { role, biggest });
+      console.error(`[drive] ${verb} ${JSON.stringify(label)}${role ? '@' + role : ''} -> ${ok ? 'hit' : 'MISS'}`);
+      // A miss is fatal: a seeding script that silently skips a step produces a
+      // fixture nobody can reproduce, and the screenshots would then be judged
+      // against a state that was never actually reached.
+      if (!ok) { console.error('FATAL: no semantic node matched'); process.exit(2); }
+    } else if (verb === 'type') {
+      // Fail loudly rather than typing into the void — see tapAt's note. A
+      // --type that lands nowhere is the failure mode that makes a seeded
+      // fixture unreproducible, so assert focus before sending keys.
+      const focused = await page.evaluate(
+        () => document.activeElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName),
+      );
+      if (!focused) {
+        console.error('FATAL: --type with no focused editing element; tap the field first');
+        process.exit(3);
+      }
+      await page.keyboard.type(raw, { delay: 25 });
+      await page.waitForTimeout(400);
+      console.error(`[drive] type ${JSON.stringify(raw)}`);
+    } else if (verb === 'key') {
+      await page.keyboard.press(raw);
+      await page.waitForTimeout(700);
+      console.error(`[drive] key ${raw}`);
+    } else {
+      await page.waitForTimeout(parseInt(raw, 10) || 0);
+    }
   }
 
   if (SCROLL) {
