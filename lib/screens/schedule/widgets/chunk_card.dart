@@ -200,11 +200,17 @@ class ChunkCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(color: theme.colorScheme.outlineVariant),
           ),
-          // Phase 33 gap closure (owner's verdict 2026-09-02) — the hatch.
+          // Phase 33 gap closure (owner's verdict 2026-09-02) — the hatch, in
+          // the BREAK tone. His follow-up ruling the same day: *"the hatch
+          // should only be during free time. breaks and short breaks should
+          // be something different. can use a hatch maybe? but a different
+          // color."* See `HatchFill.breakLines`.
+          //
           // Wraps the Row rather than sitting beside it in a Stack so the
           // painter inherits the Row's own (duration-exact) size; the Card's
           // `Clip.antiAlias` confines the lines to the rounded rect.
           child: HatchFill(
+            lineColor: HatchFill.breakLines(theme.colorScheme),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -310,13 +316,15 @@ class ChunkCard extends StatelessWidget {
         // a work chunk's Skip used the same icon and word in two different
         // arrangements). One vocabulary, one arrangement, wherever there is
         // room for it.
-        // Phase 33 gap closure (owner's verdict 2026-09-02) — the hatch, and
-        // it sits INSIDE the Opacity deliberately: a skipped break's lines
-        // fade with its label and its indicator, rather than staying at full
-        // strength over muted content.
+        // Phase 33 gap closure (owner's verdict 2026-09-02) — the hatch in
+        // the BREAK tone (`HatchFill.breakLines`), and it sits INSIDE the
+        // Opacity deliberately: a skipped break's lines fade with its label
+        // and its indicator, rather than staying at full strength over muted
+        // content.
         child: Opacity(
           opacity: chunk.isSkipped ? 0.5 : 1.0,
           child: HatchFill(
+            lineColor: HatchFill.breakLines(theme.colorScheme),
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(

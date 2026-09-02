@@ -13,13 +13,24 @@ import 'package:flutter/material.dart';
 /// annotation draws it boldly, so [defaultOpacity] is pitched well above the
 /// sketch's value rather than matching it literally.
 ///
-/// Applied to free time AND to both break tiers, per his own wording
-/// (he wrote "breaks" while marking the free-time block; no break card was on
-/// screen to mark). One rule, stated once: **diagonals mean this stretch is
-/// not work.** Work chunks stay flat and take the brighter
-/// `surfaceContainerLowest` fill, which is what separates them from a break —
-/// the second half of the same verdict (*"side project should have a color
-/// not the same as a break"*).
+/// **Two tones, not one — his follow-up ruling, 2026-09-02:** *"the hatch
+/// should only be during free time. breaks and short breaks should be
+/// something different. can use a hatch maybe? but a different color."*
+///
+/// So the rule is no longer "diagonals mean not-work"; it is a three-way
+/// vocabulary, which is what the day actually contains:
+///
+/// | Kind of time | Surface |
+/// |---|---|
+/// | Work | flat, `surfaceContainerLowest` — the solid brighter card |
+/// | Free time | [freeTimeLines] — a NEUTRAL hatch: nothing is claimed here |
+/// | Break | [breakLines] — a TINTED hatch: scheduled, but not work |
+///
+/// The first pass gave free time and breaks the identical neutral hatch,
+/// which made the pair less separable than before — the exact question
+/// `33-UAT.md` item 2 asks ("sitting next to a break card, are the two still
+/// distinguishable?"). Colour is what separates them now; the diagonals are
+/// what they still share, because both are still not-work.
 ///
 /// Paints BEHIND [child]: [CustomPaint] runs `painter` before its child, so
 /// the label and any Skip control sit on top of the hatch untouched. Both
@@ -45,12 +56,54 @@ class HatchFill extends StatelessWidget {
   /// close.
   static const double defaultOpacity = 0.10;
 
+  /// Free time's hatch: neutral, drawn from the same token as its label.
+  /// Free time is the stretch nothing has claimed, so it gets no hue.
+  static Color freeTimeLines(ColorScheme scheme) =>
+      scheme.onSurfaceVariant.withValues(alpha: defaultOpacity);
+
+  /// A break's hatch: the same diagonals in the scheme's **tertiary** accent,
+  /// so a break reads as scheduled-but-not-work rather than as unclaimed time.
+  ///
+  /// **`secondary` was tried first and rejected on measurement, not taste.**
+  /// In `ColorScheme.fromSeed`, `secondary` is the neutral-VARIANT hue — it
+  /// lands within 2-4° of `onSurfaceVariant` at every mood seed this app uses
+  /// (208° vs 210°, 160° vs 156°, 45° vs 43°) and differs only in saturation.
+  /// At 20-ish percent alpha over `surfaceContainer` that is a different
+  /// colour in the source and the same grey on the screen — the exact failure
+  /// this ruling exists to fix. `tertiary` is rotated a real distance away
+  /// (49°, 47°, 90° at those same seeds), which is what "a different color"
+  /// means to an eye.
+  ///
+  /// `primary` was excluded on meaning rather than measurement: it is the
+  /// work/action vocabulary (the default goal bar, `Complete`, the live row's
+  /// fill). `error` is spoken for by the Skip rail sitting inside these very
+  /// cards.
+  ///
+  /// **Known adjacency, stated rather than hidden:** a commitment work card
+  /// fills with `tertiaryContainer` (`chunk_card.dart`). A break's tertiary
+  /// hatch therefore shares a hue family with it. They are not confusable in
+  /// practice — one is a solid fill on a card with a title and actions, the
+  /// other is diagonal lines — but if a future phase leans harder on either,
+  /// this is the collision to check.
+  ///
+  /// The alpha is well above [defaultOpacity] because `tertiary` is only
+  /// mildly saturated (0.16-0.29 across the seeds); at 0.10 the hue rotation
+  /// would not survive the blend. 0.28 was rendered first and measured on
+  /// screen at rgb(202,213,214) — a real shift, but one that reads as extra
+  /// *weight* rather than a different colour. **0.45 was chosen by looking at
+  /// both**: free time's lines land at rgb(228,234,230) hue 140, a break's at
+  /// rgb(180,195,199) hue 193, on the same card background. Those are the
+  /// numbers to re-measure if this is ever retuned — not the alpha.
+  static Color breakLines(ColorScheme scheme) =>
+      scheme.tertiary.withValues(alpha: 0.45);
+
   final Widget child;
 
-  /// Defaults to `colorScheme.onSurfaceVariant` at [defaultOpacity] — a
-  /// scheme token, not a constant, because the whole app is re-seeded from
-  /// the day's mood (`ThemeNotifier.currentTheme`) and a hardcoded grey would
-  /// drift out of the palette every time the mood changes.
+  /// Defaults to [freeTimeLines] — a scheme token, not a constant, because
+  /// the whole app is re-seeded from the day's mood
+  /// (`ThemeNotifier.currentTheme`) and a hardcoded grey would drift out of
+  /// the palette every time the mood changes. Break call sites pass
+  /// [breakLines].
   final Color? lineColor;
 
   final double spacing;
@@ -61,11 +114,7 @@ class HatchFill extends StatelessWidget {
     final theme = Theme.of(context);
     return CustomPaint(
       painter: HatchPainter(
-        color:
-            lineColor ??
-            theme.colorScheme.onSurfaceVariant.withValues(
-              alpha: defaultOpacity,
-            ),
+        color: lineColor ?? freeTimeLines(theme.colorScheme),
         spacing: spacing,
         strokeWidth: strokeWidth,
       ),

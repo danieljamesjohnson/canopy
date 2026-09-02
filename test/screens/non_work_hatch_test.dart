@@ -67,6 +67,30 @@ Future<void> _pumpCard(
 Color? _cardColor(WidgetTester tester) =>
     tester.widgetList<Card>(find.byType(Card)).first.color;
 
+/// The colour the hatch is actually PAINTED in — read off the live
+/// [HatchPainter] rather than off `HatchFill.lineColor`, which is null at the
+/// free-time call site (it resolves its default inside `build`). Reading the
+/// painter is what makes the two-tone assertions below true of the screen
+/// instead of true of the constructor arguments.
+Color _hatchColor(WidgetTester tester) {
+  final paint = tester.widget<CustomPaint>(
+    find
+        .descendant(
+          of: find.byType(HatchFill),
+          matching: find.byType(CustomPaint),
+        )
+        .first,
+  );
+  return (paint.painter! as HatchPainter).color;
+}
+
+/// Shortest angular distance between two hues, in degrees. Wraparound is the
+/// point: 350° and 10° are 20° apart, not 340°.
+double _hueDistance(Color a, Color b) {
+  final d = (HSLColor.fromColor(a).hue - HSLColor.fromColor(b).hue).abs() % 360;
+  return d > 180 ? 360 - d : d;
+}
+
 void main() {
   group('hatchSegments — geometry, asserted directly', () {
     test(
@@ -181,6 +205,80 @@ void main() {
         ),
       );
       expect(find.byType(HatchFill), findsNothing);
+    });
+  });
+
+  group('free time and a break hatch in DIFFERENT tones', () {
+    // His follow-up ruling, 2026-09-02: "the hatch should only be during free
+    // time. breaks and short breaks should be something different. can use a
+    // hatch maybe? but a different color." The first pass gave both the same
+    // neutral lines, which made the pair LESS separable than before — the
+    // question 33-UAT.md item 2 asks out loud.
+    testWidgets('12. the two hatch tones differ, at three mood seeds', (
+      tester,
+    ) async {
+      for (final mood in [1, 3, 5]) {
+        await _pumpCard(
+          tester,
+          const SizedBox(
+            height: 300,
+            child: FreeTimeRow.until(untilMinutes: 480),
+          ),
+          moodIndex: mood,
+        );
+        final freeTone = _hatchColor(tester);
+
+        await _pumpCard(
+          tester,
+          ChunkCard(
+            chunk: _chunk(ChunkType.longBreak, 30),
+            density: ChunkCardDensity.full,
+          ),
+          moodIndex: mood,
+        );
+        final breakTone = _hatchColor(tester);
+
+        expect(
+          freeTone,
+          isNot(equals(breakTone)),
+          reason: 'mood $mood: free time and a break hatch identically',
+        );
+        // Not merely "different values": a different HUE, by a distance an
+        // eye can see. This is the assertion that did real work — it caught
+        // `secondary`, the first choice, which is the neutral-VARIANT hue and
+        // lands within 2-4 degrees of `onSurfaceVariant` at every seed. That
+        // would have been two colours in the source and one grey on the
+        // screen, and `isNot(equals)` above would have passed it happily.
+        expect(
+          _hueDistance(freeTone, breakTone),
+          greaterThan(25),
+          reason:
+              'mood $mood: the break tone is the same hue as free time — '
+              'it will read as the same grey however it is written',
+        );
+      }
+    });
+
+    testWidgets('13. short and long breaks share the one break tone', (
+      tester,
+    ) async {
+      await _pumpCard(
+        tester,
+        ChunkCard(
+          chunk: _chunk(ChunkType.shortBreak, 5),
+          density: ChunkCardDensity.compact,
+        ),
+      );
+      final shortTone = _hatchColor(tester);
+
+      await _pumpCard(
+        tester,
+        ChunkCard(
+          chunk: _chunk(ChunkType.longBreak, 30),
+          density: ChunkCardDensity.full,
+        ),
+      );
+      expect(_hatchColor(tester), shortTone);
     });
   });
 
