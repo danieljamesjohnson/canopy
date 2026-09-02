@@ -156,6 +156,20 @@ scheduled, **they can legitimately disagree about Monday**. That is the known bu
 
 ---
 
+## For whoever picks this up next (session handoff, 2026-09-02)
+
+- **The build is already serving.** `python3 tools/serve-uat.py 8143 --dir build/web`, PID `4120454`,
+  bundle sha `e46e1a4eb1941984…`. **Do not rebuild or restart it** while the gate is open — the
+  owner's verdict must be against the bytes he actually looked at. If it has died, rebuild with
+  `flutter build web --debug --source-maps --pwa-strategy=none` and re-run the pre-flight probes.
+- **The seeded Chromium profile is at `~/.cache/canopy-uat-profile-33`** (12 MB). It holds the whole
+  fixture — three goals with budgets 3.0 / 1.0 / 0.5, three completed chunks, one skipped. Drive it
+  with that path as `<profileDir>`. It was copied out of a session-scoped `/tmp` dir precisely so a
+  `/clear` would not destroy it; re-seeding by hand cost most of an afternoon.
+- **Do not press ⟳ Re-check-in** against this profile — it regenerates the day and wipes the
+  resolved chunks items 1 and 4 depend on.
+- **The owner's verdict goes in this file**, under a new `## Verdict` section, item by item.
+
 ## How the fixture was built (reproducible)
 
 Profile: a fresh persistent Chromium profile, onboarded with Exercise + Side project, then:
