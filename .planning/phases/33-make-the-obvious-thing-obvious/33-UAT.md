@@ -251,18 +251,66 @@ an owner ruling. The Item 5 tap count is still outstanding after four asks.
 
 ---
 
+## What shipped against this verdict — 2026-09-02, same day
+
+All three of his marks are closed. `flutter analyze` clean, **689 tests green** (678 before, +11).
+Rebuilt and re-served on `http://danserver:8143/` — bundle sha `da89487a9bdf90a4…`, identical on disk
+and on the wire.
+
+| His words | What changed | Seen |
+|---|---|---|
+| *"i wanted the breaks to have the diagonal lines in them like the sketch"* | New `HatchFill` (`lib/widgets/hatch_fill.dart`) on free time and on **both** break tiers | `shots/08…`, `shots/09…` |
+| *"i crossed out the text, i don't think it should be there"* | PreStart branch of `_buildEdgeStateLine` deleted — **D-33-01**, reversing D-03's LOCKED copy | `shots/08…` |
+| *"side project should have a color not the same as a break"* | Work card moves to `surfaceContainerLowest`; non-work keeps `surfaceContainer` and gains the hatch | `shots/08…`, `shots/09…` |
+
+**One rule, not three fixes:** diagonals mean *not work*; work is the solid brighter card. The colour
+half was deliberately solved by moving work up the **neutral** ramp rather than giving it a hue —
+item 4 already flags one card carrying two colour systems, and a new hue would have re-opened
+*"the colors are changing, it's not making a ton of sense"* on the screen next door.
+
+**The hatch is one constant.** `HatchFill.defaultOpacity` (0.10 of `onSurfaceVariant`) and
+`defaultSpacing` (12dp). The sketch's own value was 0.022 — invisible at arm's length, which is how
+it came to be dropped without anyone noticing. If it reads heavy or light on a phone, it is one
+number.
+
+**Mutation-tested, per this project's own rule.** Three separate mutations were applied and observed
+RED before the tests were accepted: work fill reverted to `surfaceContainer` (2 failures), the
+free-time hatch removed (1), and `hatchSegments` stepped by `spacing` instead of `spacing × √2`
+(1 — the error that would draw the lines 1.41× too close, which no "is it hatched?" assertion could
+catch). Tree restored green after each.
+
+**Two banner assertions were DELETED rather than repointed.** `find.textContaining('Nothing until')`
+→ `findsNothing` in the active and day-complete states now passes because that string renders
+*nowhere*, so it no longer discriminates anything — exactly the "assertion that cannot fail" this
+project has been bitten by five times. The two `findsOneWidget` probes that used the banner to detect
+pre-start were repointed to the leading free block (`Free until 8:00 AM`), which is a stronger probe:
+it is the row a user actually reads.
+
+**Still unjudged and unchanged:** items 1, 3, 4, 5, 6, 6b. Nothing in this closure touches the Goals
+screen, the restoratives, or the fork.
+
+---
+
 ## For whoever picks this up next (session handoff, 2026-09-02)
 
-- **The build is already serving.** `python3 tools/serve-uat.py 8143 --dir build/web`, PID `4120454`,
-  bundle sha `e46e1a4eb1941984…`. **Do not rebuild or restart it** while the gate is open — the
-  owner's verdict must be against the bytes he actually looked at. If it has died, rebuild with
-  `flutter build web --debug --source-maps --pwa-strategy=none` and re-run the pre-flight probes.
-- **The seeded Chromium profile is at `~/.cache/canopy-uat-profile-33`** (12 MB). It holds the whole
-  fixture — three goals with budgets 3.0 / 1.0 / 0.5, three completed chunks, one skipped. Drive it
-  with that path as `<profileDir>`. It was copied out of a session-scoped `/tmp` dir precisely so a
-  `/clear` would not destroy it; re-seeding by hand cost most of an afternoon.
-- **Do not press ⟳ Re-check-in** against this profile — it regenerates the day and wipes the
-  resolved chunks items 1 and 4 depend on.
+- **The gate is CLOSED — the verdict is above and the fix is shipped.** The build now serving on
+  `http://danserver:8143/` is the post-verdict one (sha `da89487a9bdf90a4…`), not the one he judged.
+  The judged bundle was `e46e1a4eb1941984…`; it is superseded, not lost — `git show 3896e78` is the
+  tree it was built from.
+- **The seeded Chromium profile is at `~/.cache/canopy-uat-profile-33`, and it lives on the
+  `localhost:8143` ORIGIN — not `danserver:8143`.** This line used to say only "drive it with that
+  path", which is a trap: Hive is IndexedDB, IndexedDB is per-origin, and the fixture was seeded
+  through `localhost`. Opening the *documented* UAT URL with that profile therefore lands on an
+  **empty** instance, the driver silently onboards a blank one, and the fixture looks destroyed when
+  it is sitting untouched one hostname away. That happened on 2026-09-02; both origins now exist
+  inside the profile (`Default/IndexedDB/http_localhost_8143…` is the real one, 60 KB, the other is
+  the accidental blank).
+  **Drive the fixture at `http://localhost:8143/`.** Verified intact after the closure: Exercise
+  3.0 / Side project 0.5 / Reading 1.0 with their completions — `shots/10-progress-lines-fixture-intact.png`.
+- **The seeded DAY expired on its own overnight.** It was generated 2026-09-01; `_loadToday()` reads
+  *today's* schedule, so on 2026-09-02 the app offers "Start check-in" again. The goals, budgets and
+  completed chunks survive (they are what the weekly progress lines are computed from) — only the
+  timeline is regenerated. Nobody pressed ⟳ Re-check-in; date rollover did it.
 - **The owner's verdict goes in this file**, under a new `## Verdict` section, item by item.
 
 ## How the fixture was built (reproducible)

@@ -1730,7 +1730,13 @@ void main() {
       });
     });
 
-    testWidgets('pre-start: "Nothing until" is present, no LiveRowCard', (
+    // **D-33-01 (owner's verdict 2026-09-02) inverts this test.** It used to
+    // require both banner lines; he struck both out on a screenshot — *"i
+    // crossed out the text, i don't think it should be there"* — so the same
+    // two strings are now required to be ABSENT. Kept as a standing guard
+    // rather than deleted, because the copy it removes was LOCKED by D-03 and
+    // a future agent reading 23-UI-SPEC.md alone would put it back.
+    testWidgets('pre-start: the banner is gone, the free block names the day', (
       tester,
     ) async {
       final schedule = DailySchedule(
@@ -1744,16 +1750,17 @@ void main() {
         now: () => DateTime(2026, 8, 7, 6, 0),
       );
 
-      expect(find.text('Nothing until 8:00 AM'), findsOneWidget);
+      expect(find.text('Nothing until 8:00 AM'), findsNothing);
       expect(
         find.text(
           'The day starts with Deep work. Until then the time is yours.',
         ),
-        findsOneWidget,
+        findsNothing,
       );
       expect(find.byType(LiveRowCard), findsNothing);
-      // The day list is still rendered below — never a bare message.
-      expect(find.textContaining('Free until'), findsOneWidget);
+      // The day list is still rendered — and it, not a banner, is now the
+      // only thing that names the pre-start stretch.
+      expect(find.text('Free until 8:00 AM'), findsOneWidget);
     });
 
     testWidgets('gap-before-next: "Up next" is present, no LiveRowCard', (
@@ -1912,7 +1919,11 @@ void main() {
           ),
           now: () => DateTime(2026, 8, 7, 18, 0),
         );
-        expect(find.textContaining('Nothing until'), findsNothing);
+        // The `Nothing until` findsNothing check that stood here is DELETED,
+        // not kept: after D-33-01 that string renders in no state at all, so
+        // it would pass without discriminating DayComplete from anything
+        // else. The DayComplete assertions above this line are what carry
+        // the test.
       },
     );
 

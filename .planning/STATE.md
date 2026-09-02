@@ -5,10 +5,10 @@ current_phase: 33
 current_phase_name: Make The Obvious Thing Obvious
 status: awaiting-human-uat
 current_phase_next: 34
-stopped_at: Phase 33 built and serving on http://danserver:8143/ — 5/5 plans executed, analyze clean, 678 tests green (621 baseline). BLOCKED on the one human UAT gate; verdict goes in 33-UAT.md.
-last_updated: "2026-09-02T00:00:00.000Z"
+stopped_at: Phase 33 UAT judged 2026-09-02 from the owner's Excalidraw annotation; his three marks (hatch, PreStart banner, work-vs-break fill) are closed, analyze clean, 689 tests green, re-served on http://danserver:8143/ (sha da89487a9bdf90a4). Items 1/3/4/5/6/6b remain UNJUDGED.
+last_updated: "2026-09-02T12:00:00.000Z"
 last_activity: 2026-09-02
-last_activity_desc: Phase 33 executed to its single UAT gate; the 2026-06-12 circle is gone
+last_activity_desc: Owner's UAT verdict recorded and closed — diagonals mean not-work, work is the solid brighter card
 state_head: 24fbc96
 progress:
   total_phases: 7
@@ -28,15 +28,38 @@ milestone_name: milestone
 
 ## Current Position
 
-Phase: 33 (Make The Obvious Thing Obvious) — **BUILT, awaiting the human UAT gate.**
-Serving on `http://danserver:8143/`; the script is `33-UAT.md`. **Do not ⟳ Re-check-in** — the day is
-pre-seeded with the completed/skipped chunks items 1 and 4 depend on, and trap #4 does not bind
-because nothing in this phase touches `schedule_generator.dart`.
+Phase: 33 (Make The Obvious Thing Obvious) — **UAT judged 2026-09-02; his three marks are closed and
+re-served.** `flutter analyze` clean, **689 tests green** (678 → +11). Bundle
+`da89487a9bdf90a4…` on `http://danserver:8143/`.
 
-Three things the owner is being asked to rule on, all found by *looking* rather than by testing: the
-progress line renders as a ~6px speck at low percentages; a goal card now carries two colour systems
-where the meaningless identity dot is louder than the meaningful progress line; and 0% renders as
-nothing, so "red when just started" is invisible at exactly just-started.
+**The verdict came as a drawing, not a list** — an annotated screenshot on the Excalidraw `canopy`
+board (`mc-read-tool excalidraw`; render in `shots/07-owner-annotation-2026-09-02.png`). Three marks,
+all closed the same day:
+
+1. *"i wanted the breaks to have the diagonal lines in them like the sketch"* — sketch 003's
+   `repeating-linear-gradient(135deg…)` was **dropped** when `FreeTimeRow` copied the break card's
+   surface verbatim, and nobody caught it because the sketch's own hatch is 2.2% black. New
+   `HatchFill` (`lib/widgets/hatch_fill.dart`) on free time and both break tiers, at 10%.
+2. *"i crossed out the text"* — **D-33-01**, the PreStart banner deleted, reversing D-03's LOCKED
+   copy. Scope is PreStart only; `Up next` and DayComplete keep D-03.
+3. *"side project should have a color not the same as a break"* — exact, not approximate: work,
+   break and free time all rendered `surfaceContainer`. Work now takes `surfaceContainerLowest`.
+
+**One rule rather than three fixes: diagonals mean *not work*, work is the solid brighter card.**
+The colour half moves work up the **neutral** ramp deliberately — a hue would have re-opened
+*"the colors are changing, it's not making a ton of sense"* on the screen next door, where item 4
+already flags one card carrying two colour systems.
+
+**Items 1, 3, 4, 5, 6 and 6b are UNJUDGED, not passed.** His screenshot was a fresh instance with
+nothing completed, so those states were never on his screen. Item 4's three findings still need a
+ruling (the ~6px speck at low percentages; the meaningless identity dot being louder than the
+meaningful progress line; 0% rendering as nothing). **The restoratives tap count is outstanding after
+four asks** — three in Phase 32, one here.
+
+**Origin trap, cost a wrong conclusion on 2026-09-02 and now corrected in the handoff:** the seeded
+profile `~/.cache/canopy-uat-profile-33` holds its fixture on the **`localhost:8143`** origin.
+IndexedDB is per-origin, so driving it at the documented `danserver:8143` URL silently onboards a
+blank instance and the fixture reads as destroyed while sitting untouched one hostname away.
 
 **Filed, not fixed: `SEED-006`.** `schedule_generator._weekStart` does not normalise time-of-day, so
 a chunk completed on a **Monday never counts toward that week's budget** — every day of the week, at

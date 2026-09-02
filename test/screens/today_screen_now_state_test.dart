@@ -592,7 +592,15 @@ void main() {
   // ── Widget tests: TodayScreen time-anchored Now (NOW-01/NOW-02) ──────────
 
   group('TodayScreen time-anchored Now (NOW-01/NOW-02)', () {
-    testWidgets('pre-start: 6am before 8am chunk → shows "Nothing until"', (
+    // Repointed by the Phase 33 gap closure (D-33-01, owner's verdict
+    // 2026-09-02): the pre-start banner this test was named for is deleted —
+    // he struck both its lines out by hand. The STATE it probed is still
+    // real and still worth pinning, so the test now asserts what actually
+    // names the pre-start day on screen: the timeline's own leading free
+    // block. That is a stronger probe than the old one, not a weaker
+    // substitute — it is the row a user reads, and its disappearance once
+    // the window opens is what NOW-02 is about.
+    testWidgets('pre-start: 6am before 8am chunk → free block, no live row', (
       tester,
     ) async {
       final sn = _FakeScheduleNotifierWithSchedule(
@@ -608,9 +616,14 @@ void main() {
         now: () => DateTime(2026, 6, 13, 6, 0), // 6:00 AM
       );
       expect(
-        find.text('Nothing until 8:00 AM'),
+        find.text('Free until 8:00 AM'),
         findsOneWidget,
-        reason: 'NOW-02: pre-start heading must appear before first chunk',
+        reason: 'NOW-02: the free stretch must be named before the first chunk',
+      );
+      expect(
+        find.textContaining('Nothing until'),
+        findsNothing,
+        reason: 'D-33-01: the pre-start banner is deleted, not reworded',
       );
       expect(
         find.byType(LiveRowCard),
@@ -639,11 +652,12 @@ void main() {
         findsOneWidget,
         reason: 'NOW-01: LiveRowCard must appear for active chunk',
       );
-      expect(
-        find.textContaining('Nothing until'),
-        findsNothing,
-        reason: 'NOW-01: no pre-start heading when chunk is active',
-      );
+      // The `Nothing until` findsNothing assertion that stood here is
+      // DELETED rather than kept (D-33-01): that banner no longer renders in
+      // any state, so the assertion would pass for a reason unrelated to
+      // being active — precisely the "assertion that cannot fail" this
+      // project's CLAUDE.md names as its recurring failure mode. The
+      // LiveRowCard check above is what discriminates the active state.
       expect(
         find.text("That's the day."),
         findsNothing,
@@ -893,9 +907,10 @@ void main() {
         },
       );
 
-      // At 7:59 → pre-start
+      // At 7:59 → pre-start. Probed by the leading free block since D-33-01
+      // deleted the banner this line used to read.
       expect(
-        find.textContaining('Nothing until'),
+        find.text('Free until 8:00 AM'),
         findsOneWidget,
         reason: 'Should be in pre-start state at 7:59 AM',
       );
@@ -2217,9 +2232,11 @@ void main() {
         );
 
         expect(
-          find.textContaining('Nothing until'),
+          find.text('Free until 9:15 AM'),
           findsOneWidget,
-          reason: 'G-03: should be in pre-start state at 9:13 AM',
+          reason: 'G-03: should be in pre-start state at 9:13 AM '
+              '(probed by the leading free block — D-33-01 deleted the '
+              'banner this assertion used to read)',
         );
 
         // Background the app — and deliberately never deliver `resumed`.

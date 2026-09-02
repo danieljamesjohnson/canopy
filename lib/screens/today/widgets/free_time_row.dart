@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../utils/time_format.dart';
+import '../../../widgets/hatch_fill.dart';
 
 /// D-05 (LOCKED): free time is named, never collapsed to whitespace.
 ///
@@ -28,6 +29,15 @@ import '../../../utils/time_format.dart';
 /// The fill is the point, not just the parity: **an outline reads as absence,
 /// a fill reads as "this is yours."** Free time on this timeline is a claim
 /// the user owns that stretch, not a hole in the day.
+///
+/// **Phase 33 gap closure (owner's verdict 2026-09-02) — the fill is
+/// HATCHED.** Copying the break card's `color`/`shape`/`clipBehavior`
+/// verbatim was right about the card and wrong about its surface: sketch 003,
+/// the one he picked, fills `.free.filled` with a 135° repeating gradient,
+/// and the copy dropped it. He drew the missing diagonals back in over this
+/// exact block (`shots/07-owner-annotation-2026-09-02.png`). See [HatchFill]
+/// — the same treatment now runs on both break tiers, so "diagonals mean not
+/// work" is one rule rather than a free-time quirk.
 class FreeTimeRow extends StatelessWidget {
   const FreeTimeRow.until({super.key, required int untilMinutes})
     : _untilMinutes = untilMinutes,
@@ -79,11 +89,13 @@ class FreeTimeRow extends StatelessWidget {
         // infinite-height trap `chunk_card.dart:166-185` documents: there the
         // child must not stretch, here it must. Pinned by the non-collapse
         // height test in `today_row_widgets_test.dart`.
-        child: Center(
-          child: Text(
-            _resolveLabel(),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+        child: HatchFill(
+          child: Center(
+            child: Text(
+              _resolveLabel(),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ),

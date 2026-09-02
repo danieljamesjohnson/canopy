@@ -456,27 +456,29 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     final bodyStyle = theme.textTheme.bodyMedium?.copyWith(color: onVariant);
 
     switch (nowState) {
-      case PreStart(:final firstChunk):
-        final title = _chunkTitle(context, firstChunk);
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Nothing until '
-                '${formatMinutes(firstChunk.displayStartMinutes!)}',
-                style: headingStyle,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'The day starts with $title. Until then the time is yours.',
-                style: bodyStyle,
-              ),
-            ],
-          ),
-        );
+      // **PreStart renders nothing — D-33-01, reversing D-03's LOCKED copy
+      // on the owner's own instruction (33-UAT.md verdict, 2026-09-02).**
+      //
+      // He struck both lines out by hand on a screenshot of this screen
+      // (`shots/07-owner-annotation-2026-09-02.png`) and wrote: *"i crossed
+      // out the text, i don't think it should be there."* The strings are not
+      // reworded — the branch is deleted, which is what he marked.
+      //
+      // The reason it reads as clutter is that it is the day's THIRD
+      // statement of the same two facts, above the fold: the timeline
+      // directly beneath already renders the free stretch as its own card
+      // ("Free until 8:00 AM" — `FreeTimeRow.until`), and the first chunk
+      // card already names the activity and its start time ("Side project ·
+      // 8:00 AM"). D-03 was written in Phase 23, before either of those
+      // existed, when this line WAS the only place the pre-start day was
+      // described.
+      //
+      // **Scope: PreStart only.** `GapBeforeNext` ("Up next") and
+      // `DayComplete` were not on his screen and are not covered by this
+      // verdict — they keep D-03 in force. Do not extend this deletion to
+      // them without a ruling of their own.
+      case PreStart():
+        return const SizedBox.shrink();
       // P-1 (23-03-PLAN.md, DECIDED): this banner does NOT change. The
       // "Up next" heading, the title/subtitle derivation below, and the
       // "Starts at …" / "Starting soon" body all stay exactly as written.
@@ -1314,14 +1316,12 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         // same viewport machinery Flutter's own scroll-into-view helper
         // uses internally.
         final stackBox =
-            _timelineStackKey.currentContext?.findRenderObject()
-                as RenderBox?;
+            _timelineStackKey.currentContext?.findRenderObject() as RenderBox?;
         if (stackBox == null) return;
         final stackTop = RenderAbstractViewport.of(
           stackBox,
         ).getOffsetToReveal(stackBox, 0.0).offset;
-        final viewportHeight =
-            _dayScrollController.position.viewportDimension;
+        final viewportHeight = _dayScrollController.position.viewportDimension;
         final raw = stackTop + geometry.yFor(nowMinutes) - viewportHeight / 2;
         // Read post-layout only — this line, and only this line (PD-16). A
         // DayComplete day puts "now" at the very bottom, so the naive
@@ -1472,7 +1472,9 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                             // delete the "Now — <time>" announcement
                             // (24-REVIEW.md WR-01).
                             Positioned(
-                              top: geometry.yFor(nowMinutes) - kNowLineHeight / 2,
+                              top:
+                                  geometry.yFor(nowMinutes) -
+                                  kNowLineHeight / 2,
                               left: 0,
                               right: 0,
                               height: kNowLineHeight,
@@ -1493,9 +1495,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                                   // (`liveStartMinutes`/`liveEndMinutes`,
                                   // half-open), never from `resolveNowState`
                                   // or the chunk list.
-                                  child: NowLineOverlay(
-                                    nowMinutes: nowMinutes,
-                                  ),
+                                  child: NowLineOverlay(nowMinutes: nowMinutes),
                                 ),
                               ),
                             ),
