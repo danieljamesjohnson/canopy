@@ -50,3 +50,6 @@ backlog/
 # GSD run-scoped harness state (dispatch-isolation sentinel)
 .gsd/
 .planning/milestone.lock
+
+# scratch dir for eyeballing screenshots — never repo content
+look/
