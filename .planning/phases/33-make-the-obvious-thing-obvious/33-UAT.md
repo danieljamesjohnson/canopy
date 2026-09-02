@@ -156,6 +156,101 @@ scheduled, **they can legitimately disagree about Monday**. That is the known bu
 
 ---
 
+## Verdict — 2026-09-02 (owner)
+
+**Where it came from.** Excalidraw, `canopy` board (`mc-read-tool excalidraw`) — a screenshot of the
+Today screen from his own instance, marked up in red, plus this note:
+
+> check out excalidraw. i wanted the breaks to have the diagonal lines in them like the sketch. i
+> crossed out the text, i don't think it should be there. in addition, i think side projecjt should
+> have a color not the hsame as a break
+
+The board render is committed as `shots/07-owner-annotation-2026-09-02.png` (the pasted screenshot is
+clean; the red is 10 freedraw strokes on the board, drawn over it). **What he actually marked, stroke
+by stroke, so nobody has to re-interpret it later:**
+
+- one strike through **"Nothing until 8:00 AM"**;
+- one stroke through/under **"The day starts with Side project. Until then the time is yours."**;
+- **seven diagonal strokes filling the "Free until 8:00 AM" block**, top-left to bottom-right;
+- one zigzag scribble across the **Side project** work card.
+
+His screenshot is his own instance, not the seeded fixture — `0 of 13 Chunks`, nothing completed or
+skipped, the day starting at 8:00 AM. **That is why most of the six items below are unjudged rather
+than passed: the states they ask about were not on his screen.**
+
+### Item 1 — the unlabelled circle · **NOT JUDGED**
+
+No words on the chip either way. He saw exactly one of them — the `To do` on the Side project row —
+and did not mark it. The 2026-06-12 circle is gone and undisputed, but "does a row's state read at a
+glance", "is a chip on every row too much furniture" and "does it look like a button" are all still
+unanswered. **Not recorded as a PASS.** He scribbled over that card, but his sentence about it is
+about its colour, not its chip.
+
+### Item 2 — free time is a filled card again · **FAIL, with the fix drawn in**
+
+> i wanted the breaks to have the diagonal lines in them like the sketch
+
+Filled was right; **flat filled is not what he picked.** The sketch he chose has the hatch in it —
+`.planning/sketches/003-the-unlabelled-circle/index.html:131`,
+`repeating-linear-gradient(135deg, …)` on `.free.filled`. The shipped `FreeTimeRow` copied the break
+card's `color`/`shape`/`clipBehavior` verbatim and **dropped the hatch**, which nobody noticed
+because the sketch's own hatch is 2% black and barely visible on a laptop. He drew his over the whole
+block in red, which is a fair signal about the weight he expects.
+
+**He says "breaks" and marked free time.** No Short/Long break card was on his screen to mark — the
+day hadn't started. Treated as "the grey non-work block", i.e. the language covers both. Routed
+below as one decision, not two.
+
+### Item 3 — the Goals screen says what it is · **NOT JUDGED**
+
+### Item 4 — the progress line · **NOT JUDGED**
+
+Nothing was completed in his instance, so every goal sits at 0.0 and **there were no coloured lines
+on screen to look at.** The three things I flagged — the 6px speck, the two colour systems on one
+card, the invisible 0% — are all still open and all still mine. Note that his one colour sentence
+("side project should have a color not the same as a break") is about the *timeline card*, not this
+screen's line or dot; do not read it as an answer to (a)/(b)/(c).
+
+### Item 5 — nine restoratives · **NOT JUDGED — no tap count, third phase running**
+
+Phase 32 asked for this number three times and never got it; this is the fourth ask, still unanswered.
+
+### Item 6 — the fork at the front door · **NOT JUDGED** (6b likewise)
+
+### New — the PreStart banner should not be there · **his own item**
+
+> i crossed out the text, i don't think it should be there
+
+Both lines, struck separately: the `Nothing until 8:00 AM` heading and
+`The day starts with Side project. Until then the time is yours.` That is the whole PreStart branch
+of `_buildEdgeStateLine` (`today_screen.dart:459-479`). **This copy is LOCKED by D-03** (23-CONTEXT.md
+decision 3 / 23-UI-SPEC.md "Edge states"), so removing it reverses a standing decision rather than
+tidying a string — it needs to be recorded as one. He struck **PreStart only**; `Up next`
+(GapBeforeNext) and the DayComplete line were not on his screen and are not covered by this.
+
+The likely reason it reads as clutter: the timeline directly beneath it already says
+**"Free until 8:00 AM"** in the block itself, and the first card already says **Side project ·
+8:00 AM**. The banner is a third statement of both facts, above the fold.
+
+### New — work and break are literally the same colour · **his own item**
+
+> in addition, i think side projecjt should have a color not the hsame as a break
+
+Correct, and it is exact rather than approximate: the work card
+(`chunk_card.dart:415-426`), the break card (`chunk_card.dart:196`) and the free-time card
+(`free_time_row.dart:63`) all render `colorScheme.surfaceContainer` with the same
+`outlineVariant` border and the same 12dp radius. The **only** thing separating a work chunk from a
+break today is the 4dp goal-colour bar on its left edge — which in his screenshot is a thin green
+strip he did not mention. Three different kinds of time, one fill.
+
+### What this verdict does not settle
+
+Items 1, 3, 4, 5, 6 and 6b are **unjudged, not passed**, and the six structural questions in the
+table above remain the only things actually answered about them. Item 4's three findings still need
+an owner ruling. The Item 5 tap count is still outstanding after four asks.
+
+---
+
 ## For whoever picks this up next (session handoff, 2026-09-02)
 
 - **The build is already serving.** `python3 tools/serve-uat.py 8143 --dir build/web`, PID `4120454`,
