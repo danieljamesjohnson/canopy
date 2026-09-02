@@ -1,20 +1,20 @@
 ---
 gsd_state_version: 1.0
 milestone: none
-current_phase: 32
-current_phase_name: Breaks You Can Tap
-status: ready
-current_phase_next: 33
-stopped_at: Phase 32 COMPLETE (4/4 UAT). Phase 33 "Make The Obvious Thing Obvious" SCOPED in ROADMAP, not yet planned — run /gsd-autonomous 33.
-last_updated: "2026-08-31T12:00:00.000Z"
-last_activity: 2026-08-31
-last_activity_desc: Phase 32 closed — 4/4 UAT, both long-running gaps closed
-state_head: 62cfa62
+current_phase: 33
+current_phase_name: Make The Obvious Thing Obvious
+status: awaiting-human-uat
+current_phase_next: 34
+stopped_at: Phase 33 built and serving on http://danserver:8143/ — 5/5 plans executed, analyze clean, 678 tests green (621 baseline). BLOCKED on the one human UAT gate; verdict goes in 33-UAT.md.
+last_updated: "2026-09-02T00:00:00.000Z"
+last_activity: 2026-09-02
+last_activity_desc: Phase 33 executed to its single UAT gate; the 2026-06-12 circle is gone
+state_head: 24fbc96
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 5
-  total_plans: 30
-  completed_plans: 30
+  total_plans: 35
+  completed_plans: 34
 milestone_name: milestone
 ---
 
@@ -27,6 +27,26 @@ milestone_name: milestone
 ---
 
 ## Current Position
+
+Phase: 33 (Make The Obvious Thing Obvious) — **BUILT, awaiting the human UAT gate.**
+Serving on `http://danserver:8143/`; the script is `33-UAT.md`. **Do not ⟳ Re-check-in** — the day is
+pre-seeded with the completed/skipped chunks items 1 and 4 depend on, and trap #4 does not bind
+because nothing in this phase touches `schedule_generator.dart`.
+
+Three things the owner is being asked to rule on, all found by *looking* rather than by testing: the
+progress line renders as a ~6px speck at low percentages; a goal card now carries two colour systems
+where the meaningless identity dot is louder than the meaningful progress line; and 0% renders as
+nothing, so "red when just started" is invisible at exactly just-started.
+
+**Filed, not fixed: `SEED-006`.** `schedule_generator._weekStart` does not normalise time-of-day, so
+a chunk completed on a **Monday never counts toward that week's budget** — every day of the week, at
+any time but exactly `00:00:00`. Measured against the generator's own expressions. Out of scope by
+the ROADMAP fence; the new `WeeklyProgressService` is correct, so Goals and the scheduler can
+legitimately disagree about Monday until it is fixed.
+
+---
+
+## Previous position
 
 Phase: 32 (Breaks You Can Tap) — **COMPLETE 2026-08-31.**
 **Next: Phase 33 "Make The Obvious Thing Obvious" — scoped in ROADMAP, not planned. Run
