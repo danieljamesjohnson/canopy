@@ -417,12 +417,31 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
               const SizedBox(height: 8),
             ],
 
-            // Cancel / Save row
+            // Cancel / Save row.
+            //
+            // **"Cancel" in edit mode, "Discard" only when creating — owner's
+            // bug report, 2026-09-03: *"i added one called help. i did discard
+            // and it didn't work."*** It worked exactly as written; the word
+            // was wrong. This button has always just popped the sheet without
+            // saving, which in CREATE mode genuinely discards the thing being
+            // made — but the same word on a sheet titled **Edit Goal**, sitting
+            // under a goal that already exists, reads as "discard this goal".
+            // He tapped it to get rid of an accidental goal and it stayed.
+            // Reproduced on the running build before changing anything.
+            //
+            // The word that actually removes a goal is **Archive goal**,
+            // directly above. That is left alone: it is accurate, it is
+            // destructive-coloured, and `View archived` in the Goals overflow
+            // uses the same word for the place things land.
+            //
+            // `commitment_form_sheet.dart:376` carries the identical
+            // `Discard`, but that sheet has no edit mode, so the word is still
+            // right there. Do not "align" it to this one.
             Row(
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Discard'),
+                  child: Text(_isEditMode ? 'Cancel' : 'Discard'),
                 ),
                 const SizedBox(width: 8),
                 Expanded(

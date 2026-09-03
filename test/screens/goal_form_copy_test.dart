@@ -170,6 +170,18 @@ void main() {
               'POLISH-02: GoalFormSheet add mode must show "Add Goal" (title + CTA). '
               'Current code uses "Add goal" — Plan 18-05 fixes capitalisation.',
         );
+
+        // The other half of the 2026-09-03 split: add mode KEEPS "Discard",
+        // because here the sheet is the only place the goal exists and closing
+        // it really does discard it. Without this assertion the edit-mode
+        // change could be "fixed" by renaming both, which would lose a true
+        // word to fix a false one.
+        expect(
+          find.text('Discard'),
+          findsOneWidget,
+          reason: 'add mode discards the goal being made — the word is right',
+        );
+        expect(find.text('Cancel'), findsNothing);
       },
     );
 
@@ -196,12 +208,33 @@ void main() {
           reason: 'POLISH-02: edit-mode CTA must read "Save Goal".',
         );
 
+        // **POLISH-02's "Cancel → Discard" rename is REVERSED for edit mode,
+        // 2026-09-03, on a bug report from use:** *"i added one called help. i
+        // did discard and it didn't work."*
+        //
+        // Nothing was broken — the button has always popped the sheet without
+        // saving. The WORD was wrong. On a sheet titled **Edit Goal**, under a
+        // goal that already exists, "Discard" reads as "discard this goal", so
+        // he tapped it to remove an accidental goal and the goal stayed. The
+        // rename was a sound call in 2026-06 when it was made; it just was
+        // never re-examined against the edit-mode sheet, where the object the
+        // verb applies to is different.
+        //
+        // Add mode keeps "Discard" — see the add-mode test below — because
+        // there the thing being discarded really is the goal you are making.
         expect(
-          find.text('Discard'),
+          find.text('Cancel'),
           findsOneWidget,
           reason:
-              'POLISH-02: Cancel TextButton must be renamed "Discard". '
-              'Current code uses "Cancel" — Plan 18-05 fixes this.',
+              'edit mode discards EDITS, not the goal. "Discard" on an '
+              '"Edit Goal" sheet reads as "delete this goal" and was reported '
+              'as not working when it did exactly what it said.',
+        );
+        expect(
+          find.text('Discard'),
+          findsNothing,
+          reason:
+              'the word that removes a goal is "Archive goal", asserted below',
         );
 
         expect(
