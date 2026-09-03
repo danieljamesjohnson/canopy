@@ -31,10 +31,7 @@ void main() {
 
         await pumpWithMood(
           tester,
-          GoalTypePicker(
-            selectedType: null,
-            onTypeSelected: (_) {},
-          ),
+          GoalTypePicker(selectedType: null, onTypeSelected: (_) {}),
         );
 
         // Use the second card (index 1) — has a 2-line title in test fonts
@@ -57,10 +54,7 @@ void main() {
 
         await pumpWithMood(
           tester,
-          GoalTypePicker(
-            selectedType: null,
-            onTypeSelected: (_) {},
-          ),
+          GoalTypePicker(selectedType: null, onTypeSelected: (_) {}),
         );
 
         final tile = tester.widget<ListTile>(find.byType(ListTile).first);
@@ -74,38 +68,36 @@ void main() {
       },
     );
 
-    testWidgets(
-      'selected _TypeCard title uses FontWeight.w600',
-      (tester) async {
-        setViewport(tester, const Size(390, 844));
+    testWidgets('selected _TypeCard title uses FontWeight.w600', (
+      tester,
+    ) async {
+      setViewport(tester, const Size(390, 844));
 
-        await pumpWithMood(
-          tester,
-          GoalTypePicker(
-            selectedType: GoalType.timeTarget,
-            onTypeSelected: (_) {},
-          ),
-        );
+      await pumpWithMood(
+        tester,
+        GoalTypePicker(
+          selectedType: GoalType.timeTarget,
+          onTypeSelected: (_) {},
+        ),
+      );
 
-        // Find the title Text of the selected card (first card = timeTarget).
-        // The title Text is the direct child of ListTile's title slot.
-        // We find all Text widgets and pick the one with the timeTarget title.
-        final titleFinder = find.text(
-          'I want to spend regular time on something',
-        );
-        expect(titleFinder, findsOneWidget);
+      // Find the title Text of the selected card (first card = timeTarget).
+      // The title Text is the direct child of ListTile's title slot.
+      // We find all Text widgets and pick the one with the timeTarget title.
+      final titleFinder = find.text(
+        'I want to spend regular time on something',
+      );
+      expect(titleFinder, findsOneWidget);
 
-        final titleWidget = tester.widget<Text>(titleFinder);
-        final resolvedWeight =
-            titleWidget.style?.fontWeight ?? FontWeight.normal;
-        expect(
-          resolvedWeight,
-          FontWeight.w600,
-          reason:
-              'Selected card title must use FontWeight.w600 — '
-              'selection must not rely on color alone (accessibility)',
-        );
-      },
-    );
+      final titleWidget = tester.widget<Text>(titleFinder);
+      final resolvedWeight = titleWidget.style?.fontWeight ?? FontWeight.normal;
+      expect(
+        resolvedWeight,
+        FontWeight.w600,
+        reason:
+            'Selected card title must use FontWeight.w600 — '
+            'selection must not rely on color alone (accessibility)',
+      );
+    });
   });
 }

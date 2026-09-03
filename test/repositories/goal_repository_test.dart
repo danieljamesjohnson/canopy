@@ -66,6 +66,13 @@ void main() {
     final goal = Goal(name: 'UUID Test', goalTypeIndex: 0);
     expect(goal.id, isNotEmpty);
     expect(goal.id.length, equals(36)); // UUID v4 is 36 chars with hyphens
-    expect(goal.id, matches(RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')));
+    expect(
+      goal.id,
+      matches(
+        RegExp(
+          r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+        ),
+      ),
+    );
   });
 }

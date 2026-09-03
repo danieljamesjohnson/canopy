@@ -59,43 +59,44 @@ void main() {
     // This stands in for a pre-migration record: Hive CE's field-dict read
     // returns null for absent HiveField(12) and HiveField(13), and the
     // getter's `?? 0` coerces null → EnergyValence.values[0] = neutral.
-    test(
-      'old Goal record (no energyValenceIndex/emojiTag) loads as neutral, '
-      'no crash (ENERGY-01a)',
-      () async {
-        const boxName = 'goals_old_compat';
+    test('old Goal record (no energyValenceIndex/emojiTag) loads as neutral, '
+        'no crash (ENERGY-01a)', () async {
+      const boxName = 'goals_old_compat';
 
-        // Write a Goal without the new fields (simulates a pre-migration record)
-        final box = await Hive.openBox<Goal>(boxName);
-        final oldGoal = Goal(
-          id: 'old-goal-id',
-          name: 'Old Goal',
-          goalTypeIndex: GoalType.timeTarget.index,
-          // energyValenceIndex: intentionally omitted — null
-          // emojiTag: intentionally omitted — null
-        );
-        await box.put('old-goal-id', oldGoal);
-        await box.close();
+      // Write a Goal without the new fields (simulates a pre-migration record)
+      final box = await Hive.openBox<Goal>(boxName);
+      final oldGoal = Goal(
+        id: 'old-goal-id',
+        name: 'Old Goal',
+        goalTypeIndex: GoalType.timeTarget.index,
+        // energyValenceIndex: intentionally omitted — null
+        // emojiTag: intentionally omitted — null
+      );
+      await box.put('old-goal-id', oldGoal);
+      await box.close();
 
-        // Reopen and read back — must not throw
-        final reopened = await Hive.openBox<Goal>(boxName);
-        final readBack = reopened.get('old-goal-id');
-        expect(readBack, isNotNull, reason: 'Goal must be readable after round-trip');
-        expect(
-          readBack!.energyValence, // getter on Goal — does not exist yet
-          equals(EnergyValence.neutral),
-          reason:
-              'Goal without energyValenceIndex must load as EnergyValence.neutral '
-              '(null ?? 0 → values[0] = neutral) — ENERGY-01a',
-        );
-        expect(
-          readBack.emojiTag, // field on Goal — does not exist yet
-          isNull,
-          reason: 'Goal without emojiTag must load as null — ENERGY-01a',
-        );
-        await reopened.close();
-      },
-    );
+      // Reopen and read back — must not throw
+      final reopened = await Hive.openBox<Goal>(boxName);
+      final readBack = reopened.get('old-goal-id');
+      expect(
+        readBack,
+        isNotNull,
+        reason: 'Goal must be readable after round-trip',
+      );
+      expect(
+        readBack!.energyValence, // getter on Goal — does not exist yet
+        equals(EnergyValence.neutral),
+        reason:
+            'Goal without energyValenceIndex must load as EnergyValence.neutral '
+            '(null ?? 0 → values[0] = neutral) — ENERGY-01a',
+      );
+      expect(
+        readBack.emojiTag, // field on Goal — does not exist yet
+        isNull,
+        reason: 'Goal without emojiTag must load as null — ENERGY-01a',
+      );
+      await reopened.close();
+    });
 
     // ENERGY-01b + ENERGY-03a: Round-trip for energyValenceIndex and emojiTag.
     // A Goal saved WITH energyValenceIndex = gives.index and a known emojiTag
@@ -113,8 +114,9 @@ void main() {
           id: 'new-goal-id',
           name: 'Energizing Goal',
           goalTypeIndex: GoalType.habit.index,
-          energyValenceIndex: EnergyValence.gives.index, // field does not exist yet — RED
-          emojiTag: knownEmoji,                          // field does not exist yet — RED
+          energyValenceIndex:
+              EnergyValence.gives.index, // field does not exist yet — RED
+          emojiTag: knownEmoji, // field does not exist yet — RED
         );
         await box.put('new-goal-id', newGoal);
         await box.close();

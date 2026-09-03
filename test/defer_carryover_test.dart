@@ -95,23 +95,22 @@ class _InMemoryGoalRepository implements GoalRepository {
 
 /// Monday 2026-06-08 = weekday 1
 final _monday = DateTime(2026, 6, 8);
+
 /// Tuesday 2026-06-09 = weekday 2
 final _tuesday = DateTime(2026, 6, 9);
+
 /// Wednesday 2026-06-10 = weekday 3
 final _wednesday = DateTime(2026, 6, 10);
 
 Goal _makeHabitGoal({String id = 'habit-goal-1', int freq = 7}) => Goal(
-      id: id,
-      name: 'Run',
-      goalTypeIndex: GoalType.habit.index,
-      frequencyPerWeek: freq,
-    );
+  id: id,
+  name: 'Run',
+  goalTypeIndex: GoalType.habit.index,
+  frequencyPerWeek: freq,
+);
 
-Goal _makeOutcomeGoal({String id = 'outcome-goal-1'}) => Goal(
-      id: id,
-      name: 'Write book',
-      goalTypeIndex: GoalType.outcome.index,
-    );
+Goal _makeOutcomeGoal({String id = 'outcome-goal-1'}) =>
+    Goal(id: id, name: 'Write book', goalTypeIndex: GoalType.outcome.index);
 
 // ---------------------------------------------------------------------------
 // Task 1 tests
@@ -124,109 +123,117 @@ void main() {
   // markDeferred logs CompletionEvent.deferred
   // -------------------------------------------------------------------------
   group('CLOSE-02 markDeferred: logs deferred event (not skipped)', () {
-    test('markDeferred logs eventIndex == CompletionEvent.deferred.index', () async {
-      final logRepo = InMemoryCompletionLogRepository();
-      final scheduleRepo = _InMemoryScheduleRepository();
-      final goalRepo = _InMemoryGoalRepository([]);
+    test(
+      'markDeferred logs eventIndex == CompletionEvent.deferred.index',
+      () async {
+        final logRepo = InMemoryCompletionLogRepository();
+        final scheduleRepo = _InMemoryScheduleRepository();
+        final goalRepo = _InMemoryGoalRepository([]);
 
-      // A discretionary deferred chunk
-      final chunk = ScheduledChunk(
-        id: 'disc-chunk-defer',
-        chunkTypeIndex: ChunkType.work.index,
-        goalId: 'goal-abc',
-        durationMinutes: 25,
-        rationale: 'Daily habit',
-      );
+        // A discretionary deferred chunk
+        final chunk = ScheduledChunk(
+          id: 'disc-chunk-defer',
+          chunkTypeIndex: ChunkType.work.index,
+          goalId: 'goal-abc',
+          durationMinutes: 25,
+          rationale: 'Daily habit',
+        );
 
-      final schedule = DailySchedule(
-        id: 'sched-defer',
-        dateYmd: '2026-06-08',
-        moodIndex: 3,
-        chunks: [chunk],
-      );
-      await scheduleRepo.save(schedule);
+        final schedule = DailySchedule(
+          id: 'sched-defer',
+          dateYmd: '2026-06-08',
+          moodIndex: 3,
+          chunks: [chunk],
+        );
+        await scheduleRepo.save(schedule);
 
-      final notifier = ScheduleNotifier(
-        now: () => _monday,
-        repo: scheduleRepo,
-        logRepo: logRepo,
-        goalRepo: goalRepo,
-      );
-      await notifier.init();
+        final notifier = ScheduleNotifier(
+          now: () => _monday,
+          repo: scheduleRepo,
+          logRepo: logRepo,
+          goalRepo: goalRepo,
+        );
+        await notifier.init();
 
-      await notifier.markDeferred(chunk.id);
+        await notifier.markDeferred(chunk.id);
 
-      final logs = await logRepo.getAll();
-      expect(logs, hasLength(1));
-      expect(
-        logs.first.eventIndex,
-        equals(CompletionEvent.deferred.index),
-        reason: 'markDeferred must log CompletionEvent.deferred (not skipped)',
-      );
-      expect(
-        logs.first.goalId,
-        equals('goal-abc'),
-        reason: 'goalId must be the chunk goalId for discretionary chunk',
-      );
-    });
+        final logs = await logRepo.getAll();
+        expect(logs, hasLength(1));
+        expect(
+          logs.first.eventIndex,
+          equals(CompletionEvent.deferred.index),
+          reason:
+              'markDeferred must log CompletionEvent.deferred (not skipped)',
+        );
+        expect(
+          logs.first.goalId,
+          equals('goal-abc'),
+          reason: 'goalId must be the chunk goalId for discretionary chunk',
+        );
+      },
+    );
 
-    test('markDeferred on a commitment chunk logs commitmentId (attributionId resolves to block id)', () async {
-      final logRepo = InMemoryCompletionLogRepository();
-      final scheduleRepo = _InMemoryScheduleRepository();
-      final goalRepo = _InMemoryGoalRepository([]);
+    test(
+      'markDeferred on a commitment chunk logs commitmentId (attributionId resolves to block id)',
+      () async {
+        final logRepo = InMemoryCompletionLogRepository();
+        final scheduleRepo = _InMemoryScheduleRepository();
+        final goalRepo = _InMemoryGoalRepository([]);
 
-      const blockId = 'block-test-id';
-      final chunk = ScheduledChunk(
-        id: 'commit-chunk-defer',
-        chunkTypeIndex: ChunkType.work.index,
-        goalId: null,
-        commitmentId: blockId,
-        durationMinutes: 25,
-        anchoredStartMinutes: 540,
-        rationale: 'Job',
-      );
+        const blockId = 'block-test-id';
+        final chunk = ScheduledChunk(
+          id: 'commit-chunk-defer',
+          chunkTypeIndex: ChunkType.work.index,
+          goalId: null,
+          commitmentId: blockId,
+          durationMinutes: 25,
+          anchoredStartMinutes: 540,
+          rationale: 'Job',
+        );
 
-      final schedule = DailySchedule(
-        id: 'sched-commit-defer',
-        dateYmd: '2026-06-08',
-        moodIndex: 3,
-        chunks: [chunk],
-      );
-      await scheduleRepo.save(schedule);
+        final schedule = DailySchedule(
+          id: 'sched-commit-defer',
+          dateYmd: '2026-06-08',
+          moodIndex: 3,
+          chunks: [chunk],
+        );
+        await scheduleRepo.save(schedule);
 
-      final notifier = ScheduleNotifier(
-        now: () => _monday,
-        repo: scheduleRepo,
-        logRepo: logRepo,
-        goalRepo: goalRepo,
-      );
-      await notifier.init();
+        final notifier = ScheduleNotifier(
+          now: () => _monday,
+          repo: scheduleRepo,
+          logRepo: logRepo,
+          goalRepo: goalRepo,
+        );
+        await notifier.init();
 
-      await notifier.markDeferred(chunk.id);
+        await notifier.markDeferred(chunk.id);
 
-      final logs = await logRepo.getAll();
-      expect(logs, hasLength(1));
-      expect(
-        logs.first.eventIndex,
-        equals(CompletionEvent.deferred.index),
-        reason: 'markDeferred must log CompletionEvent.deferred',
-      );
-      expect(
-        logs.first.commitmentId,
-        equals(blockId),
-        reason: 'Commitment chunk deferred log must record the block id in commitmentId',
-      );
-      expect(
-        logs.first.attributionId,
-        equals(blockId),
-        reason: 'attributionId must resolve to the commitment block id',
-      );
-      expect(
-        logs.first.goalId,
-        isEmpty,
-        reason: 'goalId must be empty for commitment chunks',
-      );
-    });
+        final logs = await logRepo.getAll();
+        expect(logs, hasLength(1));
+        expect(
+          logs.first.eventIndex,
+          equals(CompletionEvent.deferred.index),
+          reason: 'markDeferred must log CompletionEvent.deferred',
+        );
+        expect(
+          logs.first.commitmentId,
+          equals(blockId),
+          reason:
+              'Commitment chunk deferred log must record the block id in commitmentId',
+        );
+        expect(
+          logs.first.attributionId,
+          equals(blockId),
+          reason: 'attributionId must resolve to the commitment block id',
+        );
+        expect(
+          logs.first.goalId,
+          isEmpty,
+          reason: 'goalId must be empty for commitment chunks',
+        );
+      },
+    );
   });
 
   // -------------------------------------------------------------------------
@@ -275,7 +282,8 @@ void main() {
       expect(
         streak,
         equals(2),
-        reason: 'Streak survives a deferred day (non-breaking; Tue does not increment)',
+        reason:
+            'Streak survives a deferred day (non-breaking; Tue does not increment)',
       );
     });
 
@@ -385,38 +393,51 @@ void main() {
         deferredGoalIds: {carriedGoal.id},
       );
 
-      final workChunks = chunks.where((c) => c.chunkType == ChunkType.work).toList();
-      final carriedChunks = workChunks.where((c) => c.goalId == carriedGoal.id).toList();
+      final workChunks = chunks
+          .where((c) => c.chunkType == ChunkType.work)
+          .toList();
+      final carriedChunks = workChunks
+          .where((c) => c.goalId == carriedGoal.id)
+          .toList();
       expect(
         carriedChunks,
         isNotEmpty,
-        reason: 'A deferred goal passed via deferredGoalIds must appear in generated schedule',
+        reason:
+            'A deferred goal passed via deferredGoalIds must appear in generated schedule',
       );
     });
 
-    test('a carried goal already scheduled via normal generation is not duplicated', () {
-      // A daily habit is scheduled normally on Monday (freq=7, due every day).
-      // Also passed in deferredGoalIds — must NOT get a duplicate slot.
-      final habitGoal = _makeHabitGoal(id: 'daily-habit-1', freq: 7);
-      final sut = ScheduleGeneratorService();
+    test(
+      'a carried goal already scheduled via normal generation is not duplicated',
+      () {
+        // A daily habit is scheduled normally on Monday (freq=7, due every day).
+        // Also passed in deferredGoalIds — must NOT get a duplicate slot.
+        final habitGoal = _makeHabitGoal(id: 'daily-habit-1', freq: 7);
+        final sut = ScheduleGeneratorService();
 
-      final chunks = sut.generate(
-        goals: [habitGoal],
-        blocks: [],
-        moodIndex: 3,
-        date: _monday,
-        completionLogs: [],
-        deferredGoalIds: {habitGoal.id},
-      );
+        final chunks = sut.generate(
+          goals: [habitGoal],
+          blocks: [],
+          moodIndex: 3,
+          date: _monday,
+          completionLogs: [],
+          deferredGoalIds: {habitGoal.id},
+        );
 
-      final workChunks = chunks.where((c) => c.chunkType == ChunkType.work).toList();
-      final habitChunks = workChunks.where((c) => c.goalId == habitGoal.id).toList();
-      expect(
-        habitChunks.length,
-        equals(1),
-        reason: 'A goal already scheduled must not be duplicated by deferredGoalIds injection',
-      );
-    });
+        final workChunks = chunks
+            .where((c) => c.chunkType == ChunkType.work)
+            .toList();
+        final habitChunks = workChunks
+            .where((c) => c.goalId == habitGoal.id)
+            .toList();
+        expect(
+          habitChunks.length,
+          equals(1),
+          reason:
+              'A goal already scheduled must not be duplicated by deferredGoalIds injection',
+        );
+      },
+    );
 
     test('injection does not exceed mood cap', () {
       // Mood 1 cap = 4 chunks; fill 4 via normal goals + pass 2 more via deferredGoalIds.
@@ -430,8 +451,16 @@ void main() {
         ),
       );
       final extraGoals = [
-        Goal(id: 'extra-1', name: 'Extra 1', goalTypeIndex: GoalType.outcome.index),
-        Goal(id: 'extra-2', name: 'Extra 2', goalTypeIndex: GoalType.outcome.index),
+        Goal(
+          id: 'extra-1',
+          name: 'Extra 1',
+          goalTypeIndex: GoalType.outcome.index,
+        ),
+        Goal(
+          id: 'extra-2',
+          name: 'Extra 2',
+          goalTypeIndex: GoalType.outcome.index,
+        ),
       ];
       final sut = ScheduleGeneratorService();
 
@@ -445,7 +474,9 @@ void main() {
         deferredGoalIds: {extraGoals[0].id, extraGoals[1].id},
       );
 
-      final workChunks = chunks.where((c) => c.chunkType == ChunkType.work).toList();
+      final workChunks = chunks
+          .where((c) => c.chunkType == ChunkType.work)
+          .toList();
       expect(
         workChunks.length,
         lessThanOrEqualTo(4),
@@ -459,8 +490,10 @@ void main() {
   // -------------------------------------------------------------------------
   group('CLOSE-02 generateToday: single-hop deferred carry-in', () {
     // Helper to build a notifier with seeded prior-day schedule.
-    Future<({ScheduleNotifier notifier, _InMemoryScheduleRepository scheduleRepo})>
-        buildNotifierWithPriorDay({
+    Future<
+      ({ScheduleNotifier notifier, _InMemoryScheduleRepository scheduleRepo})
+    >
+    buildNotifierWithPriorDay({
       List<ScheduledChunk> priorChunks = const [],
       List<Goal> goals = const [],
       String todayYmd = '2026-06-09', // Tuesday
@@ -492,46 +525,50 @@ void main() {
       return (notifier: notifier, scheduleRepo: scheduleRepo);
     }
 
-    test('deferred discretionary chunk re-appears in next morning schedule', () async {
-      final goalId = 'disc-goal-carry';
-      final goal = _makeOutcomeGoal(id: goalId);
+    test(
+      'deferred discretionary chunk re-appears in next morning schedule',
+      () async {
+        final goalId = 'disc-goal-carry';
+        final goal = _makeOutcomeGoal(id: goalId);
 
-      // Prior day: one deferred, unresolved, discretionary chunk
-      final priorChunk = ScheduledChunk(
-        id: 'prior-chunk-1',
-        chunkTypeIndex: ChunkType.work.index,
-        goalId: goalId,
-        durationMinutes: 25,
-        rationale: 'Working toward your goal',
-      );
-      priorChunk.isDeferred = true;
-      priorChunk.isSkipped = true; // markDeferred sets both
+        // Prior day: one deferred, unresolved, discretionary chunk
+        final priorChunk = ScheduledChunk(
+          id: 'prior-chunk-1',
+          chunkTypeIndex: ChunkType.work.index,
+          goalId: goalId,
+          durationMinutes: 25,
+          rationale: 'Working toward your goal',
+        );
+        priorChunk.isDeferred = true;
+        priorChunk.isSkipped = true; // markDeferred sets both
 
-      final ctx = await buildNotifierWithPriorDay(
-        priorChunks: [priorChunk],
-        goals: [goal],
-      );
+        final ctx = await buildNotifierWithPriorDay(
+          priorChunks: [priorChunk],
+          goals: [goal],
+        );
 
-      // Generate today's schedule (Tuesday = _tuesday)
-      await ctx.notifier.generateToday(
-        moodIndex: 3,
-        goals: [goal],
-        blocks: [],
-        lighterDay: false,
-      );
+        // Generate today's schedule (Tuesday = _tuesday)
+        await ctx.notifier.generateToday(
+          moodIndex: 3,
+          goals: [goal],
+          blocks: [],
+          lighterDay: false,
+        );
 
-      final todaySchedule = ctx.notifier.todaySchedule;
-      expect(todaySchedule, isNotNull);
-      final todayChunks = todaySchedule!.chunks
-          .where((c) => c.chunkType == ChunkType.work && c.goalId == goalId)
-          .toList();
+        final todaySchedule = ctx.notifier.todaySchedule;
+        expect(todaySchedule, isNotNull);
+        final todayChunks = todaySchedule!.chunks
+            .where((c) => c.chunkType == ChunkType.work && c.goalId == goalId)
+            .toList();
 
-      expect(
-        todayChunks,
-        isNotEmpty,
-        reason: 'A deferred unresolved discretionary chunk must re-appear in the next day schedule',
-      );
-    });
+        expect(
+          todayChunks,
+          isNotEmpty,
+          reason:
+              'A deferred unresolved discretionary chunk must re-appear in the next day schedule',
+        );
+      },
+    );
 
     test('completed-deferred chunk of archived goal is NOT carried', () async {
       // Use an archived goal so it won't be scheduled via normal generation.
@@ -617,66 +654,70 @@ void main() {
       );
     });
 
-    test('two-days-ago deferred chunk does NOT carry (single-hop only)', () async {
-      final goalId = 'goal-two-days-ago';
-      final goal = Goal(
-        id: goalId,
-        name: 'Old deferred',
-        goalTypeIndex: GoalType.outcome.index,
-      )..isArchived = true; // archived so normal gen won't pick it up
+    test(
+      'two-days-ago deferred chunk does NOT carry (single-hop only)',
+      () async {
+        final goalId = 'goal-two-days-ago';
+        final goal = Goal(
+          id: goalId,
+          name: 'Old deferred',
+          goalTypeIndex: GoalType.outcome.index,
+        )..isArchived = true; // archived so normal gen won't pick it up
 
-      // Seed a schedule for two days ago (Sunday 2026-06-07), not yesterday.
-      final twoDaysAgoChunk = ScheduledChunk(
-        id: 'chunk-two-days-ago',
-        chunkTypeIndex: ChunkType.work.index,
-        goalId: goalId,
-        durationMinutes: 25,
-        rationale: 'Two days ago',
-      );
-      twoDaysAgoChunk.isDeferred = true;
-      twoDaysAgoChunk.isSkipped = true;
+        // Seed a schedule for two days ago (Sunday 2026-06-07), not yesterday.
+        final twoDaysAgoChunk = ScheduledChunk(
+          id: 'chunk-two-days-ago',
+          chunkTypeIndex: ChunkType.work.index,
+          goalId: goalId,
+          durationMinutes: 25,
+          rationale: 'Two days ago',
+        );
+        twoDaysAgoChunk.isDeferred = true;
+        twoDaysAgoChunk.isSkipped = true;
 
-      final logRepo = InMemoryCompletionLogRepository();
-      final scheduleRepo = _InMemoryScheduleRepository();
-      final goalRepo = _InMemoryGoalRepository([goal]);
+        final logRepo = InMemoryCompletionLogRepository();
+        final scheduleRepo = _InMemoryScheduleRepository();
+        final goalRepo = _InMemoryGoalRepository([goal]);
 
-      // Save schedule for two days ago (Sunday = 2026-06-07), NOT yesterday
-      final twoDaysAgoSchedule = DailySchedule(
-        id: 'sched-two-days-ago',
-        dateYmd: '2026-06-07', // Sunday (two days before Tuesday)
-        moodIndex: 3,
-        chunks: [twoDaysAgoChunk],
-      );
-      await scheduleRepo.save(twoDaysAgoSchedule);
-      // No schedule for yesterday (Monday 2026-06-08)
+        // Save schedule for two days ago (Sunday = 2026-06-07), NOT yesterday
+        final twoDaysAgoSchedule = DailySchedule(
+          id: 'sched-two-days-ago',
+          dateYmd: '2026-06-07', // Sunday (two days before Tuesday)
+          moodIndex: 3,
+          chunks: [twoDaysAgoChunk],
+        );
+        await scheduleRepo.save(twoDaysAgoSchedule);
+        // No schedule for yesterday (Monday 2026-06-08)
 
-      final today = DateTime.parse('2026-06-09'); // Tuesday
-      final notifier = ScheduleNotifier(
-        now: () => today,
-        repo: scheduleRepo,
-        logRepo: logRepo,
-        goalRepo: goalRepo,
-      );
-      await notifier.init();
+        final today = DateTime.parse('2026-06-09'); // Tuesday
+        final notifier = ScheduleNotifier(
+          now: () => today,
+          repo: scheduleRepo,
+          logRepo: logRepo,
+          goalRepo: goalRepo,
+        );
+        await notifier.init();
 
-      await notifier.generateToday(
-        moodIndex: 3,
-        goals: [goal],
-        blocks: [],
-        lighterDay: false,
-      );
+        await notifier.generateToday(
+          moodIndex: 3,
+          goals: [goal],
+          blocks: [],
+          lighterDay: false,
+        );
 
-      final todaySchedule = notifier.todaySchedule;
-      expect(todaySchedule, isNotNull);
-      final carriedChunks = todaySchedule!.chunks
-          .where((c) => c.chunkType == ChunkType.work && c.goalId == goalId)
-          .toList();
+        final todaySchedule = notifier.todaySchedule;
+        expect(todaySchedule, isNotNull);
+        final carriedChunks = todaySchedule!.chunks
+            .where((c) => c.chunkType == ChunkType.work && c.goalId == goalId)
+            .toList();
 
-      expect(
-        carriedChunks,
-        isEmpty,
-        reason: 'Two-days-ago deferred chunk must NOT carry (single-hop only scans yesterday)',
-      );
-    });
+        expect(
+          carriedChunks,
+          isEmpty,
+          reason:
+              'Two-days-ago deferred chunk must NOT carry (single-hop only scans yesterday)',
+        );
+      },
+    );
   });
 }

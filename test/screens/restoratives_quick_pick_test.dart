@@ -56,19 +56,22 @@ Finder _chip(String name) => find.widgetWithText(FilterChip, name);
 
 void main() {
   group('Restoratives quick-pick (OBVIOUS-03, UI-SPEC 22-23)', () {
-    testWidgets('all nine common restoratives render as chips on an empty list',
-        (tester) async {
-      final notifier = await _pumpScreen(tester);
+    testWidgets(
+      'all nine common restoratives render as chips on an empty list',
+      (tester) async {
+        final notifier = await _pumpScreen(tester);
 
-      expect(notifier.items, isEmpty);
-      expect(find.byType(FilterChip), findsNWidgets(9));
-      for (final (name, _) in kCommonRestoratives) {
-        expect(_chip(name), findsOneWidget, reason: 'missing chip: $name');
-      }
-    });
+        expect(notifier.items, isEmpty);
+        expect(find.byType(FilterChip), findsNWidgets(9));
+        for (final (name, _) in kCommonRestoratives) {
+          expect(_chip(name), findsOneWidget, reason: 'missing chip: $name');
+        }
+      },
+    );
 
-    testWidgets('one tap persists the restorative WITH the chip\'s emoji',
-        (tester) async {
+    testWidgets('one tap persists the restorative WITH the chip\'s emoji', (
+      tester,
+    ) async {
       final notifier = await _pumpScreen(tester);
 
       await tester.tap(_chip('Walk outside'));
@@ -81,28 +84,34 @@ void main() {
       expect(notifier.items.single.emojiTag, '🚶');
     });
 
-    testWidgets('after adding, the chip reads selected and the item is listed',
-        (tester) async {
-      await _pumpScreen(tester);
+    testWidgets(
+      'after adding, the chip reads selected and the item is listed',
+      (tester) async {
+        await _pumpScreen(tester);
 
-      await tester.tap(_chip('Walk outside'));
-      await tester.pumpAndSettle();
+        await tester.tap(_chip('Walk outside'));
+        await tester.pumpAndSettle();
 
-      expect(tester.widget<FilterChip>(_chip('Walk outside')).selected, isTrue);
-      // Scoped to the row's Card on purpose. An unscoped
-      // find.text('Walk outside') is satisfied by the chip's own label and
-      // would pass even if the list below never rendered the item.
-      expect(
-        find.descendant(
-          of: find.byType(Card),
-          matching: find.text('Walk outside'),
-        ),
-        findsOneWidget,
-      );
-    });
+        expect(
+          tester.widget<FilterChip>(_chip('Walk outside')).selected,
+          isTrue,
+        );
+        // Scoped to the row's Card on purpose. An unscoped
+        // find.text('Walk outside') is satisfied by the chip's own label and
+        // would pass even if the list below never rendered the item.
+        expect(
+          find.descendant(
+            of: find.byType(Card),
+            matching: find.text('Walk outside'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('tapping an added chip removes it — no confirmation dialog',
-        (tester) async {
+    testWidgets('tapping an added chip removes it — no confirmation dialog', (
+      tester,
+    ) async {
       final notifier = await _pumpScreen(tester);
 
       await tester.tap(_chip('Walk outside'));
@@ -113,24 +122,29 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(notifier.items, isEmpty);
-      expect(tester.widget<FilterChip>(_chip('Walk outside')).selected, isFalse);
+      expect(
+        tester.widget<FilterChip>(_chip('Walk outside')).selected,
+        isFalse,
+      );
       // One tap adds, one tap removes (item 22). A confirm would defeat it.
       expect(find.text('Remove restorative?'), findsNothing);
     });
 
-    testWidgets('an already-saved restorative renders selected on first build',
-        (tester) async {
-      // Seeded lowercase on purpose — this is what a hand-typed entry looks
-      // like, and the chip must recognise it as the same thing rather than
-      // offering to add a second copy.
-      final notifier = await _pumpScreen(
-        tester,
-        seed: [RestorativeItem(name: 'music', sortOrder: 0)],
-      );
+    testWidgets(
+      'an already-saved restorative renders selected on first build',
+      (tester) async {
+        // Seeded lowercase on purpose — this is what a hand-typed entry looks
+        // like, and the chip must recognise it as the same thing rather than
+        // offering to add a second copy.
+        final notifier = await _pumpScreen(
+          tester,
+          seed: [RestorativeItem(name: 'music', sortOrder: 0)],
+        );
 
-      expect(tester.widget<FilterChip>(_chip('Music')).selected, isTrue);
-      expect(notifier.items.length, 1);
-    });
+        expect(tester.widget<FilterChip>(_chip('Music')).selected, isTrue);
+        expect(notifier.items.length, 1);
+      },
+    );
 
     testWidgets('the chips render in the empty state too', (tester) async {
       await _pumpScreen(tester);
@@ -141,8 +155,9 @@ void main() {
       expect(find.text('Nothing here yet'), findsOneWidget);
     });
 
-    testWidgets('every chip is glyph PLUS word, never a bare glyph (item 30)',
-        (tester) async {
+    testWidgets('every chip is glyph PLUS word, never a bare glyph (item 30)', (
+      tester,
+    ) async {
       await _pumpScreen(tester);
 
       for (final (name, emoji) in kCommonRestoratives) {
@@ -151,8 +166,9 @@ void main() {
       }
     });
 
-    testWidgets('nine chips lay out on a phone without overflowing',
-        (tester) async {
+    testWidgets('nine chips lay out on a phone without overflowing', (
+      tester,
+    ) async {
       // The 800x600 default viewport is wide enough to hide a layout defect
       // the owner would meet first on a phone, and this phase's whole subject
       // is what a screen looks like. An overflow here fails the test.

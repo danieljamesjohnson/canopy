@@ -12,12 +12,12 @@ import 'package:provider/provider.dart';
 import '../test_helpers/mood_pump.dart';
 
 ScheduledChunk _workChunk() => ScheduledChunk(
-      id: 'c1',
-      chunkTypeIndex: ChunkType.work.index,
-      goalId: 'g1',
-      durationMinutes: 25,
-      rationale: 'Habit',
-    );
+  id: 'c1',
+  chunkTypeIndex: ChunkType.work.index,
+  goalId: 'g1',
+  durationMinutes: 25,
+  rationale: 'Habit',
+);
 
 ScheduledChunk _workChunkWithStartTime({required int startMinutes}) =>
     ScheduledChunk(
@@ -49,43 +49,46 @@ void main() {
           ),
           extraProviders: [
             ChangeNotifierProvider<ScheduleNotifier>(
-                create: (_) => _FakeScheduleNotifier()),
+              create: (_) => _FakeScheduleNotifier(),
+            ),
           ],
         );
         expect(
           find.text('Morning Run'),
           findsOneWidget,
-          reason: 'READ-01: ChunkCard must display the goal name as primary text',
+          reason:
+              'READ-01: ChunkCard must display the goal name as primary text',
         );
         expect(
           find.text('Daily habit'),
           findsOneWidget,
-          reason: 'READ-01: ChunkCard must display the human-readable rationale as secondary text',
+          reason:
+              'READ-01: ChunkCard must display the human-readable rationale as secondary text',
         );
       },
     );
 
-    testWidgets(
-      'falls back to chunk.rationale when goalName is null',
-      (tester) async {
-        await pumpWithMood(
-          tester,
-          ChunkCard(
-            chunk: _workChunk(),
-            // No goalName — should fall back to 'Habit'
+    testWidgets('falls back to chunk.rationale when goalName is null', (
+      tester,
+    ) async {
+      await pumpWithMood(
+        tester,
+        ChunkCard(
+          chunk: _workChunk(),
+          // No goalName — should fall back to 'Habit'
+        ),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>(
+            create: (_) => _FakeScheduleNotifier(),
           ),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>(
-                create: (_) => _FakeScheduleNotifier()),
-          ],
-        );
-        expect(
-          find.text('Habit'),
-          findsOneWidget,
-          reason: 'READ-01: When goalName is null, falls back to chunk.rationale',
-        );
-      },
-    );
+        ],
+      );
+      expect(
+        find.text('Habit'),
+        findsOneWidget,
+        reason: 'READ-01: When goalName is null, falls back to chunk.rationale',
+      );
+    });
   });
 
   group('ChunkCard clock-time range display (SCHED-01)', () {
@@ -95,12 +98,11 @@ void main() {
         // 9:25 AM = 565 min; duration 25 min → end 9:50 AM = 590 min
         await pumpWithMood(
           tester,
-          ChunkCard(
-            chunk: _workChunkWithStartTime(startMinutes: 565),
-          ),
+          ChunkCard(chunk: _workChunkWithStartTime(startMinutes: 565)),
           extraProviders: [
             ChangeNotifierProvider<ScheduleNotifier>(
-                create: (_) => _FakeScheduleNotifier()),
+              create: (_) => _FakeScheduleNotifier(),
+            ),
           ],
         );
         expect(
@@ -111,26 +113,27 @@ void main() {
       },
     );
 
-    testWidgets(
-      'shows duration fallback when displayStartMinutes is null',
-      (tester) async {
-        // No syntheticStartMinutes set → displayStartMinutes is null
-        await pumpWithMood(
-          tester,
-          ChunkCard(
-            chunk: _workChunk(), // durationMinutes = 25, no start time
+    testWidgets('shows duration fallback when displayStartMinutes is null', (
+      tester,
+    ) async {
+      // No syntheticStartMinutes set → displayStartMinutes is null
+      await pumpWithMood(
+        tester,
+        ChunkCard(
+          chunk: _workChunk(), // durationMinutes = 25, no start time
+        ),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>(
+            create: (_) => _FakeScheduleNotifier(),
           ),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>(
-                create: (_) => _FakeScheduleNotifier()),
-          ],
-        );
-        expect(
-          find.text('25 min'),
-          findsOneWidget,
-          reason: 'SCHED-01: Duration fallback "N min" shown when displayStartMinutes is null',
-        );
-      },
-    );
+        ],
+      );
+      expect(
+        find.text('25 min'),
+        findsOneWidget,
+        reason:
+            'SCHED-01: Duration fallback "N min" shown when displayStartMinutes is null',
+      );
+    });
   });
 }

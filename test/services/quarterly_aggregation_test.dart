@@ -36,11 +36,31 @@ void main() {
   group('completedByGoal', () {
     test('returns per-goal completed counts in range', () {
       final logs = [
-        _log(goalId: 'goalA', dateYmd: '2026-01-01', event: CompletionEvent.completed),
-        _log(goalId: 'goalA', dateYmd: '2026-01-02', event: CompletionEvent.completed),
-        _log(goalId: 'goalA', dateYmd: '2026-01-03', event: CompletionEvent.completed),
-        _log(goalId: 'goalB', dateYmd: '2026-01-04', event: CompletionEvent.completed),
-        _log(goalId: 'goalA', dateYmd: '2026-01-05', event: CompletionEvent.skipped),
+        _log(
+          goalId: 'goalA',
+          dateYmd: '2026-01-01',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'goalA',
+          dateYmd: '2026-01-02',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'goalA',
+          dateYmd: '2026-01-03',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'goalB',
+          dateYmd: '2026-01-04',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'goalA',
+          dateYmd: '2026-01-05',
+          event: CompletionEvent.skipped,
+        ),
       ];
 
       final result = service.completedByGoal(logs, '2026-01-01', '2026-01-31');
@@ -51,10 +71,26 @@ void main() {
 
     test('excludes logs outside date range', () {
       final logs = [
-        _log(goalId: 'goalA', dateYmd: '2025-12-31', event: CompletionEvent.completed),
-        _log(goalId: 'goalA', dateYmd: '2026-01-01', event: CompletionEvent.completed),
-        _log(goalId: 'goalA', dateYmd: '2026-01-31', event: CompletionEvent.completed),
-        _log(goalId: 'goalA', dateYmd: '2026-02-01', event: CompletionEvent.completed),
+        _log(
+          goalId: 'goalA',
+          dateYmd: '2025-12-31',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'goalA',
+          dateYmd: '2026-01-01',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'goalA',
+          dateYmd: '2026-01-31',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'goalA',
+          dateYmd: '2026-02-01',
+          event: CompletionEvent.completed,
+        ),
       ];
 
       final result = service.completedByGoal(logs, '2026-01-01', '2026-01-31');
@@ -74,11 +110,31 @@ void main() {
       // Week 2: Mon 2026-01-12
       // Week 3: Mon 2026-01-19
       final logs = [
-        _log(goalId: 'g1', dateYmd: '2026-01-06', event: CompletionEvent.completed), // Tue W1
-        _log(goalId: 'g1', dateYmd: '2026-01-07', event: CompletionEvent.completed), // Wed W1
-        _log(goalId: 'g1', dateYmd: '2026-01-12', event: CompletionEvent.completed), // Mon W2
-        _log(goalId: 'g1', dateYmd: '2026-01-14', event: CompletionEvent.completed), // Wed W2
-        _log(goalId: 'g1', dateYmd: '2026-01-19', event: CompletionEvent.completed), // Mon W3
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-06',
+          event: CompletionEvent.completed,
+        ), // Tue W1
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-07',
+          event: CompletionEvent.completed,
+        ), // Wed W1
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-12',
+          event: CompletionEvent.completed,
+        ), // Mon W2
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-14',
+          event: CompletionEvent.completed,
+        ), // Wed W2
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-19',
+          event: CompletionEvent.completed,
+        ), // Mon W3
       ];
 
       final result = service.completedByWeek(logs, '2026-01-01', '2026-01-31');
@@ -90,9 +146,21 @@ void main() {
 
     test('skipped and deferred logs are not counted in completedByWeek', () {
       final logs = [
-        _log(goalId: 'g1', dateYmd: '2026-01-06', event: CompletionEvent.completed),
-        _log(goalId: 'g1', dateYmd: '2026-01-06', event: CompletionEvent.skipped),
-        _log(goalId: 'g1', dateYmd: '2026-01-06', event: CompletionEvent.deferred),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-06',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-06',
+          event: CompletionEvent.skipped,
+        ),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-06',
+          event: CompletionEvent.deferred,
+        ),
       ];
 
       final result = service.completedByWeek(logs, '2026-01-01', '2026-01-31');
@@ -104,12 +172,36 @@ void main() {
   group('notSpentCount', () {
     test('counts skipped and deferred in range', () {
       final logs = [
-        _log(goalId: 'g1', dateYmd: '2026-01-01', event: CompletionEvent.skipped),
-        _log(goalId: 'g1', dateYmd: '2026-01-02', event: CompletionEvent.deferred),
-        _log(goalId: 'g1', dateYmd: '2026-01-03', event: CompletionEvent.skipped),
-        _log(goalId: 'g1', dateYmd: '2026-01-04', event: CompletionEvent.completed),
-        _log(goalId: 'g1', dateYmd: '2026-01-05', event: CompletionEvent.completed),
-        _log(goalId: 'g1', dateYmd: '2026-01-06', event: CompletionEvent.completed),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-01',
+          event: CompletionEvent.skipped,
+        ),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-02',
+          event: CompletionEvent.deferred,
+        ),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-03',
+          event: CompletionEvent.skipped,
+        ),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-04',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-05',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-06',
+          event: CompletionEvent.completed,
+        ),
       ];
 
       final result = service.notSpentCount(logs, '2026-01-01', '2026-01-31');
@@ -119,10 +211,26 @@ void main() {
 
     test('excludes logs outside date range', () {
       final logs = [
-        _log(goalId: 'g1', dateYmd: '2025-12-31', event: CompletionEvent.skipped),
-        _log(goalId: 'g1', dateYmd: '2026-01-01', event: CompletionEvent.skipped),
-        _log(goalId: 'g1', dateYmd: '2026-01-31', event: CompletionEvent.deferred),
-        _log(goalId: 'g1', dateYmd: '2026-02-01', event: CompletionEvent.skipped),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2025-12-31',
+          event: CompletionEvent.skipped,
+        ),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-01',
+          event: CompletionEvent.skipped,
+        ),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-31',
+          event: CompletionEvent.deferred,
+        ),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-02-01',
+          event: CompletionEvent.skipped,
+        ),
       ];
 
       final result = service.notSpentCount(logs, '2026-01-01', '2026-01-31');
@@ -134,10 +242,26 @@ void main() {
   group('totalCompleted', () {
     test('returns total completed count in range', () {
       final logs = [
-        _log(goalId: 'g1', dateYmd: '2026-01-01', event: CompletionEvent.completed),
-        _log(goalId: 'g2', dateYmd: '2026-01-02', event: CompletionEvent.completed),
-        _log(goalId: 'g1', dateYmd: '2026-01-03', event: CompletionEvent.skipped),
-        _log(goalId: 'g1', dateYmd: '2026-01-04', event: CompletionEvent.deferred),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-01',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'g2',
+          dateYmd: '2026-01-02',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-03',
+          event: CompletionEvent.skipped,
+        ),
+        _log(
+          goalId: 'g1',
+          dateYmd: '2026-01-04',
+          event: CompletionEvent.deferred,
+        ),
       ];
 
       final result = service.totalCompleted(logs, '2026-01-01', '2026-01-31');
@@ -147,24 +271,27 @@ void main() {
   });
 
   group('isInReviewWindow', () {
-    test('returns true when within 7 days before 90-day mark from last snapshot', () {
-      final snapshot = _snapshot(
-        periodStartYmd: '2025-10-01',
-        periodEndYmd: '2025-12-31',
-        completedAt: DateTime.utc(2026, 1, 1),
-      );
-      // 90 days after 2026-01-01 = 2026-04-01
-      // Within 7 days before = 2026-03-25 to 2026-04-01
-      final now = DateTime.utc(2026, 3, 27);
+    test(
+      'returns true when within 7 days before 90-day mark from last snapshot',
+      () {
+        final snapshot = _snapshot(
+          periodStartYmd: '2025-10-01',
+          periodEndYmd: '2025-12-31',
+          completedAt: DateTime.utc(2026, 1, 1),
+        );
+        // 90 days after 2026-01-01 = 2026-04-01
+        // Within 7 days before = 2026-03-25 to 2026-04-01
+        final now = DateTime.utc(2026, 3, 27);
 
-      final result = service.isInReviewWindow(
-        latestSnapshot: snapshot,
-        allLogs: [],
-        now: now,
-      );
+        final result = service.isInReviewWindow(
+          latestSnapshot: snapshot,
+          allLogs: [],
+          now: now,
+        );
 
-      expect(result, isTrue);
-    });
+        expect(result, isTrue);
+      },
+    );
 
     test('returns false when outside the 7-day window before 90-day mark', () {
       final snapshot = _snapshot(
@@ -185,24 +312,39 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('falls back to earliest CompletionLog date when no snapshot exists', () {
-      final logs = [
-        _log(goalId: 'g1', dateYmd: '2026-01-05', event: CompletionEvent.completed),
-        _log(goalId: 'g1', dateYmd: '2026-01-01', event: CompletionEvent.completed),
-        _log(goalId: 'g1', dateYmd: '2026-01-10', event: CompletionEvent.completed),
-      ];
-      // Earliest log: 2026-01-01, 90 days after = 2026-04-01
-      // Within 7 days before = 2026-03-25 to 2026-04-01
-      final now = DateTime.utc(2026, 3, 28);
+    test(
+      'falls back to earliest CompletionLog date when no snapshot exists',
+      () {
+        final logs = [
+          _log(
+            goalId: 'g1',
+            dateYmd: '2026-01-05',
+            event: CompletionEvent.completed,
+          ),
+          _log(
+            goalId: 'g1',
+            dateYmd: '2026-01-01',
+            event: CompletionEvent.completed,
+          ),
+          _log(
+            goalId: 'g1',
+            dateYmd: '2026-01-10',
+            event: CompletionEvent.completed,
+          ),
+        ];
+        // Earliest log: 2026-01-01, 90 days after = 2026-04-01
+        // Within 7 days before = 2026-03-25 to 2026-04-01
+        final now = DateTime.utc(2026, 3, 28);
 
-      final result = service.isInReviewWindow(
-        latestSnapshot: null,
-        allLogs: logs,
-        now: now,
-      );
+        final result = service.isInReviewWindow(
+          latestSnapshot: null,
+          allLogs: logs,
+          now: now,
+        );
 
-      expect(result, isTrue);
-    });
+        expect(result, isTrue);
+      },
+    );
 
     test('returns false when no logs and no snapshot exist', () {
       final result = service.isInReviewWindow(
@@ -237,14 +379,38 @@ void main() {
   group('completionRateByGoal', () {
     test('returns rate = completed / total events per goal', () {
       final logs = [
-        _log(goalId: 'goalA', dateYmd: '2026-01-01', event: CompletionEvent.completed),
-        _log(goalId: 'goalA', dateYmd: '2026-01-02', event: CompletionEvent.completed),
-        _log(goalId: 'goalA', dateYmd: '2026-01-03', event: CompletionEvent.skipped),
-        _log(goalId: 'goalA', dateYmd: '2026-01-04', event: CompletionEvent.deferred),
-        _log(goalId: 'goalB', dateYmd: '2026-01-05', event: CompletionEvent.completed),
+        _log(
+          goalId: 'goalA',
+          dateYmd: '2026-01-01',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'goalA',
+          dateYmd: '2026-01-02',
+          event: CompletionEvent.completed,
+        ),
+        _log(
+          goalId: 'goalA',
+          dateYmd: '2026-01-03',
+          event: CompletionEvent.skipped,
+        ),
+        _log(
+          goalId: 'goalA',
+          dateYmd: '2026-01-04',
+          event: CompletionEvent.deferred,
+        ),
+        _log(
+          goalId: 'goalB',
+          dateYmd: '2026-01-05',
+          event: CompletionEvent.completed,
+        ),
       ];
 
-      final result = service.completionRateByGoal(logs, '2026-01-01', '2026-01-31');
+      final result = service.completionRateByGoal(
+        logs,
+        '2026-01-01',
+        '2026-01-31',
+      );
 
       // goalA: 2 completed / 4 total = 0.5
       expect(result['goalA'], closeTo(0.5, 0.001));
@@ -253,7 +419,11 @@ void main() {
     });
 
     test('returns empty map for empty logs', () {
-      final result = service.completionRateByGoal([], '2026-01-01', '2026-01-31');
+      final result = service.completionRateByGoal(
+        [],
+        '2026-01-01',
+        '2026-01-31',
+      );
       expect(result, isEmpty);
     });
   });

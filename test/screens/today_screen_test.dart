@@ -212,8 +212,7 @@ Finder _nowDotFinder() => find.descendant(
   matching: find.byWidgetPredicate((widget) {
     if (widget is! Container) return false;
     final decoration = widget.decoration;
-    return decoration is BoxDecoration &&
-        decoration.shape == BoxShape.circle;
+    return decoration is BoxDecoration && decoration.shape == BoxShape.circle;
   }),
 );
 
@@ -702,9 +701,7 @@ void main() {
           // and the hour-alignment is still what keeps the numbers clean).
           final expectedTotalHeight =
               (1080 - 480) * kPixelsPerMinute + 2 * kTimelineEdgePadding;
-          final sizedBoxes = tester.widgetList<SizedBox>(
-            find.byType(SizedBox),
-          );
+          final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
           expect(
             sizedBoxes.any((box) => box.height == expectedTotalHeight),
             isTrue,
@@ -944,60 +941,56 @@ void main() {
         },
       );
 
-      testWidgets(
-        "mid-chunk truth — the line sits at TimelineGeometry's own "
-        "computed offset, strictly inside the live chunk's rendered span",
-        (tester) async {
-          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+      testWidgets("mid-chunk truth — the line sits at TimelineGeometry's own "
+          "computed offset, strictly inside the live chunk's rendered span", (
+        tester,
+      ) async {
+        await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
 
-          // Recomputed from the fixture's own numbers, never a hard-coded
-          // pixel constant — mirrors the CAL-01 group's own discipline.
-          final geometry = TimelineGeometry.forDay(
-            nowMinutes: 552, // 9:12
-            firstStartMinutes: 540, // w1 starts 9:00
-            lastEndMinutes: 625, // w2 ends 10:25
-            liveStartMinutes: 540,
-            liveEndMinutes: 565, // w1 ends 9:25
-          );
+        // Recomputed from the fixture's own numbers, never a hard-coded
+        // pixel constant — mirrors the CAL-01 group's own discipline.
+        final geometry = TimelineGeometry.forDay(
+          nowMinutes: 552, // 9:12
+          firstStartMinutes: 540, // w1 starts 9:00
+          lastEndMinutes: 625, // w2 ends 10:25
+          liveStartMinutes: 540,
+          liveEndMinutes: 565, // w1 ends 9:25
+        );
 
-          final liveRowTop = tester.getTopLeft(find.byType(LiveRowCard)).dy;
-          final liveRowBottom =
-              liveRowTop + tester.getSize(find.byType(LiveRowCard)).height;
-          final lineTop = tester.getTopLeft(find.byType(NowLineOverlay)).dy;
+        final liveRowTop = tester.getTopLeft(find.byType(LiveRowCard)).dy;
+        final liveRowBottom =
+            liveRowTop + tester.getSize(find.byType(LiveRowCard)).height;
+        final lineTop = tester.getTopLeft(find.byType(NowLineOverlay)).dy;
 
-          // The live row starts exactly at the Stack's own top here
-          // (rangeStart == firstStartMinutes == liveStartMinutes == 540),
-          // so liveRowTop doubles as the Stack's top in the same global
-          // coordinate frame — the delta below is directly comparable to
-          // geometry's own arithmetic.
-          expect(
-            lineTop - liveRowTop,
-            geometry.yFor(552) - kNowLineHeight / 2 - geometry.yFor(540),
-          );
-          expect(lineTop, greaterThan(liveRowTop));
-          expect(lineTop, lessThan(liveRowBottom));
-          expect(tester.takeException(), isNull);
-        },
-      );
+        // The live row starts exactly at the Stack's own top here
+        // (rangeStart == firstStartMinutes == liveStartMinutes == 540),
+        // so liveRowTop doubles as the Stack's top in the same global
+        // coordinate frame — the delta below is directly comparable to
+        // geometry's own arithmetic.
+        expect(
+          lineTop - liveRowTop,
+          geometry.yFor(552) - kNowLineHeight / 2 - geometry.yFor(540),
+        );
+        expect(lineTop, greaterThan(liveRowTop));
+        expect(lineTop, lessThan(liveRowBottom));
+        expect(tester.takeException(), isNull);
+      });
 
-      testWidgets(
-        'motion — a one-minute tick advances the line by exactly '
-        'kPixelsPerMinute',
-        (tester) async {
-          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
-          final lineTopAt912 = tester.getTopLeft(find.byType(NowLineOverlay)).dy;
+      testWidgets('motion — a one-minute tick advances the line by exactly '
+          'kPixelsPerMinute', (tester) async {
+        await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+        final lineTopAt912 = tester.getTopLeft(find.byType(NowLineOverlay)).dy;
 
-          // Full unmount between clocks (Pitfall 8) — see the no-suppression
-          // test's comment above for why this is load-bearing, not optional.
-          await tester.pumpWidget(const SizedBox.shrink());
+        // Full unmount between clocks (Pitfall 8) — see the no-suppression
+        // test's comment above for why this is load-bearing, not optional.
+        await tester.pumpWidget(const SizedBox.shrink());
 
-          await pumpAt(tester, DateTime(2026, 8, 7, 9, 13));
-          final lineTopAt913 = tester.getTopLeft(find.byType(NowLineOverlay)).dy;
+        await pumpAt(tester, DateTime(2026, 8, 7, 9, 13));
+        final lineTopAt913 = tester.getTopLeft(find.byType(NowLineOverlay)).dy;
 
-          expect(lineTopAt913 - lineTopAt912, kPixelsPerMinute);
-          expect(tester.takeException(), isNull);
-        },
-      );
+        expect(lineTopAt913 - lineTopAt912, kPixelsPerMinute);
+        expect(tester.takeException(), isNull);
+      });
 
       testWidgets(
         'PreStart is representable — the line never renders above the top '
@@ -1044,28 +1037,25 @@ void main() {
       // GapBeforeNext — no live row — i.e. the exact state where the chip
       // used to be guaranteed to show, so it is the strongest place to assert
       // it is really gone rather than merely suppressed.
-      testWidgets(
-        'no chip text in a non-live state — the chip is retired, not '
-        'suppressed',
-        (tester) async {
-          await pumpAt(
-            tester,
-            DateTime(2026, 8, 7, 9, 30),
-            chunks: twoChunkFixture(firstResolved: true),
-          );
+      testWidgets('no chip text in a non-live state — the chip is retired, not '
+          'suppressed', (tester) async {
+        await pumpAt(
+          tester,
+          DateTime(2026, 8, 7, 9, 30),
+          chunks: twoChunkFixture(firstResolved: true),
+        );
 
-          expect(find.byType(LiveRowCard), findsNothing);
-          expect(find.text('9:30a'), findsNothing);
-          expect(
-            find.descendant(
-              of: find.byType(NowLineOverlay),
-              matching: find.byType(Text),
-            ),
-            findsNothing,
-          );
-          expect(tester.takeException(), isNull);
-        },
-      );
+        expect(find.byType(LiveRowCard), findsNothing);
+        expect(find.text('9:30a'), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(NowLineOverlay),
+            matching: find.byType(Text),
+          ),
+          findsNothing,
+        );
+        expect(tester.takeException(), isNull);
+      });
 
       // The successor to G-01's gutter-confinement assertion. G-01 guarded a
       // chip that no longer exists, but the underlying question — where the
@@ -1134,48 +1124,45 @@ void main() {
         },
       );
 
-      testWidgets(
-        'G-03: no time chip over the live row — the full-bleed card '
-        'leaves no gutter',
-        (tester) async {
-          // Work chunk (not break) live, clock mid-chunk — the tall
-          // variant with the Complete/Skip action row, per the plan's own
-          // instruction: the break variant is shorter and its extra
-          // headroom is exactly what masked this defect through two prior
-          // rounds of checking (26-UAT.md G-03).
-          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+      testWidgets('G-03: no time chip over the live row — the full-bleed card '
+          'leaves no gutter', (tester) async {
+        // Work chunk (not break) live, clock mid-chunk — the tall
+        // variant with the Complete/Skip action row, per the plan's own
+        // instruction: the break variant is shorter and its extra
+        // headroom is exactly what masked this defect through two prior
+        // rounds of checking (26-UAT.md G-03).
+        await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
 
-          // The live row is genuinely present and is the WORK variant —
-          // otherwise this test would prove nothing.
-          expect(find.byType(LiveRowCard), findsOneWidget);
+        // The live row is genuinely present and is the WORK variant —
+        // otherwise this test would prove nothing.
+        expect(find.byType(LiveRowCard), findsOneWidget);
 
-          // No chip: no Text descendant of the overlay at all.
-          expect(
-            find.descendant(
-              of: find.byType(NowLineOverlay),
-              matching: find.byType(Text),
+        // No chip: no Text descendant of the overlay at all.
+        expect(
+          find.descendant(
+            of: find.byType(NowLineOverlay),
+            matching: find.byType(Text),
+          ),
+          findsNothing,
+        );
+
+        // The rule survives — a future "fix" cannot satisfy this test by
+        // deleting the whole overlay, only the chip. Exactly one coloured
+        // Container remains (the rule); with the chip's own Container
+        // gone too, "the rule is still there" and "the chip really is
+        // gone" are both provable from the same finder.
+        expect(
+          find.descendant(
+            of: find.byType(NowLineOverlay),
+            matching: find.byWidgetPredicate(
+              (widget) => widget is Container && widget.color != null,
             ),
-            findsNothing,
-          );
+          ),
+          findsOneWidget,
+        );
 
-          // The rule survives — a future "fix" cannot satisfy this test by
-          // deleting the whole overlay, only the chip. Exactly one coloured
-          // Container remains (the rule); with the chip's own Container
-          // gone too, "the rule is still there" and "the chip really is
-          // gone" are both provable from the same finder.
-          expect(
-            find.descendant(
-              of: find.byType(NowLineOverlay),
-              matching: find.byWidgetPredicate(
-                (widget) => widget is Container && widget.color != null,
-              ),
-            ),
-            findsOneWidget,
-          );
-
-          expect(tester.takeException(), isNull);
-        },
-      );
+        expect(tester.takeException(), isNull);
+      });
 
       testWidgets(
         'semantics — exactly one "Now — 9:12 AM" node; the chip\'s own '
@@ -1320,42 +1307,37 @@ void main() {
       // temporarily reverted to 0-equivalent pre-fix code, both failed) and
       // GREEN after restoring the fix — see 26-10-SUMMARY.md for the
       // recorded observations.
-      testWidgets(
-        'G-04: the first and last hour-axis labels stay inside the '
-        "Stack's own painted bounds",
-        (tester) async {
-          await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
+      testWidgets('G-04: the first and last hour-axis labels stay inside the '
+          "Stack's own painted bounds", (tester) async {
+        await pumpAt(tester, DateTime(2026, 8, 7, 9, 12));
 
-          final stackRect = tester.getRect(
-            find
-                .ancestor(
-                  of: find.byType(HourAxisLine).first,
-                  matching: find.byType(Stack),
-                )
-                .first,
-          );
-          final firstLabelRect = tester.getRect(
-            find.byType(HourAxisLine).first,
-          );
-          final lastLabelRect = tester.getRect(find.byType(HourAxisLine).last);
+        final stackRect = tester.getRect(
+          find
+              .ancestor(
+                of: find.byType(HourAxisLine).first,
+                matching: find.byType(Stack),
+              )
+              .first,
+        );
+        final firstLabelRect = tester.getRect(find.byType(HourAxisLine).first);
+        final lastLabelRect = tester.getRect(find.byType(HourAxisLine).last);
 
-          expect(
-            firstLabelRect.top,
-            greaterThanOrEqualTo(stackRect.top),
-            reason:
-                'G-04: the FIRST hour-axis label must not be sheared above '
-                'the Stack',
-          );
-          expect(
-            lastLabelRect.bottom,
-            lessThanOrEqualTo(stackRect.bottom),
-            reason:
-                'G-04: the LAST hour-axis label must not be sheared below '
-                'the Stack',
-          );
-          expect(tester.takeException(), isNull);
-        },
-      );
+        expect(
+          firstLabelRect.top,
+          greaterThanOrEqualTo(stackRect.top),
+          reason:
+              'G-04: the FIRST hour-axis label must not be sheared above '
+              'the Stack',
+        );
+        expect(
+          lastLabelRect.bottom,
+          lessThanOrEqualTo(stackRect.bottom),
+          reason:
+              'G-04: the LAST hour-axis label must not be sheared below '
+              'the Stack',
+        );
+        expect(tester.takeException(), isNull);
+      });
 
       testWidgets(
         'G-05: the now-line stays inside the Stack at the EXACT boundary '
@@ -1440,73 +1422,72 @@ void main() {
       // across every test in the file).
       tearDown(DevClock.resetForTest);
 
-      testWidgets(
-        'centres on open in every NowState, including DayComplete '
-        '(closes the Phase 24 UAT gap by construction)',
-        (tester) async {
-          // Table-driven (mirrors the CAL-01/CAL-02 groups' own
-          // convention) so a future added NowState is obviously missing
-          // from this list. Every clock below is reached on the SAME
-          // longDayFixture() — no per-row resolution changes needed,
-          // since resolveNowState's classification is clock-driven alone
-          // for this fixture's fully-fixed completion pattern.
-          //
-          // expectPositive is false ONLY for PreStart: nowMinutes ==
-          // rangeStart by construction there (the rendered range starts
-          // AT "now" when now precedes the first chunk), so the clamped
-          // target is exactly 0 — there is nothing before "now" to
-          // scroll past yet, which is the correct, not a degenerate,
-          // outcome.
-          final table = <String, (DateTime, bool expectPositive)>{
-            'PreStart': (DateTime(2026, 8, 7, 7, 0), false),
-            'Active': (DateTime(2026, 8, 7, 12, 45), true),
-            'Overdue': (DateTime(2026, 8, 7, 13, 10), true),
-            'GapBeforeNext': (DateTime(2026, 8, 7, 12, 30), true),
-            // The exact state Dan's Phase 24 UAT found un-scrolled — this
-            // row is the literal regression guard, not a formality.
-            'DayComplete': (DateTime(2026, 8, 7, 14, 30), true),
-          };
+      testWidgets('centres on open in every NowState, including DayComplete '
+          '(closes the Phase 24 UAT gap by construction)', (tester) async {
+        // Table-driven (mirrors the CAL-01/CAL-02 groups' own
+        // convention) so a future added NowState is obviously missing
+        // from this list. Every clock below is reached on the SAME
+        // longDayFixture() — no per-row resolution changes needed,
+        // since resolveNowState's classification is clock-driven alone
+        // for this fixture's fully-fixed completion pattern.
+        //
+        // expectPositive is false ONLY for PreStart: nowMinutes ==
+        // rangeStart by construction there (the rendered range starts
+        // AT "now" when now precedes the first chunk), so the clamped
+        // target is exactly 0 — there is nothing before "now" to
+        // scroll past yet, which is the correct, not a degenerate,
+        // outcome.
+        final table = <String, (DateTime, bool expectPositive)>{
+          'PreStart': (DateTime(2026, 8, 7, 7, 0), false),
+          'Active': (DateTime(2026, 8, 7, 12, 45), true),
+          'Overdue': (DateTime(2026, 8, 7, 13, 10), true),
+          'GapBeforeNext': (DateTime(2026, 8, 7, 12, 30), true),
+          // The exact state Dan's Phase 24 UAT found un-scrolled — this
+          // row is the literal regression guard, not a formality.
+          'DayComplete': (DateTime(2026, 8, 7, 14, 30), true),
+        };
 
-          for (final entry in table.entries) {
-            final (clock, expectPositive) = entry.value;
-            final schedule = DailySchedule(
-              dateYmd: _todayYmd(),
-              moodIndex: 3,
-              chunks: longDayFixture(),
-            );
-            await _pumpTodayScreen(
-              tester,
-              scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
-              now: () => clock,
-            );
-            await tester.pumpAndSettle();
+        for (final entry in table.entries) {
+          final (clock, expectPositive) = entry.value;
+          final schedule = DailySchedule(
+            dateYmd: _todayYmd(),
+            moodIndex: 3,
+            chunks: longDayFixture(),
+          );
+          await _pumpTodayScreen(
+            tester,
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+            now: () => clock,
+          );
+          await tester.pumpAndSettle();
 
-            final scrollable = tester.state<ScrollableState>(
-              find.byType(Scrollable).first,
+          final scrollable = tester.state<ScrollableState>(
+            find.byType(Scrollable).first,
+          );
+          if (expectPositive) {
+            expect(
+              scrollable.position.pixels,
+              greaterThan(0),
+              reason:
+                  '${entry.key}: the computed target is > 0 here, so '
+                  'the settled offset must be too',
             );
-            if (expectPositive) {
-              expect(
-                scrollable.position.pixels,
-                greaterThan(0),
-                reason: '${entry.key}: the computed target is > 0 here, so '
-                    'the settled offset must be too',
-              );
-            } else {
-              expect(
-                scrollable.position.pixels,
-                0.0,
-                reason: '${entry.key}: now IS the top of the rendered '
-                    'range here, so the clamped target is legitimately 0',
-              );
-            }
-            expect(tester.takeException(), isNull);
-
-            // Full unmount before the next clock (Pitfall 8) — _nowFn is
-            // late final, set once in initState.
-            await tester.pumpWidget(const SizedBox.shrink());
+          } else {
+            expect(
+              scrollable.position.pixels,
+              0.0,
+              reason:
+                  '${entry.key}: now IS the top of the rendered '
+                  'range here, so the clamped target is legitimately 0',
+            );
           }
-        },
-      );
+          expect(tester.takeException(), isNull);
+
+          // Full unmount before the next clock (Pitfall 8) — _nowFn is
+          // late final, set once in initState.
+          await tester.pumpWidget(const SizedBox.shrink());
+        }
+      });
 
       testWidgets('the target is the clamped centred-on-now value', (
         tester,
@@ -1695,9 +1676,7 @@ void main() {
           );
           await _pumpTodayScreen(
             tester,
-            scheduleNotifier: _FakeScheduleNotifierWithSchedule(
-              freshSchedule,
-            ),
+            scheduleNotifier: _FakeScheduleNotifierWithSchedule(freshSchedule),
             now: () => injectedNow,
           );
           await tester.pumpAndSettle();
@@ -2255,104 +2234,95 @@ void main() {
             syntheticStartMinutes: 505,
             durationMinutes: breakDurationMinutes,
           ),
-          _workChunk(id: 'w2', syntheticStartMinutes: 505 + breakDurationMinutes),
+          _workChunk(
+            id: 'w2',
+            syntheticStartMinutes: 505 + breakDurationMinutes,
+          ),
         ],
       );
     }
 
-    testWidgets(
-      'SEEBREAK-01 tier boundary (Phase 32, TAPBREAK-03 rewrite): a '
-      '5-minute break renders one Card and no Divider; a 30-minute break '
-      'renders the full tier',
-      (tester) async {
-        // Phase 32 (D-32-02) retires the sub-compact tier's reachability
-        // through TodayScreen entirely — the screen's own density ternary
-        // (today_screen.dart) is now a two-way split, matching the work
-        // ternary immediately below it. This test used to derive a
-        // three-way boundary against kSubCompactBreakMinHeight; that
-        // premise no longer holds, so the test is rewritten against the
-        // new two-way split rather than merely re-deriving its old
-        // boundary math. `ChunkCardDensity.subCompact` itself still exists
-        // (retired outright by 32-02, not this plan) and is still directly
-        // constructible in `today_row_widgets_test.dart`'s own unit tests —
-        // only its reachability THROUGH the screen is gone, which is
-        // exactly what this test now proves.
-        await _pumpTodayScreen(
-          tester,
-          scheduleNotifier: _FakeScheduleNotifierWithSchedule(
-            breakBoundaryFixture(5),
-          ),
-          now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
-        );
-        // Scoped to the break's own confined ClipRect, not "any ChunkCard"
-        // — the fixture's two work chunks (w1/w2) are ChunkCards too, and
-        // each renders its own Card.
-        final shortBreakClipRect = find
-            .ancestor(
-              of: find.text('Short break'),
-              matching: find.byType(ClipRect),
-            )
-            .first;
-        expect(
-          find.descendant(
-            of: shortBreakClipRect,
-            matching: find.byType(Divider),
-          ),
-          findsNothing,
-          reason:
-              'a 5-minute break must never render the retired sub-compact '
-              "tier's Dividers through the screen any more",
-        );
-        expect(
-          find.descendant(
-            of: shortBreakClipRect,
-            matching: find.byType(Card),
-          ),
-          findsOneWidget,
-          reason:
-              'a 5-minute break must render the new compact tier\'s '
-              'bordered Card',
-        );
+    testWidgets('SEEBREAK-01 tier boundary (Phase 32, TAPBREAK-03 rewrite): a '
+        '5-minute break renders one Card and no Divider; a 30-minute break '
+        'renders the full tier', (tester) async {
+      // Phase 32 (D-32-02) retires the sub-compact tier's reachability
+      // through TodayScreen entirely — the screen's own density ternary
+      // (today_screen.dart) is now a two-way split, matching the work
+      // ternary immediately below it. This test used to derive a
+      // three-way boundary against kSubCompactBreakMinHeight; that
+      // premise no longer holds, so the test is rewritten against the
+      // new two-way split rather than merely re-deriving its old
+      // boundary math. `ChunkCardDensity.subCompact` itself still exists
+      // (retired outright by 32-02, not this plan) and is still directly
+      // constructible in `today_row_widgets_test.dart`'s own unit tests —
+      // only its reachability THROUGH the screen is gone, which is
+      // exactly what this test now proves.
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(
+          breakBoundaryFixture(5),
+        ),
+        now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
+      );
+      // Scoped to the break's own confined ClipRect, not "any ChunkCard"
+      // — the fixture's two work chunks (w1/w2) are ChunkCards too, and
+      // each renders its own Card.
+      final shortBreakClipRect = find
+          .ancestor(
+            of: find.text('Short break'),
+            matching: find.byType(ClipRect),
+          )
+          .first;
+      expect(
+        find.descendant(of: shortBreakClipRect, matching: find.byType(Divider)),
+        findsNothing,
+        reason:
+            'a 5-minute break must never render the retired sub-compact '
+            "tier's Dividers through the screen any more",
+      );
+      expect(
+        find.descendant(of: shortBreakClipRect, matching: find.byType(Card)),
+        findsOneWidget,
+        reason:
+            'a 5-minute break must render the new compact tier\'s '
+            'bordered Card',
+      );
 
-        // TodayScreenState._nowFn is late final, set once in initState — a
-        // second pumpWidget with a different clock is silently ignored
-        // without a full unmount first.
-        await tester.pumpWidget(const SizedBox.shrink());
+      // TodayScreenState._nowFn is late final, set once in initState — a
+      // second pumpWidget with a different clock is silently ignored
+      // without a full unmount first.
+      await tester.pumpWidget(const SizedBox.shrink());
 
-        await _pumpTodayScreen(
-          tester,
-          scheduleNotifier: _FakeScheduleNotifierWithSchedule(
-            breakBoundaryFixture(30),
-          ),
-          now: () => DateTime(2026, 8, 7, 18, 0),
-        );
-        // breakBoundaryFixture builds a shortBreak-typed chunk regardless
-        // of duration — its title stays 'Short break' even at 30 minutes
-        // (title is keyed to chunk TYPE, tier is keyed to slot HEIGHT).
-        // At 30 min (180dp @ 6.0), the slot clears kFullBreakMinHeight
-        // (88.0), so this proves the full tier specifically, not a
-        // long-break title.
-        expect(
-          find.text('Short break'),
-          findsOneWidget,
-          reason: 'a 30-minute break must still render its title',
-        );
-        final fullTierClipRect = find
-            .ancestor(
-              of: find.text('Short break'),
-              matching: find.byType(ClipRect),
-            )
-            .first;
-        expect(
-          find.descendant(
-            of: fullTierClipRect,
-            matching: find.byType(Divider),
-          ),
-          findsNothing,
-          reason: 'the full tier has never rendered a Divider',
-        );
-      },
-    );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(
+          breakBoundaryFixture(30),
+        ),
+        now: () => DateTime(2026, 8, 7, 18, 0),
+      );
+      // breakBoundaryFixture builds a shortBreak-typed chunk regardless
+      // of duration — its title stays 'Short break' even at 30 minutes
+      // (title is keyed to chunk TYPE, tier is keyed to slot HEIGHT).
+      // At 30 min (180dp @ 6.0), the slot clears kFullBreakMinHeight
+      // (88.0), so this proves the full tier specifically, not a
+      // long-break title.
+      expect(
+        find.text('Short break'),
+        findsOneWidget,
+        reason: 'a 30-minute break must still render its title',
+      );
+      final fullTierClipRect = find
+          .ancestor(
+            of: find.text('Short break'),
+            matching: find.byType(ClipRect),
+          )
+          .first;
+      expect(
+        find.descendant(of: fullTierClipRect, matching: find.byType(Divider)),
+        findsNothing,
+        reason: 'the full tier has never rendered a Divider',
+      );
+    });
 
     testWidgets(
       'SEEBREAK-02: a 5-minute break occupies exactly 30.0dp of slot at '
@@ -2470,14 +2440,10 @@ void main() {
       // whenever the fixture is DayComplete-eligible for that card.
       Finder chunkDismissibles() => find.byWidgetPredicate(
         (widget) =>
-            widget is Dismissible &&
-            widget.key != const Key('end_of_day_card'),
+            widget is Dismissible && widget.key != const Key('end_of_day_card'),
       );
 
-      DailySchedule gridFixture(
-        int durationMinutes, {
-        bool isSkipped = false,
-      }) {
+      DailySchedule gridFixture(int durationMinutes, {bool isSkipped = false}) {
         return DailySchedule(
           dateYmd: _todayYmd(),
           moodIndex: 3,
@@ -2581,14 +2547,12 @@ void main() {
           expect(
             breakRect.top,
             closeTo(precedingRect.bottom, 0.5),
-            reason:
-                'a non-zero gap here means the rows are not truly adjacent',
+            reason: 'a non-zero gap here means the rows are not truly adjacent',
           );
           expect(
             followingRect.top,
             closeTo(breakRect.bottom, 0.5),
-            reason:
-                'a non-zero gap here means the rows are not truly adjacent',
+            reason: 'a non-zero gap here means the rows are not truly adjacent',
           );
 
           // Independent authority check: the break's own painted top must
@@ -2694,123 +2658,117 @@ void main() {
         },
       );
 
-      testWidgets(
-        'a mixed day renders every row independently (UI-SPEC E3 '
-        'populated / zero-one-many)',
-        (tester) async {
-          final schedule = DailySchedule(
-            dateYmd: _todayYmd(),
-            moodIndex: 3,
-            chunks: [
-              _workChunk(
-                id: 'w1',
-                syntheticStartMinutes: 480,
-                durationMinutes: 25,
-                isCompleted: true,
-              ),
-              _workChunk(
-                id: 'w2',
-                syntheticStartMinutes: 505,
-                durationMinutes: 25,
-                isSkipped: true,
-              ),
-              _breakChunk(
-                id: 'b1',
-                syntheticStartMinutes: 530,
-                durationMinutes: 5,
-                isSkipped: true,
-              ),
-              _breakChunk(
-                id: 'b2',
-                chunkTypeIndex: ChunkType.longBreak.index,
-                syntheticStartMinutes: 535,
-                durationMinutes: 30,
-              ),
-              _workChunk(
-                id: 'w3',
-                syntheticStartMinutes: 565,
-                durationMinutes: 25,
-              ),
-            ],
-          );
-          await _pumpTodayScreen(
-            tester,
-            scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
-            now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
-          );
-
-          // Phase 32 (D-32-02, Task 2 — Kind C rewrite): the gesture used
-          // to be attached per-row by chunk.id regardless of chunk type,
-          // so break count had no bearing on the Dismissible count. Now
-          // breaks never reach `Dismissible` at all (button-only) — only
-          // the 3 work chunks (w1, w2, w3) have one; b1/b2 have none.
-          expect(chunkDismissibles(), findsNWidgets(3));
-
-          final shortBreakRect = tester.getSize(
-            find
-                .ancestor(
-                  of: find.text('Short break'),
-                  matching: find.byType(ClipRect),
-                )
-                .first,
-          );
-          expect(shortBreakRect.height, 5 * kPixelsPerMinute);
-
-          final longBreakRect = tester.getSize(
-            find
-                .ancestor(
-                  of: find.text('Long break'),
-                  matching: find.byType(ClipRect),
-                )
-                .first,
-          );
-          expect(longBreakRect.height, 30 * kPixelsPerMinute);
-
-          // Phase 32 (Kind C rewrite): the compact tier (the skipped
-          // short break, b1) no longer renders an Opacity(0.5) mute — the
-          // UI-SPEC's redesigned compact tier signals "resolved" via the
-          // title's strikethrough plus the rail swapping from
-          // BreakSkipButton to BreakSkippedIndicator's 'skipped' text,
-          // not via a dimmed whole-row Opacity. The full tier (the
-          // unresolved long break, b2) is unchanged and still uses
-          // Opacity — asserted below, unchanged from before this phase.
-          final shortBreakTitle = tester.widget<Text>(
-            find.text('Short break'),
-          );
-          expect(
-            shortBreakTitle.style?.decoration,
-            TextDecoration.lineThrough,
-            reason:
-                'the skipped short break must still render struck through',
-          );
-          expect(
-            find.descendant(
-              of: find.byType(ChunkCard),
-              matching: find.byType(BreakSkippedIndicator),
+      testWidgets('a mixed day renders every row independently (UI-SPEC E3 '
+          'populated / zero-one-many)', (tester) async {
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 25,
+              isCompleted: true,
             ),
-            findsOneWidget,
-            reason:
-                'the skipped short break\'s rail must show the resolved '
-                'indicator, not the Skip button',
-          );
+            _workChunk(
+              id: 'w2',
+              syntheticStartMinutes: 505,
+              durationMinutes: 25,
+              isSkipped: true,
+            ),
+            _breakChunk(
+              id: 'b1',
+              syntheticStartMinutes: 530,
+              durationMinutes: 5,
+              isSkipped: true,
+            ),
+            _breakChunk(
+              id: 'b2',
+              chunkTypeIndex: ChunkType.longBreak.index,
+              syntheticStartMinutes: 535,
+              durationMinutes: 30,
+            ),
+            _workChunk(
+              id: 'w3',
+              syntheticStartMinutes: 565,
+              durationMinutes: 25,
+            ),
+          ],
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => DateTime(2026, 8, 7, 18, 0), // DayComplete
+        );
 
-          final longBreakOpacity = tester.widget<Opacity>(
-            find
-                .ancestor(
-                  of: find.text('Long break'),
-                  matching: find.byType(Opacity),
-                )
-                .first,
-          );
-          expect(
-            longBreakOpacity.opacity,
-            1.0,
-            reason:
-                'the unresolved long break must not render the resolved '
-                'treatment',
-          );
-        },
-      );
+        // Phase 32 (D-32-02, Task 2 — Kind C rewrite): the gesture used
+        // to be attached per-row by chunk.id regardless of chunk type,
+        // so break count had no bearing on the Dismissible count. Now
+        // breaks never reach `Dismissible` at all (button-only) — only
+        // the 3 work chunks (w1, w2, w3) have one; b1/b2 have none.
+        expect(chunkDismissibles(), findsNWidgets(3));
+
+        final shortBreakRect = tester.getSize(
+          find
+              .ancestor(
+                of: find.text('Short break'),
+                matching: find.byType(ClipRect),
+              )
+              .first,
+        );
+        expect(shortBreakRect.height, 5 * kPixelsPerMinute);
+
+        final longBreakRect = tester.getSize(
+          find
+              .ancestor(
+                of: find.text('Long break'),
+                matching: find.byType(ClipRect),
+              )
+              .first,
+        );
+        expect(longBreakRect.height, 30 * kPixelsPerMinute);
+
+        // Phase 32 (Kind C rewrite): the compact tier (the skipped
+        // short break, b1) no longer renders an Opacity(0.5) mute — the
+        // UI-SPEC's redesigned compact tier signals "resolved" via the
+        // title's strikethrough plus the rail swapping from
+        // BreakSkipButton to BreakSkippedIndicator's 'skipped' text,
+        // not via a dimmed whole-row Opacity. The full tier (the
+        // unresolved long break, b2) is unchanged and still uses
+        // Opacity — asserted below, unchanged from before this phase.
+        final shortBreakTitle = tester.widget<Text>(find.text('Short break'));
+        expect(
+          shortBreakTitle.style?.decoration,
+          TextDecoration.lineThrough,
+          reason: 'the skipped short break must still render struck through',
+        );
+        expect(
+          find.descendant(
+            of: find.byType(ChunkCard),
+            matching: find.byType(BreakSkippedIndicator),
+          ),
+          findsOneWidget,
+          reason:
+              'the skipped short break\'s rail must show the resolved '
+              'indicator, not the Skip button',
+        );
+
+        final longBreakOpacity = tester.widget<Opacity>(
+          find
+              .ancestor(
+                of: find.text('Long break'),
+                matching: find.byType(Opacity),
+              )
+              .first,
+        );
+        expect(
+          longBreakOpacity.opacity,
+          1.0,
+          reason:
+              'the unresolved long break must not render the resolved '
+              'treatment',
+        );
+      });
     });
   });
 
@@ -2847,113 +2805,109 @@ void main() {
       );
     }
 
-    testWidgets(
-      'TAPBREAK-01 tracer: a tap on the Skip rail skips exactly that '
-      'break, end to end, with no swipe anywhere in its tree',
-      (tester) async {
-        final handle = tester.ensureSemantics();
-        final fake = _FakeScheduleNotifierWithSchedule(tapBreakTracerFixture());
-        await _pumpTodayScreen(
-          tester,
-          scheduleNotifier: fake,
-          now: () => DateTime(2026, 8, 7, 9, 0), // DayComplete
-        );
-        // Let CAL-03's scroll-to-now-on-open animation fully settle before
-        // computing rects or tapping. Without this, a synthetic tap's
-        // down/up pair can straddle an in-flight scroll frame: the row
-        // shifts between them, the gesture arena reads that as movement,
-        // and the InkWell's tap never resolves — silently, with no thrown
-        // exception. Discovered empirically while building this test.
-        await tester.pumpAndSettle();
+    testWidgets('TAPBREAK-01 tracer: a tap on the Skip rail skips exactly that '
+        'break, end to end, with no swipe anywhere in its tree', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final fake = _FakeScheduleNotifierWithSchedule(tapBreakTracerFixture());
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: fake,
+        now: () => DateTime(2026, 8, 7, 9, 0), // DayComplete
+      );
+      // Let CAL-03's scroll-to-now-on-open animation fully settle before
+      // computing rects or tapping. Without this, a synthetic tap's
+      // down/up pair can straddle an in-flight scroll frame: the row
+      // shifts between them, the gesture arena reads that as movement,
+      // and the InkWell's tap never resolves — silently, with no thrown
+      // exception. Discovered empirically while building this test.
+      await tester.pumpAndSettle();
 
-        // The break row's own confined paint boundary — the same finder
-        // pattern every prior phase's geometry assertions in this file use.
-        final breakClipRect = find
-            .ancestor(
-              of: find.text('Short break'),
-              matching: find.byType(ClipRect),
-            )
-            .first;
+      // The break row's own confined paint boundary — the same finder
+      // pattern every prior phase's geometry assertions in this file use.
+      final breakClipRect = find
+          .ancestor(
+            of: find.text('Short break'),
+            matching: find.byType(ClipRect),
+          )
+          .first;
 
-        // TAPBREAK-02: the break's painted extent is still exactly its
-        // duration, derived symbolically from the scale constant — this is
-        // not one of the suite's deliberate bare-literal canaries.
-        expect(
-          tester.getSize(breakClipRect).height,
-          5 * kPixelsPerMinute,
-          reason:
-              'a break row must still occupy exactly duration x '
-              'kPixelsPerMinute of slot after this phase',
-        );
+      // TAPBREAK-02: the break's painted extent is still exactly its
+      // duration, derived symbolically from the scale constant — this is
+      // not one of the suite's deliberate bare-literal canaries.
+      expect(
+        tester.getSize(breakClipRect).height,
+        5 * kPixelsPerMinute,
+        reason:
+            'a break row must still occupy exactly duration x '
+            'kPixelsPerMinute of slot after this phase',
+      );
 
-        // TAPBREAK-01/D-32-03: the Skip rail measures exactly
-        // kBreakSkipButtonWidth wide by the row's own full height, and is
-        // exactly one InkWell — one tappable unit, not two zones.
-        final skipButton = find.descendant(
+      // TAPBREAK-01/D-32-03: the Skip rail measures exactly
+      // kBreakSkipButtonWidth wide by the row's own full height, and is
+      // exactly one InkWell — one tappable unit, not two zones.
+      final skipButton = find.descendant(
+        of: breakClipRect,
+        matching: find.byType(BreakSkipButton),
+      );
+      expect(skipButton, findsOneWidget);
+      final skipButtonSize = tester.getSize(skipButton);
+      expect(skipButtonSize.width, kBreakSkipButtonWidth);
+      expect(skipButtonSize.height, 5 * kPixelsPerMinute);
+      expect(
+        find.descendant(of: breakClipRect, matching: find.byType(InkWell)),
+        findsOneWidget,
+      );
+
+      // TAPBREAK-03: the compact tier renders a real bordered Card, not
+      // the retired hairline treatment.
+      expect(
+        find.descendant(of: breakClipRect, matching: find.byType(Card)),
+        findsOneWidget,
+      );
+
+      // Companion invariant (assumption-delta decision, 32-01-PLAN.md): a
+      // break never reaches SwipeableRowShell, and no Dismissible exists
+      // anywhere in its tree. This assertion goes red the instant a
+      // future phase reintroduces the singular gesture-vocabulary
+      // assumption D-32-02 just retired.
+      expect(
+        find.descendant(
           of: breakClipRect,
-          matching: find.byType(BreakSkipButton),
-        );
-        expect(skipButton, findsOneWidget);
-        final skipButtonSize = tester.getSize(skipButton);
-        expect(skipButtonSize.width, kBreakSkipButtonWidth);
-        expect(skipButtonSize.height, 5 * kPixelsPerMinute);
-        expect(
-          find.descendant(of: breakClipRect, matching: find.byType(InkWell)),
-          findsOneWidget,
-        );
+          matching: find.byType(SwipeableRowShell),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: breakClipRect, matching: find.byType(Dismissible)),
+        findsNothing,
+      );
 
-        // TAPBREAK-03: the compact tier renders a real bordered Card, not
-        // the retired hairline treatment.
-        expect(
-          find.descendant(of: breakClipRect, matching: find.byType(Card)),
-          findsOneWidget,
-        );
+      // The Skip button carries its own reachable Semantics(button: true,
+      // ...) node — proof that no outer excludeSemantics wrapper swallows
+      // it, the single easiest accessibility regression a straight
+      // copy-paste of the retired tier's pattern would have introduced.
+      expect(find.bySemanticsLabel('Skip Short break'), findsOneWidget);
+      expect(tester.takeException(), isNull);
 
-        // Companion invariant (assumption-delta decision, 32-01-PLAN.md): a
-        // break never reaches SwipeableRowShell, and no Dismissible exists
-        // anywhere in its tree. This assertion goes red the instant a
-        // future phase reintroduces the singular gesture-vocabulary
-        // assumption D-32-02 just retired.
-        expect(
-          find.descendant(
-            of: breakClipRect,
-            matching: find.byType(SwipeableRowShell),
-          ),
-          findsNothing,
-        );
-        expect(
-          find.descendant(
-            of: breakClipRect,
-            matching: find.byType(Dismissible),
-          ),
-          findsNothing,
-        );
+      await tester.tap(skipButton);
+      await tester.pumpAndSettle();
 
-        // The Skip button carries its own reachable Semantics(button: true,
-        // ...) node — proof that no outer excludeSemantics wrapper swallows
-        // it, the single easiest accessibility regression a straight
-        // copy-paste of the retired tier's pattern would have introduced.
-        expect(find.bySemanticsLabel('Skip Short break'), findsOneWidget);
-        expect(tester.takeException(), isNull);
+      expect(
+        fake.lastSkippedId,
+        'b1',
+        reason:
+            'a tap on the Skip rail must call markSkipped for the '
+            'break\'s own chunk id',
+      );
+      expect(
+        fake.lastCompletedId,
+        isNull,
+        reason: 'the Skip rail must never call markComplete',
+      );
 
-        await tester.tap(skipButton);
-        await tester.pumpAndSettle();
-
-        expect(
-          fake.lastSkippedId,
-          'b1',
-          reason:
-              'a tap on the Skip rail must call markSkipped for the '
-              'break\'s own chunk id',
-        );
-        expect(
-          fake.lastCompletedId,
-          isNull,
-          reason: 'the Skip rail must never call markComplete',
-        );
-
-        handle.dispose();
-      },
-    );
+      handle.dispose();
+    });
   });
 }

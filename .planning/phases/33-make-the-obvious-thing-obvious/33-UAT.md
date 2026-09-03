@@ -253,51 +253,71 @@ an owner ruling. The Item 5 tap count is still outstanding after four asks.
 
 ## What shipped against this verdict — 2026-09-02, same day
 
-All three of his marks are closed, plus the same-day follow-up ruling on the hatch tones.
-`flutter analyze` clean, **691 tests green** (678 before, +13). Rebuilt and re-served on
-`http://danserver:8143/` — bundle sha `08c452962e89cd62…`, identical on disk and on the wire.
+All three of his marks are closed, plus two follow-up rulings on how breaks and free time separate.
+`flutter analyze` clean, **692 tests green** (678 before, +14). Rebuilt and re-served on
+`http://danserver:8143/` — bundle sha `2bf9b8c8468c8cb4…`, identical on disk and on the wire.
 
 | His words | What changed | Seen |
 |---|---|---|
-| *"i wanted the breaks to have the diagonal lines in them like the sketch"* | New `HatchFill` (`lib/widgets/hatch_fill.dart`) on free time and on **both** break tiers | `shots/11…` |
-| *"the hatch should only be during free time … breaks should be something different … a different color"* (follow-up, same day) | Two tones: free time neutral, breaks **tertiary-tinted** | `shots/12…` |
-| *"i crossed out the text, i don't think it should be there"* | PreStart branch of `_buildEdgeStateLine` deleted — **D-33-01**, reversing D-03's LOCKED copy | `shots/08…` |
-| *"side project should have a color not the same as a break"* | Work card moves to `surfaceContainerLowest`; non-work keeps `surfaceContainer` and gains the hatch | `shots/11…` |
+| *"i wanted the breaks to have the diagonal lines in them like the sketch"* | New `HatchFill` (`lib/widgets/hatch_fill.dart`) — free time only, after three passes | `shots/13…` |
+| *"i crossed out the text, i don't think it should be there"* | PreStart branch of `_buildEdgeStateLine` deleted — **D-33-01**, reversing D-03's LOCKED copy | `shots/13…` |
+| *"side project should have a color not the same as a break"* | Work card moves to `surfaceContainerLowest` | `shots/13…` |
+| *"i still feel like free time and break look too similar"* (2026-09-03) | A break becomes a **tinted** `secondaryContainer` card and drops the hatch entirely | `shots/14…` |
 
-**The vocabulary is three-way, which is what the day actually contains:** work is flat and brightest;
-free time is a NEUTRAL hatch (nothing has claimed this); a break is a TINTED hatch (scheduled, but
-not work). The first pass gave free time and breaks the identical neutral hatch, which made the pair
-*less* separable than before — exactly the question item 2 asks out loud.
+**The day's three kinds of time now read three different ways.** Measured on the rendered page at
+mood 3: work rgb(255,255,255) flat · free time rgb(233,239,235) + neutral diagonals · break
+rgb(205,233,222) flat and tinted.
+
+**It took three passes, and the two dead ends are the useful part of this record.**
+
+1. Free time and breaks got the *identical* neutral hatch. Only the label and the Skip rail told them
+   apart — which made the pair *less* separable than before this phase touched them, the exact
+   question item 2 asks out loud.
+2. Both stayed hatched, and the break's lines got their own hue (`tertiary` at 0.45; free time
+   rgb(228,234,230) vs break rgb(180,195,199), measured on screen). Verdict: *"i still feel like free
+   time and break look too similar."*
+3. The difference moved off TEXTURE and onto FILL. A break is a tinted card; the hatch goes back to
+   meaning free time and nothing else — which is what he asked for in the first place.
+
+**The lesson, promoted into `hatch_fill.dart`'s own doc so it survives this file:** two cards of the
+same colour with different stripes are a spot-the-difference puzzle. Texture is a weak channel for
+"these are different kinds of thing"; fill is a strong one. **Do not answer a future "these look
+alike" report by re-tuning a hatch.**
+
+`secondaryContainer` is the one accent surface this app had not spent — `primaryContainer` is the
+live row, `tertiaryContainer` a commitment, `errorContainer` the Skip rail inside these very cards.
+The break's label moved to `onSecondaryContainer` with it, since M3's contrast guarantees are per
+pair. `HatchFill.breakLines` was **deleted, not left unreferenced.**
 
 The work/break colour half was deliberately solved on the **neutral** ramp rather than with a hue:
 item 4 already flags one card carrying two colour systems, and a new hue would have re-opened
 *"the colors are changing, it's not making a ton of sense"* on the screen next door.
 
-**`secondary` was tried for the break tone and rejected on measurement.** In `ColorScheme.fromSeed`
-it is the neutral-VARIANT hue — within 2-4° of `onSurfaceVariant` at every mood seed this app uses
-(208/210, 160/156, 45/43), differing only in saturation. That is two colours in the source and one
-grey on the screen. `tertiary` is rotated a real distance (49°/47°/90°). Measured on the rendered
-page: free time's lines are rgb(228,234,230) hue 140, a break's rgb(180,195,199) hue 193, on the same
-card background.
-
-**Both tones are one constant each.** `HatchFill.freeTimeLines` (0.10 of `onSurfaceVariant`),
-`HatchFill.breakLines` (0.45 of `tertiary`), `defaultSpacing` 12dp. The sketch's own value was 0.022
-— invisible at arm's length, which is how it came to be dropped without anyone noticing. The break
-tone was rendered at 0.28 first and looked at; it read as extra *weight* rather than a different
-colour, so it went to 0.45. Re-measure the on-screen pair above if either is ever retuned.
-
-**Mutation-tested, per this project's own rule.** Five separate mutations were applied and observed
-RED before the tests were accepted: work fill reverted to `surfaceContainer` (2 failures), the
-free-time hatch removed (1), `hatchSegments` stepped by `spacing` instead of `spacing × √2` (1 — the
+**Mutation-tested, per this project's own rule.** Seven mutations were applied across the three
+passes and each observed RED before its test was accepted — work fill reverted to `surfaceContainer`,
+the free-time hatch removed, `hatchSegments` stepped by `spacing` instead of `spacing × √2` (the
 error that would draw the lines 1.41× too close, which no "is it hatched?" assertion could catch),
-the break tone reverted to `secondary` (1), and the break tone set equal to the free-time tone (1).
-Tree restored green after each.
+the break tone reverted to `secondary`, the break tone set equal to the free-time tone, the break
+FILL reverted to `surfaceContainer`, and the hatch re-added to the compact break. Tree restored green
+after each.
 
-**One of those assertions earned its keep immediately.** The hue-distance check *failed on the first
-implementation* and is why the break tone is `tertiary` rather than `secondary` — the test caught a
-choice that would have shipped as "a different colour" in the source and the same grey on the phone.
-It reads the colour off the live `HatchPainter`, not off the constructor argument, because the
-free-time call site passes `null` and resolves its tone inside `build`.
+**Two assertions caught real mistakes before they shipped, and one of them was mine about the test
+itself.**
+
+- The hue-distance check failed on the first implementation of pass 2 and is why that tone was
+  `tertiary` rather than `secondary`: in `ColorScheme.fromSeed`, `secondary` is the neutral-VARIANT
+  hue, within 2-4° of `onSurfaceVariant` at every mood seed here (208/210, 160/156, 45/43). Two
+  colours in the source, one grey on the screen.
+- That same hue check was then **wrong for pass 3** and had to be replaced rather than satisfied. At
+  mood 1 the two container tokens sit 9.3° apart yet are plainly different — rgb(235,238,243), a
+  near-white grey, against rgb(211,229,245), a pale blue — because the difference is carried by
+  saturation and lightness, not hue. Keeping the hue threshold would have rejected a pair that works
+  and pushed the design toward a number instead of a look. It is now a plain RGB distance, which is
+  blind to which channel does the work. **A metric that was right for a line was wrong for a
+  surface.**
+
+The colour assertions read the live `Card.color` and the live `HatchPainter`, not constructor
+arguments — the free-time call site passes `null` and resolves its tone inside `build`.
 
 **Two banner assertions were DELETED rather than repointed.** `find.textContaining('Nothing until')`
 → `findsNothing` in the active and day-complete states now passes because that string renders

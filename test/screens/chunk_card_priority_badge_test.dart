@@ -13,7 +13,9 @@ ScheduledChunk _stubWorkChunk({String? goalId}) => ScheduledChunk(
 
 void main() {
   group('ChunkCard priority badge', () {
-    testWidgets('shows High badge when goalPriorityWeight is 0.75', (tester) async {
+    testWidgets('shows High badge when goalPriorityWeight is 0.75', (
+      tester,
+    ) async {
       await pumpWithMood(
         tester,
         ChunkCard(
@@ -24,7 +26,9 @@ void main() {
       expect(find.text('High'), findsOneWidget);
     });
 
-    testWidgets('shows Low badge when goalPriorityWeight is 0.25', (tester) async {
+    testWidgets('shows Low badge when goalPriorityWeight is 0.25', (
+      tester,
+    ) async {
       await pumpWithMood(
         tester,
         ChunkCard(
@@ -35,22 +39,20 @@ void main() {
       expect(find.text('Low'), findsOneWidget);
     });
 
-    testWidgets('shows no badge when goalPriorityWeight is null', (tester) async {
-      await pumpWithMood(
-        tester,
-        ChunkCard(chunk: _stubWorkChunk()),
-      );
+    testWidgets('shows no badge when goalPriorityWeight is null', (
+      tester,
+    ) async {
+      await pumpWithMood(tester, ChunkCard(chunk: _stubWorkChunk()));
       expect(find.text('High'), findsNothing);
       expect(find.text('Low'), findsNothing);
     });
 
-    testWidgets('shows no badge when goalPriorityWeight is 0.5 (Normal)', (tester) async {
+    testWidgets('shows no badge when goalPriorityWeight is 0.5 (Normal)', (
+      tester,
+    ) async {
       await pumpWithMood(
         tester,
-        ChunkCard(
-          chunk: _stubWorkChunk(goalId: 'g1'),
-          goalPriorityWeight: 0.5,
-        ),
+        ChunkCard(chunk: _stubWorkChunk(goalId: 'g1'), goalPriorityWeight: 0.5),
       );
       expect(find.text('High'), findsNothing);
       expect(find.text('Low'), findsNothing);

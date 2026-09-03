@@ -338,9 +338,7 @@ void main() {
     // edge, which is what Google Calendar does and what lets the cards sit
     // flush against the gutter with no blank clearance strip.
     testWidgets('renders a circular primary-colored dot centred on the '
-        'content edge', (
-      tester,
-    ) async {
+        'content edge', (tester) async {
       await pumpWithMood(tester, const NowLineOverlay(nowMinutes: 887));
       final dotFinder = find.descendant(
         of: find.byType(NowLineOverlay),
@@ -653,7 +651,8 @@ void main() {
         expect(
           find.byType(InkWell),
           findsOneWidget,
-          reason: 'the Skip rail is the row\'s only interactive child — no '
+          reason:
+              'the Skip rail is the row\'s only interactive child — no '
               'whole-row tap/expand affordance was added alongside it',
         );
       },
@@ -708,20 +707,17 @@ void main() {
       },
     );
 
-    testWidgets(
-      'full: title and time range render; rationale, priority chip, '
-      'valence chip do not; Complete and Skip render',
-      (tester) async {
-        await _pumpDenseChunkCard(tester, ChunkCardDensity.full);
-        expect(find.text('Write the report'), findsOneWidget);
-        expect(find.text('9:00 AM – 9:25 AM'), findsOneWidget);
-        expect(find.text('Deep work'), findsNothing); // rationale suppressed
-        expect(find.text('High'), findsNothing); // _PriorityChip suppressed
-        expect(find.text('Gives'), findsNothing); // _ValenceChip suppressed
-        expect(find.widgetWithText(FilledButton, 'Complete'), findsOneWidget);
-        expect(find.widgetWithText(OutlinedButton, 'Skip'), findsOneWidget);
-      },
-    );
+    testWidgets('full: title and time range render; rationale, priority chip, '
+        'valence chip do not; Complete and Skip render', (tester) async {
+      await _pumpDenseChunkCard(tester, ChunkCardDensity.full);
+      expect(find.text('Write the report'), findsOneWidget);
+      expect(find.text('9:00 AM – 9:25 AM'), findsOneWidget);
+      expect(find.text('Deep work'), findsNothing); // rationale suppressed
+      expect(find.text('High'), findsNothing); // _PriorityChip suppressed
+      expect(find.text('Gives'), findsNothing); // _ValenceChip suppressed
+      expect(find.widgetWithText(FilledButton, 'Complete'), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'Skip'), findsOneWidget);
+    });
 
     testWidgets('compact: only the title renders', (tester) async {
       await _pumpDenseChunkCard(tester, ChunkCardDensity.compact);
@@ -855,10 +851,7 @@ void main() {
             (w) => w is Opacity && w.opacity == 0.5,
           );
           expect(
-            find.descendant(
-              of: find.byType(ChunkCard),
-              matching: mutedOpacity,
-            ),
+            find.descendant(of: find.byType(ChunkCard), matching: mutedOpacity),
             findsOneWidget,
           );
           final titleText = tester.widget<Text>(find.text('Short break'));
@@ -895,14 +888,14 @@ void main() {
             (w) => w is Opacity && w.opacity == 0.5,
           );
           expect(
-            find.descendant(
-              of: find.byType(ChunkCard),
-              matching: mutedOpacity,
-            ),
+            find.descendant(of: find.byType(ChunkCard), matching: mutedOpacity),
             findsNothing,
           );
           final titleText = tester.widget<Text>(find.text('Long break'));
-          expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
+          expect(
+            titleText.style?.decoration,
+            isNot(TextDecoration.lineThrough),
+          );
           expect(find.text('25 min'), findsNothing);
           expect(find.text('skipped'), findsNothing);
           expect(
@@ -945,7 +938,8 @@ void main() {
               matching: find.byType(BreakSkippedIndicator),
             ),
             findsOneWidget,
-            reason: 'a skipped compact break must show the resolved '
+            reason:
+                'a skipped compact break must show the resolved '
                 'indicator in its rail',
           );
           expect(
@@ -954,7 +948,8 @@ void main() {
               matching: find.byType(BreakSkipButton),
             ),
             findsNothing,
-            reason: 'a skipped break must never still show a tappable '
+            reason:
+                'a skipped break must never still show a tappable '
                 'Skip button',
           );
         },
@@ -975,26 +970,25 @@ void main() {
       // row it decorated are both retired.
     });
 
-    testWidgets(
-      'SwipeableChunkCard forwards density for a break '
-      '(regression guard for the forgotten-forward failure mode)',
-      (tester) async {
-        await pumpWithMood(
-          tester,
-          SwipeableChunkCard(
-            chunk: _breakChunk(type: ChunkType.shortBreak),
-            density: ChunkCardDensity.compact,
+    testWidgets('SwipeableChunkCard forwards density for a break '
+        '(regression guard for the forgotten-forward failure mode)', (
+      tester,
+    ) async {
+      await pumpWithMood(
+        tester,
+        SwipeableChunkCard(
+          chunk: _breakChunk(type: ChunkType.shortBreak),
+          density: ChunkCardDensity.compact,
+        ),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(
+            value: _FakeScheduleNotifier(),
           ),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(
-              value: _FakeScheduleNotifier(),
-            ),
-          ],
-        );
-        expect(find.text('Short break'), findsOneWidget);
-        expect(find.text('5 min'), findsNothing);
-      },
-    );
+        ],
+      );
+      expect(find.text('Short break'), findsOneWidget);
+      expect(find.text('5 min'), findsNothing);
+    });
 
     // Phase 32 (D-32-02, Task 1 — Kind A, retired-mechanism deletion):
     // 'SEEBREAK-01: SwipeableChunkCard forwards subCompact for a break'
@@ -1055,27 +1049,22 @@ void main() {
     // below (which use a WORK chunk, unaffected by this phase) are kept
     // unchanged, and the "never tappable" loop above them is also kept —
     // neither depends on the retired mechanism.
-    testWidgets(
-      "an unresolved WORK chunk's Dismissible still offers the full "
-      "horizontal direction (paired guard — the break case above cannot "
-      'pass by this widget silently losing the complete direction for '
-      'everyone)',
-      (tester) async {
-        await pumpWithMood(
-          tester,
-          SwipeableChunkCard(chunk: _workChunk()),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(
-              value: _FakeScheduleNotifier(),
-            ),
-          ],
-        );
-        final dismissible = tester.widget<Dismissible>(
-          find.byType(Dismissible),
-        );
-        expect(dismissible.direction, DismissDirection.horizontal);
-      },
-    );
+    testWidgets("an unresolved WORK chunk's Dismissible still offers the full "
+        "horizontal direction (paired guard — the break case above cannot "
+        'pass by this widget silently losing the complete direction for '
+        'everyone)', (tester) async {
+      await pumpWithMood(
+        tester,
+        SwipeableChunkCard(chunk: _workChunk()),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(
+            value: _FakeScheduleNotifier(),
+          ),
+        ],
+      );
+      final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
+      expect(dismissible.direction, DismissDirection.horizontal);
+    });
   });
 
   group('LiveRowCard — two density tiers (GRID-02)', () {
@@ -1140,21 +1129,18 @@ void main() {
       expect(find.text('Now'), findsNothing);
     });
 
-    testWidgets(
-      'compact tier renders title and remainingLabel verbatim, no '
-      'LinearProgressIndicator',
-      (tester) async {
-        await pumpLiveRowCard(
-          tester,
-          slotHeight: 100.0,
-          title: 'Deep work',
-          remainingLabel: '12 min left · until 10:50',
-        );
-        expect(find.text('Deep work'), findsOneWidget);
-        expect(find.text('12 min left · until 10:50'), findsOneWidget);
-        expect(find.byType(LinearProgressIndicator), findsNothing);
-      },
-    );
+    testWidgets('compact tier renders title and remainingLabel verbatim, no '
+        'LinearProgressIndicator', (tester) async {
+      await pumpLiveRowCard(
+        tester,
+        slotHeight: 100.0,
+        title: 'Deep work',
+        remainingLabel: '12 min left · until 10:50',
+      );
+      expect(find.text('Deep work'), findsOneWidget);
+      expect(find.text('12 min left · until 10:50'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+    });
 
     testWidgets(
       'compact tier icon buttons carry the right icons and are at least the '
@@ -1197,10 +1183,7 @@ void main() {
         await pumpLiveRowCard(tester, slotHeight: kCompactLiveMinHeight);
         expect(find.text('RIGHT NOW'), findsOneWidget);
 
-        await pumpLiveRowCard(
-          tester,
-          slotHeight: kCompactLiveMinHeight - 1,
-        );
+        await pumpLiveRowCard(tester, slotHeight: kCompactLiveMinHeight - 1);
         expect(find.text('RIGHT NOW'), findsNothing);
       },
     );
@@ -1245,11 +1228,7 @@ void main() {
 
     testWidgets('single-line tap fires onTap exactly once', (tester) async {
       var tapCount = 0;
-      await pumpLiveRowCard(
-        tester,
-        slotHeight: 20.0,
-        onTap: () => tapCount++,
-      );
+      await pumpLiveRowCard(tester, slotHeight: 20.0, onTap: () => tapCount++);
       await tester.tap(find.byType(Card));
       await tester.pump();
       expect(tapCount, 1);
@@ -1353,17 +1332,11 @@ void main() {
           );
           final liveCard = find.byType(LiveRowCard);
           expect(
-            find.descendant(
-              of: liveCard,
-              matching: find.byTooltip('Skip'),
-            ),
+            find.descendant(of: liveCard, matching: find.byTooltip('Skip')),
             findsOneWidget,
           );
           expect(
-            find.descendant(
-              of: liveCard,
-              matching: find.byTooltip('Complete'),
-            ),
+            find.descendant(of: liveCard, matching: find.byTooltip('Complete')),
             findsNothing,
           );
         },
@@ -1386,10 +1359,7 @@ void main() {
             findsOneWidget,
           );
           expect(
-            find.descendant(
-              of: liveCard,
-              matching: find.byTooltip('Complete'),
-            ),
+            find.descendant(of: liveCard, matching: find.byTooltip('Complete')),
             findsOneWidget,
           );
         },
@@ -1427,7 +1397,10 @@ void main() {
             isSkipped: false,
           );
           titleText = tester.widget<Text>(find.text('Short break'));
-          expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
+          expect(
+            titleText.style?.decoration,
+            isNot(TextDecoration.lineThrough),
+          );
 
           // Single-line tier (slotHeight 20.0).
           await pumpLiveRowCard(
@@ -1446,7 +1419,10 @@ void main() {
             isSkipped: false,
           );
           titleText = tester.widget<Text>(find.text('Short break'));
-          expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
+          expect(
+            titleText.style?.decoration,
+            isNot(TextDecoration.lineThrough),
+          );
         },
       );
     });
@@ -1485,7 +1461,8 @@ void main() {
           expect(
             find.bySemanticsLabel('Skip Short break'),
             findsOneWidget,
-            reason: 'the title/countdown excluding Semantics wrapper must '
+            reason:
+                'the title/countdown excluding Semantics wrapper must '
                 'not swallow the Skip button\'s own semantics node',
           );
           await tester.tap(find.byType(BreakSkipButton));
@@ -1575,7 +1552,8 @@ void main() {
           expect(
             find.text(' · $countdown'),
             findsOneWidget,
-            reason: 'the countdown never truncates, even under the rail\'s '
+            reason:
+                'the countdown never truncates, even under the rail\'s '
                 'narrower Expanded region',
           );
         },

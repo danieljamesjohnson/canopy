@@ -5,11 +5,11 @@ current_phase: 33
 current_phase_name: Make The Obvious Thing Obvious
 status: awaiting-human-uat
 current_phase_next: 34
-stopped_at: Phase 33 UAT judged 2026-09-02 from the owner's Excalidraw annotation; his three marks (hatch, PreStart banner, work-vs-break fill) are closed, analyze clean, 691 tests green, re-served on http://danserver:8143/ (sha 08c452962e89cd62). Items 1/3/4/5/6/6b remain UNJUDGED.
-last_updated: "2026-09-02T12:00:00.000Z"
-last_activity: 2026-09-02
-last_activity_desc: Owner's UAT verdict recorded and closed — diagonals mean not-work, work is the solid brighter card
-state_head: 24fbc96
+stopped_at: Phase 33 UAT judged 2026-09-02 from the owner's Excalidraw annotation; his three marks (hatch, PreStart banner, work-vs-break fill) are closed, analyze clean, 692 tests green, re-served on http://danserver:8143/ (sha 2bf9b8c8468c8cb4). Items 1/3/4/5/6/6b remain UNJUDGED.
+last_updated: "2026-09-03T12:00:00.000Z"
+last_activity: 2026-09-03
+last_activity_desc: Free time keeps the diagonals; a break becomes a tinted card — texture was the wrong channel
+state_head: f6105c8
 progress:
   total_phases: 7
   completed_phases: 5
@@ -29,8 +29,8 @@ milestone_name: milestone
 ## Current Position
 
 Phase: 33 (Make The Obvious Thing Obvious) — **UAT judged 2026-09-02; his three marks are closed and
-re-served.** `flutter analyze` clean, **691 tests green** (678 → +13). Bundle
-`08c452962e89cd62…` on `http://danserver:8143/`.
+re-served.** `flutter analyze` clean, **692 tests green** (678 → +14). Bundle
+`2bf9b8c8468c8cb4…` on `http://danserver:8143/`.
 
 **The verdict came as a drawing, not a list** — an annotated screenshot on the Excalidraw `canopy`
 board (`mc-read-tool excalidraw`; render in `shots/07-owner-annotation-2026-09-02.png`). Three marks,
@@ -40,17 +40,21 @@ all closed the same day:
    `repeating-linear-gradient(135deg…)` was **dropped** when `FreeTimeRow` copied the break card's
    surface verbatim, and nobody caught it because the sketch's own hatch is 2.2% black. New
    `HatchFill` (`lib/widgets/hatch_fill.dart`) on free time and both break tiers.
-   **Then a same-day follow-up ruling: two tones, not one** — *"the hatch should only be during free
-   time. breaks and short breaks should be something different … but a different color."* Free time
-   is a neutral hatch, a break is a `tertiary`-tinted one. `secondary` was tried and rejected **by a
-   test, before it shipped**: in `ColorScheme.fromSeed` it is the neutral-VARIANT hue, within 2-4° of
-   `onSurfaceVariant` at every mood seed — two colours in the source, one grey on the screen.
+   **It took three passes and two more rulings from him.** Pass 1 hatched free time and breaks
+   identically. Pass 2 kept both hatched and gave the break its own hue — *"i still feel like free
+   time and break look too similar."* Pass 3 (2026-09-03) moved the difference off TEXTURE and onto
+   FILL: a break is a tinted `secondaryContainer` card carrying no hatch, and the diagonals mean free
+   time and nothing else. **The lesson, promoted into `hatch_fill.dart`: two cards of the same colour
+   with different stripes are a spot-the-difference puzzle. Do not answer a future "these look alike"
+   report by re-tuning a hatch.**
 2. *"i crossed out the text"* — **D-33-01**, the PreStart banner deleted, reversing D-03's LOCKED
    copy. Scope is PreStart only; `Up next` and DayComplete keep D-03.
 3. *"side project should have a color not the same as a break"* — exact, not approximate: work,
    break and free time all rendered `surfaceContainer`. Work now takes `surfaceContainerLowest`.
 
-**The vocabulary is three-way, which is what the day actually contains:** work is flat and brightest; free time is a NEUTRAL hatch (nothing has claimed this); a break is a TINTED hatch (scheduled, but not work).
+**The day's three kinds of time read three different ways.** Measured on the rendered page at mood 3:
+work rgb(255,255,255) flat · free time rgb(233,239,235) + neutral diagonals · break rgb(205,233,222)
+flat and tinted.
 The colour half moves work up the **neutral** ramp deliberately — a hue would have re-opened
 *"the colors are changing, it's not making a ton of sense"* on the screen next door, where item 4
 already flags one card carrying two colour systems.

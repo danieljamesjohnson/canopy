@@ -5,7 +5,6 @@ import '../../../data/models/scheduled_chunk.dart';
 import '../../../providers/schedule_notifier.dart';
 import '../../../utils/time_format.dart';
 import '../../../widgets/break_skip_button.dart';
-import '../../../widgets/hatch_fill.dart';
 import '../../today/timeline_geometry.dart';
 
 /// Phase 26 (CAL-01) row content density. `ChunkCard` renders distinct
@@ -194,55 +193,47 @@ class ChunkCard extends StatelessWidget {
           // neighbouring work chunk's own 4dp margin alone preserves the
           // visible seam — Flutter margins do not collapse.
           margin: EdgeInsets.zero,
-          color: theme.colorScheme.surfaceContainer,
+          // **A break is a TINTED card and carries no hatch — third pass,
+          // 2026-09-03: *"i still feel like free time and break look too
+          // similar."*** See `_kBreakFill` for why the texture experiment was
+          // abandoned in favour of the fill.
+          color: _breakFill(theme.colorScheme),
           clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(color: theme.colorScheme.outlineVariant),
           ),
-          // Phase 33 gap closure (owner's verdict 2026-09-02) — the hatch, in
-          // the BREAK tone. His follow-up ruling the same day: *"the hatch
-          // should only be during free time. breaks and short breaks should
-          // be something different. can use a hatch maybe? but a different
-          // color."* See `HatchFill.breakLines`.
-          //
-          // Wraps the Row rather than sitting beside it in a Stack so the
-          // painter inherits the Row's own (duration-exact) size; the Card's
-          // `Clip.antiAlias` confines the lines to the rounded rect.
-          child: HatchFill(
-            lineColor: HatchFill.breakLines(theme.colorScheme),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          decoration: chunk.isSkipped
-                              ? TextDecoration.lineThrough
-                              : null,
-                        ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSecondaryContainer,
+                        decoration: chunk.isSkipped
+                            ? TextDecoration.lineThrough
+                            : null,
                       ),
                     ),
                   ),
                 ),
-                SizedBox(
-                  width: kBreakSkipButtonWidth,
-                  child: chunk.isSkipped
-                      ? const BreakSkippedIndicator()
-                      : BreakSkipButton(
-                          chunkId: chunk.id,
-                          accessibleTitle: title,
-                        ),
-                ),
-              ],
-            ),
+              ),
+              SizedBox(
+                width: kBreakSkipButtonWidth,
+                child: chunk.isSkipped
+                    ? const BreakSkippedIndicator()
+                    : BreakSkipButton(
+                        chunkId: chunk.id,
+                        accessibleTitle: title,
+                      ),
+              ),
+            ],
           ),
         ),
       );
@@ -271,14 +262,18 @@ class ChunkCard extends StatelessWidget {
     // unbounded `OverflowBox` this card is laid out inside) — `Row(
     // crossAxisAlignment: stretch)` cannot report a size against an
     // unbounded incoming height without a tight height supplied from above.
+    // `onSecondaryContainer`, not `onSurfaceVariant`: the card underneath is
+    // now `secondaryContainer` (third pass, 2026-09-03), and M3's contrast
+    // guarantees are per PAIR — keeping the old on-colour would have been a
+    // legibility gamble that happens to look fine at one mood seed.
     final titleStyle = isLong
         ? theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurfaceVariant,
+            color: theme.colorScheme.onSecondaryContainer,
             decoration: chunk.isSkipped ? TextDecoration.lineThrough : null,
           )
         : theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+            color: theme.colorScheme.onSecondaryContainer,
             decoration: chunk.isSkipped ? TextDecoration.lineThrough : null,
           );
 
@@ -286,7 +281,7 @@ class ChunkCard extends StatelessWidget {
       height: chunk.durationMinutes * kPixelsPerMinute,
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 4),
-        color: theme.colorScheme.surfaceContainer,
+        color: _breakFill(theme.colorScheme),
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -316,65 +311,54 @@ class ChunkCard extends StatelessWidget {
         // a work chunk's Skip used the same icon and word in two different
         // arrangements). One vocabulary, one arrangement, wherever there is
         // room for it.
-        // Phase 33 gap closure (owner's verdict 2026-09-02) — the hatch in
-        // the BREAK tone (`HatchFill.breakLines`), and it sits INSIDE the
-        // Opacity deliberately: a skipped break's lines fade with its label
-        // and its indicator, rather than staying at full strength over muted
-        // content.
         child: Opacity(
           opacity: chunk.isSkipped ? 0.5 : 1.0,
-          child: HatchFill(
-            lineColor: HatchFill.breakLines(theme.colorScheme),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isLong) ...[
-                          Icon(
-                            Icons.self_improvement,
-                            size: 20,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        Flexible(
-                          child: Text(
-                            title,
-                            style: titleStyle,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isLong) ...[
+                        Icon(
+                          Icons.self_improvement,
+                          size: 20,
+                          color: theme.colorScheme.onSecondaryContainer,
                         ),
+                        const SizedBox(width: 8),
                       ],
-                    ),
-                    const SizedBox(height: 12),
-                    if (chunk.isSkipped)
-                      const BreakSkippedIndicator()
-                    else
-                      Tooltip(
-                        message: 'Skip',
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.skip_next_outlined),
-                          label: const Text('Skip'),
-                          onPressed: () => context
-                              .read<ScheduleNotifier>()
-                              .markSkipped(chunk.id),
-                          style: OutlinedButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                            foregroundColor: theme.colorScheme.error,
-                            side: BorderSide(color: theme.colorScheme.error),
-                          ),
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: titleStyle,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                  ],
-                ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (chunk.isSkipped)
+                    const BreakSkippedIndicator()
+                  else
+                    Tooltip(
+                      message: 'Skip',
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.skip_next_outlined),
+                        label: const Text('Skip'),
+                        onPressed: () => context
+                            .read<ScheduleNotifier>()
+                            .markSkipped(chunk.id),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: theme.colorScheme.error,
+                          side: BorderSide(color: theme.colorScheme.error),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
@@ -383,6 +367,32 @@ class ChunkCard extends StatelessWidget {
     );
   }
 }
+
+/// The break card's fill — a **tinted** surface, and the third answer to one
+/// question the owner asked three times.
+///
+/// - Pass 1 (2026-09-02) gave breaks and free time the same neutral hatch on
+///   the same `surfaceContainer`. Only the label and the Skip rail told them
+///   apart.
+/// - Pass 2 gave the break's hatch its own hue. Measured on screen: free time
+///   rgb(228,234,230), break rgb(180,195,199). A real difference, and still
+///   not enough — *"i still feel like free time and break look too similar."*
+/// - Pass 3 stops spending the difference on TEXTURE and spends it on FILL.
+///   Two cards of the same colour with different stripes are a spot-the-
+///   difference puzzle; two cards of different colours are not. The hatch
+///   returns to what he asked for in the first place — *"the hatch should
+///   only be during free time"* — and a break is simply a tinted card.
+///
+/// `secondaryContainer` is the one accent surface this app has not spent:
+/// `primaryContainer` is the live row, `tertiaryContainer` is a commitment,
+/// `errorContainer` is the Skip rail sitting inside these very cards. It is
+/// also M3's designated "soft accent surface", which is what a break is.
+///
+/// Measured against free time's `surfaceContainer` at the three mood seeds:
+/// rgb(211,229,245) vs (235,238,243) · (205,233,222) vs (233,239,235) ·
+/// (240,226,187) vs (245,237,223). Different hue *and* ~4-8% darker, before
+/// the hatch adds its own texture cue on one of the two.
+Color _breakFill(ColorScheme scheme) => scheme.secondaryContainer;
 
 /// Internal widget for the work-variant chunk card.
 ///

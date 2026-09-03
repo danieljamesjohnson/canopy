@@ -121,7 +121,9 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider<GoalsNotifier>.value(value: goals),
-          ChangeNotifierProvider<RestorativesNotifier>.value(value: restoratives),
+          ChangeNotifierProvider<RestorativesNotifier>.value(
+            value: restoratives,
+          ),
           ChangeNotifierProvider<CommitmentsNotifier>.value(value: commitments),
           ChangeNotifierProvider<SettingsNotifier>.value(value: settings),
         ],
@@ -238,10 +240,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Both goals persisted — the in-progress one was flushed, not dropped.
-      expect(
-        goals.goals.map((g) => g.name).toSet(),
-        {'Exercise', 'Meditation'},
-      );
+      expect(goals.goals.map((g) => g.name).toSet(), {
+        'Exercise',
+        'Meditation',
+      });
     },
   );
 
@@ -265,57 +267,56 @@ void main() {
     },
   );
 
-  testWidgets(
-    'a named job with no days cannot be saved, but can be skipped',
-    (tester) async {
-      await pump(tester);
+  testWidgets('a named job with no days cannot be saved, but can be skipped', (
+    tester,
+  ) async {
+    await pump(tester);
 
-      // Advance to the Job beat: goals → recharge → energy → job.
-      await tester.enterText(quickAddField(), 'Read\n');
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
-      await tester.pumpAndSettle();
+    // Advance to the Job beat: goals → recharge → energy → job.
+    await tester.enterText(quickAddField(), 'Read\n');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+    await tester.pumpAndSettle();
 
-      // Name a job, then clear every day chip → the job is not schedulable.
-      await tester.enterText(
-        find.widgetWithText(TextField, 'e.g. Work, Class, Gym'),
-        'Work',
-      );
-      await tester.pumpAndSettle();
-      for (final label in const ['M', 'T', 'W', 'T', 'F']) {
-        // Only the selected weekday chips are present; tapping toggles them off.
-        final chip = find.widgetWithText(FilterChip, label);
-        if (chip.evaluate().isNotEmpty) {
-          // Tap each matching chip that is currently selected.
-          for (final e in chip.evaluate()) {
-            final w = e.widget as FilterChip;
-            if (w.selected) {
-              await tester.tap(find.byWidget(w));
-              await tester.pumpAndSettle();
-            }
+    // Name a job, then clear every day chip → the job is not schedulable.
+    await tester.enterText(
+      find.widgetWithText(TextField, 'e.g. Work, Class, Gym'),
+      'Work',
+    );
+    await tester.pumpAndSettle();
+    for (final label in const ['M', 'T', 'W', 'T', 'F']) {
+      // Only the selected weekday chips are present; tapping toggles them off.
+      final chip = find.widgetWithText(FilterChip, label);
+      if (chip.evaluate().isNotEmpty) {
+        // Tap each matching chip that is currently selected.
+        for (final e in chip.evaluate()) {
+          final w = e.widget as FilterChip;
+          if (w.selected) {
+            await tester.tap(find.byWidget(w));
+            await tester.pumpAndSettle();
           }
         }
       }
+    }
 
-      // Finish is blocked and a warning is shown.
-      final finish = find.widgetWithText(ElevatedButton, 'Add & finish');
-      expect(tester.widget<ElevatedButton>(finish).onPressed, isNull);
-      expect(
-        find.text('Pick at least one day for this commitment.'),
-        findsOneWidget,
-      );
+    // Finish is blocked and a warning is shown.
+    final finish = find.widgetWithText(ElevatedButton, 'Add & finish');
+    expect(tester.widget<ElevatedButton>(finish).onPressed, isNull);
+    expect(
+      find.text('Pick at least one day for this commitment.'),
+      findsOneWidget,
+    );
 
-      // The escape hatch finishes onboarding without saving a broken job.
-      await tester.tap(find.text("I don't have a fixed commitment"));
-      await tester.pumpAndSettle();
-      expect(settings.completed, isTrue);
-      expect(commitments.blocks, isEmpty);
-    },
-  );
+    // The escape hatch finishes onboarding without saving a broken job.
+    await tester.tap(find.text("I don't have a fixed commitment"));
+    await tester.pumpAndSettle();
+    expect(settings.completed, isTrue);
+    expect(commitments.blocks, isEmpty);
+  });
 
   testWidgets(
     'a standard pre-filled job is captured on Add & finish without typing a name',
@@ -347,45 +348,44 @@ void main() {
     },
   );
 
-  testWidgets(
-    'a failure on the final step is recoverable, not a dead end',
-    (tester) async {
-      await pump(tester);
+  testWidgets('a failure on the final step is recoverable, not a dead end', (
+    tester,
+  ) async {
+    await pump(tester);
 
-      // Walk to the job beat: goals → recharge (Skip) → energy → job.
-      await tester.enterText(quickAddField(), 'Read\n');
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
-      await tester.pumpAndSettle();
+    // Walk to the job beat: goals → recharge (Skip) → energy → job.
+    await tester.enterText(quickAddField(), 'Read\n');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+    await tester.pumpAndSettle();
 
-      // First finish tap fails the write.
-      settings.failNextComplete = true;
-      final finish = find.widgetWithText(ElevatedButton, 'Add & finish');
-      await tester.tap(finish);
-      await tester.pumpAndSettle();
+    // First finish tap fails the write.
+    settings.failNextComplete = true;
+    final finish = find.widgetWithText(ElevatedButton, 'Add & finish');
+    await tester.tap(finish);
+    await tester.pumpAndSettle();
 
-      // Not stuck: still on onboarding, error surfaced, button re-enabled.
-      expect(settings.completed, isFalse);
-      expect(
-        find.text("Couldn't finish setup. Please try again."),
-        findsOneWidget,
-      );
-      expect(tester.widget<ElevatedButton>(finish).onPressed, isNotNull);
+    // Not stuck: still on onboarding, error surfaced, button re-enabled.
+    expect(settings.completed, isFalse);
+    expect(
+      find.text("Couldn't finish setup. Please try again."),
+      findsOneWidget,
+    );
+    expect(tester.widget<ElevatedButton>(finish).onPressed, isNotNull);
 
-      // Let the error SnackBar auto-dismiss so it isn't covering the button.
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
+    // Let the error SnackBar auto-dismiss so it isn't covering the button.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
 
-      // Retry succeeds.
-      await tester.tap(finish);
-      await tester.pumpAndSettle();
-      expect(settings.completed, isTrue);
-    },
-  );
+    // Retry succeeds.
+    await tester.tap(finish);
+    await tester.pumpAndSettle();
+    expect(settings.completed, isTrue);
+  });
 
   testWidgets(
     'job beat scrolls (not overflows) when the viewport is short (keyboard up)',
@@ -401,7 +401,9 @@ void main() {
             ChangeNotifierProvider<RestorativesNotifier>.value(
               value: restoratives,
             ),
-            ChangeNotifierProvider<CommitmentsNotifier>.value(value: commitments),
+            ChangeNotifierProvider<CommitmentsNotifier>.value(
+              value: commitments,
+            ),
             ChangeNotifierProvider<SettingsNotifier>.value(value: settings),
           ],
           child: const MaterialApp(home: OnboardingScreen()),
@@ -442,15 +444,17 @@ void main() {
             ChangeNotifierProvider<RestorativesNotifier>.value(
               value: restoratives,
             ),
-            ChangeNotifierProvider<CommitmentsNotifier>.value(value: commitments),
+            ChangeNotifierProvider<CommitmentsNotifier>.value(
+              value: commitments,
+            ),
             ChangeNotifierProvider<SettingsNotifier>.value(value: settings),
           ],
           child: MaterialApp(
             home: const OnboardingScreen(),
             builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: const TextScaler.linear(2.0),
-              ),
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(2.0)),
               child: child!,
             ),
           ),

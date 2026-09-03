@@ -1085,7 +1085,8 @@ void main() {
         moodIndex: 3,
         date: monday,
         completionLogs: [],
-        lighterDay: true, // drops cap to tier-2 (6), making combined demand (8) binding
+        lighterDay:
+            true, // drops cap to tier-2 (6), making combined demand (8) binding
       );
       final highCount = result
           .where((c) => c.chunkType == ChunkType.work && c.goalId == highTT.id)
@@ -1248,13 +1249,8 @@ void main() {
   );
 
   test('CAP-01: mood=1 total work chunks do not exceed cap', () {
-    final goals =
-        List.generate(4, (i) => makeHabit(name: 'Habit $i'))
-          ..add(
-            makeOutcome(
-              deadline: monday.add(const Duration(days: 7)),
-            ),
-          );
+    final goals = List.generate(4, (i) => makeHabit(name: 'Habit $i'))
+      ..add(makeOutcome(deadline: monday.add(const Duration(days: 7))));
     final result = sut.generate(
       goals: goals,
       blocks: [],
@@ -1295,8 +1291,7 @@ void main() {
           .length;
       final normalCount = result
           .where(
-            (c) =>
-                c.chunkType == ChunkType.work && c.goalId == normalHabit.id,
+            (c) => c.chunkType == ChunkType.work && c.goalId == normalHabit.id,
           )
           .length;
       expect(
@@ -1335,8 +1330,7 @@ void main() {
       );
       final highCount = result
           .where(
-            (c) =>
-                c.chunkType == ChunkType.work && c.goalId == highOutcome.id,
+            (c) => c.chunkType == ChunkType.work && c.goalId == highOutcome.id,
           )
           .length;
       final normalCount = result
@@ -1532,8 +1526,7 @@ void main() {
       );
       final chunks = result
           .where(
-            (c) =>
-                c.chunkType == ChunkType.work && c.goalId == givesOutcome.id,
+            (c) => c.chunkType == ChunkType.work && c.goalId == givesOutcome.id,
           )
           .length;
       expect(
@@ -1546,47 +1539,46 @@ void main() {
   );
 
   // VSCHED-02: low day discretionary count < medium day count
-  test(
-    'VSCHED-02: low day discretionary count < medium day count',
-    () {
-      final givesGoal = makeTimeTarget(
-        name: 'Yoga',
-        weeklyHourBudget: 10,
-        valence: EnergyValence.gives,
-      );
-      final neutralGoal = makeTimeTarget(
-        name: 'Work',
-        weeklyHourBudget: 10,
-        valence: EnergyValence.neutral,
-      );
-      final lowResult = sut.generate(
-        goals: [givesGoal, neutralGoal],
-        blocks: [],
-        moodIndex: 1,
-        date: monday,
-        lighterDay: true,
-        completionLogs: [],
-      );
-      final medResult = sut.generate(
-        goals: [givesGoal, neutralGoal],
-        blocks: [],
-        moodIndex: 3,
-        date: monday,
-        lighterDay: true,
-        completionLogs: [],
-      );
-      final lowCount =
-          lowResult.where((c) => c.chunkType == ChunkType.work).length;
-      final medCount =
-          medResult.where((c) => c.chunkType == ChunkType.work).length;
-      expect(
-        lowCount,
-        lessThan(medCount),
-        reason:
-            'VSCHED-02: low day must have fewer discretionary chunks than medium day',
-      );
-    },
-  );
+  test('VSCHED-02: low day discretionary count < medium day count', () {
+    final givesGoal = makeTimeTarget(
+      name: 'Yoga',
+      weeklyHourBudget: 10,
+      valence: EnergyValence.gives,
+    );
+    final neutralGoal = makeTimeTarget(
+      name: 'Work',
+      weeklyHourBudget: 10,
+      valence: EnergyValence.neutral,
+    );
+    final lowResult = sut.generate(
+      goals: [givesGoal, neutralGoal],
+      blocks: [],
+      moodIndex: 1,
+      date: monday,
+      lighterDay: true,
+      completionLogs: [],
+    );
+    final medResult = sut.generate(
+      goals: [givesGoal, neutralGoal],
+      blocks: [],
+      moodIndex: 3,
+      date: monday,
+      lighterDay: true,
+      completionLogs: [],
+    );
+    final lowCount = lowResult
+        .where((c) => c.chunkType == ChunkType.work)
+        .length;
+    final medCount = medResult
+        .where((c) => c.chunkType == ChunkType.work)
+        .length;
+    expect(
+      lowCount,
+      lessThan(medCount),
+      reason:
+          'VSCHED-02: low day must have fewer discretionary chunks than medium day',
+    );
+  });
 
   // VSCHED-02-neutral-excluded: neutral/costs time-target gets no restorative floor on low day
   test(
@@ -1612,8 +1604,7 @@ void main() {
       );
       final neutralChunks = result
           .where(
-            (c) =>
-                c.chunkType == ChunkType.work && c.goalId == neutralGoal.id,
+            (c) => c.chunkType == ChunkType.work && c.goalId == neutralGoal.id,
           )
           .length;
       // The restorative floor is gives-only, so a neutral goal must NOT receive
@@ -1700,8 +1691,7 @@ void main() {
       );
       final highPriChunks = result
           .where(
-            (c) =>
-                c.chunkType == ChunkType.work && c.goalId == highPriGoal.id,
+            (c) => c.chunkType == ChunkType.work && c.goalId == highPriGoal.id,
           )
           .length;
       expect(
@@ -1714,37 +1704,34 @@ void main() {
   );
 
   // determinism: same inputs produce same schedule
-  test(
-    'determinism: same inputs produce same schedule',
-    () {
-      final goals = [
-        makeTimeTarget(
-          name: 'T',
-          weeklyHourBudget: 5,
-          valence: EnergyValence.gives,
-        ),
-      ];
-      final r1 = sut.generate(
-        goals: goals,
-        blocks: [],
-        moodIndex: 3,
-        date: monday,
-        completionLogs: [],
-      );
-      final r2 = sut.generate(
-        goals: goals,
-        blocks: [],
-        moodIndex: 3,
-        date: monday,
-        completionLogs: [],
-      );
-      expect(
-        r1.map((c) => c.goalId).toList(),
-        equals(r2.map((c) => c.goalId).toList()),
-        reason: 'determinism: same inputs must produce same schedule',
-      );
-    },
-  );
+  test('determinism: same inputs produce same schedule', () {
+    final goals = [
+      makeTimeTarget(
+        name: 'T',
+        weeklyHourBudget: 5,
+        valence: EnergyValence.gives,
+      ),
+    ];
+    final r1 = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 3,
+      date: monday,
+      completionLogs: [],
+    );
+    final r2 = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 3,
+      date: monday,
+      completionLogs: [],
+    );
+    expect(
+      r1.map((c) => c.goalId).toList(),
+      equals(r2.map((c) => c.goalId).toList()),
+      reason: 'determinism: same inputs must produce same schedule',
+    );
+  });
 
   // ---------------------------------------------------------------------------
   // CR-01 regression: gives-valence + high-priority time-target on a low-mood
@@ -1781,7 +1768,8 @@ void main() {
       final chunks = result
           .where(
             (c) =>
-                c.chunkType == ChunkType.work && c.goalId == givesHighPriGoal.id,
+                c.chunkType == ChunkType.work &&
+                c.goalId == givesHighPriGoal.id,
           )
           .length;
       expect(
@@ -1931,67 +1919,69 @@ void main() {
       30,
       reason: 'mood=1 must reach a long break after 2 work chunks (BREAK-01)',
     );
-    expect(result[3].chunkType, ChunkType.shortBreak,
-        reason: 'the boundary chunk keeps its own short break (D-06)');
+    expect(
+      result[3].chunkType,
+      ChunkType.shortBreak,
+      reason: 'the boundary chunk keeps its own short break (D-06)',
+    );
     expect(result[3].durationMinutes, 5);
     expect(result[1].durationMinutes, 5);
     expect(result[9].durationMinutes, 30);
   });
 
-  test(
-    'BREAK-01: mood=2 places a long break after every 3 work chunks '
-    '(regression lock — also true under the pre-BREAK-01 formula, does '
-    'not by itself prove the new table is wired up)',
-    () {
-      // lighterDay: false -> cap=6, habitCeiling=ceil(6/2)=3 (CAP-01).
-      // 3 habits fill the habitCeiling exactly (3 chunks). mood=2 is still
-      // low-mood, so FILL-01 clamps each time-target to 1 chunk: 2
-      // time-targets -> 2 chunks. Total discretionary = 3 + 2 = 5 work chunks
-      // (cap=6 is not reached — that's expected, not a bug).
-      // N=3: chunk 3 is the only cadence boundary (floor(5/3)=1 long break);
-      // it keeps its own short break AND is followed by a separate 30-min
-      // long break (D-06): W@480(25) SB@505(5) W@510(25) SB@535(5) W@540(25)
-      // SB@565(5) LB@570(30) W@600(25) SB@625(5) W@630(25). Chunk 5 (ordinary,
-      // last) gets its own trailing short break trimmed by STEP E (D-05
-      // trims only trailing short breaks, so this is unaffected by the fix).
-      final goals = [
-        ...List.generate(3, (i) => makeHabit(name: 'Habit $i')),
-        ...List.generate(
-          2,
-          (i) => makeTimeTarget(name: 'Regular $i', weeklyHourBudget: 5),
-        ),
-      ];
-      final result = sut.generate(
-        goals: goals,
-        blocks: [],
-        moodIndex: 2,
-        date: monday,
-        completionLogs: [],
-        lighterDay: false,
-      );
-      expect(result.length, 10);
-      expect(result[0].chunkType, ChunkType.work);
-      expect(result[1].chunkType, ChunkType.shortBreak);
-      expect(result[2].chunkType, ChunkType.work);
-      expect(result[3].chunkType, ChunkType.shortBreak);
-      expect(result[4].chunkType, ChunkType.work);
-      expect(result[5].chunkType, ChunkType.shortBreak);
-      expect(result[6].chunkType, ChunkType.longBreak);
-      expect(result[7].chunkType, ChunkType.work);
-      expect(result[8].chunkType, ChunkType.shortBreak);
-      expect(result[9].chunkType, ChunkType.work);
-      expect(
-        result[6].durationMinutes,
-        30,
-        reason:
-            'mood=2 must reach a long break after 3 work chunks (BREAK-01)',
-      );
-      expect(result[5].chunkType, ChunkType.shortBreak,
-          reason: 'the boundary chunk keeps its own short break (D-06)');
-      expect(result[5].durationMinutes, 5);
-      expect(result[1].durationMinutes, 5);
-    },
-  );
+  test('BREAK-01: mood=2 places a long break after every 3 work chunks '
+      '(regression lock — also true under the pre-BREAK-01 formula, does '
+      'not by itself prove the new table is wired up)', () {
+    // lighterDay: false -> cap=6, habitCeiling=ceil(6/2)=3 (CAP-01).
+    // 3 habits fill the habitCeiling exactly (3 chunks). mood=2 is still
+    // low-mood, so FILL-01 clamps each time-target to 1 chunk: 2
+    // time-targets -> 2 chunks. Total discretionary = 3 + 2 = 5 work chunks
+    // (cap=6 is not reached — that's expected, not a bug).
+    // N=3: chunk 3 is the only cadence boundary (floor(5/3)=1 long break);
+    // it keeps its own short break AND is followed by a separate 30-min
+    // long break (D-06): W@480(25) SB@505(5) W@510(25) SB@535(5) W@540(25)
+    // SB@565(5) LB@570(30) W@600(25) SB@625(5) W@630(25). Chunk 5 (ordinary,
+    // last) gets its own trailing short break trimmed by STEP E (D-05
+    // trims only trailing short breaks, so this is unaffected by the fix).
+    final goals = [
+      ...List.generate(3, (i) => makeHabit(name: 'Habit $i')),
+      ...List.generate(
+        2,
+        (i) => makeTimeTarget(name: 'Regular $i', weeklyHourBudget: 5),
+      ),
+    ];
+    final result = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 2,
+      date: monday,
+      completionLogs: [],
+      lighterDay: false,
+    );
+    expect(result.length, 10);
+    expect(result[0].chunkType, ChunkType.work);
+    expect(result[1].chunkType, ChunkType.shortBreak);
+    expect(result[2].chunkType, ChunkType.work);
+    expect(result[3].chunkType, ChunkType.shortBreak);
+    expect(result[4].chunkType, ChunkType.work);
+    expect(result[5].chunkType, ChunkType.shortBreak);
+    expect(result[6].chunkType, ChunkType.longBreak);
+    expect(result[7].chunkType, ChunkType.work);
+    expect(result[8].chunkType, ChunkType.shortBreak);
+    expect(result[9].chunkType, ChunkType.work);
+    expect(
+      result[6].durationMinutes,
+      30,
+      reason: 'mood=2 must reach a long break after 3 work chunks (BREAK-01)',
+    );
+    expect(
+      result[5].chunkType,
+      ChunkType.shortBreak,
+      reason: 'the boundary chunk keeps its own short break (D-06)',
+    );
+    expect(result[5].durationMinutes, 5);
+    expect(result[1].durationMinutes, 5);
+  });
 
   test(
     'BREAK-01: mood=3 places a long break after every 4 work chunks (baseline unchanged)',
@@ -2037,58 +2027,60 @@ void main() {
         reason:
             'mood=3 must reach a long break after 4 work chunks (BREAK-01 baseline)',
       );
-      expect(result[7].chunkType, ChunkType.shortBreak,
-          reason: 'the boundary chunk keeps its own short break (D-06)');
+      expect(
+        result[7].chunkType,
+        ChunkType.shortBreak,
+        reason: 'the boundary chunk keeps its own short break (D-06)',
+      );
       expect(result[7].durationMinutes, 5);
       expect(result[1].durationMinutes, 5);
     },
   );
 
-  test(
-    'BREAK-01: mood=4 places a long break after every 4 work chunks '
-    '(regression lock — also true under the pre-BREAK-01 formula, does '
-    'not by itself prove the new table is wired up)',
-    () {
-      // lighterDay: false -> cap=9, habitCeiling=ceil(9/2)=5 (CAP-01).
-      // 5 habits fill the habitCeiling exactly (5 chunks, no time-targets
-      // needed). Total discretionary = 5 work chunks (cap=9 is not reached).
-      // N=4: chunk 4 is the only cadence boundary (floor(5/4)=1 long break);
-      // it keeps its own short break AND is followed by a separate 30-min
-      // long break (D-06): W@480(25) SB@505(5) W@510(25) SB@535(5) W@540(25)
-      // SB@565(5) W@570(25) SB@595(5) LB@600(30) W@630(25). Chunk 5's
-      // trailing short break is trimmed by STEP E.
-      final goals = List.generate(5, (i) => makeHabit(name: 'Habit $i'));
-      final result = sut.generate(
-        goals: goals,
-        blocks: [],
-        moodIndex: 4,
-        date: monday,
-        completionLogs: [],
-        lighterDay: false,
-      );
-      expect(result.length, 10);
-      expect(result[0].chunkType, ChunkType.work);
-      expect(result[1].chunkType, ChunkType.shortBreak);
-      expect(result[2].chunkType, ChunkType.work);
-      expect(result[3].chunkType, ChunkType.shortBreak);
-      expect(result[4].chunkType, ChunkType.work);
-      expect(result[5].chunkType, ChunkType.shortBreak);
-      expect(result[6].chunkType, ChunkType.work);
-      expect(result[7].chunkType, ChunkType.shortBreak);
-      expect(result[8].chunkType, ChunkType.longBreak);
-      expect(result[9].chunkType, ChunkType.work);
-      expect(
-        result[8].durationMinutes,
-        30,
-        reason:
-            'mood=4 must reach a long break after 4 work chunks (BREAK-01)',
-      );
-      expect(result[7].chunkType, ChunkType.shortBreak,
-          reason: 'the boundary chunk keeps its own short break (D-06)');
-      expect(result[7].durationMinutes, 5);
-      expect(result[1].durationMinutes, 5);
-    },
-  );
+  test('BREAK-01: mood=4 places a long break after every 4 work chunks '
+      '(regression lock — also true under the pre-BREAK-01 formula, does '
+      'not by itself prove the new table is wired up)', () {
+    // lighterDay: false -> cap=9, habitCeiling=ceil(9/2)=5 (CAP-01).
+    // 5 habits fill the habitCeiling exactly (5 chunks, no time-targets
+    // needed). Total discretionary = 5 work chunks (cap=9 is not reached).
+    // N=4: chunk 4 is the only cadence boundary (floor(5/4)=1 long break);
+    // it keeps its own short break AND is followed by a separate 30-min
+    // long break (D-06): W@480(25) SB@505(5) W@510(25) SB@535(5) W@540(25)
+    // SB@565(5) W@570(25) SB@595(5) LB@600(30) W@630(25). Chunk 5's
+    // trailing short break is trimmed by STEP E.
+    final goals = List.generate(5, (i) => makeHabit(name: 'Habit $i'));
+    final result = sut.generate(
+      goals: goals,
+      blocks: [],
+      moodIndex: 4,
+      date: monday,
+      completionLogs: [],
+      lighterDay: false,
+    );
+    expect(result.length, 10);
+    expect(result[0].chunkType, ChunkType.work);
+    expect(result[1].chunkType, ChunkType.shortBreak);
+    expect(result[2].chunkType, ChunkType.work);
+    expect(result[3].chunkType, ChunkType.shortBreak);
+    expect(result[4].chunkType, ChunkType.work);
+    expect(result[5].chunkType, ChunkType.shortBreak);
+    expect(result[6].chunkType, ChunkType.work);
+    expect(result[7].chunkType, ChunkType.shortBreak);
+    expect(result[8].chunkType, ChunkType.longBreak);
+    expect(result[9].chunkType, ChunkType.work);
+    expect(
+      result[8].durationMinutes,
+      30,
+      reason: 'mood=4 must reach a long break after 4 work chunks (BREAK-01)',
+    );
+    expect(
+      result[7].chunkType,
+      ChunkType.shortBreak,
+      reason: 'the boundary chunk keeps its own short break (D-06)',
+    );
+    expect(result[7].durationMinutes, 5);
+    expect(result[1].durationMinutes, 5);
+  });
 
   test('BREAK-01: mood=5 places a long break after every 5 work chunks', () {
     // lighterDay: false -> cap=11, habitCeiling=ceil(11/2)=6 (CAP-01).
@@ -2126,8 +2118,11 @@ void main() {
       30,
       reason: 'mood=5 must reach a long break after 5 work chunks (BREAK-01)',
     );
-    expect(result[9].chunkType, ChunkType.shortBreak,
-        reason: 'the boundary chunk keeps its own short break (D-06)');
+    expect(
+      result[9].chunkType,
+      ChunkType.shortBreak,
+      reason: 'the boundary chunk keeps its own short break (D-06)',
+    );
     expect(result[9].durationMinutes, 5);
     expect(result[1].durationMinutes, 5);
   });
@@ -2797,12 +2792,10 @@ void main() {
         );
 
         final anchored =
-            result.where((c) => c.anchoredStartMinutes != null).toList()
-              ..sort(
-                (a, b) => a.anchoredStartMinutes!.compareTo(
-                  b.anchoredStartMinutes!,
-                ),
-              );
+            result.where((c) => c.anchoredStartMinutes != null).toList()..sort(
+              (a, b) =>
+                  a.anchoredStartMinutes!.compareTo(b.anchoredStartMinutes!),
+            );
 
         expect(anchored.length, 4);
         expect(anchored[0].chunkType, ChunkType.work);
@@ -2905,12 +2898,10 @@ void main() {
           completionLogs: [],
         );
         final anchored =
-            result.where((c) => c.anchoredStartMinutes != null).toList()
-              ..sort(
-                (a, b) => a.anchoredStartMinutes!.compareTo(
-                  b.anchoredStartMinutes!,
-                ),
-              );
+            result.where((c) => c.anchoredStartMinutes != null).toList()..sort(
+              (a, b) =>
+                  a.anchoredStartMinutes!.compareTo(b.anchoredStartMinutes!),
+            );
 
         expect(anchored.length, 9);
         expect(anchored[0].chunkType, ChunkType.work);
@@ -2979,12 +2970,10 @@ void main() {
           completionLogs: [],
         );
         final anchored =
-            result.where((c) => c.anchoredStartMinutes != null).toList()
-              ..sort(
-                (a, b) => a.anchoredStartMinutes!.compareTo(
-                  b.anchoredStartMinutes!,
-                ),
-              );
+            result.where((c) => c.anchoredStartMinutes != null).toList()..sort(
+              (a, b) =>
+                  a.anchoredStartMinutes!.compareTo(b.anchoredStartMinutes!),
+            );
         final workStarts = anchored
             .where((c) => c.chunkType == ChunkType.work)
             .map((c) => c.anchoredStartMinutes)
@@ -3035,12 +3024,10 @@ void main() {
           completionLogs: [],
         );
         final anchored =
-            result.where((c) => c.anchoredStartMinutes != null).toList()
-              ..sort(
-                (a, b) => a.anchoredStartMinutes!.compareTo(
-                  b.anchoredStartMinutes!,
-                ),
-              );
+            result.where((c) => c.anchoredStartMinutes != null).toList()..sort(
+              (a, b) =>
+                  a.anchoredStartMinutes!.compareTo(b.anchoredStartMinutes!),
+            );
 
         final workChunks = anchored
             .where((c) => c.chunkType == ChunkType.work)
@@ -3155,9 +3142,7 @@ void main() {
         // (GUARD -- unchanged by this phase).
         final tooNarrow = sut.generate(
           goals: [],
-          blocks: [
-            makeBlock(name: 'Work', startMinutes: 540, endMinutes: 560),
-          ],
+          blocks: [makeBlock(name: 'Work', startMinutes: 540, endMinutes: 560)],
           moodIndex: 3,
           date: monday,
           completionLogs: [],

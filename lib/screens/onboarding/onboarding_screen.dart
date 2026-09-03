@@ -251,7 +251,8 @@ class _RestorativesBeatState extends State<_RestorativesBeat> {
       child: Consumer<RestorativesNotifier>(
         builder: (context, restoratives, _) {
           final added = [
-            for (final i in restoratives.items) _Entry(i.id, i.name, i.emojiTag),
+            for (final i in restoratives.items)
+              _Entry(i.id, i.name, i.emojiTag),
           ];
           final notifier = context.read<RestorativesNotifier>();
           return Column(
@@ -631,7 +632,10 @@ class _Entry {
 /// added shows as a removable chip rather than a duplicate suggestion.
 List<String> _suggestionsFor(List<String> presets, List<_Entry> added) {
   final have = {for (final e in added) e.name.toLowerCase()};
-  return [for (final p in presets) if (!have.contains(p.toLowerCase())) p];
+  return [
+    for (final p in presets)
+      if (!have.contains(p.toLowerCase())) p,
+  ];
 }
 
 /// Added items (removable input chips) + preset suggestions (add chips), all

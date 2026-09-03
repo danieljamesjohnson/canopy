@@ -37,34 +37,33 @@ class _FakeGoalsNotifier extends GoalsNotifier {
 
 void main() {
   group('FocusScreen (READ-04)', () {
-    testWidgets(
-      'renders timer label or start button for 25-minute countdown',
-      (tester) async {
-        await pumpWithMood(
-          tester,
-          const FocusScreen(chunkId: 'c1'),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>(
-              create: (_) => _FakeScheduleNotifier(),
-            ),
-            ChangeNotifierProvider<GoalsNotifier>(
-              create: (_) => _FakeGoalsNotifier(),
-            ),
-          ],
-        );
+    testWidgets('renders timer label or start button for 25-minute countdown', (
+      tester,
+    ) async {
+      await pumpWithMood(
+        tester,
+        const FocusScreen(chunkId: 'c1'),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>(
+            create: (_) => _FakeScheduleNotifier(),
+          ),
+          ChangeNotifierProvider<GoalsNotifier>(
+            create: (_) => _FakeGoalsNotifier(),
+          ),
+        ],
+      );
 
-        // FocusScreen must show the timer display (e.g. '25:00')
-        // or a 'Start 25 min timer' button when first loaded.
-        final hasTimerLabel = tester.any(find.text('25:00'));
-        final hasStartButton = tester.any(find.text('Start 25 min timer'));
-        expect(
-          hasTimerLabel || hasStartButton,
-          isTrue,
-          reason:
-              'READ-04: FocusScreen must show the 25-min timer label or start button',
-        );
-      },
-    );
+      // FocusScreen must show the timer display (e.g. '25:00')
+      // or a 'Start 25 min timer' button when first loaded.
+      final hasTimerLabel = tester.any(find.text('25:00'));
+      final hasStartButton = tester.any(find.text('Start 25 min timer'));
+      expect(
+        hasTimerLabel || hasStartButton,
+        isTrue,
+        reason:
+            'READ-04: FocusScreen must show the 25-min timer label or start button',
+      );
+    });
 
     testWidgets(
       'Timer.cancel called on dispose — no setState-after-dispose exception',

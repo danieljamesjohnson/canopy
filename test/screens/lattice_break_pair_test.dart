@@ -132,199 +132,188 @@ int _firstBreakPairIndex(List<ScheduledChunk> chunks) {
 
 void main() {
   group('D-06: a cadence boundary emits two consecutive break chunks', () {
-    test(
-      'D-06: the engine emits a 5-minute break immediately followed by a '
-      '30-minute break',
-      () {
-        final day = _latticeDay();
-        final pairIndex = _firstBreakPairIndex(day);
-        expect(
-          pairIndex,
-          greaterThanOrEqualTo(0),
-          reason:
-              'no shortBreak->longBreak adjacency found in the generated '
-              'day — the unfixed engine replaces the short break with the '
-              'long one instead of following it (28-CONTEXT.md D-06)',
-        );
+    test('D-06: the engine emits a 5-minute break immediately followed by a '
+        '30-minute break', () {
+      final day = _latticeDay();
+      final pairIndex = _firstBreakPairIndex(day);
+      expect(
+        pairIndex,
+        greaterThanOrEqualTo(0),
+        reason:
+            'no shortBreak->longBreak adjacency found in the generated '
+            'day — the unfixed engine replaces the short break with the '
+            'long one instead of following it (28-CONTEXT.md D-06)',
+      );
 
-        final shortBreak = day[pairIndex];
-        final longBreak = day[pairIndex + 1];
+      final shortBreak = day[pairIndex];
+      final longBreak = day[pairIndex + 1];
 
-        expect(shortBreak.durationMinutes, 5);
-        expect(longBreak.durationMinutes, 30);
-        expect(
-          longBreak.displayStartMinutes,
-          shortBreak.displayStartMinutes! + 5,
-          reason:
-              'the long break must start exactly where the short break '
-              'ends — the two are adjacent cells, not one stretched cell',
-        );
-      },
-    );
+      expect(shortBreak.durationMinutes, 5);
+      expect(longBreak.durationMinutes, 30);
+      expect(
+        longBreak.displayStartMinutes,
+        shortBreak.displayStartMinutes! + 5,
+        reason:
+            'the long break must start exactly where the short break '
+            'ends — the two are adjacent cells, not one stretched cell',
+      );
+    });
 
-    test(
-      'D-06: buildTimeline renders the pair as two adjacent ChunkRows with '
-      'no gap row between',
-      () {
-        final day = _latticeDay();
-        final pairIndex = _firstBreakPairIndex(day);
-        expect(
-          pairIndex,
-          greaterThanOrEqualTo(0),
-          reason:
-              'no shortBreak->longBreak adjacency found in the generated '
-              'day — cannot exercise buildTimeline against a pair that '
-              'does not exist',
-        );
+    test('D-06: buildTimeline renders the pair as two adjacent ChunkRows with '
+        'no gap row between', () {
+      final day = _latticeDay();
+      final pairIndex = _firstBreakPairIndex(day);
+      expect(
+        pairIndex,
+        greaterThanOrEqualTo(0),
+        reason:
+            'no shortBreak->longBreak adjacency found in the generated '
+            'day — cannot exercise buildTimeline against a pair that '
+            'does not exist',
+      );
 
-        final shortBreak = day[pairIndex];
-        final longBreak = day[pairIndex + 1];
+      final shortBreak = day[pairIndex];
+      final longBreak = day[pairIndex + 1];
 
-        final rows = buildTimeline(chunks: day, nowState: DayComplete());
+      final rows = buildTimeline(chunks: day, nowState: DayComplete());
 
-        // Every chunk gets exactly one row — none swallowed, none
-        // duplicated.
-        expect(rows.whereType<ChunkRow>().length, day.length);
+      // Every chunk gets exactly one row — none swallowed, none
+      // duplicated.
+      expect(rows.whereType<ChunkRow>().length, day.length);
 
-        final shortRowIndex = rows.indexWhere(
-          (r) => r is ChunkRow && r.chunk.id == shortBreak.id,
-        );
-        final longRowIndex = rows.indexWhere(
-          (r) => r is ChunkRow && r.chunk.id == longBreak.id,
-        );
-        expect(shortRowIndex, isNot(-1));
-        expect(longRowIndex, isNot(-1));
-        expect(
-          longRowIndex,
-          shortRowIndex + 1,
-          reason:
-              'the long-break row must sit immediately after the '
-              'short-break row — no GapFreeRow (or anything else) between '
-              'them, since the pair has a zero-minute gap',
-        );
-      },
-    );
+      final shortRowIndex = rows.indexWhere(
+        (r) => r is ChunkRow && r.chunk.id == shortBreak.id,
+      );
+      final longRowIndex = rows.indexWhere(
+        (r) => r is ChunkRow && r.chunk.id == longBreak.id,
+      );
+      expect(shortRowIndex, isNot(-1));
+      expect(longRowIndex, isNot(-1));
+      expect(
+        longRowIndex,
+        shortRowIndex + 1,
+        reason:
+            'the long-break row must sit immediately after the '
+            'short-break row — no GapFreeRow (or anything else) between '
+            'them, since the pair has a zero-minute gap',
+      );
+    });
 
-    test(
-      'D-06: TimelineGeometry positions the pair abutting exactly — no '
-      'overlap, no dead space',
-      () {
-        final day = _latticeDay();
-        final pairIndex = _firstBreakPairIndex(day);
-        expect(
-          pairIndex,
-          greaterThanOrEqualTo(0),
-          reason:
-              'no shortBreak->longBreak adjacency found in the generated '
-              'day — cannot exercise TimelineGeometry against a pair that '
-              'does not exist',
-        );
+    test('D-06: TimelineGeometry positions the pair abutting exactly — no '
+        'overlap, no dead space', () {
+      final day = _latticeDay();
+      final pairIndex = _firstBreakPairIndex(day);
+      expect(
+        pairIndex,
+        greaterThanOrEqualTo(0),
+        reason:
+            'no shortBreak->longBreak adjacency found in the generated '
+            'day — cannot exercise TimelineGeometry against a pair that '
+            'does not exist',
+      );
 
-        final shortBreak = day[pairIndex];
-        final longBreak = day[pairIndex + 1];
+      final shortBreak = day[pairIndex];
+      final longBreak = day[pairIndex + 1];
 
-        final firstStart = day.first.displayStartMinutes!;
-        final lastChunk = day.last;
-        final lastEnd =
-            lastChunk.displayStartMinutes! + lastChunk.durationMinutes;
+      final firstStart = day.first.displayStartMinutes!;
+      final lastChunk = day.last;
+      final lastEnd =
+          lastChunk.displayStartMinutes! + lastChunk.durationMinutes;
 
-        final geometry = TimelineGeometry.forDay(
-          nowMinutes: firstStart,
-          firstStartMinutes: firstStart,
-          lastEndMinutes: lastEnd,
-        );
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: firstStart,
+        firstStartMinutes: firstStart,
+        lastEndMinutes: lastEnd,
+      );
 
-        final shortStart = shortBreak.displayStartMinutes!;
-        final longStart = longBreak.displayStartMinutes!;
+      final shortStart = shortBreak.displayStartMinutes!;
+      final longStart = longBreak.displayStartMinutes!;
 
-        // Arithmetic assertions on a linear mapping — trustworthy in the
-        // test harness, unlike any text-driven measurement (STATE.md
-        // test-harness caveat).
-        expect(
-          geometry.yFor(longStart),
-          geometry.yFor(shortStart) + geometry.heightFor(shortStart, 5),
-          reason:
-              'the long break must start exactly where the short break '
-              'row ends — no overlap, no dead space between them',
-        );
-        expect(
-          geometry.heightFor(longStart, 30),
-          greaterThan(geometry.heightFor(shortStart, 5)),
-          reason: 'a 30-minute break row must render taller than a '
-              '5-minute one',
-        );
-      },
-    );
+      // Arithmetic assertions on a linear mapping — trustworthy in the
+      // test harness, unlike any text-driven measurement (STATE.md
+      // test-harness caveat).
+      expect(
+        geometry.yFor(longStart),
+        geometry.yFor(shortStart) + geometry.heightFor(shortStart, 5),
+        reason:
+            'the long break must start exactly where the short break '
+            'row ends — no overlap, no dead space between them',
+      );
+      expect(
+        geometry.heightFor(longStart, 30),
+        greaterThan(geometry.heightFor(shortStart, 5)),
+        reason:
+            'a 30-minute break row must render taller than a '
+            '5-minute one',
+      );
+    });
   });
 
   group('D-06: the pair renders', () {
-    testWidgets(
-      'D-06: a 5-minute break card and a 30-minute break card render '
-      'adjacently without throwing',
-      (tester) async {
-        final day = _latticeDay();
-        final pairIndex = _firstBreakPairIndex(day);
-        expect(
-          pairIndex,
-          greaterThanOrEqualTo(0),
-          reason:
-              'no shortBreak->longBreak adjacency found in the generated '
-              'day — cannot render a pair that does not exist. This is a '
-              '30-minute longBreak size no downstream widget has ever been '
-              'handed.',
-        );
+    testWidgets('D-06: a 5-minute break card and a 30-minute break card render '
+        'adjacently without throwing', (tester) async {
+      final day = _latticeDay();
+      final pairIndex = _firstBreakPairIndex(day);
+      expect(
+        pairIndex,
+        greaterThanOrEqualTo(0),
+        reason:
+            'no shortBreak->longBreak adjacency found in the generated '
+            'day — cannot render a pair that does not exist. This is a '
+            '30-minute longBreak size no downstream widget has ever been '
+            'handed.',
+      );
 
-        final shortBreak = day[pairIndex];
-        final longBreak = day[pairIndex + 1];
+      final shortBreak = day[pairIndex];
+      final longBreak = day[pairIndex + 1];
 
-        final firstStart = day.first.displayStartMinutes!;
-        final lastChunk = day.last;
-        final lastEnd =
-            lastChunk.displayStartMinutes! + lastChunk.durationMinutes;
-        final geometry = TimelineGeometry.forDay(
-          nowMinutes: firstStart,
-          firstStartMinutes: firstStart,
-          lastEndMinutes: lastEnd,
-        );
+      final firstStart = day.first.displayStartMinutes!;
+      final lastChunk = day.last;
+      final lastEnd =
+          lastChunk.displayStartMinutes! + lastChunk.durationMinutes;
+      final geometry = TimelineGeometry.forDay(
+        nowMinutes: firstStart,
+        firstStartMinutes: firstStart,
+        lastEndMinutes: lastEnd,
+      );
 
-        await pumpWithMood(
-          tester,
-          Column(
-            children: [
-              SizedBox(
-                height: geometry.heightFor(
-                  shortBreak.displayStartMinutes!,
-                  shortBreak.durationMinutes,
-                ),
-                child: TimelineRowTile(child: ChunkCard(chunk: shortBreak)),
+      await pumpWithMood(
+        tester,
+        Column(
+          children: [
+            SizedBox(
+              height: geometry.heightFor(
+                shortBreak.displayStartMinutes!,
+                shortBreak.durationMinutes,
               ),
-              SizedBox(
-                height: geometry.heightFor(
-                  longBreak.displayStartMinutes!,
-                  longBreak.durationMinutes,
-                ),
-                child: TimelineRowTile(child: ChunkCard(chunk: longBreak)),
+              child: TimelineRowTile(child: ChunkCard(chunk: shortBreak)),
+            ),
+            SizedBox(
+              height: geometry.heightFor(
+                longBreak.displayStartMinutes!,
+                longBreak.durationMinutes,
               ),
-            ],
-          ),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(
-              value: _FakeScheduleNotifier(),
+              child: TimelineRowTile(child: ChunkCard(chunk: longBreak)),
             ),
           ],
-        );
-        await tester.pump();
+        ),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(
+            value: _FakeScheduleNotifier(),
+          ),
+        ],
+      );
+      await tester.pump();
 
-        // "Renders fine" is unverifiable unless checked: no thrown
-        // exception (a RenderFlex overflow surfaces through
-        // takeException()), and exactly two ChunkCards present. No
-        // assertion on text width, glyph metric, or label layout — the
-        // harness's placeholder font inflates those (STATE.md carry-forward
-        // invariant).
-        expect(tester.takeException(), isNull);
-        expect(find.byType(ChunkCard), findsNWidgets(2));
-      },
-    );
+      // "Renders fine" is unverifiable unless checked: no thrown
+      // exception (a RenderFlex overflow surfaces through
+      // takeException()), and exactly two ChunkCards present. No
+      // assertion on text width, glyph metric, or label layout — the
+      // harness's placeholder font inflates those (STATE.md carry-forward
+      // invariant).
+      expect(tester.takeException(), isNull);
+      expect(find.byType(ChunkCard), findsNWidgets(2));
+    });
   });
 
   group('COMMITBREAK-01/RENDER — a commitment break renders as a break', () {

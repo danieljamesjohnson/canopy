@@ -88,10 +88,7 @@ void main() {
     });
 
     test('returns null when both are null', () {
-      final chunk = ScheduledChunk(
-        chunkTypeIndex: 0,
-        durationMinutes: 25,
-      );
+      final chunk = ScheduledChunk(chunkTypeIndex: 0, durationMinutes: 25);
       expect(chunk.displayStartMinutes, isNull);
     });
   });

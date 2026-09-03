@@ -102,8 +102,9 @@ Future<void> _tapFab(WidgetTester tester) async {
 
 void main() {
   group('Goals add fork (OBVIOUS-03, UI-SPEC 24-27)', () {
-    testWidgets('the FAB asks which kind FIRST — no goal form yet',
-        (tester) async {
+    testWidgets('the FAB asks which kind FIRST — no goal form yet', (
+      tester,
+    ) async {
       await _pumpGoals(tester);
 
       await _tapFab(tester);
@@ -129,49 +130,54 @@ void main() {
     });
 
     testWidgets(
-        'the restorative door saves a RestorativeItem and never a Goal — '
-        'no goal form at any point (T-33-12)', (tester) async {
-      final h = await _pumpGoals(tester);
+      'the restorative door saves a RestorativeItem and never a Goal — '
+      'no goal form at any point (T-33-12)',
+      (tester) async {
+        final h = await _pumpGoals(tester);
 
-      await _tapFab(tester);
-      expect(find.byType(GoalFormSheet), findsNothing);
+        await _tapFab(tester);
+        expect(find.byType(GoalFormSheet), findsNothing);
 
-      await tester.tap(find.text(_restorativeDoor));
-      await tester.pumpAndSettle();
-      expect(find.byType(GoalFormSheet), findsNothing);
+        await tester.tap(find.text(_restorativeDoor));
+        await tester.pumpAndSettle();
+        expect(find.byType(GoalFormSheet), findsNothing);
 
-      await tester.enterText(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.byType(TextFormField),
-        ).first,
-        'Play guitar',
-      );
-      await tester.pumpAndSettle();
-      expect(find.byType(GoalFormSheet), findsNothing);
+        await tester.enterText(
+          find
+              .descendant(
+                of: find.byType(AlertDialog),
+                matching: find.byType(TextFormField),
+              )
+              .first,
+          'Play guitar',
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(GoalFormSheet), findsNothing);
 
-      await tester.tap(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.widgetWithText(FilledButton, 'Add'),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.tap(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.widgetWithText(FilledButton, 'Add'),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // The promise, asserted on both sides.
-      expect(h.restoratives.items.length, 1);
-      expect(h.restoratives.items.single.name, 'Play guitar');
-      expect(h.goals.goals, isEmpty);
-      expect(find.byType(GoalFormSheet), findsNothing);
+        // The promise, asserted on both sides.
+        expect(h.restoratives.items.length, 1);
+        expect(h.restoratives.items.single.name, 'Play guitar');
+        expect(h.goals.goals, isEmpty);
+        expect(find.byType(GoalFormSheet), findsNothing);
 
-      // Let the confirmation SnackBar's display timer fire so it does not leak
-      // into teardown as a pending timer.
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
-    });
+        // Let the confirmation SnackBar's display timer fire so it does not leak
+        // into teardown as a pending timer.
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+      },
+    );
 
-    testWidgets('cancelling the fork creates nothing of either kind',
-        (tester) async {
+    testWidgets('cancelling the fork creates nothing of either kind', (
+      tester,
+    ) async {
       final h = await _pumpGoals(tester);
 
       await _tapFab(tester);
@@ -184,8 +190,9 @@ void main() {
       expect(h.restoratives.items, isEmpty);
     });
 
-    testWidgets('tapping an existing goal opens the form with NO fork',
-        (tester) async {
+    testWidgets('tapping an existing goal opens the form with NO fork', (
+      tester,
+    ) async {
       await _pumpGoals(
         tester,
         seed: [
@@ -208,8 +215,9 @@ void main() {
       expect(find.byType(GoalFormSheet), findsOneWidget);
     });
 
-    testWidgets('on a phone both doors and both consequence lines still fit',
-        (tester) async {
+    testWidgets('on a phone both doors and both consequence lines still fit', (
+      tester,
+    ) async {
       // Below the 720dp breakpoint the goal door leads to a bottom sheet
       // rather than a dialog, and the fork itself has ~40dp less width than
       // its own 360dp cap. An overflow on either fails this test.

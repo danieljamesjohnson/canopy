@@ -165,8 +165,9 @@ void main() {
         await notifier.markDeferred('chunk-1');
 
         // After markDeferred:
-        final updatedChunk = notifier.todaySchedule?.chunks
-            .firstWhere((c) => c.id == 'chunk-1');
+        final updatedChunk = notifier.todaySchedule?.chunks.firstWhere(
+          (c) => c.id == 'chunk-1',
+        );
         expect(
           updatedChunk?.isDeferred,
           isTrue,
@@ -175,7 +176,8 @@ void main() {
         expect(
           updatedChunk?.isSkipped,
           isTrue,
-          reason: 'markDeferred must also set isSkipped = true for screen partitioning',
+          reason:
+              'markDeferred must also set isSkipped = true for screen partitioning',
         );
         expect(
           listener.count,

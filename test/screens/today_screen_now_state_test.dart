@@ -1241,7 +1241,11 @@ void main() {
               durationMinutes: 5,
               isSkipped: breakSkipped,
             ),
-            _workChunk(id: 'w2', syntheticStartMinutes: 510, durationMinutes: 25),
+            _workChunk(
+              id: 'w2',
+              syntheticStartMinutes: 510,
+              durationMinutes: 25,
+            ),
           ],
         );
       }
@@ -1275,7 +1279,10 @@ void main() {
             matching: find.byType(LiveRowCard),
           );
           await tester.tap(
-            find.descendant(of: liveRow, matching: find.byType(BreakSkipButton)),
+            find.descendant(
+              of: liveRow,
+              matching: find.byType(BreakSkipButton),
+            ),
           );
           await tester.pumpAndSettle();
 
@@ -1378,8 +1385,7 @@ void main() {
         // Relative to the Stack's own top — see Correction 2 above.
         final liveTopInStack = liveRect.top - stackRectLive.top;
         final nowLineTopInStackBefore =
-            tester.getRect(find.byType(NowLineOverlay)).top -
-            stackRectLive.top;
+            tester.getRect(find.byType(NowLineOverlay)).top - stackRectLive.top;
 
         // TodayScreenState._nowFn is late final — a second pump with a
         // different fixture must fully unmount first, or the second clock
@@ -1491,7 +1497,8 @@ void main() {
               matching: find.byType(BreakSkippedIndicator),
             ),
             findsOneWidget,
-            reason: 'an already-skipped break must show the resolved '
+            reason:
+                'an already-skipped break must show the resolved '
                 'indicator in its rail',
           );
           expect(
@@ -1500,92 +1507,89 @@ void main() {
               matching: find.byType(BreakSkipButton),
             ),
             findsNothing,
-            reason: 'an already-skipped break must never still show a '
+            reason:
+                'an already-skipped break must never still show a '
                 'tappable Skip button — there is no way to re-skip it',
           );
           expect(fake.lastSkippedId, isNull);
         },
       );
 
-      testWidgets(
-        'Case D — a live, UNRESOLVED break carries no strikethrough '
-        '(pairs with the isSkipped:true case already proven at the widget '
-        'level in today_row_widgets_test.dart, since an isSkipped:true LIVE '
-        'break is unreachable through resolveNowState — see Case B)',
-        (tester) async {
-          final fake = _FakeScheduleNotifierWithSchedule(liveSkipFixture());
-          await _pumpTodayScreen(
-            tester,
-            scheduleNotifier: fake,
-            now: liveSkipNow,
-          );
-          final titleText = tester.widget<Text>(find.text('Taking a break'));
-          expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
-        },
-      );
-    });
-
-    testWidgets(
-      'GapBeforeNext "Up next" banner names the reference title, not '
-      '"Work block" (PD-27-10)',
-      (tester) async {
-        // PD-27-10: this test's real subject is `_chunkTitle`'s
-        // break-awareness, not the live row's now-deleted line naming the
-        // upcoming chunk.
-        // `_chunkTitle` survives with two callers (today_screen.dart ~460
-        // PreStart, ~507 GapBeforeNext), and today_screen.dart's own comment
-        // at ~494-498 explicitly names break-awareness at the GapBeforeNext
-        // site as load-bearing ("do NOT add a `chunkType` check in this
-        // case; the shared helper already handles it") — repointed here so
-        // that guard can still fail.
-        //
-        // w1 is marked completed (resolved); `now` sits inside w1's own
-        // window but before b1's window opens. resolveNowState's
-        // GapBeforeNext branch fires once the current window's chunk is
-        // resolved and the next chunk's window has not yet opened
-        // (now_state.dart) — b1 has not opened yet (505 > 490 at 8:10),
-        // producing GapBeforeNext(b1), matching the identical fixture shape
-        // in `today_screen_test.dart`'s sibling "gap-before-next targeting a
-        // break names the break" test.
-        final sn = _FakeScheduleNotifierWithSchedule(
-          DailySchedule(
-            dateYmd: _todayYmd(),
-            moodIndex: 3,
-            chunks: [
-              _workChunk(
-                id: 'w1',
-                syntheticStartMinutes: 480,
-                durationMinutes: 25,
-                isCompleted: true,
-              ),
-              _breakChunk(
-                id: 'b1',
-                syntheticStartMinutes: 505,
-                durationMinutes: 5,
-              ),
-            ],
-          ),
-        );
+      testWidgets('Case D — a live, UNRESOLVED break carries no strikethrough '
+          '(pairs with the isSkipped:true case already proven at the widget '
+          'level in today_row_widgets_test.dart, since an isSkipped:true LIVE '
+          'break is unreachable through resolveNowState — see Case B)', (
+        tester,
+      ) async {
+        final fake = _FakeScheduleNotifierWithSchedule(liveSkipFixture());
         await _pumpTodayScreen(
           tester,
-          scheduleNotifier: sn,
-          now: () => DateTime(2026, 6, 13, 8, 10),
+          scheduleNotifier: fake,
+          now: liveSkipNow,
         );
-        expect(find.text('Up next'), findsOneWidget);
-        // 'Short break' legitimately renders twice — once in the edge-state
-        // banner under test, once in b1's own (unresolved, upcoming) row
-        // further down the day list — scope to the banner itself, mirroring
-        // today_screen_test.dart's identical ancestor-scoping pattern.
-        final upNextHeader = find
-            .ancestor(of: find.text('Up next'), matching: find.byType(Padding))
-            .first;
-        expect(
-          find.descendant(of: upNextHeader, matching: find.text('Short break')),
-          findsOneWidget,
-        );
-        expect(find.text('Work block'), findsNothing);
-      },
-    );
+        final titleText = tester.widget<Text>(find.text('Taking a break'));
+        expect(titleText.style?.decoration, isNot(TextDecoration.lineThrough));
+      });
+    });
+
+    testWidgets('GapBeforeNext "Up next" banner names the reference title, not '
+        '"Work block" (PD-27-10)', (tester) async {
+      // PD-27-10: this test's real subject is `_chunkTitle`'s
+      // break-awareness, not the live row's now-deleted line naming the
+      // upcoming chunk.
+      // `_chunkTitle` survives with two callers (today_screen.dart ~460
+      // PreStart, ~507 GapBeforeNext), and today_screen.dart's own comment
+      // at ~494-498 explicitly names break-awareness at the GapBeforeNext
+      // site as load-bearing ("do NOT add a `chunkType` check in this
+      // case; the shared helper already handles it") — repointed here so
+      // that guard can still fail.
+      //
+      // w1 is marked completed (resolved); `now` sits inside w1's own
+      // window but before b1's window opens. resolveNowState's
+      // GapBeforeNext branch fires once the current window's chunk is
+      // resolved and the next chunk's window has not yet opened
+      // (now_state.dart) — b1 has not opened yet (505 > 490 at 8:10),
+      // producing GapBeforeNext(b1), matching the identical fixture shape
+      // in `today_screen_test.dart`'s sibling "gap-before-next targeting a
+      // break names the break" test.
+      final sn = _FakeScheduleNotifierWithSchedule(
+        DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: [
+            _workChunk(
+              id: 'w1',
+              syntheticStartMinutes: 480,
+              durationMinutes: 25,
+              isCompleted: true,
+            ),
+            _breakChunk(
+              id: 'b1',
+              syntheticStartMinutes: 505,
+              durationMinutes: 5,
+            ),
+          ],
+        ),
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: sn,
+        now: () => DateTime(2026, 6, 13, 8, 10),
+      );
+      expect(find.text('Up next'), findsOneWidget);
+      // 'Short break' legitimately renders twice — once in the edge-state
+      // banner under test, once in b1's own (unresolved, upcoming) row
+      // further down the day list — scope to the banner itself, mirroring
+      // today_screen_test.dart's identical ancestor-scoping pattern.
+      final upNextHeader = find
+          .ancestor(of: find.text('Up next'), matching: find.byType(Padding))
+          .first;
+      expect(
+        find.descendant(of: upNextHeader, matching: find.text('Short break')),
+        findsOneWidget,
+      );
+      expect(find.text('Work block'), findsNothing);
+    });
 
     testWidgets('live work chunk keeps the plain kicker', (tester) async {
       final sn = _FakeScheduleNotifierWithSchedule(
@@ -2234,7 +2238,8 @@ void main() {
         expect(
           find.text('Free until 9:15 AM'),
           findsOneWidget,
-          reason: 'G-03: should be in pre-start state at 9:13 AM '
+          reason:
+              'G-03: should be in pre-start state at 9:13 AM '
               '(probed by the leading free block — D-33-01 deleted the '
               'banner this assertion used to read)',
         );

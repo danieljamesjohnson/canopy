@@ -16,12 +16,12 @@ import '../test_helpers/mood_pump.dart';
 // ---------------------------------------------------------------------------
 
 ScheduledChunk _workChunk() => ScheduledChunk(
-      id: 'c1',
-      chunkTypeIndex: ChunkType.work.index,
-      goalId: 'g1',
-      durationMinutes: 25,
-      rationale: 'Habit',
-    );
+  id: 'c1',
+  chunkTypeIndex: ChunkType.work.index,
+  goalId: 'g1',
+  durationMinutes: 25,
+  rationale: 'Habit',
+);
 
 /// Minimal fake ScheduleNotifier that does not touch Hive.
 class _FakeScheduleNotifier extends ScheduleNotifier {
@@ -35,88 +35,86 @@ class _FakeScheduleNotifier extends ScheduleNotifier {
 
 void main() {
   group('ChunkDetailSheet (READ-03)', () {
-    testWidgets(
-      'shows goal name, rationale, and three action buttons',
-      (tester) async {
-        final notifier = _FakeScheduleNotifier();
+    testWidgets('shows goal name, rationale, and three action buttons', (
+      tester,
+    ) async {
+      final notifier = _FakeScheduleNotifier();
 
-        await pumpWithMood(
-          tester,
-          ChunkDetailSheet(
-            chunk: _workChunk(),
-            notifier: notifier,
-            goalName: 'Morning Run',
-            displayRationale: 'Daily habit',
-          ),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
-          ],
-        );
+      await pumpWithMood(
+        tester,
+        ChunkDetailSheet(
+          chunk: _workChunk(),
+          notifier: notifier,
+          goalName: 'Morning Run',
+          displayRationale: 'Daily habit',
+        ),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
+        ],
+      );
 
-        expect(
-          find.text('Morning Run'),
-          findsOneWidget,
-          reason: 'READ-03: sheet must display the goal name',
-        );
-        expect(
-          find.text('Daily habit'),
-          findsOneWidget,
-          reason: 'READ-03: sheet must display the rationale',
-        );
-        expect(
-          find.text('Mark complete'),
-          findsOneWidget,
-          reason: 'READ-03: sheet must show a Mark complete action',
-        );
-        expect(
-          find.text('Skip chunk'),
-          findsOneWidget,
-          reason: 'READ-03: sheet must show a Skip chunk action',
-        );
-        expect(
-          find.text('Defer to later'),
-          findsOneWidget,
-          reason: 'READ-03: sheet must show a Defer to later action',
-        );
-      },
-    );
+      expect(
+        find.text('Morning Run'),
+        findsOneWidget,
+        reason: 'READ-03: sheet must display the goal name',
+      );
+      expect(
+        find.text('Daily habit'),
+        findsOneWidget,
+        reason: 'READ-03: sheet must display the rationale',
+      );
+      expect(
+        find.text('Mark complete'),
+        findsOneWidget,
+        reason: 'READ-03: sheet must show a Mark complete action',
+      );
+      expect(
+        find.text('Skip chunk'),
+        findsOneWidget,
+        reason: 'READ-03: sheet must show a Skip chunk action',
+      );
+      expect(
+        find.text('Defer to later'),
+        findsOneWidget,
+        reason: 'READ-03: sheet must show a Defer to later action',
+      );
+    });
 
-    testWidgets(
-      'resolved chunk shows status badge and no action buttons',
-      (tester) async {
-        final notifier = _FakeScheduleNotifier();
-        final chunk = ScheduledChunk(
-          id: 'c2',
-          chunkTypeIndex: ChunkType.work.index,
-          goalId: 'g1',
-          durationMinutes: 25,
-          rationale: 'Habit',
-        )..isCompleted = true;
+    testWidgets('resolved chunk shows status badge and no action buttons', (
+      tester,
+    ) async {
+      final notifier = _FakeScheduleNotifier();
+      final chunk = ScheduledChunk(
+        id: 'c2',
+        chunkTypeIndex: ChunkType.work.index,
+        goalId: 'g1',
+        durationMinutes: 25,
+        rationale: 'Habit',
+      )..isCompleted = true;
 
-        await pumpWithMood(
-          tester,
-          ChunkDetailSheet(
-            chunk: chunk,
-            notifier: notifier,
-            goalName: 'Morning Run',
-            displayRationale: 'Daily habit',
-          ),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
-          ],
-        );
+      await pumpWithMood(
+        tester,
+        ChunkDetailSheet(
+          chunk: chunk,
+          notifier: notifier,
+          goalName: 'Morning Run',
+          displayRationale: 'Daily habit',
+        ),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
+        ],
+      );
 
-        expect(
-          find.text('Completed'),
-          findsOneWidget,
-          reason: 'READ-03: resolved chunk shows Completed badge',
-        );
-        expect(
-          find.text('Mark complete'),
-          findsNothing,
-          reason: 'READ-03: no action buttons on resolved chunk',
-        );
-      },
-    );
+      expect(
+        find.text('Completed'),
+        findsOneWidget,
+        reason: 'READ-03: resolved chunk shows Completed badge',
+      );
+      expect(
+        find.text('Mark complete'),
+        findsNothing,
+        reason: 'READ-03: no action buttons on resolved chunk',
+      );
+    });
   });
 }

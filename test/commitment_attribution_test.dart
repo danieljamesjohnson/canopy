@@ -93,15 +93,14 @@ CommitmentBlock _makeBlock({
   String name = 'Job',
   List<int> daysOfWeek = const [1, 2, 3, 4, 5],
   int startMinutes = 540, // 09:00
-  int endMinutes = 600,   // 10:00 — 60-min window → 2 × 25-min slots
-}) =>
-    CommitmentBlock(
-      id: 'block-test-id',
-      name: name,
-      daysOfWeek: daysOfWeek,
-      startMinutes: startMinutes,
-      endMinutes: endMinutes,
-    );
+  int endMinutes = 600, // 10:00 — 60-min window → 2 × 25-min slots
+}) => CommitmentBlock(
+  id: 'block-test-id',
+  name: name,
+  daysOfWeek: daysOfWeek,
+  startMinutes: startMinutes,
+  endMinutes: endMinutes,
+);
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -132,19 +131,27 @@ void main() {
           completionLogs: [],
         );
 
-        final workChunks = chunks.where((c) => c.chunkType == ChunkType.work).toList();
-        expect(workChunks, isNotEmpty, reason: 'Should generate at least one work chunk');
+        final workChunks = chunks
+            .where((c) => c.chunkType == ChunkType.work)
+            .toList();
+        expect(
+          workChunks,
+          isNotEmpty,
+          reason: 'Should generate at least one work chunk',
+        );
 
         for (final chunk in workChunks) {
           expect(
             chunk.commitmentId,
             equals(block.id),
-            reason: 'Each commitment work chunk must carry commitmentId == block.id',
+            reason:
+                'Each commitment work chunk must carry commitmentId == block.id',
           );
           expect(
             chunk.goalId,
             isNull,
-            reason: 'Commitment chunks must not set goalId (preserves goalId == Goal-id invariant)',
+            reason:
+                'Commitment chunks must not set goalId (preserves goalId == Goal-id invariant)',
           );
         }
       },
@@ -169,7 +176,9 @@ void main() {
           completionLogs: [],
         );
 
-        final workChunks = chunks.where((c) => c.chunkType == ChunkType.work).toList();
+        final workChunks = chunks
+            .where((c) => c.chunkType == ChunkType.work)
+            .toList();
         expect(workChunks, isNotEmpty);
 
         for (final chunk in workChunks) {
@@ -194,8 +203,14 @@ void main() {
 
   group('CLOSE-03 notifier: commitment chunk logs non-empty CommitmentBlock.id', () {
     // Helper that sets up a notifier pre-seeded with one commitment chunk.
-    Future<({ScheduleNotifier notifier, InMemoryCompletionLogRepository logRepo, ScheduledChunk chunk})>
-        buildNotifier({required String blockId}) async {
+    Future<
+      ({
+        ScheduleNotifier notifier,
+        InMemoryCompletionLogRepository logRepo,
+        ScheduledChunk chunk,
+      })
+    >
+    buildNotifier({required String blockId}) async {
       final logRepo = InMemoryCompletionLogRepository();
       final scheduleRepo = _InMemoryScheduleRepository();
       final goalRepo = _InMemoryGoalRepository([]);
@@ -245,17 +260,20 @@ void main() {
         expect(
           log.commitmentId,
           equals(blockId),
-          reason: 'markComplete must log the CommitmentBlock.id as commitmentId',
+          reason:
+              'markComplete must log the CommitmentBlock.id as commitmentId',
         );
         expect(
           log.attributionId,
           equals(blockId),
-          reason: 'attributionId must resolve to the CommitmentBlock.id (non-empty)',
+          reason:
+              'attributionId must resolve to the CommitmentBlock.id (non-empty)',
         );
         expect(
           log.goalId,
           isEmpty,
-          reason: 'goalId must be empty for commitment chunks — the id lives in commitmentId',
+          reason:
+              'goalId must be empty for commitment chunks — the id lives in commitmentId',
         );
         expect(
           log.eventIndex,
@@ -285,12 +303,14 @@ void main() {
         expect(
           log.attributionId,
           equals(blockId),
-          reason: 'attributionId must resolve to the CommitmentBlock.id (non-empty)',
+          reason:
+              'attributionId must resolve to the CommitmentBlock.id (non-empty)',
         );
         expect(
           log.goalId,
           isEmpty,
-          reason: 'goalId must be empty for commitment chunks — the id lives in commitmentId',
+          reason:
+              'goalId must be empty for commitment chunks — the id lives in commitmentId',
         );
       },
     );
@@ -337,7 +357,8 @@ void main() {
         expect(
           log.goalId,
           equals(goalId),
-          reason: 'Discretionary chunk must still log its own goalId (commitmentId is null → falls through)',
+          reason:
+              'Discretionary chunk must still log its own goalId (commitmentId is null → falls through)',
         );
       },
     );

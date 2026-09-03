@@ -108,10 +108,12 @@ Future<_InMemoryGoalRepository> _pumpModal(WidgetTester tester) async {
   late BuildContext capturedCtx;
   await pumpWithMood(
     tester,
-    Builder(builder: (ctx) {
-      capturedCtx = ctx;
-      return const SizedBox.shrink();
-    }),
+    Builder(
+      builder: (ctx) {
+        capturedCtx = ctx;
+        return const SizedBox.shrink();
+      },
+    ),
     extraProviders: [
       ChangeNotifierProvider<GoalsNotifier>.value(value: notifier),
     ],
@@ -194,39 +196,35 @@ void main() {
       },
     );
 
-    testWidgets(
-      'priority control visible when Habit goal type is selected',
-      (tester) async {
-        await _pumpForm(tester);
+    testWidgets('priority control visible when Habit goal type is selected', (
+      tester,
+    ) async {
+      await _pumpForm(tester);
 
-        await tester.tap(find.text('I want to build a daily habit'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.text('I want to build a daily habit'));
+      await tester.pumpAndSettle();
 
-        expect(
-          find.byType(SegmentedButton<double>),
-          findsOneWidget,
-          reason: 'Priority control must be visible for Habit goal type',
-        );
-      },
-    );
+      expect(
+        find.byType(SegmentedButton<double>),
+        findsOneWidget,
+        reason: 'Priority control must be visible for Habit goal type',
+      );
+    });
 
-    testWidgets(
-      'priority control visible when Outcome goal type is selected',
-      (tester) async {
-        await _pumpForm(tester);
+    testWidgets('priority control visible when Outcome goal type is selected', (
+      tester,
+    ) async {
+      await _pumpForm(tester);
 
-        await tester.tap(
-          find.text("I'm working toward a specific outcome"),
-        );
-        await tester.pumpAndSettle();
+      await tester.tap(find.text("I'm working toward a specific outcome"));
+      await tester.pumpAndSettle();
 
-        expect(
-          find.byType(SegmentedButton<double>),
-          findsOneWidget,
-          reason: 'Priority control must be visible for Outcome goal type',
-        );
-      },
-    );
+      expect(
+        find.byType(SegmentedButton<double>),
+        findsOneWidget,
+        reason: 'Priority control must be visible for Outcome goal type',
+      );
+    });
 
     testWidgets(
       'priority control visible when Time Target goal type is selected',
@@ -309,9 +307,7 @@ void main() {
         await _pumpModal(tester);
 
         // Select the outcome goal type — deepest variant with most fields.
-        await tester.tap(
-          find.text("I'm working toward a specific outcome"),
-        );
+        await tester.tap(find.text("I'm working toward a specific outcome"));
         await tester.pumpAndSettle();
 
         // Priority selector must be reachable via scroll (may be below fold).

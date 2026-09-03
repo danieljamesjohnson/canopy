@@ -12,12 +12,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../test_helpers/mood_pump.dart';
 
-Goal _stubGoal() => Goal(
-      id: 'g1',
-      name: 'Exercise',
-      goalTypeIndex: 0,
-      color: '#4CAF50',
-    );
+Goal _stubGoal() =>
+    Goal(id: 'g1', name: 'Exercise', goalTypeIndex: 0, color: '#4CAF50');
 
 AnimatedOpacity _hoverIconsOpacity(WidgetTester tester, IconData iconData) {
   return tester.widget<AnimatedOpacity>(
@@ -33,8 +29,39 @@ AnimatedOpacity _hoverIconsOpacity(WidgetTester tester, IconData iconData) {
 void main() {
   group('GoalCard hover behavior (no trailing supplied)', () {
     testWidgets(
-        'InkWell.onHover(true) reveals edit_outlined + archive_outlined',
-        (tester) async {
+      'InkWell.onHover(true) reveals edit_outlined + archive_outlined',
+      (tester) async {
+        await pumpWithMood(
+          tester,
+          GoalCard(
+            goal: _stubGoal(),
+            onTap: () {},
+            onEdit: () {},
+            onArchive: () {},
+          ),
+        );
+
+        // Pre-hover both icons exist at opacity 0.
+        expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.archive_outlined), findsOneWidget);
+        expect(_hoverIconsOpacity(tester, Icons.edit_outlined).opacity, 0.0);
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.addPointer(location: Offset.zero);
+        addTearDown(gesture.removePointer);
+        await gesture.moveTo(tester.getCenter(find.byType(GoalCard)));
+        await tester.pumpAndSettle();
+
+        expect(_hoverIconsOpacity(tester, Icons.edit_outlined).opacity, 1.0);
+        expect(_hoverIconsOpacity(tester, Icons.archive_outlined).opacity, 1.0);
+      },
+    );
+
+    testWidgets('InkWell.onHover(false) returns hover icons to opacity 0', (
+      tester,
+    ) async {
       await pumpWithMood(
         tester,
         GoalCard(
@@ -45,36 +72,7 @@ void main() {
         ),
       );
 
-      // Pre-hover both icons exist at opacity 0.
-      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.archive_outlined), findsOneWidget);
-      expect(_hoverIconsOpacity(tester, Icons.edit_outlined).opacity, 0.0);
-
-      final gesture =
-          await tester.createGesture(kind: PointerDeviceKind.mouse);
-      await gesture.addPointer(location: Offset.zero);
-      addTearDown(gesture.removePointer);
-      await gesture.moveTo(tester.getCenter(find.byType(GoalCard)));
-      await tester.pumpAndSettle();
-
-      expect(_hoverIconsOpacity(tester, Icons.edit_outlined).opacity, 1.0);
-      expect(_hoverIconsOpacity(tester, Icons.archive_outlined).opacity, 1.0);
-    });
-
-    testWidgets('InkWell.onHover(false) returns hover icons to opacity 0',
-        (tester) async {
-      await pumpWithMood(
-        tester,
-        GoalCard(
-          goal: _stubGoal(),
-          onTap: () {},
-          onEdit: () {},
-          onArchive: () {},
-        ),
-      );
-
-      final gesture =
-          await tester.createGesture(kind: PointerDeviceKind.mouse);
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await gesture.addPointer(location: Offset.zero);
       addTearDown(gesture.removePointer);
 
@@ -90,35 +88,37 @@ void main() {
 
   group('GoalCard hover behavior (trailing non-null guard)', () {
     testWidgets(
-        'when trailing is supplied, hover icons are NOT shown (suppressed)',
-        (tester) async {
-      await pumpWithMood(
-        tester,
-        GoalCard(
-          goal: _stubGoal(),
-          onTap: () {},
-          onEdit: () {},
-          onArchive: () {},
-          trailing: const SizedBox(width: 20, height: 20),
-        ),
-      );
+      'when trailing is supplied, hover icons are NOT shown (suppressed)',
+      (tester) async {
+        await pumpWithMood(
+          tester,
+          GoalCard(
+            goal: _stubGoal(),
+            onTap: () {},
+            onEdit: () {},
+            onArchive: () {},
+            trailing: const SizedBox(width: 20, height: 20),
+          ),
+        );
 
-      // The trailing slot replaces hover icons entirely — neither edit nor
-      // archive icons exist in the tree (per goal_card.dart `showHoverIcons`
-      // guard on line 167).
-      expect(find.byIcon(Icons.edit_outlined), findsNothing);
-      expect(find.byIcon(Icons.archive_outlined), findsNothing);
+        // The trailing slot replaces hover icons entirely — neither edit nor
+        // archive icons exist in the tree (per goal_card.dart `showHoverIcons`
+        // guard on line 167).
+        expect(find.byIcon(Icons.edit_outlined), findsNothing);
+        expect(find.byIcon(Icons.archive_outlined), findsNothing);
 
-      // Hovering still doesn't reveal them.
-      final gesture =
-          await tester.createGesture(kind: PointerDeviceKind.mouse);
-      await gesture.addPointer(location: Offset.zero);
-      addTearDown(gesture.removePointer);
-      await gesture.moveTo(tester.getCenter(find.byType(GoalCard)));
-      await tester.pumpAndSettle();
+        // Hovering still doesn't reveal them.
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.addPointer(location: Offset.zero);
+        addTearDown(gesture.removePointer);
+        await gesture.moveTo(tester.getCenter(find.byType(GoalCard)));
+        await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.edit_outlined), findsNothing);
-      expect(find.byIcon(Icons.archive_outlined), findsNothing);
-    });
+        expect(find.byIcon(Icons.edit_outlined), findsNothing);
+        expect(find.byIcon(Icons.archive_outlined), findsNothing);
+      },
+    );
   });
 }

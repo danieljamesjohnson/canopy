@@ -78,7 +78,8 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
     'Dec',
   ];
 
-  String _formatDate(DateTime d) => '${_monthAbbr[d.month]} ${d.day}, ${d.year}';
+  String _formatDate(DateTime d) =>
+      '${_monthAbbr[d.month]} ${d.day}, ${d.year}';
 
   @override
   void dispose() {
@@ -162,9 +163,7 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
     if (result != null) {
       // Store date-only (midnight local) so day-equality in the generator is
       // unaffected by any time component.
-      setState(
-        () => _date = DateTime(result.year, result.month, result.day),
-      );
+      setState(() => _date = DateTime(result.year, result.month, result.day));
     }
   }
 
@@ -268,8 +267,7 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
               ),
             ],
             selected: {_isOneOff},
-            onSelectionChanged: (sel) =>
-                setState(() => _isOneOff = sel.first),
+            onSelectionChanged: (sel) => setState(() => _isOneOff = sel.first),
           ),
           const SizedBox(height: 16),
 
@@ -297,7 +295,11 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.calendar_today, size: 18, color: colorScheme.primary),
+                    Icon(
+                      Icons.calendar_today,
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
                     const SizedBox(width: 12),
                     Text(
                       _date == null ? 'Pick a date' : _formatDate(_date!),
@@ -361,9 +363,9 @@ class _CommitmentFormSheetState extends State<CommitmentFormSheet> {
             const SizedBox(height: 8),
             Text(
               'End must be at least 25 minutes after start.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.error,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colorScheme.error),
             ),
           ],
           const SizedBox(height: 24),

@@ -157,63 +157,60 @@ void main() {
     expect(chunks.first.id, 'chunk-done');
   });
 
-  test(
-    'COMMITBREAK-01/ADD-EVENT: an event added mid-day gets the same 25+5 '
-    'lattice as a generated day',
-    () async {
-      final repo = _InMemoryScheduleRepository();
-      final notifier = await makeNotifier(repo);
+  test('COMMITBREAK-01/ADD-EVENT: an event added mid-day gets the same 25+5 '
+      'lattice as a generated day', () async {
+    final repo = _InMemoryScheduleRepository();
+    final notifier = await makeNotifier(repo);
 
-      final block = CommitmentBlock(
-        name: 'Meeting',
-        daysOfWeek: const [],
-        startMinutes: 840, // 14:00
-        endMinutes: 900, // 15:00 — 60-min window, mood 3 (N=4): no
-        // cadence boundary reached, short breaks only.
-        date: DateTime(2026, 3, 23),
-      );
-      final inserted = await notifier.addEventToday(block);
-      expect(inserted, isTrue);
+    final block = CommitmentBlock(
+      name: 'Meeting',
+      daysOfWeek: const [],
+      startMinutes: 840, // 14:00
+      endMinutes: 900, // 15:00 — 60-min window, mood 3 (N=4): no
+      // cadence boundary reached, short breaks only.
+      date: DateTime(2026, 3, 23),
+    );
+    final inserted = await notifier.addEventToday(block);
+    expect(inserted, isTrue);
 
-      final blockChunks =
-          notifier.todaySchedule!.chunks
-              .where((c) => c.commitmentId == block.id)
-              .toList()
-            ..sort(
-              (a, b) => a.anchoredStartMinutes!.compareTo(
-                b.anchoredStartMinutes!,
-              ),
-            );
+    final blockChunks =
+        notifier.todaySchedule!.chunks
+            .where((c) => c.commitmentId == block.id)
+            .toList()
+          ..sort(
+            (a, b) =>
+                a.anchoredStartMinutes!.compareTo(b.anchoredStartMinutes!),
+          );
 
-      expect(
-        blockChunks.length,
-        4,
-        reason:
-            'work@840/25, shortBreak@865/5, work@870/25, shortBreak@895/5 — '
-            'the same 25+5 lattice a generated day gets inside a commitment '
-            'window (COMMITBREAK-01), reached via the SECOND path '
-            '(addEventToday), not generate()',
-      );
-      expect(blockChunks[0].chunkType, ChunkType.work);
-      expect(blockChunks[0].anchoredStartMinutes, 840);
-      expect(blockChunks[0].durationMinutes, 25);
-      expect(blockChunks[1].chunkType, ChunkType.shortBreak);
-      expect(blockChunks[1].anchoredStartMinutes, 865);
-      expect(blockChunks[1].durationMinutes, 5);
-      expect(blockChunks[2].chunkType, ChunkType.work);
-      expect(blockChunks[2].anchoredStartMinutes, 870);
-      expect(blockChunks[2].durationMinutes, 25);
-      expect(blockChunks[3].chunkType, ChunkType.shortBreak);
-      expect(blockChunks[3].anchoredStartMinutes, 895);
-      expect(blockChunks[3].durationMinutes, 5);
-      expect(
-        blockChunks.every((c) => c.commitmentId == block.id),
-        isTrue,
-        reason: 'D-30-04: every anchored chunk (work AND break) carries '
-            "the block's commitmentId",
-      );
-    },
-  );
+    expect(
+      blockChunks.length,
+      4,
+      reason:
+          'work@840/25, shortBreak@865/5, work@870/25, shortBreak@895/5 — '
+          'the same 25+5 lattice a generated day gets inside a commitment '
+          'window (COMMITBREAK-01), reached via the SECOND path '
+          '(addEventToday), not generate()',
+    );
+    expect(blockChunks[0].chunkType, ChunkType.work);
+    expect(blockChunks[0].anchoredStartMinutes, 840);
+    expect(blockChunks[0].durationMinutes, 25);
+    expect(blockChunks[1].chunkType, ChunkType.shortBreak);
+    expect(blockChunks[1].anchoredStartMinutes, 865);
+    expect(blockChunks[1].durationMinutes, 5);
+    expect(blockChunks[2].chunkType, ChunkType.work);
+    expect(blockChunks[2].anchoredStartMinutes, 870);
+    expect(blockChunks[2].durationMinutes, 25);
+    expect(blockChunks[3].chunkType, ChunkType.shortBreak);
+    expect(blockChunks[3].anchoredStartMinutes, 895);
+    expect(blockChunks[3].durationMinutes, 5);
+    expect(
+      blockChunks.every((c) => c.commitmentId == block.id),
+      isTrue,
+      reason:
+          'D-30-04: every anchored chunk (work AND break) carries '
+          "the block's commitmentId",
+    );
+  });
 
   test(
     "COMMITBREAK-02/ADD-EVENT: the added event's own window never moves",
@@ -236,9 +233,8 @@ void main() {
               .where((c) => c.commitmentId == block.id)
               .toList()
             ..sort(
-              (a, b) => a.anchoredStartMinutes!.compareTo(
-                b.anchoredStartMinutes!,
-              ),
+              (a, b) =>
+                  a.anchoredStartMinutes!.compareTo(b.anchoredStartMinutes!),
             );
       expect(blockChunks, isNotEmpty);
       expect(blockChunks.first.anchoredStartMinutes, 840);
@@ -257,88 +253,84 @@ void main() {
     },
   );
 
-  test(
-    'COMMITBREAK-01/ADD-EVENT-TRIM: the trailing trim must not delete a '
-    'commitment break (D-30-02)',
-    () async {
-      final repo = _InMemoryScheduleRepository();
-      // Seed today with: a completed discretionary work chunk, then another
-      // block's anchored work+break pair as the chronologically LAST items —
-      // exactly the shape _trimTrailingNonWork sees when a PREVIOUS
-      // addEventToday call already anchored a commitment break onto today.
-      final discretionary =
-          ScheduledChunk(
-            id: 'w0',
-            chunkTypeIndex: ChunkType.work.index,
-            goalId: 'goal-1',
-            durationMinutes: 25,
-            syntheticStartMinutes: 480,
-            rationale: 'Deep work',
-          )..isCompleted = true;
-      final otherWork = ScheduledChunk(
-        id: 'other-work',
-        chunkTypeIndex: ChunkType.work.index,
-        commitmentId: 'other-block',
-        durationMinutes: 25,
-        anchoredStartMinutes: 1170,
-        rationale: 'Other meeting',
-      );
-      final otherBreak = ScheduledChunk(
-        id: 'other-break',
-        chunkTypeIndex: ChunkType.shortBreak.index,
-        commitmentId: 'other-block',
-        durationMinutes: 5,
-        anchoredStartMinutes: 1195,
-        rationale: '',
-      );
-      await repo.save(
-        DailySchedule(
-          id: 'sched-1',
-          dateYmd: testDateYmd,
-          moodIndex: 3,
-          chunks: [discretionary, otherWork, otherBreak],
-        ),
-      );
-      final notifier = ScheduleNotifier(
-        now: () => DateTime(2026, 3, 23),
-        repo: repo,
-        logRepo: _InMemoryLogRepository(),
-        goalRepo: _InMemoryGoalRepository(),
-      );
-      await notifier.init();
+  test('COMMITBREAK-01/ADD-EVENT-TRIM: the trailing trim must not delete a '
+      'commitment break (D-30-02)', () async {
+    final repo = _InMemoryScheduleRepository();
+    // Seed today with: a completed discretionary work chunk, then another
+    // block's anchored work+break pair as the chronologically LAST items —
+    // exactly the shape _trimTrailingNonWork sees when a PREVIOUS
+    // addEventToday call already anchored a commitment break onto today.
+    final discretionary = ScheduledChunk(
+      id: 'w0',
+      chunkTypeIndex: ChunkType.work.index,
+      goalId: 'goal-1',
+      durationMinutes: 25,
+      syntheticStartMinutes: 480,
+      rationale: 'Deep work',
+    )..isCompleted = true;
+    final otherWork = ScheduledChunk(
+      id: 'other-work',
+      chunkTypeIndex: ChunkType.work.index,
+      commitmentId: 'other-block',
+      durationMinutes: 25,
+      anchoredStartMinutes: 1170,
+      rationale: 'Other meeting',
+    );
+    final otherBreak = ScheduledChunk(
+      id: 'other-break',
+      chunkTypeIndex: ChunkType.shortBreak.index,
+      commitmentId: 'other-block',
+      durationMinutes: 5,
+      anchoredStartMinutes: 1195,
+      rationale: '',
+    );
+    await repo.save(
+      DailySchedule(
+        id: 'sched-1',
+        dateYmd: testDateYmd,
+        moodIndex: 3,
+        chunks: [discretionary, otherWork, otherBreak],
+      ),
+    );
+    final notifier = ScheduleNotifier(
+      now: () => DateTime(2026, 3, 23),
+      repo: repo,
+      logRepo: _InMemoryLogRepository(),
+      goalRepo: _InMemoryGoalRepository(),
+    );
+    await notifier.init();
 
-      // Add an event for a DIFFERENT day — this exercises the early-return
-      // (!anchorsToday) branch, which still runs _trimTrailingNonWork()
-      // against today's existing chunks before bailing out.
-      final block = CommitmentBlock(
-        name: 'Tomorrow',
-        daysOfWeek: const [],
-        startMinutes: 9 * 60,
-        endMinutes: 10 * 60,
-        date: DateTime(2026, 3, 24),
-      );
-      final placed = await notifier.addEventToday(block);
+    // Add an event for a DIFFERENT day — this exercises the early-return
+    // (!anchorsToday) branch, which still runs _trimTrailingNonWork()
+    // against today's existing chunks before bailing out.
+    final block = CommitmentBlock(
+      name: 'Tomorrow',
+      daysOfWeek: const [],
+      startMinutes: 9 * 60,
+      endMinutes: 10 * 60,
+      date: DateTime(2026, 3, 24),
+    );
+    final placed = await notifier.addEventToday(block);
 
-      expect(placed, isFalse);
-      final survivingBreak = notifier.todaySchedule!.chunks.where(
-        (c) =>
-            c.anchoredStartMinutes == 1195 &&
-            c.chunkType == ChunkType.shortBreak &&
-            c.commitmentId == 'other-block',
-      );
-      expect(
-        survivingBreak.length,
-        1,
-        reason:
-            'D-30-02: _trimTrailingNonWork must not delete a commitment '
-            "break just because it's the day's trailing chunk — only a "
-            'discretionary (commitmentId == null) trailing short break may '
-            'be trimmed. NOTE: the discretionary half of this trim is '
-            'already covered by CR-01 below and is deliberately not '
-            're-tested here.',
-      );
-    },
-  );
+    expect(placed, isFalse);
+    final survivingBreak = notifier.todaySchedule!.chunks.where(
+      (c) =>
+          c.anchoredStartMinutes == 1195 &&
+          c.chunkType == ChunkType.shortBreak &&
+          c.commitmentId == 'other-block',
+    );
+    expect(
+      survivingBreak.length,
+      1,
+      reason:
+          'D-30-02: _trimTrailingNonWork must not delete a commitment '
+          "break just because it's the day's trailing chunk — only a "
+          'discretionary (commitmentId == null) trailing short break may '
+          'be trimmed. NOTE: the discretionary half of this trim is '
+          'already covered by CR-01 below and is deliberately not '
+          're-tested here.',
+    );
+  });
 
   test(
     'returns false for an event on a different day (does not touch today)',

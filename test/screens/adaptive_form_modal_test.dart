@@ -93,10 +93,7 @@ class _InMemoryCommitmentRepository implements CommitmentBlockRepository {
 // Captures a BuildContext via Builder, then calls showAdaptiveFormModal
 // WITHOUT awaiting (Future only resolves on dismiss), then pumpAndSettle.
 // ---------------------------------------------------------------------------
-Future<void> _pumpAdaptiveGoalModal(
-  WidgetTester tester,
-  Size viewport,
-) async {
+Future<void> _pumpAdaptiveGoalModal(WidgetTester tester, Size viewport) async {
   setViewport(tester, viewport);
 
   final repo = _InMemoryGoalRepository();
@@ -106,10 +103,12 @@ Future<void> _pumpAdaptiveGoalModal(
   late BuildContext capturedCtx;
   await pumpWithMood(
     tester,
-    Builder(builder: (ctx) {
-      capturedCtx = ctx;
-      return const SizedBox.shrink();
-    }),
+    Builder(
+      builder: (ctx) {
+        capturedCtx = ctx;
+        return const SizedBox.shrink();
+      },
+    ),
     extraProviders: [
       ChangeNotifierProvider<GoalsNotifier>.value(value: notifier),
     ],
@@ -139,10 +138,12 @@ Future<void> _pumpAdaptiveCommitmentModal(
   late BuildContext capturedCtx;
   await pumpWithMood(
     tester,
-    Builder(builder: (ctx) {
-      capturedCtx = ctx;
-      return const SizedBox.shrink();
-    }),
+    Builder(
+      builder: (ctx) {
+        capturedCtx = ctx;
+        return const SizedBox.shrink();
+      },
+    ),
     extraProviders: [
       ChangeNotifierProvider<CommitmentsNotifier>.value(value: notifier),
     ],
@@ -170,7 +171,8 @@ void main() {
         expect(
           find.byType(Dialog),
           findsOneWidget,
-          reason: 'RESP-01: showAdaptiveFormModal must route to Dialog at >= 720dp',
+          reason:
+              'RESP-01: showAdaptiveFormModal must route to Dialog at >= 720dp',
         );
         expect(
           find.byType(BottomSheet),
@@ -188,7 +190,8 @@ void main() {
         expect(
           find.byType(BottomSheet),
           findsOneWidget,
-          reason: 'RESP-01: showAdaptiveFormModal must route to BottomSheet at < 720dp',
+          reason:
+              'RESP-01: showAdaptiveFormModal must route to BottomSheet at < 720dp',
         );
         expect(
           find.byType(Dialog),
@@ -245,7 +248,8 @@ void main() {
         expect(
           handleContainerFinder,
           findsNothing,
-          reason: 'RESP-02: drag-handle Container (40×4) must be absent inside '
+          reason:
+              'RESP-02: drag-handle Container (40×4) must be absent inside '
               'Dialog when isDialog is true',
         );
       },
@@ -266,14 +270,16 @@ void main() {
         expect(
           constrainedBoxFinder,
           findsWidgets,
-          reason: 'RESP-02: at least one ConstrainedBox must exist inside the Dialog',
+          reason:
+              'RESP-02: at least one ConstrainedBox must exist inside the Dialog',
         );
 
         final boxes = tester.widgetList<ConstrainedBox>(constrainedBoxFinder);
         expect(
           boxes.any((b) => b.constraints.maxWidth == 560.0),
           isTrue,
-          reason: 'RESP-02: Dialog must contain a ConstrainedBox(maxWidth: 560)',
+          reason:
+              'RESP-02: Dialog must contain a ConstrainedBox(maxWidth: 560)',
         );
       },
     );
@@ -288,7 +294,8 @@ void main() {
         expect(
           find.byType(Dialog),
           findsOneWidget,
-          reason: 'RESP-03: CommitmentFormSheet must open as Dialog at >= 720dp '
+          reason:
+              'RESP-03: CommitmentFormSheet must open as Dialog at >= 720dp '
               'when shown via showAdaptiveFormModal',
         );
         expect(

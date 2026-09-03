@@ -71,31 +71,27 @@ void main() {
       await tester.pump(); // settle addPostFrameCallback loadGoals
     }
 
-    testWidgets(
-      'pasting a slate of 8 with NO trailing newline creates all 8',
-      (tester) async {
-        await pump(tester);
+    testWidgets('pasting a slate of 8 with NO trailing newline creates all 8', (
+      tester,
+    ) async {
+      await pump(tester);
 
-        // The normal shape when copying lines from notes: no trailing newline.
-        final names = List.generate(8, (i) => 'Goal ${i + 1}');
-        await tester.enterText(
-          find.byType(TextField).first,
-          names.join('\n'),
-        );
-        await tester.pumpAndSettle();
+      // The normal shape when copying lines from notes: no trailing newline.
+      final names = List.generate(8, (i) => 'Goal ${i + 1}');
+      await tester.enterText(find.byType(TextField).first, names.join('\n'));
+      await tester.pumpAndSettle();
 
-        // No extra keystroke needed — the paste alone yields all 8.
-        expect(notifier.goals, hasLength(8));
-        expect(notifier.goals.map((g) => g.name).toSet(), names.toSet());
-        // And the field is empty (nothing stranded).
-        expect(
-          tester.widget<TextField>(find.byType(TextField).first).controller!.text,
-          '',
-        );
-        // The confirmation reports the honest count.
-        expect(find.text('Added 8 goals'), findsOneWidget);
-      },
-    );
+      // No extra keystroke needed — the paste alone yields all 8.
+      expect(notifier.goals, hasLength(8));
+      expect(notifier.goals.map((g) => g.name).toSet(), names.toSet());
+      // And the field is empty (nothing stranded).
+      expect(
+        tester.widget<TextField>(find.byType(TextField).first).controller!.text,
+        '',
+      );
+      // The confirmation reports the honest count.
+      expect(find.text('Added 8 goals'), findsOneWidget);
+    });
 
     testWidgets('pasting a slate WITH a trailing newline creates all 8', (
       tester,
@@ -154,32 +150,33 @@ void main() {
       });
     });
 
-    testWidgets('a failed save recovers the name and does not wedge the worker', (
-      tester,
-    ) async {
-      await pump(tester);
-      final field = find.byType(TextField).first;
+    testWidgets(
+      'a failed save recovers the name and does not wedge the worker',
+      (tester) async {
+        await pump(tester);
+        final field = find.byType(TextField).first;
 
-      // First save fails: the goal must NOT vanish silently.
-      repo.failNextSaves = 1;
-      await tester.enterText(field, 'Meditate\n');
-      await tester.pumpAndSettle();
+        // First save fails: the goal must NOT vanish silently.
+        repo.failNextSaves = 1;
+        await tester.enterText(field, 'Meditate\n');
+        await tester.pumpAndSettle();
 
-      expect(notifier.goals, isEmpty); // nothing persisted
-      // The unsaved name is restored to the field so the user can retry.
-      expect(
-        tester.widget<TextField>(field).controller!.text,
-        contains('Meditate'),
-      );
+        expect(notifier.goals, isEmpty); // nothing persisted
+        // The unsaved name is restored to the field so the user can retry.
+        expect(
+          tester.widget<TextField>(field).controller!.text,
+          contains('Meditate'),
+        );
 
-      // Worker is not wedged: retry (saves now succeed) actually persists,
-      // and a further goal also lands — proving _draining was reset.
-      await tester.enterText(field, 'Meditate\n');
-      await tester.pumpAndSettle();
-      await tester.enterText(field, 'Run\n');
-      await tester.pumpAndSettle();
+        // Worker is not wedged: retry (saves now succeed) actually persists,
+        // and a further goal also lands — proving _draining was reset.
+        await tester.enterText(field, 'Meditate\n');
+        await tester.pumpAndSettle();
+        await tester.enterText(field, 'Run\n');
+        await tester.pumpAndSettle();
 
-      expect(notifier.goals.map((g) => g.name).toSet(), {'Meditate', 'Run'});
-    });
+        expect(notifier.goals.map((g) => g.name).toSet(), {'Meditate', 'Run'});
+      },
+    );
   });
 }

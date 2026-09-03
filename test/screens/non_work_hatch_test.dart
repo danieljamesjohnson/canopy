@@ -19,6 +19,8 @@
 // pair in particular is the one that pins the owner's actual complaint, since
 // a hatch could ship while all three fills stayed identical.
 
+import 'dart:math' as math;
+
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_card.dart';
@@ -84,11 +86,12 @@ Color _hatchColor(WidgetTester tester) {
   return (paint.painter! as HatchPainter).color;
 }
 
-/// Shortest angular distance between two hues, in degrees. Wraparound is the
-/// point: 350° and 10° are 20° apart, not 340°.
-double _hueDistance(Color a, Color b) {
-  final d = (HSLColor.fromColor(a).hue - HSLColor.fromColor(b).hue).abs() % 360;
-  return d > 180 ? 360 - d : d;
+/// Euclidean distance between two colours in 0-255 RGB. Crude on purpose —
+/// see the comment at its call site for why "which channel carries the
+/// difference" is the wrong question to ask here.
+double _rgbDistance(Color a, Color b) {
+  final dr = (a.r - b.r) * 255, dg = (a.g - b.g) * 255, db = (a.b - b.b) * 255;
+  return math.sqrt(dr * dr + dg * dg + db * db);
 }
 
 void main() {
@@ -168,7 +171,13 @@ void main() {
       expect(find.byType(HatchFill), findsOneWidget);
     });
 
-    testWidgets('7. a short break carries it (compact tier, 30dp slot)', (
+    // Tests 7 and 8 are INVERTED from what they asserted on 2026-09-02, and
+    // that inversion is the third pass: "i still feel like free time and
+    // break look too similar." A break was hatched too (first in the same
+    // neutral tone, then in its own hue); it is now a tinted card carrying no
+    // hatch at all, which is what he asked for in the first place — "the
+    // hatch should only be during free time."
+    testWidgets('7. a short break does NOT carry it (compact tier)', (
       tester,
     ) async {
       await _pumpCard(
@@ -178,10 +187,10 @@ void main() {
           density: ChunkCardDensity.compact,
         ),
       );
-      expect(find.byType(HatchFill), findsOneWidget);
+      expect(find.byType(HatchFill), findsNothing);
     });
 
-    testWidgets('8. a long break carries it (full tier, 180dp slot)', (
+    testWidgets('8. a long break does NOT carry it (full tier)', (
       tester,
     ) async {
       await _pumpCard(
@@ -191,7 +200,7 @@ void main() {
           density: ChunkCardDensity.full,
         ),
       );
-      expect(find.byType(HatchFill), findsOneWidget);
+      expect(find.byType(HatchFill), findsNothing);
     });
 
     testWidgets('9. a work chunk does NOT — that is what the hatch means', (
@@ -208,13 +217,16 @@ void main() {
     });
   });
 
-  group('free time and a break hatch in DIFFERENT tones', () {
-    // His follow-up ruling, 2026-09-02: "the hatch should only be during free
-    // time. breaks and short breaks should be something different. can use a
-    // hatch maybe? but a different color." The first pass gave both the same
-    // neutral lines, which made the pair LESS separable than before — the
-    // question 33-UAT.md item 2 asks out loud.
-    testWidgets('12. the two hatch tones differ, at three mood seeds', (
+  group('free time and a break do not look alike (the third pass)', () {
+    // 2026-09-03: "i still feel like free time and break look too similar."
+    //
+    // The two earlier passes both spent the difference on TEXTURE — same
+    // fill, different stripes — and both were judged too similar by the only
+    // instrument that counts. These assertions moved to the FILL with them,
+    // and they are deliberately about what a person perceives (hue distance,
+    // lightness gap) rather than "the two tokens are not identical", which is
+    // what the previous version proved while the screen still looked wrong.
+    testWidgets('12. the two fills differ by hue AND by lightness', (
       tester,
     ) async {
       for (final mood in [1, 3, 5]) {
@@ -226,7 +238,7 @@ void main() {
           ),
           moodIndex: mood,
         );
-        final freeTone = _hatchColor(tester);
+        final freeFill = _cardColor(tester)!;
 
         await _pumpCard(
           tester,
@@ -236,49 +248,59 @@ void main() {
           ),
           moodIndex: mood,
         );
-        final breakTone = _hatchColor(tester);
+        final breakFill = _cardColor(tester)!;
 
+        // **Distance, not hue.** A hue-only threshold was written here first
+        // and it FAILED at mood 1 — where the two tokens sit 9.3° apart yet
+        // are plainly different on screen: rgb(235,238,243), a near-white
+        // grey, against rgb(211,229,245), a pale blue. The difference an eye
+        // gets there is carried by saturation (0.25 → 0.63) and lightness,
+        // not by hue rotation. Asserting hue would have rejected a pair that
+        // works and pushed the design toward a number instead of a look.
+        //
+        // Crude Euclidean RGB distance is the honest measure for this claim:
+        // it is blind to WHICH channel carries the difference, which is the
+        // point. The two rejected passes both scored 0 here — identical
+        // fills, the whole complaint.
         expect(
-          freeTone,
-          isNot(equals(breakTone)),
-          reason: 'mood $mood: free time and a break hatch identically',
-        );
-        // Not merely "different values": a different HUE, by a distance an
-        // eye can see. This is the assertion that did real work — it caught
-        // `secondary`, the first choice, which is the neutral-VARIANT hue and
-        // lands within 2-4 degrees of `onSurfaceVariant` at every seed. That
-        // would have been two colours in the source and one grey on the
-        // screen, and `isNot(equals)` above would have passed it happily.
-        expect(
-          _hueDistance(freeTone, breakTone),
-          greaterThan(25),
+          _rgbDistance(freeFill, breakFill),
+          greaterThan(20),
           reason:
-              'mood $mood: the break tone is the same hue as free time — '
-              'it will read as the same grey however it is written',
+              'mood $mood: free time and a break are the same colour '
+              '($freeFill vs $breakFill)',
+        );
+        expect(
+          HSLColor.fromColor(freeFill).lightness -
+              HSLColor.fromColor(breakFill).lightness,
+          greaterThan(0.02),
+          reason: 'mood $mood: the break fill must also be visibly darker',
         );
       }
     });
 
-    testWidgets('13. short and long breaks share the one break tone', (
+    testWidgets('13. only free time is hatched — his original instruction', (
       tester,
     ) async {
       await _pumpCard(
         tester,
-        ChunkCard(
-          chunk: _chunk(ChunkType.shortBreak, 5),
-          density: ChunkCardDensity.compact,
+        const SizedBox(
+          height: 300,
+          child: FreeTimeRow.until(untilMinutes: 480),
         ),
       );
-      final shortTone = _hatchColor(tester);
-
-      await _pumpCard(
-        tester,
-        ChunkCard(
-          chunk: _chunk(ChunkType.longBreak, 30),
-          density: ChunkCardDensity.full,
+      expect(find.byType(HatchFill), findsOneWidget);
+      // Its tone is the neutral one, and there is now no other.
+      expect(
+        _hatchColor(tester),
+        HatchFill.freeTimeLines(
+          ThemeData(
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF4A8C7A),
+            ),
+          ).colorScheme,
         ),
       );
-      expect(_hatchColor(tester), shortTone);
     });
   });
 
@@ -320,7 +342,7 @@ void main() {
     });
 
     testWidgets(
-      '11. work takes surfaceContainerLowest, break stays surfaceContainer',
+      '11. the three kinds of time take three different container tokens',
       (tester) async {
         final scheme = ThemeData(
           useMaterial3: true,
@@ -343,8 +365,39 @@ void main() {
             density: ChunkCardDensity.full,
           ),
         );
+        expect(_cardColor(tester), scheme.secondaryContainer);
+
+        await _pumpCard(
+          tester,
+          const SizedBox(
+            height: 300,
+            child: FreeTimeRow.until(untilMinutes: 480),
+          ),
+        );
         expect(_cardColor(tester), scheme.surfaceContainer);
       },
     );
+
+    testWidgets('14. a break tier does not change its fill between tiers', (
+      tester,
+    ) async {
+      await _pumpCard(
+        tester,
+        ChunkCard(
+          chunk: _chunk(ChunkType.shortBreak, 5),
+          density: ChunkCardDensity.compact,
+        ),
+      );
+      final shortFill = _cardColor(tester);
+
+      await _pumpCard(
+        tester,
+        ChunkCard(
+          chunk: _chunk(ChunkType.longBreak, 30),
+          density: ChunkCardDensity.full,
+        ),
+      );
+      expect(_cardColor(tester), shortFill);
+    });
   });
 }

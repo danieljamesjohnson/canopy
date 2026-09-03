@@ -90,10 +90,11 @@ void main() {
       await notifier.saveItem(RestorativeItem(name: 'Third', sortOrder: 2));
       await notifier.saveItem(RestorativeItem(name: 'First', sortOrder: 0));
       await notifier.saveItem(RestorativeItem(name: 'Second', sortOrder: 1));
-      expect(
-        notifier.items.map((i) => i.name).toList(),
-        ['First', 'Second', 'Third'],
-      );
+      expect(notifier.items.map((i) => i.name).toList(), [
+        'First',
+        'Second',
+        'Third',
+      ]);
     });
 
     test('editing an existing item updates in place, no duplicate', () async {

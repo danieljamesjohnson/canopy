@@ -41,8 +41,6 @@ Future<void> pumpWithMood(
   // drag handle visibility, breakpoint) pass `extraProviders: const []`.
   final providers = extraProviders.toList(growable: false);
   await tester.pumpWidget(
-    providers.isEmpty
-        ? app
-        : MultiProvider(providers: providers, child: app),
+    providers.isEmpty ? app : MultiProvider(providers: providers, child: app),
   );
 }

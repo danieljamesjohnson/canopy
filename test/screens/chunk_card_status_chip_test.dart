@@ -44,10 +44,7 @@ void main() {
     ) async {
       await pumpWithMood(
         tester,
-        ChunkCard(
-          chunk: _stubWorkChunk(),
-          density: ChunkCardDensity.compact,
-        ),
+        ChunkCard(chunk: _stubWorkChunk(), density: ChunkCardDensity.compact),
       );
       expect(find.text('To do'), findsOneWidget);
       // Item 2: the glyph this phase exists to delete must not come back
@@ -129,21 +126,20 @@ void main() {
       );
     });
 
-    testWidgets(
-      '6. no second completion affordance — one Complete, one Skip',
-      (tester) async {
-        await pumpWithMood(
-          tester,
-          ChunkCard(chunk: _stubWorkChunk(), density: ChunkCardDensity.full),
-        );
-        // UI-SPEC item 4: variant C (a real checkbox in the trailing slot) was
-        // rejected precisely for adding a second way to complete a chunk.
-        expect(find.text('Complete'), findsOneWidget);
-        expect(find.text('Skip'), findsOneWidget);
-        expect(find.widgetWithText(FilledButton, 'Complete'), findsOneWidget);
-        expect(find.widgetWithText(OutlinedButton, 'Skip'), findsOneWidget);
-      },
-    );
+    testWidgets('6. no second completion affordance — one Complete, one Skip', (
+      tester,
+    ) async {
+      await pumpWithMood(
+        tester,
+        ChunkCard(chunk: _stubWorkChunk(), density: ChunkCardDensity.full),
+      );
+      // UI-SPEC item 4: variant C (a real checkbox in the trailing slot) was
+      // rejected precisely for adding a second way to complete a chunk.
+      expect(find.text('Complete'), findsOneWidget);
+      expect(find.text('Skip'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Complete'), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'Skip'), findsOneWidget);
+    });
 
     testWidgets(
       '7. backstop (UI-SPEC item 6): the title yields, the chip does not',

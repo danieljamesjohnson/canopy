@@ -341,28 +341,31 @@ void main() {
       expect(geometry.rangeEnd, 1020);
     });
 
-    test('PreStart: now precedes firstStart extends rangeStart back to now',
-        () {
-      final geometry = TimelineGeometry.forDay(
-        nowMinutes: 390,
-        firstStartMinutes: 540,
-        lastEndMinutes: 1020,
-      );
-      expect(geometry.rangeStart, 360);
-    });
-
-    test('DayComplete: now follows lastEnd extends rangeEnd forward to now',
-        () {
-      final geometry = TimelineGeometry.forDay(
-        nowMinutes: 1265,
-        firstStartMinutes: 540,
-        lastEndMinutes: 1020,
-      );
-      expect(geometry.rangeEnd, 1320);
-    });
+    test(
+      'PreStart: now precedes firstStart extends rangeStart back to now',
+      () {
+        final geometry = TimelineGeometry.forDay(
+          nowMinutes: 390,
+          firstStartMinutes: 540,
+          lastEndMinutes: 1020,
+        );
+        expect(geometry.rangeStart, 360);
+      },
+    );
 
     test(
-        'yFor(rangeStart) is always kTimelineEdgePadding (G-04/G-05, '
+      'DayComplete: now follows lastEnd extends rangeEnd forward to now',
+      () {
+        final geometry = TimelineGeometry.forDay(
+          nowMinutes: 1265,
+          firstStartMinutes: 540,
+          lastEndMinutes: 1020,
+        );
+        expect(geometry.rangeEnd, 1320);
+      },
+    );
+
+    test('yFor(rangeStart) is always kTimelineEdgePadding (G-04/G-05, '
         '26-10-PLAN.md)', () {
       final geometry = TimelineGeometry.forDay(
         nowMinutes: 555,
@@ -391,8 +394,7 @@ void main() {
       expect(geometry.heightFor(540, 5), 5 * kPixelsPerMinute);
     });
 
-    test(
-        'totalHeight equals (rangeEnd - rangeStart) * 5.5 plus '
+    test('totalHeight equals (rangeEnd - rangeStart) * 5.5 plus '
         '2 * kTimelineEdgePadding with no live row (G-04/G-05, '
         '26-10-PLAN.md)', () {
       final geometry = TimelineGeometry.forDay(
@@ -423,22 +425,17 @@ void main() {
       expect(geometry.heightFor(540, 25), 25 * kPixelsPerMinute);
     });
 
-    test(
-        'yFor clamps rather than returning a negative-before-padding '
+    test('yFor clamps rather than returning a negative-before-padding '
         'offset for an out-of-range minute', () {
       final geometry = TimelineGeometry.forDay(
         nowMinutes: 555,
         firstStartMinutes: 540,
         lastEndMinutes: 1020,
       );
-      expect(
-        geometry.yFor(geometry.rangeStart - 120),
-        kTimelineEdgePadding,
-      );
+      expect(geometry.yFor(geometry.rangeStart - 120), kTimelineEdgePadding);
     });
 
-    test(
-        'GRID-01: every hour boundary is equidistant, even with a live '
+    test('GRID-01: every hour boundary is equidistant, even with a live '
         'chunk present', () {
       // A 25-minute live chunk (540..565) whose end minute falls strictly
       // inside the 540..600 hour — the exact configuration the defect
@@ -476,8 +473,7 @@ void main() {
       }
     });
 
-    test(
-        'SEEBREAK-02: heightFor returns the ground-truth pixel height for '
+    test('SEEBREAK-02: heightFor returns the ground-truth pixel height for '
         'every break duration the lattice emits', () {
       // GUARD — green before and after the wiring (heightFor is pure
       // arithmetic on already-known ints; it has no idea what density a

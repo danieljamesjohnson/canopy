@@ -18,12 +18,12 @@ import 'package:provider/provider.dart';
 import '../test_helpers/mood_pump.dart';
 
 ScheduledChunk _unresolvedChunk() => ScheduledChunk(
-      id: 'c1',
-      chunkTypeIndex: ChunkType.work.index,
-      goalId: 'g1',
-      durationMinutes: 45,
-      rationale: 'Deep work',
-    );
+  id: 'c1',
+  chunkTypeIndex: ChunkType.work.index,
+  goalId: 'g1',
+  durationMinutes: 45,
+  rationale: 'Deep work',
+);
 
 ScheduledChunk _completedChunk() {
   final c = ScheduledChunk(
@@ -70,126 +70,126 @@ class _FakeScheduleNotifier extends ScheduleNotifier {
 
 void main() {
   group('ChunkCard always-visible action buttons (SCHED-03)', () {
-    testWidgets(
-      'unresolved chunk shows FilledButton "Complete" without hover',
-      (tester) async {
-        final notifier = _FakeScheduleNotifier();
-        await pumpWithMood(
-          tester,
-          ChunkCard(chunk: _unresolvedChunk()),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
-          ],
-        );
-        // No hover gesture — buttons must be visible immediately.
-        expect(
-          find.widgetWithText(FilledButton, 'Complete'),
-          findsOneWidget,
-          reason: 'SCHED-03: FilledButton "Complete" must be always visible on unresolved chunk',
-        );
-      },
-    );
+    testWidgets('unresolved chunk shows FilledButton "Complete" without hover', (
+      tester,
+    ) async {
+      final notifier = _FakeScheduleNotifier();
+      await pumpWithMood(
+        tester,
+        ChunkCard(chunk: _unresolvedChunk()),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
+        ],
+      );
+      // No hover gesture — buttons must be visible immediately.
+      expect(
+        find.widgetWithText(FilledButton, 'Complete'),
+        findsOneWidget,
+        reason:
+            'SCHED-03: FilledButton "Complete" must be always visible on unresolved chunk',
+      );
+    });
 
-    testWidgets(
-      'unresolved chunk shows OutlinedButton "Skip" without hover',
-      (tester) async {
-        final notifier = _FakeScheduleNotifier();
-        await pumpWithMood(
-          tester,
-          ChunkCard(chunk: _unresolvedChunk()),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
-          ],
-        );
-        expect(
-          find.widgetWithText(OutlinedButton, 'Skip'),
-          findsOneWidget,
-          reason: 'SCHED-03: OutlinedButton "Skip" must be always visible on unresolved chunk',
-        );
-      },
-    );
+    testWidgets('unresolved chunk shows OutlinedButton "Skip" without hover', (
+      tester,
+    ) async {
+      final notifier = _FakeScheduleNotifier();
+      await pumpWithMood(
+        tester,
+        ChunkCard(chunk: _unresolvedChunk()),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
+        ],
+      );
+      expect(
+        find.widgetWithText(OutlinedButton, 'Skip'),
+        findsOneWidget,
+        reason:
+            'SCHED-03: OutlinedButton "Skip" must be always visible on unresolved chunk',
+      );
+    });
 
-    testWidgets(
-      'completed chunk shows no FilledButton or OutlinedButton',
-      (tester) async {
-        final notifier = _FakeScheduleNotifier();
-        await pumpWithMood(
-          tester,
-          ChunkCard(chunk: _completedChunk()),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
-          ],
-        );
-        expect(
-          find.byType(FilledButton),
-          findsNothing,
-          reason: 'SCHED-03: Resolved (completed) chunk must show no action buttons',
-        );
-        expect(
-          find.byType(OutlinedButton),
-          findsNothing,
-          reason: 'SCHED-03: Resolved (completed) chunk must show no action buttons',
-        );
-      },
-    );
+    testWidgets('completed chunk shows no FilledButton or OutlinedButton', (
+      tester,
+    ) async {
+      final notifier = _FakeScheduleNotifier();
+      await pumpWithMood(
+        tester,
+        ChunkCard(chunk: _completedChunk()),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
+        ],
+      );
+      expect(
+        find.byType(FilledButton),
+        findsNothing,
+        reason:
+            'SCHED-03: Resolved (completed) chunk must show no action buttons',
+      );
+      expect(
+        find.byType(OutlinedButton),
+        findsNothing,
+        reason:
+            'SCHED-03: Resolved (completed) chunk must show no action buttons',
+      );
+    });
 
-    testWidgets(
-      'skipped chunk shows no FilledButton or OutlinedButton',
-      (tester) async {
-        final notifier = _FakeScheduleNotifier();
-        await pumpWithMood(
-          tester,
-          ChunkCard(chunk: _skippedChunk()),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
-          ],
-        );
-        expect(
-          find.byType(FilledButton),
-          findsNothing,
-          reason: 'SCHED-03: Resolved (skipped) chunk must show no action buttons',
-        );
-        expect(
-          find.byType(OutlinedButton),
-          findsNothing,
-          reason: 'SCHED-03: Resolved (skipped) chunk must show no action buttons',
-        );
-      },
-    );
+    testWidgets('skipped chunk shows no FilledButton or OutlinedButton', (
+      tester,
+    ) async {
+      final notifier = _FakeScheduleNotifier();
+      await pumpWithMood(
+        tester,
+        ChunkCard(chunk: _skippedChunk()),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
+        ],
+      );
+      expect(
+        find.byType(FilledButton),
+        findsNothing,
+        reason:
+            'SCHED-03: Resolved (skipped) chunk must show no action buttons',
+      );
+      expect(
+        find.byType(OutlinedButton),
+        findsNothing,
+        reason:
+            'SCHED-03: Resolved (skipped) chunk must show no action buttons',
+      );
+    });
 
-    testWidgets(
-      'tapping Complete calls ScheduleNotifier.markComplete',
-      (tester) async {
-        final notifier = _FakeScheduleNotifier();
-        await pumpWithMood(
-          tester,
-          ChunkCard(chunk: _unresolvedChunk()),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
-          ],
-        );
-        await tester.tap(find.widgetWithText(FilledButton, 'Complete'));
-        await tester.pump();
-        expect(notifier.lastCompletedId, 'c1');
-      },
-    );
+    testWidgets('tapping Complete calls ScheduleNotifier.markComplete', (
+      tester,
+    ) async {
+      final notifier = _FakeScheduleNotifier();
+      await pumpWithMood(
+        tester,
+        ChunkCard(chunk: _unresolvedChunk()),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
+        ],
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Complete'));
+      await tester.pump();
+      expect(notifier.lastCompletedId, 'c1');
+    });
 
-    testWidgets(
-      'tapping Skip calls ScheduleNotifier.markSkipped',
-      (tester) async {
-        final notifier = _FakeScheduleNotifier();
-        await pumpWithMood(
-          tester,
-          ChunkCard(chunk: _unresolvedChunk()),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
-          ],
-        );
-        await tester.tap(find.widgetWithText(OutlinedButton, 'Skip'));
-        await tester.pump();
-        expect(notifier.lastSkippedId, 'c1');
-      },
-    );
+    testWidgets('tapping Skip calls ScheduleNotifier.markSkipped', (
+      tester,
+    ) async {
+      final notifier = _FakeScheduleNotifier();
+      await pumpWithMood(
+        tester,
+        ChunkCard(chunk: _unresolvedChunk()),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
+        ],
+      );
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Skip'));
+      await tester.pump();
+      expect(notifier.lastSkippedId, 'c1');
+    });
 
     testWidgets(
       'no AnimatedOpacity hover overlay in tree for unresolved chunk',

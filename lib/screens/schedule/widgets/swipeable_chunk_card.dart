@@ -34,7 +34,11 @@ import 'chunk_card.dart';
 /// (D-31-01) — the `isCompleted` term in `resolved` is defensive/future-proofing
 /// for breaks and load-bearing for work chunks.
 class SwipeableRowShell extends StatelessWidget {
-  const SwipeableRowShell({super.key, required this.chunk, required this.child});
+  const SwipeableRowShell({
+    super.key,
+    required this.chunk,
+    required this.child,
+  });
 
   final ScheduledChunk chunk;
 
@@ -86,7 +90,9 @@ class SwipeableRowShell extends StatelessWidget {
       // (D-31-01), so a break's only enabled direction is endToStart (skip).
       direction: resolved
           ? DismissDirection.none
-          : (isWork ? DismissDirection.horizontal : DismissDirection.endToStart),
+          : (isWork
+                ? DismissDirection.horizontal
+                : DismissDirection.endToStart),
       // confirmDismiss always returns false — card stays in the list.
       // Dismissible is used purely as a gesture affordance.
       confirmDismiss: (direction) async {

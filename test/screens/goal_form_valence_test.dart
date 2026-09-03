@@ -95,10 +95,12 @@ Future<_InMemoryGoalRepository> _pumpModal(WidgetTester tester) async {
   late BuildContext capturedCtx;
   await pumpWithMood(
     tester,
-    Builder(builder: (ctx) {
-      capturedCtx = ctx;
-      return const SizedBox.shrink();
-    }),
+    Builder(
+      builder: (ctx) {
+        capturedCtx = ctx;
+        return const SizedBox.shrink();
+      },
+    ),
     extraProviders: [
       ChangeNotifierProvider<GoalsNotifier>.value(value: notifier),
     ],
@@ -129,18 +131,15 @@ Future<_InMemoryGoalRepository> _pumpModal(WidgetTester tester) async {
 
 void main() {
   group('Energy valence SegmentedButton (ENERGY-02)', () {
-    testWidgets(
-      '"Energy" section label renders',
-      (tester) async {
-        await _pumpForm(tester);
+    testWidgets('"Energy" section label renders', (tester) async {
+      await _pumpForm(tester);
 
-        expect(
-          find.text('Energy'),
-          findsOneWidget,
-          reason: 'Energy section label must be visible in GoalFormSheet',
-        );
-      },
-    );
+      expect(
+        find.text('Energy'),
+        findsOneWidget,
+        reason: 'Energy section label must be visible in GoalFormSheet',
+      );
+    });
 
     testWidgets(
       'segment labels "Gives energy", "Neutral", "Costs energy" all render',
@@ -159,22 +158,19 @@ void main() {
       },
     );
 
-    testWidgets(
-      'new goal defaults to Neutral selected',
-      (tester) async {
-        await _pumpForm(tester);
+    testWidgets('new goal defaults to Neutral selected', (tester) async {
+      await _pumpForm(tester);
 
-        // SegmentedButton<EnergyValence> does not exist yet — RED
-        final segBtn = tester.widget<SegmentedButton<EnergyValence>>(
-          find.byType(SegmentedButton<EnergyValence>),
-        );
-        expect(
-          segBtn.selected,
-          equals({EnergyValence.neutral}),
-          reason: 'New goal must default valence to Neutral',
-        );
-      },
-    );
+      // SegmentedButton<EnergyValence> does not exist yet — RED
+      final segBtn = tester.widget<SegmentedButton<EnergyValence>>(
+        find.byType(SegmentedButton<EnergyValence>),
+      );
+      expect(
+        segBtn.selected,
+        equals({EnergyValence.neutral}),
+        reason: 'New goal must default valence to Neutral',
+      );
+    });
 
     testWidgets(
       'editing an existing goal with gives valence shows "Gives energy" pre-selected',
@@ -183,7 +179,8 @@ void main() {
           id: 'g-gives',
           name: 'Morning Run',
           goalTypeIndex: GoalType.habit.index,
-          energyValenceIndex: EnergyValence.gives.index, // field does not exist — RED
+          energyValenceIndex:
+              EnergyValence.gives.index, // field does not exist — RED
         );
         await _pumpForm(tester, existingGoal: goal);
 

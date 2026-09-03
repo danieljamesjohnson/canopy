@@ -145,7 +145,9 @@ class _RestorativeQuickAddDialogState
     );
     navigator.pop();
     messenger.showSnackBar(
-      SnackBar(content: Text('Saved "$name" — a restorative, never scheduled.')),
+      SnackBar(
+        content: Text('Saved "$name" — a restorative, never scheduled.'),
+      ),
     );
   }
 

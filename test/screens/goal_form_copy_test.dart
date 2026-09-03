@@ -137,19 +137,14 @@ Future<void> _pumpCommitmentsScreenWithBlock(WidgetTester tester) async {
 
   final theme = ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF4A8C7A),
-    ),
+    colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4A8C7A)),
   );
   await tester.pumpWidget(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<CommitmentsNotifier>.value(value: notifier),
       ],
-      child: MaterialApp(
-        theme: theme,
-        home: const CommitmentsScreen(),
-      ),
+      child: MaterialApp(theme: theme, home: const CommitmentsScreen()),
     ),
   );
   await tester.pumpAndSettle();
@@ -191,7 +186,8 @@ void main() {
         expect(
           find.text('Edit Goal'),
           findsOneWidget,
-          reason: 'POLISH-02: GoalFormSheet edit-mode title must be "Edit Goal".',
+          reason:
+              'POLISH-02: GoalFormSheet edit-mode title must be "Edit Goal".',
         );
 
         expect(

@@ -26,14 +26,10 @@ void main() {
     test('returns the box directly when the first open succeeds', () async {
       var opens = 0;
       var deletes = 0;
-      final sentinel = await openBoxResilient<int>(
-        'ok',
-        (_) async {
-          opens++;
-          return _FakeBox<int>();
-        },
-        (_) async => deletes++,
-      );
+      final sentinel = await openBoxResilient<int>('ok', (_) async {
+        opens++;
+        return _FakeBox<int>();
+      }, (_) async => deletes++);
 
       expect(sentinel, isA<Box<int>>());
       expect(opens, 1, reason: 'no retry when the first open works');
@@ -43,15 +39,11 @@ void main() {
     test('resets the box and reopens when the first open throws', () async {
       var opens = 0;
       final deleted = <String>[];
-      final box = await openBoxResilient<int>(
-        'corrupt',
-        (_) async {
-          opens++;
-          if (opens == 1) throw HiveError('cannot read, unknown typeId: 0');
-          return _FakeBox<int>();
-        },
-        (name) async => deleted.add(name),
-      );
+      final box = await openBoxResilient<int>('corrupt', (_) async {
+        opens++;
+        if (opens == 1) throw HiveError('cannot read, unknown typeId: 0');
+        return _FakeBox<int>();
+      }, (name) async => deleted.add(name));
 
       expect(box, isA<Box<int>>());
       expect(opens, 2, reason: 'open is retried after the reset');
@@ -89,42 +81,47 @@ void main() {
       tempDir.deleteSync(recursive: true);
     });
 
-    test('recovers when a box holds a record the app can no longer read',
-        () async {
-      const boxName = 'goals';
+    test(
+      'recovers when a box holds a record the app can no longer read',
+      () async {
+        const boxName = 'goals';
 
-      // 1. An "old app version" persists a Goal (typeId 0) to disk.
-      final oldApp = HiveImpl();
-      oldApp.init(tempDir.path);
-      oldApp.registerAdapter(GoalAdapter());
-      final oldBox = await oldApp.openBox<Goal>(boxName);
-      await oldBox.put('g1', Goal(name: 'legacy goal', goalTypeIndex: 0));
-      await oldApp.close();
+        // 1. An "old app version" persists a Goal (typeId 0) to disk.
+        final oldApp = HiveImpl();
+        oldApp.init(tempDir.path);
+        oldApp.registerAdapter(GoalAdapter());
+        final oldBox = await oldApp.openBox<Goal>(boxName);
+        await oldBox.put('g1', Goal(name: 'legacy goal', goalTypeIndex: 0));
+        await oldApp.close();
 
-      // 2. A "new build" with no GoalAdapter registered cannot deserialize the
-      //    persisted frame — this is the crash the bug report captured. Verify
-      //    a plain open really throws, then close so its file locks release.
-      final crashingApp = HiveImpl();
-      crashingApp.init(tempDir.path);
-      await expectLater(
-        crashingApp.openBox(boxName),
-        throwsA(isA<HiveError>()),
-        reason: 'sanity: the stale record really does break a plain open',
-      );
-      await crashingApp.close();
+        // 2. A "new build" with no GoalAdapter registered cannot deserialize the
+        //    persisted frame — this is the crash the bug report captured. Verify
+        //    a plain open really throws, then close so its file locks release.
+        final crashingApp = HiveImpl();
+        crashingApp.init(tempDir.path);
+        await expectLater(
+          crashingApp.openBox(boxName),
+          throwsA(isA<HiveError>()),
+          reason: 'sanity: the stale record really does break a plain open',
+        );
+        await crashingApp.close();
 
-      // 3. The resilient open discards the unreadable data and boots clean.
-      final recoveryApp = HiveImpl();
-      recoveryApp.init(tempDir.path);
-      final recovered = await openBoxResilient(
-        boxName,
-        (n) => recoveryApp.openBox(n),
-        (n) => recoveryApp.deleteBoxFromDisk(n),
-      );
-      expect(recovered.isEmpty, isTrue,
-          reason: 'incompatible data is reset, app continues to a clean state');
-      await recoveryApp.close();
-    });
+        // 3. The resilient open discards the unreadable data and boots clean.
+        final recoveryApp = HiveImpl();
+        recoveryApp.init(tempDir.path);
+        final recovered = await openBoxResilient(
+          boxName,
+          (n) => recoveryApp.openBox(n),
+          (n) => recoveryApp.deleteBoxFromDisk(n),
+        );
+        expect(
+          recovered.isEmpty,
+          isTrue,
+          reason: 'incompatible data is reset, app continues to a clean state',
+        );
+        await recoveryApp.close();
+      },
+    );
   });
 }
 

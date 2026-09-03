@@ -19,12 +19,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../test_helpers/mood_pump.dart';
 
-Goal _stubGoal(String id, String name) => Goal(
-      id: id,
-      name: name,
-      goalTypeIndex: 0,
-      color: '#4CAF50',
-    );
+Goal _stubGoal(String id, String name) =>
+    Goal(id: id, name: name, goalTypeIndex: 0, color: '#4CAF50');
 
 /// Production-mirroring reorderable list. Mirrors the platform gate logic
 /// from `goals_screen.dart:_buildReorderableSection` (Phase 14 Phase 01):
@@ -35,7 +31,8 @@ Widget _reorderableSection(List<Goal> goals) {
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrangeAccent),
   ).colorScheme;
-  final isMobileTouch = defaultTargetPlatform == TargetPlatform.android ||
+  final isMobileTouch =
+      defaultTargetPlatform == TargetPlatform.android ||
       defaultTargetPlatform == TargetPlatform.iOS;
   return ReorderableListView.builder(
     shrinkWrap: true,
@@ -106,19 +103,22 @@ Future<void> _underPlatform(
 
 void main() {
   group('GoalCard drag handle visibility', () {
-    testWidgets('visible on Android (mobile touch — Phase 14: now always shown)',
-        (tester) async {
-      await _underPlatform(TargetPlatform.android, () async {
-        await pumpWithMood(
-          tester,
-          _reorderableSection([_stubGoal('g1', 'Exercise')]),
-        );
-        expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
-      });
-    });
+    testWidgets(
+      'visible on Android (mobile touch — Phase 14: now always shown)',
+      (tester) async {
+        await _underPlatform(TargetPlatform.android, () async {
+          await pumpWithMood(
+            tester,
+            _reorderableSection([_stubGoal('g1', 'Exercise')]),
+          );
+          expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
+        });
+      },
+    );
 
-    testWidgets('visible on iOS (mobile touch — Phase 14: now always shown)',
-        (tester) async {
+    testWidgets('visible on iOS (mobile touch — Phase 14: now always shown)', (
+      tester,
+    ) async {
       await _underPlatform(TargetPlatform.iOS, () async {
         await pumpWithMood(
           tester,

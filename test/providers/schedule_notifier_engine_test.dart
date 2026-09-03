@@ -179,7 +179,8 @@ void main() {
         expect(
           lighterWorkChunks,
           lessThan(heavierWorkChunks),
-          reason: 'lighterDay=true must produce strictly fewer work chunks than lighterDay=false',
+          reason:
+              'lighterDay=true must produce strictly fewer work chunks than lighterDay=false',
         );
       },
     );
@@ -213,18 +214,22 @@ void main() {
         // so the walk finds: 06-08 (today, just appended) → 06-05 (Fri, ✓) →
         // 06-03 (Wed, ✓) → no more logs → streak=3.
         final logRepo = InMemoryCompletionLogRepository();
-        await logRepo.append(CompletionLog(
-          chunkId: 'c-wed',
-          goalId: goal.id,
-          dateYmd: '2026-06-03', // Wednesday (weekday 3, due day for 3x/week)
-          eventIndex: CompletionEvent.completed.index,
-        ));
-        await logRepo.append(CompletionLog(
-          chunkId: 'c-fri',
-          goalId: goal.id,
-          dateYmd: '2026-06-05', // Friday (weekday 5, due day for 3x/week)
-          eventIndex: CompletionEvent.completed.index,
-        ));
+        await logRepo.append(
+          CompletionLog(
+            chunkId: 'c-wed',
+            goalId: goal.id,
+            dateYmd: '2026-06-03', // Wednesday (weekday 3, due day for 3x/week)
+            eventIndex: CompletionEvent.completed.index,
+          ),
+        );
+        await logRepo.append(
+          CompletionLog(
+            chunkId: 'c-fri',
+            goalId: goal.id,
+            dateYmd: '2026-06-05', // Friday (weekday 5, due day for 3x/week)
+            eventIndex: CompletionEvent.completed.index,
+          ),
+        );
 
         final goalRepo = _InMemoryGoalRepository([goal]);
         final scheduleRepo = _InMemoryScheduleRepository();
@@ -259,7 +264,8 @@ void main() {
         expect(
           goalRepo.saved,
           isNotEmpty,
-          reason: 'GoalRepository.save must be called for habit goals after markComplete',
+          reason:
+              'GoalRepository.save must be called for habit goals after markComplete',
         );
         final savedGoal = goalRepo.saved.last;
         expect(
@@ -289,18 +295,22 @@ void main() {
         );
 
         final logRepo = InMemoryCompletionLogRepository();
-        await logRepo.append(CompletionLog(
-          chunkId: 'c-wed-2',
-          goalId: goal.id,
-          dateYmd: '2026-06-03', // Wednesday (weekday 3, due day)
-          eventIndex: CompletionEvent.completed.index,
-        ));
-        await logRepo.append(CompletionLog(
-          chunkId: 'c-fri-2',
-          goalId: goal.id,
-          dateYmd: '2026-06-05', // Friday (weekday 5, due day)
-          eventIndex: CompletionEvent.completed.index,
-        ));
+        await logRepo.append(
+          CompletionLog(
+            chunkId: 'c-wed-2',
+            goalId: goal.id,
+            dateYmd: '2026-06-03', // Wednesday (weekday 3, due day)
+            eventIndex: CompletionEvent.completed.index,
+          ),
+        );
+        await logRepo.append(
+          CompletionLog(
+            chunkId: 'c-fri-2',
+            goalId: goal.id,
+            dateYmd: '2026-06-05', // Friday (weekday 5, due day)
+            eventIndex: CompletionEvent.completed.index,
+          ),
+        );
 
         final goalRepo = _InMemoryGoalRepository([goal]);
         final scheduleRepo = _InMemoryScheduleRepository();
@@ -333,14 +343,16 @@ void main() {
         expect(
           goalRepo.saved,
           isNotEmpty,
-          reason: 'GoalRepository.save must be called for habit goals after markSkipped',
+          reason:
+              'GoalRepository.save must be called for habit goals after markSkipped',
         );
         final savedGoal = goalRepo.saved.last;
         // After skip on a due day, the streak resets to 0.
         expect(
           savedGoal.streakCount,
           equals(0),
-          reason: 'streakCount must be 0 after a skipped due day (streak reset)',
+          reason:
+              'streakCount must be 0 after a skipped due day (streak reset)',
         );
       },
     );
@@ -383,18 +395,22 @@ void main() {
 
         final logRepo = InMemoryCompletionLogRepository();
         // Two consecutive prior due-day completions before streak01TestDate.
-        await logRepo.append(CompletionLog(
-          chunkId: 'c-wed',
-          goalId: goal.id,
-          dateYmd: '2026-06-03', // Wed (weekday 3, due day)
-          eventIndex: CompletionEvent.completed.index,
-        ));
-        await logRepo.append(CompletionLog(
-          chunkId: 'c-fri',
-          goalId: goal.id,
-          dateYmd: '2026-06-05', // Fri (weekday 5, due day)
-          eventIndex: CompletionEvent.completed.index,
-        ));
+        await logRepo.append(
+          CompletionLog(
+            chunkId: 'c-wed',
+            goalId: goal.id,
+            dateYmd: '2026-06-03', // Wed (weekday 3, due day)
+            eventIndex: CompletionEvent.completed.index,
+          ),
+        );
+        await logRepo.append(
+          CompletionLog(
+            chunkId: 'c-fri',
+            goalId: goal.id,
+            dateYmd: '2026-06-05', // Fri (weekday 5, due day)
+            eventIndex: CompletionEvent.completed.index,
+          ),
+        );
 
         final goalRepo = _InMemoryGoalRepository([goal]);
         final scheduleRepo = _InMemoryScheduleRepository();
@@ -406,11 +422,7 @@ void main() {
           goalRepo: goalRepo,
         );
 
-        await notifier.generateToday(
-          moodIndex: 3,
-          goals: [goal],
-          blocks: [],
-        );
+        await notifier.generateToday(moodIndex: 3, goals: [goal], blocks: []);
 
         // goalRepo.saved must contain the goal with streakCount == 2.
         expect(

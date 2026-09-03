@@ -260,11 +260,17 @@ void main() {
         await notifier.init();
         addTearDown(notifier.dispose);
 
-        expect(notifier.isPreCheckin, isTrue,
-            reason: 'in-memory mood seed must be cleared on day rollover');
+        expect(
+          notifier.isPreCheckin,
+          isTrue,
+          reason: 'in-memory mood seed must be cleared on day rollover',
+        );
         final stored = await repo.getSettings();
-        expect(stored?.moodSeedArgb, isNotNull,
-            reason: 'D-10: Hive moodSeedArgb is NOT cleared by the rollover seam');
+        expect(
+          stored?.moodSeedArgb,
+          isNotNull,
+          reason: 'D-10: Hive moodSeedArgb is NOT cleared by the rollover seam',
+        );
         expect(stored?.moodSeedArgb, 0xFF4A8C7A);
       },
     );
@@ -287,8 +293,11 @@ void main() {
         await notifier.init();
         addTearDown(notifier.dispose);
 
-        expect(notifier.isPreCheckin, isFalse,
-            reason: 'same-day persisted seed must survive init');
+        expect(
+          notifier.isPreCheckin,
+          isFalse,
+          reason: 'same-day persisted seed must survive init',
+        );
         // currentTheme should be derived from the persisted seed.
         final actual = notifier.currentTheme.colorScheme.primary;
         final expected = ColorScheme.fromSeed(
@@ -330,7 +339,13 @@ void main() {
         // then resume under the noon() clock.
         final mutableNotifier = ThemeNotifier(
           repository: repo,
-          now: () => DateTime(2026, 5, 11, 12, 0), // pretend the seed was set yesterday
+          now: () => DateTime(
+            2026,
+            5,
+            11,
+            12,
+            0,
+          ), // pretend the seed was set yesterday
           timeModulationEnabled: false,
         );
         await mutableNotifier.init();
@@ -356,8 +371,11 @@ void main() {
         expect(today.isPreCheckin, isFalse);
         today.didChangeAppLifecycleState(AppLifecycleState.paused);
         today.didChangeAppLifecycleState(AppLifecycleState.resumed);
-        expect(today.isPreCheckin, isFalse,
-            reason: 'same-day resume must NOT clear the in-memory seed');
+        expect(
+          today.isPreCheckin,
+          isFalse,
+          reason: 'same-day resume must NOT clear the in-memory seed',
+        );
 
         // And confirm Hive moodSeedArgb is still set throughout — the rollover
         // seam is in-memory only (D-10 / Open Question 1 RESOLVED).
