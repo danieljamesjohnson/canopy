@@ -310,9 +310,32 @@ class ScheduleGeneratorService {
   // Private budget helpers.
   // ---------------------------------------------------------------------------
 
-  /// Returns the Monday of the week containing [date].
-  DateTime _weekStart(DateTime date) =>
-      date.subtract(Duration(days: date.weekday - 1));
+  /// Returns the **date-only** Monday of the week containing [date].
+  ///
+  /// **SEED-006, fixed 2026-09-03.** This normalises the time of day *before*
+  /// subtracting. Until now it did not — `date.subtract(...)` alone returned
+  /// Monday at *today's clock time*, while a [CompletionLog] parses from a
+  /// `YYYY-MM-DD` string and is therefore always midnight. Monday-00:00
+  /// `isBefore` Monday-14:30, so **a chunk completed on a Monday never counted
+  /// toward that week's budget** — on every day of the week, at every time
+  /// except exactly `00:00:00`, which `DateTime.now()` never produces.
+  ///
+  /// The cost was not cosmetic: [_remainingHours] read high by exactly
+  /// Monday's completed chunks, so [_demandForTimeTarget] over-scheduled every
+  /// time-target goal worked on a Monday, for the rest of that week, every
+  /// week. Nothing on screen contradicted anything — the day just came back
+  /// fuller than the budget called for, which is why it was never reported.
+  ///
+  /// **Public and static so there is exactly one week boundary in the app.**
+  /// `WeeklyProgressService.weekStart` — written correct during Phase 33 and
+  /// deliberately NOT aligned to this defect — now delegates here, so the
+  /// Goals screen's progress line and the scheduler's own budget arithmetic
+  /// cannot drift apart again. Same "delete the duplicate, share the source of
+  /// truth" move as D-30-03 and IN-01.
+  static DateTime weekStart(DateTime date) {
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    return dateOnly.subtract(Duration(days: dateOnly.weekday - 1));
+  }
 
   /// Counts completed (not skipped) time-target chunks this week for [goalId].
   int _completedChunksThisWeek(
@@ -320,12 +343,20 @@ class ScheduleGeneratorService {
     List<CompletionLog> logs,
     DateTime today,
   ) {
-    final weekStart = _weekStart(today);
+    final start = weekStart(today);
+    // Both ends date-only (SEED-006 item 3, "does the upper bound want the
+    // same normalisation for symmetry?"). It does — not because the old form
+    // was wrong at this end, but because it was only right BY ACCIDENT: a
+    // midnight log passed `!isAfter(today-at-14:30)` precisely because today
+    // carried a clock time. Normalising the lower bound and not this one
+    // would leave the window's two ends depending on opposite properties of
+    // the same value.
+    final end = DateTime(today.year, today.month, today.day);
     return logs.where((l) {
       if (l.goalId != goalId) return false;
       if (l.event != CompletionEvent.completed) return false;
       final logDate = DateTime.parse(l.dateYmd);
-      return !logDate.isBefore(weekStart) && !logDate.isAfter(today);
+      return !logDate.isBefore(start) && !logDate.isAfter(end);
     }).length;
   }
 

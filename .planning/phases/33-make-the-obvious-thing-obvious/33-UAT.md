@@ -22,6 +22,10 @@ renders through the new code on load, so the screen you open is already produced
 state you need to judge is already on screen. **Do not press ⟳ Re-check-in** — it would regenerate
 the day and wipe the completed and skipped chunks that items 1 and 4 depend on.
 
+> **Superseded 2026-09-03.** SEED-006 is now fixed, so this phase's diff DOES touch
+> `schedule_generator.dart`. Trap #4 binds any future round that judges scheduling output — see the
+> SEED-006 section below. It did not bind the rounds already judged, which were UI-only.
+
 ---
 
 ## Already answered — do not spend your time on these
@@ -140,19 +144,21 @@ need the fork too?
 
 ---
 
-## One thing that is not a defect, so you do not report it as one
+## SEED-006 — was "not a defect you should report"; now fixed
 
-Phase 33 also found a **live bug in the scheduling engine** and deliberately did not fix it, because
-the ROADMAP fences this phase off from `schedule_generator.dart`. It is filed as
-`.planning/seeds/SEED-006-week-start-carries-time-of-day.md`.
+**When this script was written, this section told you to ignore a live engine bug.** It is closed as
+of 2026-09-03 ("take it"), so the warning is replaced rather than left to mislead.
 
-`_weekStart` does not normalise time-of-day, so **a chunk completed on a Monday never counts toward
-that week's budget** — dropped every day of the week, at every time except exactly `00:00:00`.
-Measured, not estimated.
+`_weekStart` did not normalise time-of-day, so **a chunk completed on a Monday never counted toward
+that week's budget** — every day of the week, at every time except exactly `00:00:00`. Goals and the
+scheduler could legitimately disagree about Monday. They no longer can: there is now **one** week
+boundary (`ScheduleGeneratorService.weekStart`), and `WeeklyProgressService` and
+`QuarterlyAggregationService` both delegate to it.
 
-The Goals progress line uses the **corrected** arithmetic. The scheduler still uses the buggy one. So
-if you compare "how much have I done this week" between the Goals screen and how the day is being
-scheduled, **they can legitimately disagree about Monday**. That is the known bug, not item 4.
+**CLAUDE.md trap #4 is live again for this phase.** The diff now includes
+`lib/services/schedule_generator.dart`, so **any future UAT that judges scheduling output must
+⟳ Re-check-in first** — the "Step 0 is not required" note at the top of this file was true for the
+UI-only rounds and is **no longer true** for engine-facing ones.
 
 ---
 
@@ -255,7 +261,7 @@ an owner ruling. The Item 5 tap count is still outstanding after four asks.
 
 All three of his marks are closed, plus two follow-up rulings on how breaks and free time separate,
 plus item 4's three findings. `flutter analyze` clean, **701 tests green** (678 before, +23). Rebuilt
-and re-served on `http://danserver:8143/` — bundle sha `2443a110376a6e5a…`, identical on disk and on
+and re-served on `http://danserver:8143/` — bundle sha `2458bade94de6b7c…`, identical on disk and on
 the wire.
 
 | His words | What changed | Seen |

@@ -5,6 +5,7 @@ import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/models/commitment_block.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/services/schedule_generator.dart';
+import 'package:canopy/services/weekly_progress_service.dart';
 
 void main() {
   late ScheduleGeneratorService sut;
@@ -3244,5 +3245,142 @@ void main() {
         }
       },
     );
+  });
+  // ---------------------------------------------------------------------------
+  // SEED-006 — a chunk completed on a Monday never counted toward that week
+  // ---------------------------------------------------------------------------
+  //
+  // `_weekStart` subtracted `weekday - 1` days WITHOUT normalising the time of
+  // day, so it returned Monday at *today's clock time*. A CompletionLog stores
+  // `dateYmd` as `YYYY-MM-DD`, so `DateTime.parse` always yields midnight —
+  // and Monday-00:00 `isBefore` Monday-14:30. The Monday log was dropped, on
+  // every day of the week, at every time except exactly 00:00:00.
+  //
+  // **Why 3248 lines of green tests never caught it, which is the real
+  // lesson:** every fixture in this file builds its date with
+  // `DateTime(2026, 3, 23)` — midnight. That is the ONE input where the defect
+  // cannot fire, and `DateTime.now()` never produces it. The suite tested the
+  // single unreachable case exclusively. These tests use wall-clock times a
+  // real user actually has.
+  group('SEED-006: week start must be date-only', () {
+    test('weekStart normalises the time of day', () {
+      // Monday 2026-03-23 at 14:30 must yield Monday 2026-03-23 at midnight,
+      // not Monday at 14:30. Asserted directly: this is the defect itself,
+      // one call deep, with no scheduling arithmetic in between to muddy it.
+      expect(
+        ScheduleGeneratorService.weekStart(DateTime(2026, 3, 23, 14, 30)),
+        DateTime(2026, 3, 23),
+      );
+      // Mid-week, at a time of day that is not midnight, still walks back to
+      // the same Monday midnight.
+      expect(
+        ScheduleGeneratorService.weekStart(DateTime(2026, 3, 25, 9, 0)),
+        DateTime(2026, 3, 23),
+      );
+      // Sunday is the END of the week here (weekday 7), not the start.
+      expect(
+        ScheduleGeneratorService.weekStart(DateTime(2026, 3, 29, 23, 59)),
+        DateTime(2026, 3, 23),
+      );
+    });
+
+    test('the generator and the Goals screen agree about Monday', () {
+      // The divergence SEED-006 called "the strongest argument for fixing this
+      // soon": WeeklyProgressService.weekStart was correct while the
+      // generator's was not, so the progress line and the scheduler could
+      // legitimately disagree about the same Monday.
+      for (final at in [
+        DateTime(2026, 3, 23, 0, 0),
+        DateTime(2026, 3, 23, 14, 30),
+        DateTime(2026, 3, 27, 9, 0),
+      ]) {
+        expect(
+          ScheduleGeneratorService.weekStart(at),
+          WeeklyProgressService.weekStart(at),
+          reason: 'the two week-start helpers disagree at $at',
+        );
+      }
+    });
+
+    test('a Monday completion reduces Monday-afternoon demand', () {
+      // End-to-end through generate(), because the unit assertion above would
+      // stay green if the helper were fixed and its caller left alone.
+      //
+      // 6.25h budget = 15 chunks remaining; on Monday daysLeft is 7, so
+      // demand is ceil(15/7) = 3. One completed chunk takes it to 14 →
+      // ceil(14/7) = 2. The budget is chosen to sit exactly on that boundary:
+      // at most other budgets a single 25-minute chunk does not move the
+      // ceiling at all, and the test would pass with the bug intact.
+      final goal = makeTimeTarget(name: 'Deep work', weeklyHourBudget: 6.25);
+      final mondayAfternoon = DateTime(2026, 3, 23, 14, 30);
+
+      List<ScheduledChunk> runWith(List<CompletionLog> logs) => sut.generate(
+        goals: [goal],
+        blocks: [],
+        moodIndex: 5,
+        date: mondayAfternoon,
+        completionLogs: logs,
+      );
+
+      final withoutLog = workChunksOf(runWith([]));
+      final withMondayLog = workChunksOf(
+        runWith([makeLog(goalId: goal.id, dateYmd: '2026-03-23')]),
+      );
+
+      expect(
+        withoutLog,
+        3,
+        reason: 'baseline: 15 chunks over 7 days is 3 a day',
+      );
+      expect(
+        withMondayLog,
+        2,
+        reason:
+            "a chunk completed this Monday must count against this week's "
+            'budget — with SEED-006 live this reads 3, identical to having '
+            'done nothing at all',
+      );
+    });
+
+    test("Monday's completion stays counted for the rest of the week", () {
+      // The seed's sharpest finding: because the week start stayed pinned to
+      // Monday-at-today's-clock-time, Monday's work was invisible on Tuesday,
+      // Wednesday and every day through Sunday — not just on Monday itself.
+      final goal = makeTimeTarget(name: 'Deep work', weeklyHourBudget: 6.25);
+      // Wednesday 2026-03-25, 09:00. daysLeft = 7 - 3 + 1 = 5.
+      // 15 chunks / 5 = 3; 14 / 5 = ceil(2.8) = 3 — the ceiling does not move
+      // here, so assert the arithmetic that DOES: the Monday log is inside
+      // the week window at all.
+      final wednesday = DateTime(2026, 3, 25, 9, 0);
+      expect(
+        DateTime.parse(
+          '2026-03-23',
+        ).isBefore(ScheduleGeneratorService.weekStart(wednesday)),
+        isFalse,
+        reason: "Monday's log must not fall before Wednesday's week start",
+      );
+      // And it is genuinely reachable through generate(): a full week of
+      // completions must starve the goal rather than leaving it at full
+      // budget. 15 logged chunks against a 15-chunk budget is zero remaining.
+      final spent = List.generate(
+        15,
+        (i) => makeLog(goalId: goal.id, dateYmd: '2026-03-23'),
+      );
+      final result = sut.generate(
+        goals: [goal],
+        blocks: [],
+        moodIndex: 5,
+        date: wednesday,
+        completionLogs: spent,
+      );
+      expect(
+        workChunksOf(result),
+        0,
+        reason:
+            'a fully-spent weekly budget must schedule nothing on Wednesday; '
+            'with SEED-006 live every one of those Monday logs is dropped '
+            'and the goal reads as untouched',
+      );
+    });
   });
 }

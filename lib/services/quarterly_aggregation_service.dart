@@ -1,5 +1,6 @@
 import '../data/models/completion_log.dart';
 import '../data/models/quarterly_snapshot.dart';
+import 'schedule_generator.dart';
 
 /// Pure-Dart aggregation logic for CompletionLog data.
 ///
@@ -25,7 +26,18 @@ class QuarterlyAggregationService {
 
   /// Returns completed chunk counts per ISO Monday date key for logs within range.
   ///
-  /// Each log is bucketed to the Monday of its week using: date - (weekday - 1) days.
+  /// Buckets through [ScheduleGeneratorService.weekStart] — the app's single
+  /// week boundary — rather than repeating `date - (weekday - 1) days` here.
+  ///
+  /// **This was the THIRD copy of that arithmetic and the last remaining drift
+  /// vector (SEED-006, closed 2026-09-03).** It was never wrong: its input is
+  /// `DateTime.parse(log.dateYmd)`, which is always midnight, so the missing
+  /// time-of-day normalisation that broke the generator could not fire here.
+  /// That is exactly what made it dangerous — a correct-by-accident duplicate
+  /// that would have kept looking right while the definition it duplicates
+  /// moved. Delegating is behaviour-identical (normalising a midnight instant
+  /// is a no-op) and is the same D-30-03 / IN-01 move as the generator's own
+  /// shared lattice constants.
   Map<String, int> completedByWeek(
     List<CompletionLog> logs,
     String startYmd,
@@ -34,8 +46,9 @@ class QuarterlyAggregationService {
     final result = <String, int>{};
     for (final log in _inRange(logs, startYmd, endYmd)) {
       if (log.event != CompletionEvent.completed) continue;
-      final date = DateTime.parse(log.dateYmd);
-      final monday = date.subtract(Duration(days: date.weekday - 1));
+      final monday = ScheduleGeneratorService.weekStart(
+        DateTime.parse(log.dateYmd),
+      );
       final key = _toYmd(monday);
       result[key] = (result[key] ?? 0) + 1;
     }

@@ -28,34 +28,21 @@ class WeeklyProgressService {
 
   /// Returns the **date-only** Monday of the week containing [date].
   ///
-  /// Normalises the time of day *before* subtracting, so the returned instant
-  /// is always midnight.
+  /// **Now a delegation, and that is the point — SEED-006 closed 2026-09-03.**
+  /// This method used to carry its own (correct) implementation alongside a
+  /// long doc comment explaining that `ScheduleGeneratorService._weekStart`
+  /// was *not* correct and must not be aligned to. That divergence is gone:
+  /// the generator's helper is fixed and public, and this one forwards to it,
+  /// so the Goals screen's progress line and the scheduler's budget
+  /// arithmetic now share one definition of where a week starts.
   ///
-  /// **Deliberate divergence from the generator — do not "align" this to it.**
-  /// `ScheduleGeneratorService._weekStart` (schedule_generator.dart:314-315)
-  /// computes `date.subtract(Duration(days: date.weekday - 1))` *without*
-  /// normalising, so its week start carries today's clock time. A log parses
-  /// from a `YYYY-MM-DD` string and is therefore always midnight, so a log
-  /// dated Monday `isBefore` a Monday-at-14:30 week start and is dropped.
-  ///
-  /// The blast radius was **measured**, by running the generator's own
-  /// expressions (schedule_generator.dart:314-328) across a fixed calendar,
-  /// rather than estimated: because the week start stays pinned to
-  /// Monday-at-today's-clock-time all week, **a chunk completed on a Monday
-  /// never counts toward that week's budget — on every day of the week, at
-  /// every time of day except exactly 00:00:00.** Tuesday through Sunday logs
-  /// are unaffected. The cost is that `_remainingHours` reads high by exactly
-  /// Monday's completed chunks, so `_demandForTimeTarget` over-schedules that
-  /// goal for the rest of the week, every week.
-  ///
-  /// This helper is correct. The generator's off-by-one is **out of scope by
-  /// the ROADMAP's "do not modify `schedule_generator.dart`" fence**; it is
-  /// captured in `.planning/seeds/SEED-006-week-start-carries-time-of-day.md`
-  /// and a fix belongs to a later phase.
-  static DateTime weekStart(DateTime date) {
-    final dateOnly = DateTime(date.year, date.month, date.day);
-    return dateOnly.subtract(Duration(days: dateOnly.weekday - 1));
-  }
+  /// **Kept as a named method rather than deleted** so this service's callers
+  /// and tests keep reading a week boundary from the service they already
+  /// depend on. The dependency direction is unchanged — this file already
+  /// imports the generator for [ScheduleGeneratorService.workChunkMinutes],
+  /// which is the same IN-01 "share the source of truth" precedent.
+  static DateTime weekStart(DateTime date) =>
+      ScheduleGeneratorService.weekStart(date);
 
   /// Completed logs for [goalId] within Monday..[today], both ends inclusive.
   ///

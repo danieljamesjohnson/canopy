@@ -3,7 +3,38 @@
 **Raised:** 2026-09-01, by the agent, during Phase 33 plan 33-02 (`WeeklyProgressService`).
 Not a user report — nobody has complained about this, which is part of why it matters.
 
-**Status:** open. Found, characterised, and deliberately **not fixed** in Phase 33.
+**Status:** **CLOSED 2026-09-03** — fixed on the owner's explicit go-ahead ("take it"), after
+Phase 33's UAT items were closed. Kept in full rather than deleted: how it was found, and why 3248
+lines of green tests could not have caught it, outlive the fix.
+
+## Closed — what shipped
+
+`ScheduleGeneratorService.weekStart` normalises to date-only and is now **public and static**;
+`_completedChunksThisWeek` normalises its upper bound too (item 3 below — not because the old form
+was wrong at that end, but because it was right only *by accident*, relying on `today` carrying a
+clock time that the lower bound was being fixed to ignore). `WeeklyProgressService.weekStart` and
+`QuarterlyAggregationService.completedByWeek` both delegate to it, so **the app has one week
+boundary** and the Goals/scheduler disagreement is gone (item 4).
+
+**Item 2 — "review the suite for cases whose expected values silently encode the bug" — found
+ZERO, and the reason is the finding.** Every fixture in `schedule_generator_test.dart` builds its
+date as `DateTime(2026, 3, 23)` (76 uses of `date: monday`, all midnight). Midnight is the one input
+where the defect **cannot** fire, and `DateTime.now()` never produces it. The suite exercised the
+single unreachable case, exclusively. That is why 3248 lines of green tests missed a bug that fired
+every day of every week for every Monday-working user. The new tests use wall-clock times a real
+person actually has.
+
+The four new tests were observed **genuinely RED** first — not as a compile error, which this
+project's CLAUDE.md rightly calls a weak red. The helper was made public with its **buggy body
+intact**, the assertions were watched to fail (`2026-03-23 14:30` where `2026-03-23 00:00` was
+expected; 3 chunks where 2 were expected), and only then was the body normalised.
+
+**Consequence to carry forward: CLAUDE.md trap #4 is live again.** This phase now touches
+`schedule_generator.dart`, so any future UAT judging scheduling output must ⟳ Re-check-in first.
+
+---
+
+## Original report (kept verbatim)
 
 ## Where it lives
 

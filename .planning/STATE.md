@@ -5,11 +5,11 @@ current_phase: 33
 current_phase_name: Make The Obvious Thing Obvious
 status: awaiting-human-uat
 current_phase_next: 34
-stopped_at: Phase 33 UAT judged 2026-09-02 from the owner's Excalidraw annotation; his three marks (hatch, PreStart banner, work-vs-break fill) are closed, analyze clean, 701 tests green, re-served on http://danserver:8143/ (sha 2443a110376a6e5a). Item 4 closed 2026-09-03; items 1/3/5/6/6b remain UNJUDGED.
+stopped_at: Phase 33 UAT judged 2026-09-02 from the owner's Excalidraw annotation; his three marks (hatch, PreStart banner, work-vs-break fill) are closed, analyze clean, 705 tests green, re-served on http://danserver:8143/ (sha 2458bade94de6b7c). Item 4 and SEED-006 closed 2026-09-03; items 1/3/5/6/6b remain UNJUDGED.
 last_updated: "2026-09-03T12:00:00.000Z"
 last_activity: 2026-09-03
-last_activity_desc: Item 4 closed — a low progress value is now visible, and the meaningless dot is gone
-state_head: 1e6e7da
+last_activity_desc: SEED-006 closed — one week boundary in the app; the suite had only ever tested midnight
+state_head: 7138a56
 progress:
   total_phases: 7
   completed_phases: 5
@@ -29,8 +29,8 @@ milestone_name: milestone
 ## Current Position
 
 Phase: 33 (Make The Obvious Thing Obvious) — **UAT judged 2026-09-02; his three marks are closed and
-re-served.** `flutter analyze` clean, **701 tests green** (678 → +23). Bundle
-`2443a110376a6e5a…` on `http://danserver:8143/`.
+re-served.** `flutter analyze` clean, **705 tests green** (678 → +27). Bundle
+`2458bade94de6b7c…` on `http://danserver:8143/`.
 
 **The verdict came as a drawing, not a list** — an annotated screenshot on the Excalidraw `canopy`
 board (`mc-read-tool excalidraw`; render in `shots/07-owner-annotation-2026-09-02.png`). Three marks,
@@ -70,11 +70,22 @@ profile `~/.cache/canopy-uat-profile-33` holds its fixture on the **`localhost:8
 IndexedDB is per-origin, so driving it at the documented `danserver:8143` URL silently onboards a
 blank instance and the fixture reads as destroyed while sitting untouched one hostname away.
 
-**Filed, not fixed: `SEED-006`.** `schedule_generator._weekStart` does not normalise time-of-day, so
-a chunk completed on a **Monday never counts toward that week's budget** — every day of the week, at
-any time but exactly `00:00:00`. Measured against the generator's own expressions. Out of scope by
-the ROADMAP fence; the new `WeeklyProgressService` is correct, so Goals and the scheduler can
-legitimately disagree about Monday until it is fixed.
+**SEED-006 is CLOSED (2026-09-03).** `schedule_generator._weekStart` did not normalise time-of-day,
+so **a chunk completed on a Monday never counted toward that week's budget** — every day of the week,
+at every time but exactly `00:00:00`. `weekStart` is now public, static and date-only, and
+`WeeklyProgressService` + `QuarterlyAggregationService` both delegate to it: **one week boundary in
+the app**, so Goals and the scheduler cannot disagree about Monday again.
+
+**The audit item found ZERO flipped tests, and that is the finding.** Every fixture in
+`schedule_generator_test.dart` builds its date as midnight (76 uses of `date: monday`) — the one
+input where the defect cannot fire, and one `DateTime.now()` never produces. **3248 lines of green
+tests exercised the single unreachable case, exclusively.** The four new tests use wall-clock times
+and were observed genuinely RED first: the helper was made public with its **buggy body intact** and
+the assertions watched to fail, because a compile error is a weak red.
+
+**⚠ CLAUDE.md trap #4 is LIVE again.** This phase's diff now includes `schedule_generator.dart`, so
+**any future UAT judging scheduling output must ⟳ Re-check-in first.** The "Step 0 not required"
+note in `33-UAT.md` was true for the UI-only rounds and is now annotated as superseded.
 
 ---
 
