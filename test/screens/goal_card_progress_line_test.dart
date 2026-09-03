@@ -149,6 +149,168 @@ void main() {
     });
   });
 
+  // ── Item 4, the three findings the owner ruled on (2026-09-03) ───────────
+  //
+  // All three were found by LOOKING at the built screen, not by testing it,
+  // and none of them could have been caught by the assertions above: every
+  // one of those checks a COLOUR, and all three defects were about SIZE.
+  // A band test passes at six pixels and at zero.
+  group('GoalCard progress line — item 4(a)/(c): a low value is visible', () {
+    test('1. the fill is floored at kGoalProgressMinFill', () {
+      // Asserted arithmetically as well as through the rendered box: a
+      // rendered-height check alone passes at ANY floor, including a 2dp one
+      // that is still invisible. This pins the number that was chosen.
+      expect(goalProgressFillHeight(0.0), kGoalProgressMinFill);
+      expect(goalProgressFillHeight(0.139), kGoalProgressMinFill);
+      // 0.139 of the old 40dp track was ~5.6dp — "technically red and
+      // practically invisible". Of the new 56dp track it is 7.8dp, still
+      // under the floor, which is why BOTH constants moved.
+      expect(kGoalProgressTrackHeight * 0.139, lessThan(kGoalProgressMinFill));
+    });
+
+    // **These two bounds are BARE LITERALS on purpose, and the reason is a
+    // measured failure of this very test file.** Every other assertion here
+    // derives its expected value from `kGoalProgressTrackHeight` /
+    // `kGoalProgressTrackWidth`, so it moves with the constant and can never
+    // discriminate one value from another: mutation-testing the track back to
+    // its pre-ruling 40dp × 5dp produced ZERO failures across the whole file.
+    // A symbolic expectation cannot fail a symbol. Same trap STATE.md records
+    // for `kBreakHitSlop` in Phase 31, and it recurred here within one phase.
+    //
+    // The literals encode the legibility claims the ruling actually makes,
+    // not the numbers that happen to satisfy them today. Raising the track
+    // further keeps them green; reverting it fails them.
+    test('2a. the track is not a hairline', () {
+      expect(
+        kGoalProgressTrackWidth,
+        greaterThanOrEqualTo(8.0),
+        reason: 'below 8dp a 56dp-tall bar reads as a rule, not a gauge',
+      );
+    });
+
+    test('2b. the floor must not swallow the middle of the scale', () {
+      // The fixture's amber goal, 41.7%. It must clear the minimum mark by a
+      // visible margin, or the nub has eaten the scale and every value below
+      // the halfway point reads as "barely started".
+      //
+      // An ABSOLUTE gap, not a ratio: a ratio couples this bound to the floor,
+      // so raising the floor for legibility would fail a test about the
+      // TRACK — two independent claims tangled into one number. At the
+      // pre-ruling 40dp track the gap is 4.7dp, which is what this catches.
+      expect(
+        goalProgressFillHeight(0.417) - kGoalProgressMinFill,
+        greaterThanOrEqualTo(10.0),
+        reason: 'the track is too short to separate amber from the floor',
+      );
+    });
+
+    test('2. above the floor the fill stays strictly proportional', () {
+      // The floor must not flatten the whole scale — only its bottom. These
+      // are the fixture's own amber and green values.
+      expect(
+        goalProgressFillHeight(0.417),
+        closeTo(kGoalProgressTrackHeight * 0.417, 0.001),
+      );
+      expect(
+        goalProgressFillHeight(0.833),
+        closeTo(kGoalProgressTrackHeight * 0.833, 0.001),
+      );
+      expect(goalProgressFillHeight(1.0), kGoalProgressTrackHeight);
+      // And it clamps rather than overflowing the track.
+      expect(goalProgressFillHeight(1.6), kGoalProgressTrackHeight);
+    });
+
+    testWidgets('3. a 13.9% goal paints a mark, not a speck', (tester) async {
+      await pumpWithMood(tester, GoalCard(goal: _goal(), weekProgress: 0.139));
+      expect(_fillColour(tester), _red);
+      expect(
+        tester.getSize(find.byKey(_fillKey)).height,
+        kGoalProgressMinFill,
+        reason: 'the reported ~6px speck must reach the floor',
+      );
+      expect(
+        tester.getSize(find.byKey(_fillKey)).width,
+        kGoalProgressTrackWidth,
+      );
+    });
+
+    testWidgets('4. exactly 0.0 paints a RED mark, not an empty track', (
+      tester,
+    ) async {
+      // Item 4(c) verbatim: "red when just started is currently invisible at
+      // exactly just-started." A budgeted goal with nothing done painted zero
+      // height, which is indistinguishable on screen from a goal that has no
+      // weekly target at all.
+      await pumpWithMood(
+        tester,
+        GoalCard(goal: _goal(weeklyHourBudget: 3.0), weekProgress: 0.0),
+      );
+      expect(_fillColour(tester), _red);
+      expect(tester.getSize(find.byKey(_fillKey)).height, kGoalProgressMinFill);
+    });
+
+    testWidgets('5. 0.0 and null still differ — that is the whole point', (
+      tester,
+    ) async {
+      // The distinction the fix exists to surface. If a future change makes
+      // `null` paint a nub too, both states collapse back into one mark and
+      // 4(c) silently regresses in the opposite direction.
+      await pumpWithMood(
+        tester,
+        GoalCard(goal: _goal(weeklyHourBudget: 3.0), weekProgress: 0.0),
+      );
+      expect(find.byKey(_fillKey), findsOneWidget);
+
+      await pumpWithMood(
+        tester,
+        GoalCard(goal: _goal(type: GoalType.outcome), weekProgress: null),
+      );
+      expect(
+        find.byKey(_fillKey),
+        findsNothing,
+        reason: 'no weekly target is the ONLY thing an empty track means',
+      );
+    });
+  });
+
+  group('GoalCard — item 4(b): one colour system, and it means something', () {
+    testWidgets('6. the identity swatch is gone from the title row', (
+      tester,
+    ) async {
+      await pumpWithMood(tester, GoalCard(goal: _goal(), weekProgress: 0.10));
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Container &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).shape == BoxShape.circle,
+        ),
+        findsNothing,
+        reason:
+            'the swatch stated an identity the user never chose, louder than '
+            'the progress line that states something true',
+      );
+    });
+
+    testWidgets('7. the goal\'s own colour is painted nowhere on the card', (
+      tester,
+    ) async {
+      // Stronger than "no circle": the swatch could come back as any shape.
+      // `_goal()` fixes the goal colour at #4CAF50 precisely so this can be
+      // asserted by value.
+      await pumpWithMood(tester, GoalCard(goal: _goal(), weekProgress: 0.10));
+      expect(
+        _paintedColours(tester),
+        isNot(contains(const Color(0xFF4CAF50))),
+        reason:
+            "the goal's auto-assigned identity colour has no meaning on "
+            'this screen, so it should not be painted on it',
+      );
+      // The meaningful colour is still there.
+      expect(_paintedColours(tester), contains(_red));
+    });
+  });
+
   group('GoalCard progress line — no target (UI-SPEC item 16)', () {
     testWidgets('null progress renders the grey track and no fill', (
       tester,

@@ -38,7 +38,7 @@ exactly this kind.
 | S2 | Does every unresolved row carry a labelled chip? | **Yes.** `To do` present on every unresolved work row in the semantics tree. |
 | S3 | Do the resolved states carry words too? | **Yes.** `Done` and `Skipped` both present as text nodes. |
 | S4 | Is there still exactly one way to complete a chunk? | **Yes.** One `Complete` button per row; the chip exposes no tap target. |
-| S5 | Are all three colour bands actually rendering? | **Yes.** Pixel-checked on `shots/04-goals-progress-lines.png`: red 17px, amber 72px, green 155px. |
+| S5 | Are all three colour bands actually rendering? | **Yes.** Pixel-checked; re-measured after item 4 on `shots/15-progress-line-item4.png`: red 8×12px, amber 8×23px, green 8×46px. |
 | S6 | Is the fork reachable before any form, and does each door state its consequence? | **Yes.** `"What are you adding?"` with both doors and both consequence lines. |
 | S7 | Does tapping a restorative chip add it, and tapping again remove it? | **Yes.** Covered by `restoratives_quick_pick_test.dart` cases 2–4 and confirmed live. |
 
@@ -253,9 +253,10 @@ an owner ruling. The Item 5 tap count is still outstanding after four asks.
 
 ## What shipped against this verdict — 2026-09-02, same day
 
-All three of his marks are closed, plus two follow-up rulings on how breaks and free time separate.
-`flutter analyze` clean, **692 tests green** (678 before, +14). Rebuilt and re-served on
-`http://danserver:8143/` — bundle sha `2bf9b8c8468c8cb4…`, identical on disk and on the wire.
+All three of his marks are closed, plus two follow-up rulings on how breaks and free time separate,
+plus item 4's three findings. `flutter analyze` clean, **701 tests green** (678 before, +23). Rebuilt
+and re-served on `http://danserver:8143/` — bundle sha `2443a110376a6e5a…`, identical on disk and on
+the wire.
 
 | His words | What changed | Seen |
 |---|---|---|
@@ -326,8 +327,52 @@ project has been bitten by five times. The two `findsOneWidget` probes that used
 pre-start were repointed to the leading free block (`Free until 8:00 AM`), which is a stronger probe:
 it is the row a user actually reads.
 
-**Still unjudged and unchanged:** items 1, 3, 4, 5, 6, 6b. Nothing in this closure touches the Goals
-screen, the restoratives, or the fork.
+### Item 4 — all three findings closed, 2026-09-03 ("go ahead and fix the remaining things")
+
+He delegated the three rulings rather than answering (a)/(b)/(c) one by one. What was decided, and
+on what basis:
+
+- **(a) the ~6px speck** → track **40 → 56dp tall, 5 → 8dp wide**. Height is the channel that carries
+  a low value; widening alone would only make a short speck a fatter one. 56 is bounded by the card
+  (~92dp of content, track centred), not chosen for looks.
+- **(c) 0% invisible** → a **12dp minimum fill**, and the render condition changed from `p > 0` to
+  `p != null`. A budgeted goal with nothing done now paints a red stub; **no weekly target is the
+  only thing an empty track means.** This deliberately breaks proportionality below ~21% — the trade
+  is sound because the line is a three-band traffic light with no key and no number (item 15), so the
+  band is the message and the fraction never was.
+- **(b) two colour systems** → the identity swatch is **deleted, not muted.** `goal.color` is
+  auto-assigned by `GoalsNotifier.autoColor()` and there is no colour control anywhere in the goal
+  form, so the dot stated an identity the user never chose, louder than the line that states
+  something true. Muting would keep a meaningless mark and just make it quieter. **Known
+  consequence:** the goal colour still paints the timeline's 4dp left bar, and this card was the only
+  place to see which colour belonged to which goal. That legend is gone; every timeline card carries
+  the goal's name anyway.
+
+Measured on the rendered page (`shots/15…`, `shots/16…`): red 8×12px · amber 8×23px · green 8×46px,
+against the old 5×6px speck. **The 12dp floor was itself chosen by looking** — at 10dp the mark
+paints a near-perfect circle on a 4dp-radius track, i.e. a red dot, one screen after (b) deleted a
+coloured dot from this same card.
+
+**Two mutation-testing findings worth more than the fix.**
+
+1. **Reverting the track to its old 40×5 produced ZERO failures** across the whole file. Every
+   assertion derived its expected value from `kGoalProgressTrackHeight` / `kGoalProgressTrackWidth`,
+   so it moved with the constant — a symbolic expectation cannot fail a symbol. This is the same trap
+   STATE.md records for `kBreakHitSlop` in Phase 31, recurring inside one phase. Fixed with two bare
+   literal bounds that encode the legibility claim (`width >= 8`; amber clears the floor by >= 10dp)
+   rather than the numbers that satisfy it today.
+2. The rendered-width assertion caught a **half-applied change**: the track's `Positioned(width: 5)`
+   and the content `Padding(left: 5)` had not moved with the constant, so the widened track rendered
+   at the old width no matter what `_ProgressLine` asked for. Not visible in the diff; visible in the
+   pixels.
+
+Five mutations were applied and each observed RED: no minimum fill (3 failures), `0.0` back to
+painting nothing (2), track height back to 40 (1), track width back to 5 (1), identity swatch
+restored (2).
+
+**Still unjudged:** items 1, 3, 5, 6 and 6b — nothing in any of this touches the restoratives or the
+fork. **Item 5's tap count remains the one open question no agent can close**; it needs a thumb, and
+it has now been asked four times.
 
 ---
 

@@ -1,7 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import '../../../data/models/energy_valence.dart';
 import '../../../data/models/goal.dart';
-import '../../../utils/time_format.dart';
 
 /// Fixed height of the goal card's left progress track, in logical pixels.
 ///
@@ -14,7 +15,62 @@ import '../../../utils/time_format.dart';
 /// percentages, so the fill is `kGoalProgressTrackHeight * progress` and never
 /// a fraction of the card. Do not reintroduce `FractionallySizedBox` here and
 /// do not tie the fill to the card's height by any other route.
-const double kGoalProgressTrackHeight = 40.0;
+///
+/// **Raised 40 → 56 by the owner's ruling on `33-UAT.md` item 4(a).** At 40dp
+/// the fixture's 13.9% goal rendered a ~6px speck: *"technically red and
+/// practically invisible."* Height is the channel that carries a LOW value —
+/// widening the track only makes a short speck a fatter speck — so the track
+/// grew taller and [kGoalProgressTrackWidth] grew alongside it to keep the bar
+/// from reading as a hair. 56 is bounded by the card, not chosen for looks: a
+/// goal card's content is ~92dp (title row + secondary line + chip run +
+/// padding) and the track is CENTRED inside it, so anything past ~64 would
+/// start to look like a bar the card cannot contain.
+const double kGoalProgressTrackHeight = 56.0;
+
+/// Track width, 5 → 8 with the height rise above. Not independently motivated:
+/// a 56dp × 5dp bar reads as a hairline, so the aspect ratio had to follow.
+const double kGoalProgressTrackWidth = 8.0;
+
+/// **The minimum painted fill, and the whole of item 4(c).** Two reported
+/// defects share this one constant:
+///
+/// - *"the lines are small … red barely registers"* — 13.9% of 56dp is 7.8dp,
+///   still a speck. Floored here, it is a mark.
+/// - *"red when just started is invisible at exactly just-started"* — a
+///   budgeted goal with nothing done is 0.0, which painted **zero height**,
+///   making it identical on screen to a goal with no weekly target at all.
+///   The distinction was real in the data, unit-tested, and never reached the
+///   eye.
+///
+/// **This deliberately breaks strict proportionality at the bottom of the
+/// scale**, and that is the trade the owner was offered: below ~21% every
+/// value paints the same 12dp mark. It costs nothing real — the line carries a
+/// three-band traffic light with **no key and no number on screen** (UI-SPEC
+/// item 15), so the band is the message and the exact fraction never was. A
+/// value the eye cannot see is not more honest than one it can.
+///
+/// **12 rather than 10, decided by looking at the rendered screen.** At 10 the
+/// mark is 8dp wide and 10dp tall on a 4dp-radius track, which paints a
+/// near-perfect CIRCLE — a red dot, one screen after item 4(b) deleted a
+/// coloured dot from this very card for being a meaningless pip. 12 reads as a
+/// stub of a bar, which is what it is.
+///
+/// The null case is untouched: no weekly target still paints no fill at all,
+/// which is now the ONLY thing an empty track means.
+const double kGoalProgressMinFill = 12.0;
+
+/// Painted fill height for [progress], floored at [kGoalProgressMinFill] and
+/// clamped to [kGoalProgressTrackHeight].
+///
+/// Top-level and public so the floor can be asserted **arithmetically** rather
+/// than only through a rendered box. A rendered-height assertion alone passes
+/// at any floor value — including a 2dp one that is still invisible, which is
+/// the defect being fixed. This lets a test pin the number that was chosen,
+/// not merely that some number is applied.
+double goalProgressFillHeight(double progress) => math.max(
+  kGoalProgressMinFill,
+  kGoalProgressTrackHeight * progress.clamp(0.0, 1.0),
+);
 
 /// Red/yellow/green is a universally-read scale and is deliberately NOT
 /// sourced from the mood-seeded ColorScheme: `ColorScheme.fromSeed` moves
@@ -60,8 +116,11 @@ String _typeLabel(GoalType type) {
 }
 
 /// A Material Card displaying a goal with a left-hand weekly-progress line, an
-/// optional rank number, the name, an identity swatch, a labelled type chip,
-/// and an optional secondary stat (weekly hours or streak count).
+/// optional rank number, the name, a labelled type chip, and an optional
+/// secondary stat (weekly hours or streak count).
+///
+/// **The progress line is the only colour on this card** (item 4(b)) — the
+/// identity swatch that used to sit at the end of the title row is deleted.
 ///
 /// When [trailing] is null and the pointer hovers (desktop), the hover-revealed
 /// edit + archive icons fade in via [AnimatedOpacity] (120ms easeOut). On mobile
@@ -135,9 +194,11 @@ class _GoalCardState extends State<GoalCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final goal = widget.goal;
-    final goalColor = goal.color != null
-        ? hexToColor(goal.color!)
-        : theme.colorScheme.primary;
+    // `goalColor` was resolved here (`hexToColor(goal.color!)`, falling back to
+    // `colorScheme.primary`) for the identity swatch deleted in the title row
+    // below. Nothing on this card paints the goal's colour any more, so the
+    // lookup goes with it rather than sitting unused — `hexToColor` still has
+    // callers elsewhere and is untouched.
     final secondary = _secondaryLine(goal);
     final showHoverIcons = widget.trailing == null;
 
@@ -159,14 +220,21 @@ class _GoalCardState extends State<GoalCard> {
               left: 0,
               top: 0,
               bottom: 0,
-              width: 5,
+              // Both of these read [kGoalProgressTrackWidth] rather than
+              // repeating its value: when the track widened 5 → 8 for item
+              // 4(a), this Positioned and the content Padding below still said
+              // 5, so the track rendered at the OLD width no matter what
+              // `_ProgressLine` asked for. Caught by the rendered-width
+              // assertion in `goal_card_progress_line_test.dart`, not by
+              // reading the diff.
+              width: kGoalProgressTrackWidth,
               child: Center(
                 child: _ProgressLine(progress: widget.weekProgress),
               ),
             ),
             // Content — determines Stack size
             Padding(
-              padding: const EdgeInsets.only(left: 5),
+              padding: const EdgeInsets.only(left: kGoalProgressTrackWidth),
               child: Row(
                 children: [
                   // Rank gutter, on the LEADING side: `trailing` holds the
@@ -200,6 +268,41 @@ class _GoalCardState extends State<GoalCard> {
                           // row is gone — an unlabelled glyph in an identity
                           // colour is precisely the shape UI-SPEC item 30
                           // forbids. It is now the labelled _TypeChip below.
+                          // **The identity swatch is GONE — item 4(b),
+                          // owner's ruling.** A 16dp filled circle in the
+                          // goal's colour used to sit at the end of this row.
+                          //
+                          // The complaint was not that it was ugly, it was
+                          // that the card carried TWO colour systems and the
+                          // meaningless one was louder: the left line's colour
+                          // states weekly progress, while the dot stated an
+                          // identity the user never chose and cannot change
+                          // (`goal.color` is auto-assigned from a palette by
+                          // `GoalsNotifier.autoColor()` — there is no colour
+                          // control in `goal_form_sheet.dart`). Exercise
+                          // rendered a GREEN dot beside a RED line. That is
+                          // the standing complaint this whole phase answers —
+                          // *"the colors are changing, it's not making a ton
+                          // of sense"* — reappearing one screen over.
+                          //
+                          // Removed rather than muted, which was the other
+                          // option offered: muting keeps a meaningless mark
+                          // and only makes it quieter. One colour on this
+                          // card, and it means something.
+                          //
+                          // **Known consequence, not an oversight:** the goal
+                          // colour still paints the 4dp left bar on a work
+                          // chunk (`chunk_card.dart`), and this card was the
+                          // only place a user could see which colour belonged
+                          // to which goal. That legend is now gone. It was
+                          // never a legend anyone asked for — every timeline
+                          // card also carries the goal's NAME — but if a
+                          // future phase wants colour-to-goal identification,
+                          // this row is where it goes back.
+                          //
+                          // The `showHoverIcons && _hovered` gate went with
+                          // it: WR-03 existed only to stop the hover icons
+                          // painting over the swatch.
                           Row(
                             children: [
                               if (goal.emojiTag != null) ...[
@@ -216,26 +319,6 @@ class _GoalCardState extends State<GoalCard> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              const SizedBox(width: 6),
-                              // WR-03: hide the color swatch on hover so the
-                              // hover-revealed edit + archive IconButtons
-                              // (~96dp wide, painted by the Positioned stack
-                              // child below) do not paint over the swatch.
-                              // Without this gate the swatch silently
-                              // disappears under the icons on hover; with the
-                              // gate the swatch fades out as the icons fade
-                              // in, keeping the right-edge readable.
-                              if (showHoverIcons && _hovered)
-                                const SizedBox(width: 16, height: 16)
-                              else
-                                Container(
-                                  width: 16,
-                                  height: 16,
-                                  decoration: BoxDecoration(
-                                    color: goalColor,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
                             ],
                           ),
                           // Secondary stat on its own line — it no longer
@@ -414,7 +497,9 @@ class _TypeChip extends StatelessWidget {
 ///
 /// A null [progress] renders the bare grey track and no fill at all — the
 /// model has no weekly target to measure against, so a coloured line would
-/// assert a claim the data cannot support (item 16).
+/// assert a claim the data cannot support (item 16). **A progress of exactly
+/// 0.0 is NOT that case** and no longer renders like it: see
+/// [kGoalProgressMinFill].
 class _ProgressLine extends StatelessWidget {
   const _ProgressLine({required this.progress});
 
@@ -426,7 +511,7 @@ class _ProgressLine extends StatelessWidget {
     final p = progress;
 
     return SizedBox(
-      width: 5,
+      width: kGoalProgressTrackWidth,
       height: kGoalProgressTrackHeight,
       child: Stack(
         children: [
@@ -435,21 +520,28 @@ class _ProgressLine extends StatelessWidget {
               key: const ValueKey('goal-progress-track'),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(2.5),
+                borderRadius: BorderRadius.circular(
+                  kGoalProgressTrackWidth / 2,
+                ),
               ),
             ),
           ),
-          if (p != null && p > 0)
+          // `p != null`, not `p > 0`: zero is a real measurement — "budgeted,
+          // nothing done yet" — and the whole of item 4(c) is that it must
+          // reach the screen as a red mark rather than as an empty track.
+          if (p != null)
             Align(
               alignment: Alignment.bottomCenter,
               child: SizedBox(
-                width: 5,
-                height: kGoalProgressTrackHeight * p.clamp(0.0, 1.0),
+                width: kGoalProgressTrackWidth,
+                height: goalProgressFillHeight(p),
                 child: DecoratedBox(
                   key: const ValueKey('goal-progress-fill'),
                   decoration: BoxDecoration(
                     color: _bandColor(p),
-                    borderRadius: BorderRadius.circular(2.5),
+                    borderRadius: BorderRadius.circular(
+                      kGoalProgressTrackWidth / 2,
+                    ),
                   ),
                 ),
               ),

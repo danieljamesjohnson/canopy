@@ -5,11 +5,11 @@ current_phase: 33
 current_phase_name: Make The Obvious Thing Obvious
 status: awaiting-human-uat
 current_phase_next: 34
-stopped_at: Phase 33 UAT judged 2026-09-02 from the owner's Excalidraw annotation; his three marks (hatch, PreStart banner, work-vs-break fill) are closed, analyze clean, 692 tests green, re-served on http://danserver:8143/ (sha 2bf9b8c8468c8cb4). Items 1/3/4/5/6/6b remain UNJUDGED.
+stopped_at: Phase 33 UAT judged 2026-09-02 from the owner's Excalidraw annotation; his three marks (hatch, PreStart banner, work-vs-break fill) are closed, analyze clean, 701 tests green, re-served on http://danserver:8143/ (sha 2443a110376a6e5a). Item 4 closed 2026-09-03; items 1/3/5/6/6b remain UNJUDGED.
 last_updated: "2026-09-03T12:00:00.000Z"
 last_activity: 2026-09-03
-last_activity_desc: Free time keeps the diagonals; a break becomes a tinted card — texture was the wrong channel
-state_head: f6105c8
+last_activity_desc: Item 4 closed — a low progress value is now visible, and the meaningless dot is gone
+state_head: 1e6e7da
 progress:
   total_phases: 7
   completed_phases: 5
@@ -29,8 +29,8 @@ milestone_name: milestone
 ## Current Position
 
 Phase: 33 (Make The Obvious Thing Obvious) — **UAT judged 2026-09-02; his three marks are closed and
-re-served.** `flutter analyze` clean, **692 tests green** (678 → +14). Bundle
-`2bf9b8c8468c8cb4…` on `http://danserver:8143/`.
+re-served.** `flutter analyze` clean, **701 tests green** (678 → +23). Bundle
+`2443a110376a6e5a…` on `http://danserver:8143/`.
 
 **The verdict came as a drawing, not a list** — an annotated screenshot on the Excalidraw `canopy`
 board (`mc-read-tool excalidraw`; render in `shots/07-owner-annotation-2026-09-02.png`). Three marks,

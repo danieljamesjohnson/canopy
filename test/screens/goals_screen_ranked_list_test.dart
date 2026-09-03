@@ -390,9 +390,16 @@ void main() {
         reason: 'no percentage is printed anywhere on this screen',
       );
 
-      // One identity swatch per goal and not one more — an extra row of
-      // swatches would be a key by another name. byWidgetPredicate, not
-      // byType: byType compares runtimeType exactly (CLAUDE.md trap 1).
+      // **Was `findsNWidgets(6)` — one identity swatch per goal. Now zero.**
+      // Item 4(b), owner's ruling: the swatch is deleted outright, because a
+      // card carrying two colour systems put the MEANINGLESS one (an
+      // auto-assigned identity colour) louder than the meaningful one (the
+      // progress band). This assertion keeps its original job — no colour on
+      // this screen except the one that means something — and simply counts
+      // to a different number.
+      //
+      // byWidgetPredicate, not byType: byType compares runtimeType exactly
+      // (CLAUDE.md trap 1).
       expect(
         find.byWidgetPredicate(
           (w) =>
@@ -400,7 +407,10 @@ void main() {
               w.decoration is BoxDecoration &&
               (w.decoration as BoxDecoration).shape == BoxShape.circle,
         ),
-        findsNWidgets(6),
+        findsNothing,
+        reason:
+            'the identity swatch is gone — the progress line is the only '
+            'colour on a goal card now',
       );
     });
   });
