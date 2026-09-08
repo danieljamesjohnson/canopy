@@ -993,11 +993,30 @@ generator, so ⟳ Re-check-in is NOT required for this phase's own items — but
 output, it binds. State the reason either way rather than copying the rule.**
 
 **Requirements:** GOALADD-01 (adding a goal starts from pre-chosen options, not a blank form),
-GOALADD-02 (typing your own is as easy as tapping one), GOALADD-03 (no add path creates a goal with
-attributes the user did not choose)
+GOALADD-02 (typing your own is as easy as tapping one), **GOALADD-03 — AMENDED 2026-09-08 (no add
+path creates a goal with attributes that are *hidden from* the user)**
+
+> **Why GOALADD-03 was amended, recorded because the original wording is the honest thing to
+> preserve.** It read *"no add path creates a goal with attributes the user did not choose."* Under
+> ruling (a) that is **unsatisfiable** — one-tap creation means the app chooses type, budget and
+> priority for you, every time. The requirement was written while (b) was the recommendation and
+> silently encoded (b) as a constraint; leaving it would have handed the planner a contradiction and
+> invited it to build (b) while calling it (a).
+>
+> The amendment keeps the requirement's actual intent and drops the part that was really an
+> implementation preference. **The "help" defect was never that a default existed — it was that
+> nothing on any screen ever said "3.0 hrs/week", so the user could not know what he had agreed
+> to.** Visibility is the property that failed and the property worth testing.
+>
+> **What GOALADD-03 now requires, and what a test for it looks like:** every attribute the app
+> assigned without being asked is **legible on the goal row itself**, and the form that changes it is
+> **one tap from that row**. A test satisfies this by finding the budget text on the created row —
+> not by asserting the budget equals 3.0, which is a symbolic assertion that would move with the
+> constant and cannot fail (see CLAUDE.md, "assertions that cannot fail").
+
 **Depends on:** Phase 33 (owns the fork, the single add path, and the form this extends)
-**Plans:** not yet planned — run `/gsd-plan-phase 34`. The (a)/(b)/(c) ruling above should be taken
-at discuss time, before any plan is written.
+**Plans:** not yet planned — run `/gsd-plan-phase 34`. The (a)/(b)/(c) ruling is **taken: (a)**, see
+above. Do not re-open it at discuss time.
 
 ---
 
