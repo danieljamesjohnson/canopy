@@ -51,7 +51,34 @@ the contract (per the hard constraint: reuse before inventing).
 | md+ | 16px | Sheet/section horizontal padding (`_QuickPickSection`'s `EdgeInsets.fromLTRB(16, 12, 16, 8)`, `GoalCard` margin) |
 | lg | 24px | `GoalFormSheet`'s own outer padding (`EdgeInsets.fromLTRB(24,24,24,…)`) — the new preset-picker sheet reuses this exact figure so the two sheets a user flips between (picker → form) do not visibly shift margins |
 
-Exceptions: none. No new spacing value is introduced by this phase.
+### Exception: `md = 12px` is a documented project token, not a gap
+
+**Stated explicitly because the UI checker BLOCKED on it (2026-09-08)** — 12 is a multiple of 4 but
+is not a member of the standard `{4, 8, 16, 24, 32, 48, 64}` set the checker enforces.
+
+**It is nevertheless the correct value here, and the deviation is Canopy's, not this phase's.**
+12px is this project's established internal-padding token and pre-dates this phase by many months.
+Measured on 2026-09-08: **18 `EdgeInsets` sites across 8+ files**, including all three widgets this
+phase touches or extracts from:
+
+- `add_kind_fork.dart:230` — `EdgeInsets.symmetric(horizontal: 12, vertical: 12)` (the fork's own
+  door tiles, which the preset row sits beneath)
+- `restoratives_screen.dart:361,367` — the `_RestorativeRow` margin and padding, i.e. one of the two
+  widgets being merged into the shared preset chip
+- `goals_screen.dart:248`, `chunk_card.dart:318`, `commitments_screen.dart:223,229`, and others
+
+**Why it is not "fixed" to 8 or 16.** Doing so would change the rendered padding of three already
+shipped widgets to satisfy a token list, in a phase whose entire premise is *extract and reuse, do
+not invent*. The hard constraint on this phase is that where the source widgets already agree, the
+shipped value IS the contract. They agree on 12. Changing it would also put a visual diff in front
+of the owner that has nothing to do with what he asked for — and this project has been burned
+specifically by visual changes that a green suite thought were free.
+
+**Standing decision, not a one-off waiver:** treat 12px as an accepted Canopy spacing token for
+row/card internal padding. A future phase that wants to normalise it should do so deliberately,
+across all 18 sites at once, with the owner looking at the result — not incidentally.
+
+No **new** spacing value is introduced by this phase.
 
 ---
 
@@ -106,17 +133,58 @@ Component Contract, Decision 3).
 
 ## UI Considerations
 
-Applicable state considerations resolved: 6 covered, 1 backstop, 0 unresolved.
+**Probe run 2026-09-08** over 7 named surfaces (E1 sheet, E2 grid, E3 chip, E4 add-your-own,
+E5 just-added list, E6 budget line, E7 Done): **50 applicable considerations**, resolved below.
+The researcher's original 7-row table is preserved and extended — the probe's value here was one
+genuinely missing case (`error` under one-tap creation), not the other 42.
+
+### The one the probe caught that matters — read this before planning
+
+| Category | Element(s) | Status | Resolution |
+|----------|------------|--------|------------|
+| **error** | **E3 preset chip — save fails after the chip has already vanished** | ✅ **resolved (explicit)** | **This risk is created by ruling (a) and exists on no other add path.** Decision 4 requires the chip to disappear *synchronously, same frame*, not gated on the async save — that is what closes the double-tap race. But `GoalsNotifier` persists to Hive, and Hive writes **can** fail: `goal_form_sheet.dart:113` already ships `Could not save goal. Please try again.` for exactly this. On the form path a failure is visible because the user is still sitting on the form. **On the chip path the user has already moved on, and the optimistic UI has already lied to them** — chip gone, card shown, nothing saved. **Required behaviour:** on a failed create, restore the chip to the grid, remove its "Just added" card, and surface the existing failure copy in a `SnackBar`. A silent swallow here reproduces the "help" defect in a worse form — a goal the user believes exists and does not. |
+
+**Why this was worth the probe.** Every other UI-SPEC row describes what the user sees when things
+work. This is the one where (a)'s speed — the thing the owner chose it for — is also what hides the
+failure. It is cheap to get right and invisible when got wrong.
+
+### Resolved from the researcher's original pass (unchanged)
 
 | Category | Element(s) | Status | Resolution / Reason |
 |----------|------------|--------|---------------------|
-| empty | preset grid, all 8 already claimed | ✅ covered | The "Common" heading + `Wrap` are omitted together when zero presets remain unclaimed — never an empty heading over nothing (Component Contract, Decision 5) |
-| zero-one-many | goals created in one sheet visit | ✅ covered | "Just added" list renders 0, 1, or up to 8 `GoalCard` rows as the user taps; each tap removes exactly one chip and adds exactly one row (Component Contract, Decision 4) |
-| duplicate | typed name matches a preset (case-insensitive) | ✅ covered | Reuses the exact matching idiom already shipped in `_suggestionsFor`/`_matchFor` (trim + lowercase); a goal named "reading" hides the "Reading" chip whether it was created via the chip, via "Add your own," or pre-existed before this sheet ever opened |
-| overflow | long goal name on the just-added row | ✅ covered | Inherited unchanged from `GoalCard`: `Expanded` + `TextOverflow.ellipsis` on the name (`goal_card.dart:319`) — nothing here changes that contract |
-| race / double-submit | rapid double-tap on one chip | ✅ covered | Chip removal from the grid must be synchronous (same frame as the tap, via local optimistic state), not gated on the async save completing — closes the exact "taps twice, gets two goals" failure named in the objective (Component Contract, Decision 4) |
-| loading | preset grid on sheet open, before `GoalsNotifier.goals` is confirmed fresh | 🧪 backstop | The picker sheet is opened from a screen (`GoalsScreen`) that has already loaded goals before the "Add goal" button is reachable, so a loading flash is not expected — but no explicit spinner/skeleton is specified. If the executor finds a real gap here (e.g. the sheet is reachable before `loadGoals()` resolves), treat "render the grid unfiltered rather than blocking" as the fallback, not a spinner. |
-| partial | some presets claimed, some not, mid-list | ✅ covered | Grid always reflects exactly the unclaimed subset; no partial/disabled visual state exists because claimed presets are hidden, not greyed out (Component Contract, Decision 3) |
+| empty | E2 preset grid, all 8 already claimed | ✅ resolved (explicit) | The "Common" heading + `Wrap` are omitted together when zero presets remain unclaimed — never an empty heading over nothing (Decision 5) |
+| zero-one-many | E5 goals created in one sheet visit | ✅ resolved (explicit) | Renders 0, 1, or up to 8 `GoalCard` rows; each tap removes exactly one chip and adds exactly one row (Decision 4) |
+| duplicate | E4 typed name matches a preset (case-insensitive) | ✅ resolved (explicit) | Reuses the shipped `_suggestionsFor`/`_matchFor` idiom (trim + lowercase); a goal named "reading" hides the "Reading" chip however it was created |
+| overflow | E5 long goal name on the just-added row | ✅ resolved (explicit) | Inherited unchanged from `GoalCard`: `Expanded` + `TextOverflow.ellipsis` (`goal_card.dart:319`) |
+| race / double-submit | E3 rapid double-tap on one chip | ✅ resolved (explicit) | Chip removal is synchronous with the tap via local optimistic state — closes "taps twice, gets two goals". **See the error row above: this is precisely what makes the failure path invisible, so the two must be implemented together.** |
+| partial | E2 some presets claimed, some not | ✅ resolved (explicit) | Grid reflects exactly the unclaimed subset; claimed presets are hidden, not greyed out (Decision 3) |
+
+### Resolved by one standing fact — `loading` across E1–E7
+
+| Category | Element(s) | Status | Resolution |
+|----------|------------|--------|------------|
+| loading | E1, E2, E3, E4, E5, E6, E7 (7 items) | ✅ resolved (explicit) | **There is no loading state in this flow, and that is a property of the architecture, not an omission.** Goals live in Hive (local, synchronous) and are held in memory by `GoalsNotifier`; `GoalsScreen` has already loaded them before its "Add goal" button is reachable. No spinner, skeleton or progressive reveal is specified for any surface here. **If an executor finds a real gap** — the sheet reachable before `loadGoals()` resolves — the fallback is *render the grid unfiltered*, never block behind a spinner. Introducing a loading affordance in this flow is a new design question, not a bug fix. |
+
+### Resolved as bounded-by-construction — `long-text` on E2/E3/E4/E6/E7
+
+| Category | Element(s) | Status | Resolution |
+|----------|------------|--------|------------|
+| long-text | E2, E3 preset chips | ✅ resolved (explicit) | Preset labels are **not user input** — they are 8 hard-coded strings, longest "Learn something" (15 chars) plus one emoji. `Wrap` reflows to a new run; no truncation logic is needed or wanted. This is only true while the list stays hard-coded, which CLAUDE.md requires. |
+| long-text | E6 budget line | ✅ resolved (explicit) | Numeric and bounded — "3.0 hrs/week" shape. Cannot overflow a full-width row. |
+| long-text | E4, E7 fixed labels | ✅ resolved (explicit) | "Add your own" and "Done" are fixed strings, not interpolated. No localisation is in scope for this phase. |
+
+### Resolved as inherited-unchanged — E1/E2/E4/E6/E7 residuals
+
+| Category | Element(s) | Status | Resolution |
+|----------|------------|--------|------------|
+| populated | E1, E2, E3, E4, E6, E7 (6 items) | ✅ resolved (explicit) | The happy path *is* the specified design — the flow steps and the visual-hierarchy ranking above describe the populated state at typical volume (8 chips down to 0, 0–8 just-added cards). Nothing further to resolve. |
+| overflow | E1, E2, E3, E4, E6, E7 (6 items) | ✅ resolved (explicit) | The sheet scrolls; `Wrap` reflows. **The one binding constraint is stated in the visual-hierarchy section: "Just added" must not grow tall enough to push the preset grid off screen** — that inversion is the only overflow outcome this phase treats as a defect. |
+| empty | E1, E3, E4, E6, E7 (5 items) | ✅ resolved (explicit) | E6's empty case is the substantive one and is contracted in Decision 1: **a goal type with no weekly budget shows no secondary line and an empty grey track, never red** (the Phase 33 locked decision). E1/E3/E4/E7 have no meaningful empty state — they are chrome, not data. |
+| partial | E1, E3, E4, E5, E6, E7 (6 items) | ✅ resolved (explicit) | **A preset-created goal is partial data by design** — no description, no target date, defaults for type/budget/priority. `GoalCard` already renders goals in exactly this state (every field it shows is either always-present or independently null-guarded), which is why the mitigation needs no new widget. Partial is the normal case here, not an edge. |
+| zero-one-many | E1, E2, E3, E4, E6 (5 items) | ✅ resolved (explicit) | Covered by the E2/E5 rows above — the only count that varies is unclaimed presets (8→0) and just-added cards (0→8), and both are contracted. Singular/plural copy does not arise: no count is rendered as text anywhere in this sheet. |
+| error | E1, E2, E4, E5, E6, E7 (6 items) | ✅ resolved (explicit) | All defer to the E3 error contract above plus the shipped `goal_form_sheet.dart:113` pattern. E4 and E5 hand off to `GoalFormSheet`, which owns its own save-failure copy already. No new error surface is introduced by this phase. |
+
+**Coverage:** 50 applicable · 50 resolved (50 explicit, 0 backstop) · 0 unresolved.
 
 ---
 
@@ -125,6 +193,28 @@ Applicable state considerations resolved: 6 covered, 1 backstop, 0 unresolved.
 This is the load-bearing section for this phase — the template's generic fields above don't carry
 enough resolution for a reuse-and-extract job with a ruled interaction model. Every numbered decision
 below answers one of `34-CONTEXT.md`'s named open questions.
+
+### Visual hierarchy — the focal point, stated rather than implied
+
+*(Added 2026-09-08 in response to the UI checker's non-blocking Dimension-2 FLAG: the flow order
+below implied a hierarchy but never declared one, leaving an executor to infer it from step
+ordering.)*
+
+**The preset grid is the primary visual anchor of `GoalPresetPickerSheet`** — it is the thing the
+owner asked for ("the pre chosen options"), it occupies the largest area, and it is what the eye
+should land on when the sheet opens. Everything else is subordinate to it:
+
+| Rank | Element | Weight |
+|---|---|---|
+| 1 | **The preset chip grid** | Primary. Largest area, first thing below the title, full accent-eligible chip treatment. |
+| 2 | "Add your own" row | Secondary. Present and obvious, but must not compete with the grid — it is the *escape hatch*, not the default action. It carries the only accent icon in the sheet, which is enough to find it without enlarging it. |
+| 3 | "Just added" cards | Tertiary. Confirmation/receipt, not a call to action. They appear below the fold of the primary choice and read as a running tally of what just happened. |
+| 4 | "Done" | Terminal. An accent button, but positioned as an exit rather than an objective — nothing about the sheet should suggest you must press it before the goals are real. They are real the moment the chip is tapped. |
+
+**The one hierarchy inversion to avoid:** if "Just added" grows tall enough to push the preset grid
+off screen, the sheet stops reading as "pick from these options" and starts reading as a list
+manager. Decision 5's re-visit rules govern this; the executor should treat "the grid is still
+visible after adding several goals" as part of the contract, not a nicety.
 
 ### The flow, end to end
 
