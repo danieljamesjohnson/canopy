@@ -902,6 +902,92 @@ Plans:
 
 ---
 
+### Phase 34: Adding a Goal Feels Like Onboarding
+
+Standalone phase, no milestone. **Raised by the owner on 2026-09-08, immediately after Phase 33's
+one-add-path fix landed**, and it is the second half of the same complaint rather than a new idea.
+
+Verbatim: *"i want when you press the button for it to be the same flow as onboarding. with the
+pre chosen options plus an easy way for you to add your own."* Earlier the same day, on the Goals
+screen: *"i wish the goal screen worked easily like the onboarding. where there were options and
+emojis and such."*
+
+**Goal:** Adding a goal from the Goals screen offers the same guided start onboarding does — a set
+of pre-chosen options you can tap, plus a frictionless way to type your own — without
+re-introducing the silent-defaults trap Phase 33 just removed.
+
+**The finding that makes this small.** This pattern already ships **twice**, and the Goals screen
+is the only add-surface in the app without it:
+
+| Surface | What you get |
+|---|---|
+| Onboarding, goals step | `_ChipCloud` of presets (`onboarding_screen.dart:644`, list at `:138`) |
+| What restores you | `_QuickPickSection` of presets **with emojis** (`restoratives_screen.dart:262`, `kCommonRestoratives` at `:18`) |
+| **Goals screen** | nothing — the fork, then a blank form |
+
+So this is mostly a **reuse-and-extract** job, not a design invention. Two file-private
+implementations of one idea already exist; a third copy is the wrong answer. Extract one shared
+widget — same "delete the duplicate, share the source of truth" move as D-30-03 and IN-01.
+
+**The sharp constraint, and the reason this is a phase rather than a one-liner.** The thing that
+was *just* deleted (2026-09-08, commit `1587fff`) is a fast path that created a goal with
+`GoalType.timeTarget` and a **3.0 hrs/week budget nobody chose** — that is how a goal called
+"help" became a three-hour weekly commitment, and it is the whole reason the guided path now owns
+the top slot. **Tapping a preset chip must not quietly do the same thing.** Restoratives can be
+one-tap because a `RestorativeItem` has no attributes; a `Goal` has type, budget and priority.
+
+Resolve that explicitly, with the owner, before building:
+
+- **(a) Tap a preset → created immediately with defaults.** Fastest, matches restoratives, and
+  re-opens the exact defect Phase 33 closed.
+- **(b) Tap a preset → the goal form opens pre-filled with the name and emoji**, and you pick type,
+  budget and priority. One extra tap; "options and emojis" in the literal sense he asked for.
+- **(c) Multi-select the chips, then one form pass over the batch.** Closest to onboarding's
+  "lay down a slate" feel; the most work.
+
+**Recommendation on file: (b)**, unless the owner overrides. It is the only one of the three that
+cannot re-create the silent-default trap, and his own words are "options … plus an easy way to add
+your own", not "one tap and done".
+
+**What the phase must deliver:**
+
+1. **A preset row inside the goal door of the fork.** The fork stays in front (UI-SPEC item 24) —
+   this sits *after* "Something to make time for", not before it.
+2. **`kCommonGoals` as `(name, emoji)` pairs.** `_goalPresets` is currently bare strings with no
+   emojis, which is why the Goals screen has never shown any; the restorative list is the shape to
+   copy. Seed it from `_goalPresets` (Exercise, Reading, Family time, Side project, Learn
+   something, Outdoors, Creative time, Rest) and give each an emoji. **The list contents are a
+   taste call — put it to the owner rather than guessing**, and note that onboarding shares this
+   list, so changing it changes onboarding too (which is the point).
+3. **An easy way to add your own**, alongside the presets — the second half of his sentence, and
+   the thing the chips alone do not give.
+4. **One shared preset-chip widget**, replacing the two private copies.
+
+**What this phase must NOT do:**
+
+- **Do not put a bare quick-add field back on the Goals screen.** That is the control Phase 33
+  deleted, for the reason above. "Add your own" belongs inside the guided flow, past the fork.
+- **Do not re-introduce a second add-goal entry point.** `goals_add_fork_test.dart` asserts there
+  is exactly one and it is at the top; that assertion is load-bearing, not incidental.
+- **Do not touch the scheduling engine.** Nothing here needs `schedule_generator.dart`.
+- **Do not add an LLM or "smart" suggestions.** The presets are a hard-coded list. See CLAUDE.md.
+
+**This phase MUST end in a human UAT checkpoint.** It is a flow change judged by feel, which is the
+class this project's green suites have missed six times. Reuse port 8143 (kill whatever is on it
+first, and check — a stale server has squatted it twice). **Trap #4: nothing here touches the
+generator, so ⟳ Re-check-in is NOT required for this phase's own items — but SEED-006 put
+`schedule_generator.dart` into Phase 33's diff on 2026-09-03, so if a round also judges scheduling
+output, it binds. State the reason either way rather than copying the rule.**
+
+**Requirements:** GOALADD-01 (adding a goal starts from pre-chosen options, not a blank form),
+GOALADD-02 (typing your own is as easy as tapping one), GOALADD-03 (no add path creates a goal with
+attributes the user did not choose)
+**Depends on:** Phase 33 (owns the fork, the single add path, and the form this extends)
+**Plans:** not yet planned — run `/gsd-plan-phase 34`. The (a)/(b)/(c) ruling above should be taken
+at discuss time, before any plan is written.
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -922,4 +1008,5 @@ Plans:
 | 30. Breaks In Committed Time | — (standalone) | 5/5 | Complete    | 2026-08-25 |
 | 31. Breaks You Can Skip | — (standalone) | 7/8 | Superseded by Phase 32 (round-two UAT 2026-08-27: swipe approach rejected) |  |
 | 32. Breaks You Can Tap | — (standalone) | 3/3 + gap closure | Complete | 2026-08-31 |
-| 33. Make The Obvious Thing Obvious | — (standalone) | 0/TBD | Not started | |
+| 33. Make The Obvious Thing Obvious | — (standalone) | 5/5 + 4 owner rounds | UAT in progress — items 1/3/5/6 unjudged | |
+| 34. Adding a Goal Feels Like Onboarding | — (standalone) | 0/TBD | Not started | |

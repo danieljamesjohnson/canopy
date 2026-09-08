@@ -5,11 +5,11 @@ current_phase: 33
 current_phase_name: Make The Obvious Thing Obvious
 status: awaiting-human-uat
 current_phase_next: 34
-stopped_at: Phase 33 UAT judged 2026-09-02 from the owner's Excalidraw annotation; his three marks (hatch, PreStart banner, work-vs-break fill) are closed, analyze clean, 706 tests green, re-served on http://danserver:8143/ (sha b046779cbf2a8b4c). Item 4 + SEED-006 closed 2026-09-03, item 6b closed 2026-09-08 (one add path); items 1/3/5/6 remain UNJUDGED.
+stopped_at: "Phase 33's UAT is still open on items 1/3/5/6 (script: 33-UAT-R2.md, item 5 first and it needs a THUMB not an agent). Everything the owner has actually reported is closed and serving on http://danserver:8143/ (sha b046779cbf2a8b4c), analyze clean, 706 green. Phase 34 is scoped in ROADMAP.md and NOT started — run /gsd-plan-phase 34, but take the (a)/(b)/(c) ruling from the owner first."
 last_updated: "2026-09-08T12:00:00.000Z"
 last_activity: 2026-09-08
-last_activity_desc: One add-goal path — the guided flow took the text field's place and the FAB is gone
-state_head: 668f0c4
+last_activity_desc: Phase 34 scoped (add-a-goal like onboarding); phase 33 UAT still open on items 1/3/5/6
+state_head: 1587fff
 progress:
   total_phases: 7
   completed_phases: 5
@@ -28,64 +28,79 @@ milestone_name: milestone
 
 ## Current Position
 
-Phase: 33 (Make The Obvious Thing Obvious) — **UAT judged 2026-09-02; his three marks are closed and
-re-served.** `flutter analyze` clean, **706 tests green** (678 → +28). Bundle
-`b046779cbf2a8b4c…` on `http://danserver:8143/`.
+**Two things are open, and they are different kinds of open.**
 
-**The verdict came as a drawing, not a list** — an annotated screenshot on the Excalidraw `canopy`
-board (`mc-read-tool excalidraw`; render in `shots/07-owner-annotation-2026-09-02.png`). Three marks,
-all closed the same day:
+### 1. Phase 33's UAT — four items still need the owner's eyes (`33-UAT-R2.md`)
 
-1. *"i wanted the breaks to have the diagonal lines in them like the sketch"* — sketch 003's
-   `repeating-linear-gradient(135deg…)` was **dropped** when `FreeTimeRow` copied the break card's
-   surface verbatim, and nobody caught it because the sketch's own hatch is 2.2% black. New
-   `HatchFill` (`lib/widgets/hatch_fill.dart`) on free time and both break tiers.
-   **It took three passes and two more rulings from him.** Pass 1 hatched free time and breaks
-   identically. Pass 2 kept both hatched and gave the break its own hue — *"i still feel like free
-   time and break look too similar."* Pass 3 (2026-09-03) moved the difference off TEXTURE and onto
-   FILL: a break is a tinted `secondaryContainer` card carrying no hatch, and the diagonals mean free
-   time and nothing else. **The lesson, promoted into `hatch_fill.dart`: two cards of the same colour
-   with different stripes are a spot-the-difference puzzle. Do not answer a future "these look alike"
-   report by re-tuning a hatch.**
-2. *"i crossed out the text"* — **D-33-01**, the PreStart banner deleted, reversing D-03's LOCKED
-   copy. Scope is PreStart only; `Up next` and DayComplete keep D-03.
-3. *"side project should have a color not the same as a break"* — exact, not approximate: work,
-   break and free time all rendered `surfaceContainer`. Work now takes `surfaceContainerLowest`.
+Items **1, 3, 5, 6** are **UNJUDGED, not passed**. Everything he has actually reported is fixed and
+serving on `http://danserver:8143/` (sha `b046779cbf2a8b4c`), `flutter analyze` clean, **706 green**.
 
-**The day's three kinds of time read three different ways.** Measured on the rendered page at mood 3:
-work rgb(255,255,255) flat · free time rgb(233,239,235) + neutral diagonals · break rgb(205,233,222)
-flat and tinted.
-The colour half moves work up the **neutral** ramp deliberately — a hue would have re-opened
-*"the colors are changing, it's not making a ton of sense"* on the screen next door, where item 4
-already flags one card carrying two colour systems.
+**Item 5 leads that script on purpose.** Its tap count has been asked five times now — three in
+Phase 32, once in round 1, once in round 2 — and missed every time by sitting behind items that ran
+long. **It cannot be closed by an agent**: "is the button there" is a browser question and was
+settled that way, but "do five taps land under a thumb" is not. Do not route it to a driver again.
 
-**Items 1, 3, 4, 5, 6 and 6b are UNJUDGED, not passed.** His screenshot was a fresh instance with
-nothing completed, so those states were never on his screen. Item 4's three findings still need a
-ruling (the ~6px speck at low percentages; the meaningless identity dot being louder than the
-meaningful progress line; 0% rendering as nothing). **The restoratives tap count is outstanding after
-four asks** — three in Phase 32, one here.
+**Round 2 REVERSES round 1's Step 0: ⟳ Re-check-in is now required**, because SEED-006 put
+`schedule_generator.dart` into this phase's diff on 2026-09-03 and trap #4 binds.
 
-**Origin trap, cost a wrong conclusion on 2026-09-02 and now corrected in the handoff:** the seeded
-profile `~/.cache/canopy-uat-profile-33` holds its fixture on the **`localhost:8143`** origin.
-IndexedDB is per-origin, so driving it at the documented `danserver:8143` URL silently onboards a
-blank instance and the fixture reads as destroyed while sitting untouched one hostname away.
+### 2. Phase 34 — scoped, not started
 
-**SEED-006 is CLOSED (2026-09-03).** `schedule_generator._weekStart` did not normalise time-of-day,
-so **a chunk completed on a Monday never counted toward that week's budget** — every day of the week,
-at every time but exactly `00:00:00`. `weekStart` is now public, static and date-only, and
-`WeeklyProgressService` + `QuarterlyAggregationService` both delegate to it: **one week boundary in
-the app**, so Goals and the scheduler cannot disagree about Monday again.
+**`/gsd-plan-phase 34`.** Full entry in `ROADMAP.md`. The short version: *"i want when you press the
+button for it to be the same flow as onboarding. with the pre chosen options plus an easy way for
+you to add your own."* The pattern already ships twice (onboarding's `_ChipCloud`, the restoratives
+screen's `_QuickPickSection`) and the Goals screen is the only add-surface without it — so it is
+mostly extract-and-reuse.
 
-**The audit item found ZERO flipped tests, and that is the finding.** Every fixture in
-`schedule_generator_test.dart` builds its date as midnight (76 uses of `date: monday`) — the one
-input where the defect cannot fire, and one `DateTime.now()` never produces. **3248 lines of green
-tests exercised the single unreachable case, exclusively.** The four new tests use wall-clock times
-and were observed genuinely RED first: the helper was made public with its **buggy body intact** and
-the assertions watched to fail, because a compile error is a weak red.
+**Take one ruling from the owner before planning:** does tapping a preset create the goal outright
+(fast, but re-opens the silent-defaults defect Phase 33 just closed), open a pre-filled form
+(recommended), or batch-select then one form pass? The ROADMAP entry lays out (a)/(b)/(c).
 
-**⚠ CLAUDE.md trap #4 is LIVE again.** This phase's diff now includes `schedule_generator.dart`, so
-**any future UAT judging scheduling output must ⟳ Re-check-in first.** The "Step 0 not required"
-note in `33-UAT.md` was true for the UI-only rounds and is now annotated as superseded.
+---
+
+## What closed during the 2026-09-02 → 09-08 owner rounds
+
+Seven things, all from him using the build rather than reading a script. Recorded because the
+*shape* of several of them is reusable, not just the fix.
+
+1. **The hatch (three passes).** Sketch 003's diagonal fill was dropped when `FreeTimeRow` copied
+   the break card's surface; nobody caught it because the sketch's own hatch is 2.2% black. Pass 1
+   hatched free time AND breaks identically — which made them *less* separable. Pass 2 gave the
+   break its own hue; still *"i still feel like free time and break look too similar."* Pass 3 moved
+   the difference off TEXTURE onto FILL. **The lesson is in `hatch_fill.dart`: two cards of the same
+   colour with different stripes are a spot-the-difference puzzle. Do not answer a future "these
+   look alike" by re-tuning a hatch.**
+2. **D-33-01 — the PreStart banner deleted**, reversing D-03's LOCKED copy on his instruction. It
+   was the day's third statement of the same two facts. PreStart only; `Up next`/DayComplete keep
+   D-03.
+3. **Work ≠ break fill.** All three surfaces rendered `surfaceContainer`. Work moved up the NEUTRAL
+   ramp, deliberately not to a hue — a hue would re-open *"the colors are changing"* one screen over.
+4. **Item 4** — the progress line: 40→56dp tall, 5→8dp wide, a 12dp minimum fill so 0% reads as a
+   red stub, and the meaningless identity dot **deleted, not muted** (`goal.color` is auto-assigned
+   with no user control anywhere).
+5. **SEED-006** — `weekStart` did not normalise time-of-day, so **a Monday completion never counted
+   toward its week**, every day, every time but exactly `00:00:00`. One week boundary now; Goals and
+   the scheduler cannot disagree again.
+6. **`Discard` on the *Edit Goal* sheet → `Cancel`.** It always discarded the *edits*; the word said
+   otherwise, so he tapped it to remove an accidental goal and the goal stayed. `Archive goal` is
+   what removes one.
+7. **One add-goal path (item 6b, closed by use).** *"there's 2 'add goal' flows … i want the one on
+   the bottom to be where the text one is."* The unguided field was creating goals with a
+   `3.0 hrs/week` budget nobody chose. Guided path moved to the top slot; **FAB deleted**.
+
+**Three testing lessons from those rounds, worth more than any of the fixes:**
+
+- **A symbolic expectation cannot fail a symbol.** Reverting the progress track to its old 40×5
+  produced ZERO failures — every assertion derived from the constants and moved with them. Same trap
+  as `kBreakHitSlop` in Phase 31, recurring inside one phase. Fixed with bare literal bounds
+  encoding the legibility claim.
+- **A metric right for a line was wrong for a surface.** The hue-distance check that correctly
+  rejected `secondary` for a hatch tone had to be REPLACED, not satisfied, when the same question
+  was asked about two container fills — at one seed they sit 9.3° apart and are plainly different,
+  because saturation and lightness carry it.
+- **The suite tested the one input where the bug could not fire.** Every generator fixture builds
+  its date at midnight (76 uses of `date: monday`); midnight is the single value SEED-006 exempts,
+  and `DateTime.now()` never produces it. 3248 green lines, exclusively exercising the unreachable
+  case.
 
 ---
 
