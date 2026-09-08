@@ -24,6 +24,7 @@ import 'package:canopy/providers/goals_notifier.dart';
 import 'package:canopy/providers/restoratives_notifier.dart';
 import 'package:canopy/screens/goals/goal_form_sheet.dart';
 import 'package:canopy/screens/goals/goals_screen.dart';
+import 'package:canopy/screens/goals/widgets/goal_preset_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -160,14 +161,17 @@ void main() {
       expect(find.byType(GoalFormSheet), findsNothing);
     });
 
-    testWidgets('the goal door opens the goal form', (tester) async {
+    testWidgets('the goal door opens the preset picker, not the goal form', (
+      tester,
+    ) async {
       await _pumpGoals(tester);
 
       await _tapAdd(tester);
       await tester.tap(find.text(_goalDoor));
       await tester.pumpAndSettle();
 
-      expect(find.byType(GoalFormSheet), findsOneWidget);
+      expect(find.byType(GoalPresetPickerSheet), findsOneWidget);
+      expect(find.byType(GoalFormSheet), findsNothing);
       expect(find.text(_goalDoor), findsNothing);
     });
 
@@ -274,7 +278,8 @@ void main() {
 
       await tester.tap(find.text(_goalDoor));
       await tester.pumpAndSettle();
-      expect(find.byType(GoalFormSheet), findsOneWidget);
+      expect(find.byType(GoalPresetPickerSheet), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

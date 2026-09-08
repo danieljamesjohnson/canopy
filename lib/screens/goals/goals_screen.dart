@@ -16,6 +16,7 @@ import '../../widgets/adaptive_form_modal.dart';
 import 'goal_form_sheet.dart';
 import 'widgets/add_kind_fork.dart';
 import 'widgets/goal_card.dart';
+import 'widgets/goal_preset_picker_sheet.dart';
 
 // `_quickAddHint` lived here — the "Add another (N so far)" placeholder for
 // the quick-add field this screen no longer has (2026-09-08, one add path).
@@ -124,6 +125,14 @@ class _GoalsScreenState extends State<GoalsScreen> {
   /// The quick-add field above the list stays a goal-only path — typing into a
   /// field labelled "Add a goal" has already answered the question, and the
   /// round-two UAT asks the owner to rule on whether that narrowing is right.
+  ///
+  /// Choosing the goal door opens [GoalPresetPickerSheet], NOT `GoalFormSheet`
+  /// directly (D-34-01) — one tap on a preset chip creates the goal
+  /// immediately, and `GoalFormSheet` is reachable only from inside that sheet
+  /// (via "Add your own" or tapping a "Just added" row). Opening the form
+  /// AFTER the picker's modal future completes is deliberate — this
+  /// codebase's pattern is one modal at a time, the same way the fork pops
+  /// before the next sheet opens.
   Future<void> _openAddSheet(BuildContext context) async {
     final kind = await showAddKindFork(context);
     if (kind == null || !context.mounted) return;
@@ -133,13 +142,31 @@ class _GoalsScreenState extends State<GoalsScreen> {
     }
     if (!context.mounted) return;
     final isDesktop = MediaQuery.of(context).size.width >= 720;
+    var wantsForm = false;
+    Goal? editTarget;
     await showAdaptiveFormModal(
       context: context,
-      builder: (scrollController) => GoalFormSheet(
+      builder: (scrollController) => GoalPresetPickerSheet(
         scrollController: scrollController,
         isDialog: isDesktop,
+        onRequestForm: (goal) {
+          wantsForm = true;
+          editTarget = goal;
+        },
       ),
     );
+    if (!wantsForm || !context.mounted) return;
+    if (editTarget == null) {
+      await showAdaptiveFormModal(
+        context: context,
+        builder: (scrollController) => GoalFormSheet(
+          scrollController: scrollController,
+          isDialog: isDesktop,
+        ),
+      );
+    } else {
+      _openEditSheet(context, editTarget!);
+    }
   }
 
   /// Editing an existing goal has already answered the fork's question, so this

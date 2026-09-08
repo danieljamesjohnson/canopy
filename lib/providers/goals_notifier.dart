@@ -56,14 +56,34 @@ class GoalsNotifier extends ChangeNotifier {
     await loadGoals();
   }
 
+  /// The single source of a fresh goal's defaults: regular-time type with a
+  /// 3 hrs/week budget (so it actually schedules out of the box — a null
+  /// budget produces zero chunks forever), normal priority (left unset, which
+  /// the form labels 'Normal'), and whatever color/sortOrder/emoji the caller
+  /// supplies. Both [quickAddGoals] and [addPresetGoal] build every `Goal`
+  /// through this factory so the defaults have exactly one definition.
+  Goal _newDefaultGoal({
+    required String name,
+    required String color,
+    required int sortOrder,
+    String? emoji,
+  }) {
+    return Goal(
+      name: name,
+      goalTypeIndex: GoalType.timeTarget.index,
+      color: color,
+      weeklyHourBudget: 3.0,
+      sortOrder: sortOrder,
+      emojiTag: emoji,
+    );
+  }
+
   /// Frictionless bulk entry: create one or more goals from plain names, so a
   /// user can lay down a full slate with the least effort (type a name, Enter,
   /// repeat — or paste a newline-separated list).
   ///
-  /// Each goal gets sensible defaults: regular-time type with a 3 hrs/week
-  /// budget (so it actually schedules out of the box — a null budget produces
-  /// zero chunks forever), normal priority (null → 0.5), and the next palette
-  /// color. Type and everything else stay refine-able later via the edit sheet.
+  /// Each goal gets sensible defaults via [_newDefaultGoal]. Type and
+  /// everything else stay refine-able later via the edit sheet.
   ///
   /// Blank/whitespace-only names are skipped. New goals are appended after any
   /// existing ones. Returns the count actually added. Reloads once at the end.
@@ -86,11 +106,9 @@ class GoalsNotifier extends ChangeNotifier {
     // order, so the first [saved] of [cleaned] are the ones that persisted.
     var saved = 0;
     for (var i = 0; i < cleaned.length; i++) {
-      final goal = Goal(
+      final goal = _newDefaultGoal(
         name: cleaned[i],
-        goalTypeIndex: GoalType.timeTarget.index,
         color: _colorPalette[(startCount + i) % _colorPalette.length],
-        weeklyHourBudget: 3.0,
         sortOrder: nextSort++,
       );
       try {
@@ -102,6 +120,43 @@ class GoalsNotifier extends ChangeNotifier {
     }
     await loadGoals();
     return saved;
+  }
+
+  /// A NEW sibling method rather than a widened `quickAddGoals` (D-34-06):
+  /// `quickAddGoals` returns `Future<int>` and the preset picker needs the
+  /// created `Goal` object itself (for the "Just added" card and the
+  /// edit-sheet handoff), and widening its parameter type would touch 10 call
+  /// sites (2 in `onboarding_screen.dart`, 8 across
+  /// `test/providers/goals_notifier_quick_add_test.dart` and
+  /// `test/screens/quick_add_goals_test.dart`) for no gain.
+  ///
+  /// Trims [name] and returns null if it's empty. Builds the goal via
+  /// [_newDefaultGoal] (carrying [emoji] onto `Goal.emojiTag`), wraps the
+  /// single save in try/catch and returns null on failure without rethrowing
+  /// — the same honest-failure contract `quickAddGoals` already uses. Calls
+  /// [loadGoals] on success and returns the created `Goal`.
+  Future<Goal?> addPresetGoal(String name, {String? emoji}) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return null;
+
+    final nextSort = _goals.isEmpty
+        ? 0
+        : _goals.map((g) => g.sortOrder).reduce((a, b) => a > b ? a : b) + 1;
+
+    final goal = _newDefaultGoal(
+      name: trimmed,
+      color: autoColor(),
+      sortOrder: nextSort,
+      emoji: emoji,
+    );
+
+    try {
+      await _repository.save(goal);
+    } catch (_) {
+      return null;
+    }
+    await loadGoals();
+    return goal;
   }
 
   /// Archives a goal by id — sets isArchived = true, does NOT delete.
