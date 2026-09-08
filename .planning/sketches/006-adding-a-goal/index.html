@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sketch 006 — adding a goal feels like onboarding</title>
+<link rel="stylesheet" href="../themes/default.css">
+<style>
+/* ─────────────────────────────────────────────────────────────────
+   Sketch 006. Throwaway. Question: what happens when you TAP a
+   preset chip on the Goals screen's add flow?
+   What is real: _goalPresets (onboarding_screen.dart:138) is 8 bare
+   strings, no emojis. kCommonRestoratives (restoratives_screen.dart:18)
+   is (name, emoji) pairs and IS one-tap — because a RestorativeItem
+   has no attributes. A Goal has type, weekly budget, priority.
+   The 3.0 hrs/week silent default was deleted 2026-09-08 (1587fff).
+   ───────────────────────────────────────────────────────────────── */
+
+.stage { flex-wrap:wrap; gap:20px; align-items:flex-start; padding-top:18px; }
+.col { display:flex; flex-direction:column; align-items:center; gap:9px; }
+.col .cap { font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:#67716d; font-weight:700; }
+.col .sub { font-size:11.5px; color:#7c8682; max-width:330px; text-align:center; line-height:1.45; margin-top:-4px; }
+.phone { height:min(660px,74vh); max-width:330px; }
+
+.appbar { display:flex; align-items:center; gap:10px; padding:14px 16px 6px; flex:0 0 auto; }
+.appbar .back { font-size:18px; color:var(--on-surface-variant); }
+.appbar h1 { margin:0; font-size:18px; font-weight:600; letter-spacing:-.01em; }
+
+.scroller { flex:1 1 auto; overflow-y:auto; padding-bottom:70px; }
+.scroller::-webkit-scrollbar { width:5px; }
+.scroller::-webkit-scrollbar-thumb { background:var(--outline-variant); border-radius:3px; }
+
+.sechdr { padding:14px 16px 7px; font-size:12px; font-weight:700; color:var(--primary); letter-spacing:.02em; }
+
+/* preset chips */
+.chipgrid { display:flex; flex-wrap:wrap; gap:7px; padding:0 16px; }
+.pick {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:9px 12px; border-radius:var(--radius-pill);
+  border:1px solid var(--outline-variant); background:var(--surface);
+  font:inherit; font-size:13px; color:var(--on-surface); cursor:pointer;
+  transition:all .14s ease;
+}
+.pick:hover { border-color:var(--primary); background:var(--surface-container); }
+.pick[aria-pressed="true"] { background:var(--primary-container); border-color:var(--primary-container); color:var(--on-primary-container); font-weight:600; }
+.pick .e { font-size:15px; }
+.pick .tick { font-size:12px; font-weight:700; }
+
+/* add your own */
+.qadd { margin:12px 16px 2px; }
+.qadd .field { display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px dashed var(--outline); border-radius:12px; background:var(--surface); color:var(--on-surface-variant); font-size:13.5px; }
+.qadd .plus { font-size:16px; color:var(--primary); font-weight:700; }
+
+/* goal rows (the list you land back on) */
+.grow { margin:6px 12px; padding:11px 12px; display:flex; align-items:center; gap:10px;
+  background:var(--surface); border:1px solid var(--outline-variant); border-radius:12px; }
+.grow .rank { font-family:var(--mono); font-size:12px; color:var(--on-surface-variant); width:14px; }
+.grow .e { font-size:18px; }
+.grow .nm { flex:1 1 auto; font-size:14.5px; font-weight:500; }
+.grow .meta { font-size:11px; color:var(--on-surface-variant); }
+.grow.fresh { border-color:var(--primary); background:var(--primary-container); }
+.grow.fresh .meta { color:var(--on-primary-container); }
+
+/* the assumed-values callout */
+.assumed { margin:10px 14px; padding:11px 12px; border-radius:12px; background:#fbe6e0; border:1px solid #e6b6a8; font-size:12px; line-height:1.6; color:#5d2317; }
+.assumed b { font-weight:700; }
+.assumed .k { font-family:var(--mono); font-size:11.5px; }
+
+.okcallout { margin:10px 14px; padding:11px 12px; border-radius:12px; background:var(--secondary-container); color:var(--on-secondary-container); font-size:12px; line-height:1.55; }
+
+/* the form */
+.form { padding:2px 16px 18px; }
+.form .lab { font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--on-surface-variant); margin:14px 0 6px; }
+.form .inp { padding:10px 12px; border:1px solid var(--outline-variant); border-radius:10px; background:var(--surface); font-size:14.5px; display:flex; align-items:center; gap:8px; }
+.form .inp.prefilled { border-color:var(--primary); background:var(--primary-container); color:var(--on-primary-container); font-weight:600; }
+.form .inp.empty { color:#9aa4a0; font-style:italic; font-weight:400; }
+.seg { display:flex; gap:6px; flex-wrap:wrap; }
+.seg button { font:inherit; font-size:12.5px; padding:8px 12px; border-radius:var(--radius-pill);
+  border:1px solid var(--outline-variant); background:var(--surface); color:var(--on-surface); cursor:pointer; }
+.seg button[aria-pressed="true"] { background:var(--primary-container); border-color:var(--primary-container); color:var(--on-primary-container); font-weight:600; }
+.pillnote { display:inline-block; margin-top:7px; font-size:11px; color:var(--on-surface-variant); }
+
+.bottombar { position:absolute; left:0; right:0; bottom:0; padding:11px 14px; background:var(--surface);
+  border-top:1px solid var(--outline-variant); display:flex; gap:8px; justify-content:flex-end; align-items:center; }
+.bottombar .count { flex:1 1 auto; font-size:12px; color:var(--on-surface-variant); }
+.bottombar button { font:inherit; font-size:13.5px; padding:10px 16px; border-radius:var(--radius-pill);
+  cursor:pointer; border:1px solid var(--outline-variant); background:transparent; color:var(--on-surface); }
+.bottombar button.primary { background:var(--primary); color:var(--on-primary); border-color:var(--primary); font-weight:600; }
+.bottombar button.primary[disabled] { opacity:.35; cursor:default; }
+
+.taphint { text-align:center; font-size:11.5px; color:#7c8682; padding:9px 14px 2px; }
+.taphint b { color:#3d4744; }
+.resetbtn { font:inherit; font-size:12px; padding:5px 11px; border-radius:999px; border:1px solid var(--outline-variant); background:transparent; color:#67716d; cursor:pointer; }
+
+.steps { font-family:var(--mono); font-size:11px; color:#67716d; text-align:center; }
+.steps b { color:#22695b; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="label">Sketch 006</span>
+  <b style="font-size:13px">Adding a goal — what does tapping a preset do?</b>
+  <span class="spacer"></span>
+  <span class="label">Mood</span>
+  <div class="group">
+    <button onclick="setMood('1')">1</button>
+    <button onclick="setMood('3')" aria-pressed="true">3</button>
+    <button onclick="setMood('5')">5</button>
+  </div>
+  <button class="resetbtn" onclick="resetAll()">↺ Reset all three</button>
+</div>
+
+<p class="note" style="max-width:1100px">
+  All three phones start on the <strong>same screen</strong> — the goal door of the fork, now with
+  presets. <strong>Tap a chip in each one</strong> and watch what it does. The list is shared with
+  onboarding, so whichever you pick changes onboarding too.
+</p>
+
+<div class="stage">
+
+  <!-- ══════════════════════════ A ══════════════════════════ -->
+  <div class="col">
+    <div class="cap">A · Tap = created</div>
+    <div class="sub">Fastest. Matches restoratives. But a goal has attributes a restorative doesn't, so it must invent them.</div>
+    <div class="phone" id="pA">
+      <div class="appbar"><span class="back">←</span><h1>Add a goal</h1></div>
+      <div class="scroller">
+        <div class="sechdr">Pick one to start</div>
+        <div class="chipgrid" id="gridA"></div>
+        <div class="qadd"><div class="field"><span class="plus">+</span> Or type your own…</div></div>
+        <div id="outA"></div>
+      </div>
+      <div class="bottombar"><span class="count" id="cntA"></span><button>Done</button></div>
+    </div>
+    <div class="steps" id="stepA">taps to a goal: <b>1</b></div>
+  </div>
+
+  <!-- ══════════════════════════ B ══════════════════════════ -->
+  <div class="col">
+    <div class="cap">B · Tap = form, pre-filled</div>
+    <div class="sub">Chip fills the name + emoji; you choose type, budget and priority. One extra tap, nothing assumed.</div>
+    <div class="phone" id="pB">
+      <div id="bBrowse">
+        <div class="appbar"><span class="back">←</span><h1>Add a goal</h1></div>
+        <div class="scroller">
+          <div class="sechdr">Pick one to start</div>
+          <div class="chipgrid" id="gridB"></div>
+          <div class="qadd"><div class="field"><span class="plus">+</span> Or type your own…</div></div>
+          <p class="taphint">Every chip opens the same form the “type your own” field does — <b>it just arrives filled in.</b></p>
+        </div>
+      </div>
+      <div id="bForm" style="display:none; flex:1 1 auto; display:none; flex-direction:column;"></div>
+      <div class="bottombar" id="barB"><span class="count"></span><button>Done</button></div>
+    </div>
+    <div class="steps" id="stepB">taps to a goal: <b>2</b></div>
+  </div>
+
+  <!-- ══════════════════════════ C ══════════════════════════ -->
+  <div class="col">
+    <div class="cap">C · Multi-select, then one form</div>
+    <div class="sub">Tap several, then one pass sets them all. Closest to onboarding’s “lay down a slate”. Most to build.</div>
+    <div class="phone" id="pC">
+      <div id="cBrowse">
+        <div class="appbar"><span class="back">←</span><h1>Add goals</h1></div>
+        <div class="scroller">
+          <div class="sechdr">Pick as many as you like</div>
+          <div class="chipgrid" id="gridC"></div>
+          <div class="qadd"><div class="field"><span class="plus">+</span> Or type your own…</div></div>
+          <p class="taphint">Nothing is created until you press <b>Continue</b>.</p>
+        </div>
+      </div>
+      <div id="cForm" style="display:none; flex-direction:column; flex:1 1 auto;"></div>
+      <div class="bottombar" id="barC">
+        <span class="count" id="cntC">none selected</span>
+        <button class="primary" id="contC" disabled onclick="cContinue()">Continue</button>
+      </div>
+    </div>
+    <div class="steps" id="stepC">taps to 3 goals: <b>4</b></div>
+  </div>
+
+</div>
+
+<p class="note" style="max-width:1100px; padding-bottom:50px">
+  <strong>The constraint behind the question.</strong> On 2026-09-08 the unguided add-goal field was
+  deleted because it created goals with a <span style="font-family:var(--mono)">3.0 hrs/week</span>
+  budget nobody chose — that is how a goal called “help” became a three-hour weekly commitment.
+  <strong>A is that same mechanism with a nicer front end.</strong> B and C both make you say the
+  number. The trade is purely taps: B is 2 taps per goal, C is 1 tap per goal plus one shared form pass.
+</p>
+
+<script>
+const PRESETS = [
+  ['Exercise','🏃'], ['Reading','📚'], ['Family time','👨‍👩‍👧'], ['Side project','💻'],
+  ['Learn something','🌱'], ['Outdoors','🌲'], ['Creative time','🎨'], ['Rest','😴'],
+];
+
+function setMood(m){
+  document.body.dataset.mood = m;
+  document.querySelectorAll('.toolbar .group button').forEach(b =>
+    b.setAttribute('aria-pressed', b.textContent === m));
+}
+
+function chips(gridId, handler, pressedSet){
+  const g = document.getElementById(gridId);
+  g.innerHTML = '';
+  PRESETS.forEach(([name, emoji], i) => {
+    const b = document.createElement('button');
+    b.className = 'pick';
+    const on = pressedSet && pressedSet.has(i);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.innerHTML = `<span class="e">${emoji}</span><span>${name}</span>` + (on ? '<span class="tick">✓</span>' : '');
+    b.onclick = () => handler(i, name, emoji);
+    g.appendChild(b);
+  });
+}
+
+/* ── A: tap creates immediately, with values nobody chose ────────── */
+let aMade = [];
+function aTap(i, name, emoji){
+  if (aMade.some(g => g.name === name)) return;
+  aMade.push({name, emoji});
+  renderA();
+}
+function renderA(){
+  chips('gridA', aTap, new Set(aMade.map(g => PRESETS.findIndex(p => p[0] === g.name))));
+  const out = document.getElementById('outA');
+  if (!aMade.length){ out.innerHTML = ''; document.getElementById('cntA').textContent = ''; return; }
+  out.innerHTML = `
+    <div class="assumed">
+      <b>Created — but three things were decided for you:</b><br>
+      <span class="k">type &nbsp;&nbsp;&nbsp;= timeTarget</span><br>
+      <span class="k">budget &nbsp;= 3.0 hrs/week</span><br>
+      <span class="k">priority = Normal</span><br>
+      <span style="display:inline-block;margin-top:6px">This is the defect deleted on 2026-09-08, re-opened.</span>
+    </div>
+    <div class="sechdr">Your goals</div>` +
+    aMade.map((g, n) => `
+      <div class="grow fresh">
+        <span class="rank">${n+1}</span><span class="e">${g.emoji}</span>
+        <span class="nm">${g.name}</span>
+        <span class="meta">3.0 h/wk</span>
+      </div>`).join('');
+  document.getElementById('cntA').textContent = `${aMade.length} goal${aMade.length>1?'s':''} created`;
+  document.getElementById('stepA').innerHTML = `taps to ${aMade.length} goal${aMade.length>1?'s':''}: <b>${aMade.length}</b>`;
+}
+
+/* ── B: tap opens the form, pre-filled ───────────────────────────── */
+function bTap(i, name, emoji){
+  document.getElementById('bBrowse').style.display = 'none';
+  document.getElementById('barB').style.display = 'none';
+  const f = document.getElementById('bForm');
+  f.style.display = 'flex';
+  f.innerHTML = `
+    <div class="appbar"><span class="back" onclick="bBack()">←</span><h1>New goal</h1></div>
+    <div class="scroller"><div class="form">
+      <div class="lab">Name</div>
+      <div class="inp prefilled"><span style="font-size:17px">${emoji}</span> ${name}</div>
+      <span class="pillnote">↑ the only thing the chip filled in — edit it freely</span>
+
+      <div class="lab">What kind of goal</div>
+      <div class="seg">
+        <button aria-pressed="false">Time target</button>
+        <button aria-pressed="false">Habit</button>
+        <button aria-pressed="false">Outcome</button>
+      </div>
+      <span class="pillnote">nothing pre-selected → nothing assumed</span>
+
+      <div class="lab">Weekly hours target</div>
+      <div class="inp empty">you pick — no default</div>
+
+      <div class="lab">Priority</div>
+      <div class="seg">
+        <button aria-pressed="false">Low</button>
+        <button aria-pressed="false">Normal</button>
+        <button aria-pressed="false">High</button>
+      </div>
+
+      <div class="okcallout" style="margin:18px 0 0">
+        Two taps to a goal instead of one — and the second tap is the one that
+        stops the app inventing a 3-hour commitment for you.
+      </div>
+    </div></div>
+    <div class="bottombar"><span class="count"></span>
+      <button onclick="bBack()">Cancel</button>
+      <button class="primary" onclick="bBack()">Save goal</button></div>`;
+  document.getElementById('stepB').innerHTML = 'taps to a goal: <b>2</b> (chip → save)';
+}
+function bBack(){
+  document.getElementById('bForm').style.display = 'none';
+  document.getElementById('bBrowse').style.display = 'block';
+  document.getElementById('barB').style.display = 'flex';
+}
+
+/* ── C: multi-select, then one shared form pass ──────────────────── */
+let cSel = new Set();
+function cTap(i){
+  cSel.has(i) ? cSel.delete(i) : cSel.add(i);
+  renderC();
+}
+function renderC(){
+  chips('gridC', cTap, cSel);
+  const n = cSel.size;
+  document.getElementById('cntC').textContent = n ? `${n} selected` : 'none selected';
+  document.getElementById('contC').disabled = n === 0;
+  document.getElementById('contC').textContent = n ? `Continue (${n})` : 'Continue';
+  document.getElementById('stepC').innerHTML = `taps to ${n||3} goal${(n||3)>1?'s':''}: <b>${(n||3)+1}</b>`;
+}
+function cContinue(){
+  const picked = [...cSel].map(i => PRESETS[i]);
+  document.getElementById('cBrowse').style.display = 'none';
+  document.getElementById('barC').style.display = 'none';
+  const f = document.getElementById('cForm');
+  f.style.display = 'flex';
+  f.innerHTML = `
+    <div class="appbar"><span class="back" onclick="cBack()">←</span><h1>Set them up</h1></div>
+    <div class="scroller"><div class="form">
+      ${picked.map(([name, emoji]) => `
+        <div style="margin:14px 0 0; padding:12px; border:1px solid var(--outline-variant); border-radius:12px; background:var(--surface)">
+          <div style="display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600">
+            <span style="font-size:18px">${emoji}</span>${name}
+          </div>
+          <div style="display:flex; gap:8px; margin-top:10px; align-items:center">
+            <div class="inp empty" style="flex:1 1 auto; padding:8px 10px; font-size:13px">hrs/week</div>
+            <div class="seg"><button aria-pressed="false" style="font-size:12px; padding:7px 10px">Low</button><button aria-pressed="false" style="font-size:12px; padding:7px 10px">Norm</button><button aria-pressed="false" style="font-size:12px; padding:7px 10px">High</button></div>
+          </div>
+        </div>`).join('')}
+      <div class="okcallout" style="margin-top:16px">
+        One pass over all ${picked.length}. Nothing assumed — but this screen is a
+        <b>new</b> screen to design and build; A and B both re-use the form that already exists.
+      </div>
+    </div></div>
+    <div class="bottombar"><span class="count"></span>
+      <button onclick="cBack()">Back</button>
+      <button class="primary" onclick="cBack()">Create ${picked.length}</button></div>`;
+}
+function cBack(){
+  document.getElementById('cForm').style.display = 'none';
+  document.getElementById('cBrowse').style.display = 'block';
+  document.getElementById('barC').style.display = 'flex';
+}
+
+function resetAll(){
+  aMade = []; cSel = new Set();
+  bBack(); cBack(); renderA(); renderC();
+  document.getElementById('stepA').innerHTML = 'taps to a goal: <b>1</b>';
+  document.getElementById('stepB').innerHTML = 'taps to a goal: <b>2</b>';
+}
+
+renderA();
+chips('gridB', bTap, null);
+renderC();
+</script>
+</body>
+</html>
