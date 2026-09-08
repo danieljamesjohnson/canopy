@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: none
 current_phase: 34
 current_phase_name: Adding a Goal Feels Like Onboarding
-status: planning
+status: awaiting-human-uat
 current_phase_next: none
-stopped_at: "Phase 33 CLOSED 2026-09-08 by owner review — he reviewed the build himself and accepted items 1/3/5/6 without running 33-UAT-R2.md. Phase 34 is the last phase in ROADMAP.md; the (a)/(b)/(c) ruling is TAKEN — owner chose (a) after seeing sketch 006 side by side. Running /gsd-autonomous 34."
-last_updated: "2026-09-08T18:00:00.000Z"
+stopped_at: "Phase 34 BUILT and SERVING on http://danserver:8143/ (sha b479e2c449f0b0bf), 740 green, analyze clean, code review done and its two reproduced race defects fixed. Verification is human_needed: 12/12 automated must-haves verified, 6 UAT items need the owner — script is 34-UAT.md, and item 2 wants a DIGIT (n/5 thumb count), not an adjective. Nothing else is planned; 34 is the last phase in ROADMAP.md."
+last_updated: "2026-09-08T21:30:00.000Z"
 last_activity: 2026-09-08
-last_activity_desc: Phase 33 closed by owner review; sketch 006 served, ruling (a) taken; phase 34 autonomous started
-state_head: 8ef2508
+last_activity_desc: Phase 34 executed end-to-end (3 plans, 740 green); awaiting owner UAT on 34-UAT.md
+state_head: 90c8b5c
 progress:
-  total_phases: 7
-  completed_phases: 6
-  total_plans: 35
-  completed_plans: 35
+  total_phases: 8
+  completed_phases: 7
+  total_plans: 38
+  completed_plans: 38
 milestone_name: milestone
 ---
 
@@ -28,7 +28,42 @@ milestone_name: milestone
 
 ## Current Position
 
-**Phase 34 is the last phase in the roadmap, and it is now unblocked.** Phase 33 is closed.
+**Phase 34 is BUILT and waiting on one thing: the owner's thumb.** It is the last phase in the
+roadmap. Serving on `http://danserver:8143/` (sha `b479e2c449f0b0bf`), **740 green** (706 at phase
+start), `flutter analyze` clean. Script: **`34-UAT.md`**.
+
+### What the automated side established, so it is not re-judged
+
+12/12 codebase-verifiable must-haves verified against the code, not against the SUMMARYs. The
+feature was also **driven live** with the project's own semantics driver before handover
+(`shots/`): one tap creates with nothing interposed, the chip vanishes, the `Just added` card and
+the Goals row both read `3.0 hrs/week`, the emoji reaches the model (`🏃 Exercise` renders on the
+Today timeline), and `Exercise` is correctly filtered out of the grid once it exists.
+
+**GOALADD-03's proof asserts rendered text** (`find.text('3.0 hrs/week')`, with `weeklyHourBudget`
+grep count 0 in that test file) — deliberately, because an assertion derived from the constant it
+checks moves with that constant and cannot fail. That trap has bitten this repo before.
+
+### What is genuinely open — 6 UAT items, all perceptual
+
+Does it feel like onboarding; the five-chip thumb count **as a digit**; whether the budget on the
+card is *noticed* rather than merely rendered; whether "add your own" as a button beats a field;
+and accept/reject on the two changes the owner did not ask for (onboarding's chip family + emoji,
+and `Walk` → `Walk outside`). None of these are inferable from a green suite — that is the whole
+reason the phase was required to end here.
+
+### The code review earned its place this phase
+
+It found **two real concurrency defects and reproduced both** rather than theorising them: the
+double-tap guard built for the Goals sheet was never carried over to onboarding's beats, which this
+phase had just rewired (two taps → two goals named "Reading"), and two different presets tapped
+before either save resolved collided on `sortOrder` and colour. Fixed at the notifier level so both
+callers of each method are covered, with 9 regression tests. **Both were introduced BY this phase's
+own migration** — the shared-widget refactor moved the call sites without moving the guard.
+
+---
+
+## Phase 33 — CLOSED 2026-09-08 by owner review, not by the script
 
 ### Phase 33 — CLOSED 2026-09-08 by owner review, not by the script
 
