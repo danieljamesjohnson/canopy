@@ -271,5 +271,111 @@ void main() {
         expect(_chip('Reading'), findsNothing);
       },
     );
+
+    testWidgets(
+      'GOALADD-02: one tap on Add your own reaches a blank GoalFormSheet',
+      (tester) async {
+        await _pumpGoals(tester);
+        await _openPicker(tester);
+
+        await tester.tap(find.text('Add your own'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(GoalFormSheet), findsOneWidget);
+        expect(find.byType(GoalPresetPickerSheet), findsNothing);
+        // CREATE mode specifically, not edit mode with some other goal
+        // attached: 'Edit Goal'/'Save Goal' only ever render in edit mode.
+        expect(find.text('Edit Goal'), findsNothing);
+        expect(find.text('Save Goal'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'UI-SPEC Decision 2: the picker sheet contains no editable text field '
+      'of any kind',
+      (tester) async {
+        await _pumpGoals(tester);
+        await _openPicker(tester);
+
+        // EditableText with a predicate, not find.byType(TextField):
+        // find.byType does not match subclasses, and both TextField and
+        // TextFormField render an EditableText internally.
+        expect(
+          find.byWidgetPredicate((w) => w is EditableText),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      "D-34-02: tapping a Just Added row reaches that goal's form in edit "
+      'mode',
+      (tester) async {
+        await _pumpGoals(tester);
+        await _openPicker(tester);
+
+        await tester.tap(_chip('Reading'));
+        await tester.pumpAndSettle();
+
+        // Scoped to the picker sheet: the Goals screen behind it also
+        // renders a GoalCard for the same goal, so an unscoped
+        // find.byType(GoalCard) is ambiguous to tap.
+        await tester.tap(
+          find.descendant(
+            of: find.byType(GoalPresetPickerSheet),
+            matching: find.byType(GoalCard),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(GoalFormSheet), findsOneWidget);
+        // Proves EDIT mode, not create mode: the name field is prefilled.
+        expect(find.widgetWithText(TextField, 'Reading'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'UI-SPEC Decision 5: with all 8 presets already claimed, Common is '
+      'absent and Add your own still shows',
+      (tester) async {
+        final seeds = [
+          for (final (name, _) in kCommonGoals)
+            Goal(
+              name: name,
+              goalTypeIndex: GoalType.timeTarget.index,
+              color: '#4CAF50',
+            ),
+        ];
+        await _pumpGoals(tester, seed: seeds);
+        await _openPicker(tester);
+
+        expect(find.text('Common'), findsNothing);
+        expect(
+          find.byWidgetPredicate((w) => w is FilterChip),
+          findsNothing,
+        );
+        expect(find.text('Add your own'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Done closes the sheet, leaving goals created this visit on the '
+      'Goals screen',
+      (tester) async {
+        final h = await _pumpGoals(tester);
+        await _openPicker(tester);
+
+        await tester.tap(_chip('Reading'));
+        await tester.pumpAndSettle();
+
+        final doneButton = find.widgetWithText(FilledButton, 'Done');
+        await tester.ensureVisible(doneButton);
+        await tester.tap(doneButton);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(GoalPresetPickerSheet), findsNothing);
+        expect(h.goals.goals.single.name, 'Reading');
+      },
+    );
   });
 }

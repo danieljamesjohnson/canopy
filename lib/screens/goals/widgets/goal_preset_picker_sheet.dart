@@ -145,6 +145,8 @@ class _GoalPresetPickerSheetState extends State<GoalPresetPickerSheet> {
               existingNames,
             ).isNotEmpty)
               const SizedBox(height: 16),
+            _AddYourOwnRow(onTap: () => _requestForm(null)),
+            const SizedBox(height: 16),
             if (_justAdded.isNotEmpty) ...[
               Text('Just added', style: theme.textTheme.titleSmall),
               const SizedBox(height: 8),
@@ -156,7 +158,60 @@ class _GoalPresetPickerSheetState extends State<GoalPresetPickerSheet> {
                 GoalCard(goal: g, onTap: () => _requestForm(g)),
               const SizedBox(height: 16),
             ],
+            // An exit, not an objective (UI-SPEC visual hierarchy rank 4):
+            // the goals are already real by the time this is visible, so
+            // nothing here calls onRequestForm — closing the sheet is enough.
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Done'),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The escape hatch to a hand-typed name (GOALADD-02, UI-SPEC Decision 2):
+/// a full-width tappable row, copying `_DoorTile`'s shape — NOT a text field
+/// wearing a new location. The control deleted 2026-09-08 was a `TextField`
+/// that created a goal on submit with an unchosen budget; a bordered box with
+/// placeholder text would be that same control in a new place. A hand-typed
+/// name has no default anyone pre-agreed to, so it earns the full form rather
+/// than another instant-create path.
+class _AddYourOwnRow extends StatelessWidget {
+  const _AddYourOwnRow({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.add, color: theme.colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Add your own',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
