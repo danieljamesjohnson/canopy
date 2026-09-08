@@ -80,7 +80,17 @@ class _GoalPresetPickerSheetState extends State<GoalPresetPickerSheet> {
 
     if (!mounted) return;
     if (created != null) {
-      setState(() => _justAdded.add(created));
+      // WR-03 (34-REVIEW.md): clear `_claiming` on the success path too, not
+      // only on failure, so its actual behavior matches its doc comment —
+      // "a tap whose save has not resolved yet." `notifier.goals` now
+      // contains the goal too (addPresetGoal awaits loadGoals() before
+      // returning), so the chip stays correctly hidden regardless; this is
+      // belt-and-braces so a future in-sheet undo/archive can't be silently
+      // defeated by a name stuck in `_claiming` forever.
+      setState(() {
+        _justAdded.add(created);
+        _claiming.remove(name.trim().toLowerCase());
+      });
     } else {
       // Ruling (a) buys its speed by removing the chip before the write
       // lands — that is what closes the double-tap race, and it is also
