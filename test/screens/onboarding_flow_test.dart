@@ -163,9 +163,12 @@ void main() {
   testWidgets('tapping a preset chip adds that goal', (tester) async {
     await pump(tester);
     // The preset "big buttons" are one-tap adds.
-    await tester.tap(find.widgetWithText(ActionChip, 'Reading'));
+    await tester.tap(find.widgetWithText(FilterChip, 'Reading'));
     await tester.pumpAndSettle();
     expect(goals.goals.map((g) => g.name), contains('Reading'));
+    // The emoji must reach the model on the onboarding path too, not just on
+    // the Goals-screen path (GOALADD-03).
+    expect(goals.goals.single.emojiTag, '📚');
     // Continue is now enabled off the single preset tap.
     expect(
       tester
@@ -176,6 +179,52 @@ void main() {
       isNotNull,
     );
   });
+
+  testWidgets(
+    'the added chip\'s delete affordance removes a goal added during '
+    'onboarding (beat 1, D-34-07/T-34-05)',
+    (tester) async {
+      await pump(tester);
+      await tester.tap(find.widgetWithText(FilterChip, 'Reading'));
+      await tester.pumpAndSettle();
+      expect(goals.goals, hasLength(1));
+
+      // The preset grid is createOnly and cannot remove anything — the
+      // removal gesture lives only on the added-chip row's own InputChip.
+      final addedChip = tester.widget<InputChip>(
+        find.widgetWithText(InputChip, 'Reading'),
+      );
+      addedChip.onDeleted!();
+      await tester.pumpAndSettle();
+
+      expect(goals.goals, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'the added chip\'s delete affordance removes a restorative added during '
+    'onboarding (beat 2, D-34-07/T-34-05)',
+    (tester) async {
+      await pump(tester);
+      // Advance to beat 2.
+      await tester.enterText(quickAddField(), 'Exercise\n');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilterChip, 'Walk outside'));
+      await tester.pumpAndSettle();
+      expect(restoratives.items, hasLength(1));
+
+      final addedChip = tester.widget<InputChip>(
+        find.widgetWithText(InputChip, 'Walk outside'),
+      );
+      addedChip.onDeleted!();
+      await tester.pumpAndSettle();
+
+      expect(restoratives.items, isEmpty);
+    },
+  );
 
   testWidgets('full walk-through: goals → recharge → energy → finish', (
     tester,
@@ -464,7 +513,7 @@ void main() {
 
       // Add a goal via a preset chip (at the top), then reach Continue by
       // scrolling — it must be reachable, not stranded off-screen.
-      final chip = find.widgetWithText(ActionChip, 'Reading');
+      final chip = find.widgetWithText(FilterChip, 'Reading');
       await tester.ensureVisible(chip);
       await tester.pumpAndSettle();
       await tester.tap(chip);

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/restorative_item.dart';
 import '../../providers/restoratives_notifier.dart';
+import '../../widgets/preset_chip_grid.dart';
 
 /// The nine common restoratives offered as one-tap chips (UI-SPEC item 22).
 ///
@@ -267,7 +268,9 @@ class _QuickPickSection extends StatelessWidget {
   /// The already-saved item matching [name], or null. Case-insensitive on the
   /// trimmed name so a hand-typed "music" and the `Music` chip are one thing,
   /// using the `.where(...).firstOrNull` lookup idiom this codebase already
-  /// uses for id/name matching (`goals_notifier.dart:150`).
+  /// uses for id/name matching (`goals_notifier.dart:150`). Kept here (rather
+  /// than folded into the shared widget) because delete needs an id and
+  /// `PresetChipGrid` deals only in names.
   RestorativeItem? _matchFor(String name) {
     final needle = name.trim().toLowerCase();
     return notifier.items
@@ -277,54 +280,34 @@ class _QuickPickSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Common', style: theme.textTheme.titleSmall),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final (name, emoji) in kCommonRestoratives)
-                _buildChip(name, emoji),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChip(String name, String emoji) {
-    final match = _matchFor(name);
-    return FilterChip(
-      avatar: Text(emoji),
-      label: Text(name),
-      selected: match != null,
-      onSelected: (selected) {
-        if (selected) {
-          // saveItem, NOT quickAddItems: the bulk helper sets no emoji and
-          // these chips carry one, so a chip-added item would otherwise fall
-          // back to the generic 🌿 in the row below.
-          notifier.saveItem(
-            RestorativeItem(
-              name: name,
-              emojiTag: emoji,
-              sortOrder: notifier.items.length,
+      child: PresetChipGrid(
+        presets: kCommonRestoratives,
+        existingNames: notifier.items.map((i) => i.name),
+        mode: PresetChipMode.toggle,
+        heading: 'Common',
+        onCreate: (name, emoji) =>
+            // saveItem, NOT quickAddItems: the bulk helper sets no emoji and
+            // these chips carry one, so a chip-added item would otherwise
+            // fall back to the generic 🌿 in the row below.
+            notifier.saveItem(
+              RestorativeItem(
+                name: name,
+                emojiTag: emoji,
+                sortOrder: notifier.items.length,
+              ),
             ),
-          );
-        } else if (match != null) {
+        onRemove: (name) {
           // No confirmation dialog on purpose. One tap adds, one tap removes
           // (UI-SPEC item 22) — a confirm on a toggle would defeat the item,
           // and re-adding costs exactly one tap. The heavier `_confirmDelete`
           // stays on the list rows below, which can hold user-typed items the
           // chips cannot restore (threat register T-33-11).
-          notifier.deleteItem(match.id);
-        }
-      },
+          final match = _matchFor(name);
+          if (match != null) notifier.deleteItem(match.id);
+        },
+      ),
     );
   }
 }

@@ -4,13 +4,17 @@ import 'package:provider/provider.dart';
 import '../../data/models/commitment_block.dart';
 import '../../data/models/energy_valence.dart';
 import '../../data/models/goal.dart';
+import '../../data/models/restorative_item.dart';
 import '../../providers/commitments_notifier.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/restoratives_notifier.dart';
 import '../../providers/settings_notifier.dart';
 import '../../services/notification_service.dart';
 import '../../utils/commitment_window.dart';
+import '../../widgets/preset_chip_grid.dart';
 import '../../widgets/quick_add_field.dart';
+import '../goals/widgets/goal_preset_picker_sheet.dart' show kCommonGoals;
+import '../restoratives/restoratives_screen.dart' show kCommonRestoratives;
 
 /// Onboarding as "let the app get to know you", in four short, centered beats:
 ///   1. Goals    — what do you want to make time for?
@@ -133,30 +137,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-// Preset "big buttons" — one tap adds the item; the type/paste field stays for
-// anything not listed.
-const List<String> _goalPresets = [
-  'Exercise',
-  'Reading',
-  'Family time',
-  'Side project',
-  'Learn something',
-  'Outdoors',
-  'Creative time',
-  'Rest',
-];
-
-const List<String> _restorativePresets = [
-  'Walk',
-  'Music',
-  'Nap',
-  'Nature',
-  'Call a friend',
-  'Bath',
-  'Stretch',
-  'Games',
-];
-
 // ---------------------------------------------------------------------------
 // Beat 1: Goals
 // ---------------------------------------------------------------------------
@@ -193,11 +173,20 @@ class _GoalsBeatState extends State<_GoalsBeat> {
             children: [
               const _BeatTitle('What are your goals?'),
               const SizedBox(height: 16),
-              _ChipCloud(
-                added: added,
-                suggestions: _suggestionsFor(_goalPresets, added),
-                onAdd: (name) => goalsNotifier.quickAddGoals([name]),
-                onRemove: goalsNotifier.archiveGoal,
+              // Onboarding has no list view of its own (D-34-07): this row is
+              // the only place a goal added this visit is shown or removed.
+              // The preset grid below never carries this job — it is
+              // createOnly, so a claimed preset is simply hidden, never
+              // removable from there.
+              _AddedChipRow(added: added, onRemove: goalsNotifier.archiveGoal),
+              if (added.isNotEmpty) const SizedBox(height: 12),
+              PresetChipGrid(
+                presets: kCommonGoals,
+                existingNames: goals.goals.map((g) => g.name),
+                mode: PresetChipMode.createOnly,
+                alignment: WrapAlignment.center,
+                onCreate: (name, emoji) =>
+                    goalsNotifier.addPresetGoal(name, emoji: emoji),
               ),
               const SizedBox(height: 20),
               QuickAddField(
@@ -261,11 +250,26 @@ class _RestorativesBeatState extends State<_RestorativesBeat> {
             children: [
               const _BeatTitle('What helps you recharge?'),
               const SizedBox(height: 16),
-              _ChipCloud(
-                added: added,
-                suggestions: _suggestionsFor(_restorativePresets, added),
-                onAdd: (name) => notifier.quickAddItems([name]),
-                onRemove: notifier.deleteItem,
+              // Same reasoning as beat 1's _AddedChipRow (D-34-07): this is
+              // onboarding's only display of what's been added this visit.
+              _AddedChipRow(added: added, onRemove: notifier.deleteItem),
+              if (added.isNotEmpty) const SizedBox(height: 12),
+              // D-34-08: onboarding adopts kCommonRestoratives (the list the
+              // restoratives screen already ships) instead of its own
+              // disagreeing private list, so a name claimed here can't
+              // reappear as an unclaimed near-duplicate on that screen.
+              PresetChipGrid(
+                presets: kCommonRestoratives,
+                existingNames: restoratives.items.map((i) => i.name),
+                mode: PresetChipMode.createOnly,
+                alignment: WrapAlignment.center,
+                onCreate: (name, emoji) => notifier.saveItem(
+                  RestorativeItem(
+                    name: name,
+                    emojiTag: emoji,
+                    sortOrder: notifier.items.length,
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
               QuickAddField(
@@ -628,30 +632,17 @@ class _Entry {
   final String? emoji;
 }
 
-/// Presets not already added (case-insensitive), so a preset the user has
-/// added shows as a removable chip rather than a duplicate suggestion.
-List<String> _suggestionsFor(List<String> presets, List<_Entry> added) {
-  final have = {for (final e in added) e.name.toLowerCase()};
-  return [
-    for (final p in presets)
-      if (!have.contains(p.toLowerCase())) p,
-  ];
-}
-
-/// Added items (removable input chips) + preset suggestions (add chips), all
-/// centered. Tapping a suggestion adds it; tapping the × on an added chip
-/// removes it.
-class _ChipCloud extends StatelessWidget {
-  const _ChipCloud({
-    required this.added,
-    required this.suggestions,
-    required this.onAdd,
-    required this.onRemove,
-  });
+/// This surface's display of what you already have — the job `GoalCard` gives
+/// the Goals screen and `_RestorativeRow` gives restoratives (D-34-07).
+/// Onboarding has no list view of its own, so this small `Wrap` of removable
+/// `InputChip`s is the only place a user sees or removes a goal/restorative
+/// added during this visit. `PresetChipGrid` (below, in both beats) never
+/// carries this job: in `createOnly` mode a claimed preset is simply hidden
+/// from the grid, never rendered removable there.
+class _AddedChipRow extends StatelessWidget {
+  const _AddedChipRow({required this.added, required this.onRemove});
 
   final List<_Entry> added;
-  final List<String> suggestions;
-  final void Function(String name) onAdd;
   final void Function(String id) onRemove;
 
   @override
@@ -668,12 +659,6 @@ class _ChipCloud extends StatelessWidget {
             label: Text(e.name),
             backgroundColor: colorScheme.secondaryContainer,
             onDeleted: () => onRemove(e.id),
-          ),
-        for (final s in suggestions)
-          ActionChip(
-            avatar: const Icon(Icons.add, size: 18),
-            label: Text(s),
-            onPressed: () => onAdd(s),
           ),
       ],
     );
