@@ -992,11 +992,11 @@ generator, so ⟳ Re-check-in is NOT required for this phase's own items — but
 `schedule_generator.dart` into Phase 33's diff on 2026-09-03, so if a round also judges scheduling
 output, it binds. State the reason either way rather than copying the rule.**
 
-**Requirements:** GOALADD-01 (adding a goal starts from pre-chosen options, not a blank form),
-GOALADD-02 (typing your own is as easy as tapping one), **GOALADD-03 — AMENDED 2026-09-08 (no add
-path creates a goal with attributes that are *hidden from* the user)**
+**Requirements:** GOALADD-01 (adding a goal starts from pre-chosen options, not a blank form), GOALADD-02 (typing your own is as easy as tapping one), GOALADD-03 (no add path creates a goal with attributes that are hidden from the user)
 
-> **Why GOALADD-03 was amended, recorded because the original wording is the honest thing to
+> **GOALADD-03 was AMENDED on 2026-09-08 — the wording above is the amended one.**
+>
+> **Why it was amended, recorded because the original wording is the honest thing to
 > preserve.** It read *"no add path creates a goal with attributes the user did not choose."* Under
 > ruling (a) that is **unsatisfiable** — one-tap creation means the app chooses type, budget and
 > priority for you, every time. The requirement was written while (b) was the recommendation and
