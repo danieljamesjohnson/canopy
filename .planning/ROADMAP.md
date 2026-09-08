@@ -1015,8 +1015,13 @@ output, it binds. State the reason either way rather than copying the rule.**
 > constant and cannot fail (see CLAUDE.md, "assertions that cannot fail").
 
 **Depends on:** Phase 33 (owns the fork, the single add path, and the form this extends)
-**Plans:** not yet planned — run `/gsd-plan-phase 34`. The (a)/(b)/(c) ruling is **taken: (a)**, see
-above. Do not re-open it at discuss time.
+**Plans:** 3 plans (planned 2026-09-08). The (a)/(b)/(c) ruling is **taken: (a)**, see above. Do not
+re-open it at discuss time.
+
+Plans:
+- [ ] 34-01-PLAN.md — wave 1, tracer: the goal door opens a preset picker; one tap creates the goal and the created row states its `3.0 hrs/week` budget; "Add your own" and a just-added row each reach the form in one tap; a failed write restores the chip rather than lying
+- [ ] 34-02-PLAN.md — wave 2: onboarding and the restoratives screen adopt the shared `PresetChipGrid`, retiring both private copies; onboarding gains the emoji; restoratives' geometry pinned to numbers measured before the refactor
+- [ ] 34-03-PLAN.md — wave 3: debug build served on 8143 with a proven pre-flight, then the blocking human UAT (`34-UAT.md`) that asks for the thumb count as a number
 
 ---
 
