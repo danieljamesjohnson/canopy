@@ -81,10 +81,26 @@ class _GoalPresetPickerSheetState extends State<GoalPresetPickerSheet> {
     if (!mounted) return;
     if (created != null) {
       setState(() => _justAdded.add(created));
+    } else {
+      // Ruling (a) buys its speed by removing the chip before the write
+      // lands — that is what closes the double-tap race, and it is also
+      // what makes a failure invisible: the user has already moved on, the
+      // chip is gone, and nothing was saved. A silent swallow here
+      // reproduces the "help" defect in a worse form — a goal the user
+      // believes exists and does not.
+      //
+      // No "Just added" card is ever removed on this path because none is
+      // ever added: the card is built from the Goal the notifier returns,
+      // so a failed create produces nothing to undo. The invariant this
+      // proves is the end state — chip present, zero cards, SnackBar shown —
+      // not the mechanism.
+      setState(() => _claiming.remove(name.trim().toLowerCase()));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save goal. Please try again.'),
+        ),
+      );
     }
-    // A null result (failed save) is ignored here — Task 3 replaces this
-    // branch with a real failure path (restore the chip, show a SnackBar)
-    // and its own test proves the replacement.
   }
 
   @override

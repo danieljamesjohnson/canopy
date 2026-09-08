@@ -80,6 +80,28 @@ class _SlowSaveGoalRepository implements GoalRepository {
   }
 }
 
+/// A repository whose `save` always throws — the empty store never gains an
+/// entry, so `getAll`/`getActive` stay empty too. Used to prove a failed
+/// write restores the chip rather than leaving the UI claiming a goal exists.
+class _FailingGoalRepository implements GoalRepository {
+  @override
+  Future<List<Goal>> getAll() async => [];
+
+  @override
+  Future<Goal?> getById(String id) async => null;
+
+  @override
+  Future<void> delete(String id) async {}
+
+  @override
+  Future<List<Goal>> getActive() async => [];
+
+  @override
+  Future<void> save(Goal goal) async {
+    throw StateError('simulated save failure');
+  }
+}
+
 class _Harness {
   _Harness(this.goals);
   final GoalsNotifier goals;
@@ -375,6 +397,40 @@ void main() {
 
         expect(find.byType(GoalPresetPickerSheet), findsNothing);
         expect(h.goals.goals.single.name, 'Reading');
+      },
+    );
+
+    testWidgets(
+      'a failed write restores the chip, shows no goal card, and surfaces '
+      'the failure copy',
+      (tester) async {
+        final h = await _pumpGoals(
+          tester,
+          repository: _FailingGoalRepository(),
+        );
+        await _openPicker(tester);
+
+        await tester.tap(_chip('Reading'));
+        await tester.pumpAndSettle();
+
+        expect(_chip('Reading'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(GoalPresetPickerSheet),
+            matching: find.byType(GoalCard),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.text('Could not save goal. Please try again.'),
+          findsOneWidget,
+        );
+        expect(h.goals.goals, isEmpty);
+
+        // Drain the SnackBar's display timer so it does not leak into
+        // teardown as a pending timer.
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
       },
     );
   });
