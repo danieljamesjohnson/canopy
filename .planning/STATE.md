@@ -5,11 +5,11 @@ current_phase: 33
 current_phase_name: Make The Obvious Thing Obvious
 status: awaiting-human-uat
 current_phase_next: 34
-stopped_at: Phase 33 UAT judged 2026-09-02 from the owner's Excalidraw annotation; his three marks (hatch, PreStart banner, work-vs-break fill) are closed, analyze clean, 705 tests green, re-served on http://danserver:8143/ (sha 2458bade94de6b7c). Item 4 and SEED-006 closed 2026-09-03; items 1/3/5/6/6b remain UNJUDGED.
-last_updated: "2026-09-03T12:00:00.000Z"
-last_activity: 2026-09-03
-last_activity_desc: SEED-006 closed — one week boundary in the app; the suite had only ever tested midnight
-state_head: 7138a56
+stopped_at: Phase 33 UAT judged 2026-09-02 from the owner's Excalidraw annotation; his three marks (hatch, PreStart banner, work-vs-break fill) are closed, analyze clean, 706 tests green, re-served on http://danserver:8143/ (sha b046779cbf2a8b4c). Item 4 + SEED-006 closed 2026-09-03, item 6b closed 2026-09-08 (one add path); items 1/3/5/6 remain UNJUDGED.
+last_updated: "2026-09-08T12:00:00.000Z"
+last_activity: 2026-09-08
+last_activity_desc: One add-goal path — the guided flow took the text field's place and the FAB is gone
+state_head: 668f0c4
 progress:
   total_phases: 7
   completed_phases: 5
@@ -29,8 +29,8 @@ milestone_name: milestone
 ## Current Position
 
 Phase: 33 (Make The Obvious Thing Obvious) — **UAT judged 2026-09-02; his three marks are closed and
-re-served.** `flutter analyze` clean, **705 tests green** (678 → +27). Bundle
-`2458bade94de6b7c…` on `http://danserver:8143/`.
+re-served.** `flutter analyze` clean, **706 tests green** (678 → +28). Bundle
+`b046779cbf2a8b4c…` on `http://danserver:8143/`.
 
 **The verdict came as a drawing, not a list** — an annotated screenshot on the Excalidraw `canopy`
 board (`mc-read-tool excalidraw`; render in `shots/07-owner-annotation-2026-09-02.png`). Three marks,

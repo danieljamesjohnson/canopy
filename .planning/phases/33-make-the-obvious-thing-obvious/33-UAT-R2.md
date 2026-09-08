@@ -1,12 +1,12 @@
 # Phase 33 UAT — Round 2 (the open items)
 
 **URL:** **http://danserver:8143/**
-**Bundle sha256:** `2458bade94de6b7c…` — identical on disk and on the wire
-**Suite:** `flutter analyze` clean · `flutter test` **705 passing** (678 when round 1 was written)
+**Bundle sha256:** `b046779cbf2a8b4c…` — identical on disk and on the wire
+**Suite:** `flutter analyze` clean · `flutter test` **706 passing** (678 when round 1 was written)
 
-Round 1's verdict closed everything you marked, plus item 4 and SEED-006. **Five items were never
-judged** — not because they passed, but because your screenshot was a fresh instance where those
-states never appeared. This is the script for those five, and nothing else.
+Round 1's verdict closed everything you marked, plus item 4 and SEED-006; **item 6b closed on
+2026-09-08** off the "help" report. **Four items are still unjudged** — not because they passed, but because your screenshot was a fresh instance where those
+states never appeared. This is the script for those four, and nothing else.
 
 ---
 
@@ -75,7 +75,8 @@ chip on the card. The three type sections are gone.
 
 ## Item 6 — the fork at the front door
 
-**Goals → the green "Add goal" button (bottom right).** You get *"What are you adding?"* with two
+**Goals → the "Add goal" button — now at the TOP of the list, where the text field used to be
+(2026-09-08).** You get *"What are you adding?"* with two
 doors:
 
 - **Something to make time for** — *"Gets a type, a weekly budget and a priority. Canopy schedules
@@ -90,12 +91,21 @@ This is the guitar friction: marking something energising no longer forces it to
 
 ---
 
-## Item 6b — the quick-add still has no fork, and that was a scope call
+## Item 6b — **CLOSED 2026-09-08, and not by answering the question**
 
-Same screen, the **"Add another…"** field at the top. Typing "guitar" there still silently creates a
-**goal** — the fork only guards the button. Deliberate, not an oversight.
+It was answered by use instead. He added a goal called "help" through the quick-add field, tried to
+get rid of it, and reported both halves of the problem:
 
-- Acceptable, or does the quick-add need the fork too?
+> *"i added one called help. i did discard and it didnt work."*
+> *"it's the fact there's 2 'add goal' flows. one on the top with text, one on the bottom with
+> guiding. i want the one on the bottom to be where the text one is."*
+
+**The narrowing was not acceptable, and the fix is a move rather than an addition.** The guided path
+(fork → form) now sits at the top of the list where the quick-add field was; the FAB is deleted.
+There is exactly one way to add a goal and it asks what kind first. `shots/19…`, `shots/20…`
+
+Separately, the **"Discard"** on the *Edit Goal* sheet now reads **"Cancel"** — it always discarded
+the *edits*, never the goal, and the word said otherwise. **Archive goal** is what removes one.
 
 ---
 
@@ -112,4 +122,4 @@ Same screen, the **"Add another…"** field at the top. Typing "guitar" there st
 
 `shots/13-three-kinds-of-time.png` · `14-tinted-breaks-timeline.png` ·
 `15-progress-line-item4.png` · `16-progress-line-zoom.png` · `17-restoratives-current.png` ·
-`18-add-fork-current.png`
+`19-one-add-path.png` · `20-fork-from-the-top.png`

@@ -13,18 +13,16 @@ import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
 import '../../services/weekly_progress_service.dart';
 import '../../widgets/adaptive_form_modal.dart';
-import '../../widgets/quick_add_field.dart';
 import 'goal_form_sheet.dart';
 import 'widgets/add_kind_fork.dart';
 import 'widgets/goal_card.dart';
 
-/// Encouraging placeholder for the quick-add field; "8" is the reference the
-/// frictionless-slate goal is measured by.
-String _quickAddHint(int count) => count == 0
-    ? 'Add a goal'
-    : count < 8
-    ? 'Add another ($count so far)'
-    : 'Add another ($count goals)';
+// `_quickAddHint` lived here — the "Add another (N so far)" placeholder for
+// the quick-add field this screen no longer has (2026-09-08, one add path).
+// Deleted rather than left unreferenced, per this codebase's retire-
+// deliberately charter. `QuickAddField` itself is untouched and still ships:
+// onboarding uses it for both goals and restoratives, where the guided
+// alternative is the surrounding flow rather than a competing button.
 
 /// The Goals screen: one list, ordered by priority, headed `Priority order`.
 ///
@@ -219,21 +217,48 @@ class _GoalsScreenState extends State<GoalsScreen> {
               constraints: const BoxConstraints(maxWidth: 720),
               child: CustomScrollView(
                 slivers: [
-                  // Frictionless slate entry (always available): type a name,
-                  // press Enter, keep going. The full form (FAB) stays for
-                  // refining type/energy/etc.
+                  // **ONE add path, and it is the guided one — owner's
+                  // diagnosis, 2026-09-08:** *"it's the fact there's 2 'add
+                  // goal' flows. one on the top with text, one on the bottom
+                  // with guiding. i want the one on the bottom to be where the
+                  // text one is."*
+                  //
+                  // A `QuickAddField` used to sit here: type a name, press
+                  // Enter, and `quickAddGoals` created a goal outright with
+                  // `GoalType.timeTarget` and a **3.0 hrs/week budget nobody
+                  // chose**. The guided path — fork, then the form with type,
+                  // energy, priority and emoji — was on the FAB in the opposite
+                  // corner. Two entry points, and the one under your thumb at
+                  // the top of the screen was the one that skipped every
+                  // question. That is how a goal called "help" became a
+                  // three-hour weekly commitment.
+                  //
+                  // The guided path now occupies the slot the field had, and
+                  // **the FAB is gone** — a move, not an addition, because two
+                  // flows was the defect. Same shape as the FAB it replaces (a
+                  // tonal fill, a `+`, the same words) so it reads as the
+                  // control that moved rather than a new one.
+                  //
+                  // This also closes `33-UAT.md` item 6b, which asked whether
+                  // the fork guarding the button but not the field was
+                  // acceptable. It was not, and it was answered by use rather
+                  // than by the question.
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                      child: QuickAddField(
-                        onSubmit: (names) => notifier.quickAddGoals(names),
-                        autofocus: allEmpty,
-                        multiAddNoun: 'goals',
-                        addTooltip: 'Add goal',
-                        // No helperText (UI-SPEC item 28 — instructions go).
-                        // hintText stays: a placeholder is a label, not an
-                        // instruction (item 29).
-                        hintText: _quickAddHint(notifier.goals.length),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.tonalIcon(
+                          onPressed: () => _openAddSheet(context),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add goal'),
+                          style: FilledButton.styleFrom(
+                            // Matches the height the text field occupied, so
+                            // the slot does not jump, and clears the 48dp touch
+                            // minimum on its own.
+                            minimumSize: const Size.fromHeight(52),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -262,11 +287,10 @@ class _GoalsScreenState extends State<GoalsScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openAddSheet(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Add goal'),
-      ),
+      // No `floatingActionButton`. It held the guided add path, which now sits
+      // at the top of the list where the quick-add field used to be. Deleted
+      // rather than left alongside: two add-goal entry points was the reported
+      // defect, so keeping this one would preserve exactly what was wrong.
     );
   }
 
@@ -376,10 +400,12 @@ class _EmptyState extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
+            // Repointed with the add path itself (2026-09-08): this told you
+            // to type in a field that no longer exists. An empty state that
+            // describes a removed control is worse than none.
             Text(
-              'Type a goal above and press Enter — keep going to add your '
-              'whole week. You can refine type, priority, and energy later by '
-              'tapping any goal.',
+              'Tap Add goal above to lay down your first one. You pick what '
+              'kind it is, how much time it wants, and how much it matters.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,

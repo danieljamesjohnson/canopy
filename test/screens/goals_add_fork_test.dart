@@ -95,19 +95,61 @@ Future<_Harness> _pumpGoals(
   return _Harness(goals, restoratives);
 }
 
-Future<void> _tapFab(WidgetTester tester) async {
-  await tester.tap(find.byType(FloatingActionButton));
+/// Taps the screen's ONE add-goal control.
+///
+/// Repointed 2026-09-08 from `find.byType(FloatingActionButton)`. The guided
+/// add path moved from a FAB in the bottom corner to the top of the list,
+/// where a quick-add text field used to sit — the owner's diagnosis was that
+/// having *two* add-goal flows, with the unguided one under his thumb, was the
+/// defect. The path being tested is unchanged; only where you tap it moved,
+/// so these are repointed rather than retired.
+///
+/// Deliberately finds by LABEL, not by widget type: a type-based finder would
+/// have gone green again the moment any button appeared here, including a
+/// second one, which is precisely the state this change exists to remove.
+Future<void> _tapAdd(WidgetTester tester) async {
+  await tester.tap(find.widgetWithText(FilledButton, 'Add goal'));
   await tester.pumpAndSettle();
+}
+
+/// The screen must expose exactly ONE way in. This is the assertion that makes
+/// the repoint above meaningful rather than cosmetic.
+void _expectSingleAddPath(WidgetTester tester) {
+  expect(
+    find.byType(FloatingActionButton),
+    findsNothing,
+    reason: 'the FAB moved to the top of the list; it must not also remain',
+  );
+  expect(
+    find.byType(TextField),
+    findsNothing,
+    reason:
+        'the quick-add field is gone — typing a name used to create a goal '
+        'with a 3.0 hrs/week budget nobody chose, skipping the fork entirely',
+  );
+  expect(find.widgetWithText(FilledButton, 'Add goal'), findsOneWidget);
 }
 
 void main() {
   group('Goals add fork (OBVIOUS-03, UI-SPEC 24-27)', () {
-    testWidgets('the FAB asks which kind FIRST — no goal form yet', (
+    testWidgets('there is exactly ONE add-goal path, and it is at the top', (
+      tester,
+    ) async {
+      // The owner's own diagnosis, 2026-09-08: "it's the fact there's 2 'add
+      // goal' flows. one on the top with text, one on the bottom with guiding.
+      // i want the one on the bottom to be where the text one is." This is
+      // that sentence as an assertion, and it also closes 33-UAT.md item 6b
+      // (the fork guarded the button but not the field).
+      await _pumpGoals(tester);
+      _expectSingleAddPath(tester);
+    });
+
+    testWidgets('the add control asks which kind FIRST — no goal form yet', (
       tester,
     ) async {
       await _pumpGoals(tester);
 
-      await _tapFab(tester);
+      await _tapAdd(tester);
 
       expect(find.text(_goalDoor), findsOneWidget);
       expect(find.text(_restorativeDoor), findsOneWidget);
@@ -121,7 +163,7 @@ void main() {
     testWidgets('the goal door opens the goal form', (tester) async {
       await _pumpGoals(tester);
 
-      await _tapFab(tester);
+      await _tapAdd(tester);
       await tester.tap(find.text(_goalDoor));
       await tester.pumpAndSettle();
 
@@ -135,7 +177,7 @@ void main() {
       (tester) async {
         final h = await _pumpGoals(tester);
 
-        await _tapFab(tester);
+        await _tapAdd(tester);
         expect(find.byType(GoalFormSheet), findsNothing);
 
         await tester.tap(find.text(_restorativeDoor));
@@ -180,7 +222,7 @@ void main() {
     ) async {
       final h = await _pumpGoals(tester);
 
-      await _tapFab(tester);
+      await _tapAdd(tester);
       await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
       await tester.pumpAndSettle();
 
@@ -224,7 +266,7 @@ void main() {
       setViewport(tester, const Size(390, 844));
       await _pumpGoals(tester);
 
-      await _tapFab(tester);
+      await _tapAdd(tester);
       expect(find.text(_goalDoor), findsOneWidget);
       expect(find.text(_restorativeDoor), findsOneWidget);
       expect(find.text(_goalConsequence), findsOneWidget);

@@ -1,13 +1,34 @@
-// Widget tests for the GoalsScreen quick-add bar — frictionless slate entry.
+// Widget tests for quick-add goal entry — frictionless slate entry.
 //
 // The critical case (regression guard): pasting a newline-separated list must
 // explode into N goals, not collapse into one mashed goal. A single-line
 // TextField strips newlines; the quick-add field must be multi-line.
+//
+// ---------------------------------------------------------------------------
+// RETARGETED 2026-09-08 — from GoalsScreen to QuickAddField itself
+// ---------------------------------------------------------------------------
+// The Goals screen no longer has a quick-add field. The owner diagnosed the
+// real defect as having TWO add-goal flows — "one on the top with text, one on
+// the bottom with guiding" — where the text one silently created a goal with a
+// 3.0 hrs/week budget he never chose. The guided path took its place and the
+// FAB was deleted (see goals_add_fork_test.dart).
+//
+// These tests were NOT retired with it, because every behaviour they guard is
+// still live: `QuickAddField` still ships and onboarding uses it for both goals
+// and restoratives, where the guided alternative is the surrounding flow rather
+// than a competing button. Deleting them would have dropped real coverage of
+// working code — a paste that mashes 8 goals into 1, a rapid-entry race that
+// drops names, a failed save that strands text — on the grounds that one of
+// three call sites went away.
+//
+// They now pump the WIDGET plus the real notifier, which is where all of that
+// behaviour actually lives. That also makes them immune to either screen's
+// layout, so this cannot happen again.
 
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/repositories/goal_repository.dart';
 import 'package:canopy/providers/goals_notifier.dart';
-import 'package:canopy/screens/goals/goals_screen.dart';
+import 'package:canopy/widgets/quick_add_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -50,7 +71,7 @@ class _InMemoryGoalRepository implements GoalRepository {
 }
 
 void main() {
-  group('GoalsScreen quick-add', () {
+  group('quick-add goal entry (QuickAddField + GoalsNotifier)', () {
     late _InMemoryGoalRepository repo;
     late GoalsNotifier notifier;
 
@@ -63,12 +84,21 @@ void main() {
     Future<void> pump(WidgetTester tester) async {
       await pumpWithMood(
         tester,
-        const GoalsScreen(),
+        // The exact wiring onboarding uses (onboarding_screen.dart:203-210):
+        // the field delegates persistence to `quickAddGoals`, which returns how
+        // many actually landed so a partial failure can be surfaced without
+        // losing the user's input.
+        QuickAddField(
+          onSubmit: (names) => notifier.quickAddGoals(names),
+          multiAddNoun: 'goals',
+          addTooltip: 'Add goal',
+          hintText: 'Add a goal',
+        ),
         extraProviders: [
           ChangeNotifierProvider<GoalsNotifier>.value(value: notifier),
         ],
       );
-      await tester.pump(); // settle addPostFrameCallback loadGoals
+      await tester.pump();
     }
 
     testWidgets('pasting a slate of 8 with NO trailing newline creates all 8', (
