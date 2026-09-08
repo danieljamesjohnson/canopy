@@ -33,6 +33,52 @@ class RestorativesNotifier extends ChangeNotifier {
     await loadItems();
   }
 
+  /// Trimmed-lowercased names with an [addPresetItem] save in flight — the
+  /// same guard `GoalsNotifier._pendingPresetNames` uses, mirrored here so
+  /// the identical double-tap race (34-REVIEW.md WR-01, "a fast double-tap
+  /// creates two identical goals/restoratives") is closed for the preset
+  /// chip grid's restoratives callers too, not just its goals caller. See
+  /// that field's doc comment for the full reasoning.
+  final Set<String> _pendingPresetNames = {};
+
+  /// Creates one restorative item from a tapped preset chip (onboarding's
+  /// restoratives beat and the restoratives screen's quick-pick section both
+  /// route through this rather than building a [RestorativeItem] and calling
+  /// [saveItem] directly), guarding against the same double-tap and
+  /// concurrent-different-preset races [GoalsNotifier.addPresetGoal] guards
+  /// against. Trims [name] and returns null if it's empty or if a save for
+  /// this exact name is already in flight — a no-op, not a second creation;
+  /// the FIRST tap on any preset still creates immediately (ruling (a)).
+  Future<RestorativeItem?> addPresetItem(String name, {String? emoji}) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return null;
+
+    final key = trimmed.toLowerCase();
+    if (_pendingPresetNames.contains(key)) return null;
+
+    // Offset by other in-flight preset creations so two different presets
+    // tapped before either save resolves don't both read the same stale
+    // `_items.length` and collide on sortOrder.
+    final offset = _pendingPresetNames.length;
+    _pendingPresetNames.add(key);
+
+    final item = RestorativeItem(
+      name: trimmed,
+      emojiTag: emoji,
+      sortOrder: _items.length + offset,
+    );
+
+    try {
+      await _repository.save(item);
+    } catch (_) {
+      _pendingPresetNames.remove(key);
+      return null;
+    }
+    await loadItems();
+    _pendingPresetNames.remove(key);
+    return item;
+  }
+
   /// Frictionless bulk entry: create one or more restoratives from plain names
   /// (type a name + Enter, repeat — or paste a newline-separated list). Blank
   /// names are skipped; new items are appended after existing ones. On a save

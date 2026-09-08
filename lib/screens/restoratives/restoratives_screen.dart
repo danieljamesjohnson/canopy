@@ -287,17 +287,13 @@ class _QuickPickSection extends StatelessWidget {
         existingNames: notifier.items.map((i) => i.name),
         mode: PresetChipMode.toggle,
         heading: 'Common',
-        onCreate: (name, emoji) =>
-            // saveItem, NOT quickAddItems: the bulk helper sets no emoji and
-            // these chips carry one, so a chip-added item would otherwise
-            // fall back to the generic 🌿 in the row below.
-            notifier.saveItem(
-              RestorativeItem(
-                name: name,
-                emojiTag: emoji,
-                sortOrder: notifier.items.length,
-              ),
-            ),
+        // addPresetItem, NOT saveItem/quickAddItems directly: quickAddItems
+        // sets no emoji and these chips carry one (a chip-added item would
+        // otherwise fall back to the generic 🌿 in the row below), and
+        // addPresetItem additionally guards against the double-tap and
+        // concurrent-different-preset races 34-REVIEW.md WR-01/WR-02
+        // reproduced for this same shared widget's goals caller.
+        onCreate: (name, emoji) => notifier.addPresetItem(name, emoji: emoji),
         onRemove: (name) {
           // No confirmation dialog on purpose. One tap adds, one tap removes
           // (UI-SPEC item 22) — a confirm on a toggle would defeat the item,

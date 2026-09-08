@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../data/models/commitment_block.dart';
 import '../../data/models/energy_valence.dart';
 import '../../data/models/goal.dart';
-import '../../data/models/restorative_item.dart';
 import '../../providers/commitments_notifier.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/restoratives_notifier.dart';
@@ -263,13 +262,12 @@ class _RestorativesBeatState extends State<_RestorativesBeat> {
                 existingNames: restoratives.items.map((i) => i.name),
                 mode: PresetChipMode.createOnly,
                 alignment: WrapAlignment.center,
-                onCreate: (name, emoji) => notifier.saveItem(
-                  RestorativeItem(
-                    name: name,
-                    emojiTag: emoji,
-                    sortOrder: notifier.items.length,
-                  ),
-                ),
+                // addPresetItem, NOT saveItem directly: it guards against the
+                // double-tap and concurrent-different-preset races WR-01/WR-02
+                // in 34-REVIEW.md reproduced for the goals side of this same
+                // shared widget.
+                onCreate: (name, emoji) =>
+                    notifier.addPresetItem(name, emoji: emoji),
               ),
               const SizedBox(height: 20),
               QuickAddField(
