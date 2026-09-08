@@ -1,20 +1,20 @@
 ---
 gsd_state_version: 1.0
 milestone: none
-current_phase: 33
-current_phase_name: Make The Obvious Thing Obvious
-status: awaiting-human-uat
-current_phase_next: 34
-stopped_at: "Phase 33's UAT is still open on items 1/3/5/6 (script: 33-UAT-R2.md, item 5 first and it needs a THUMB not an agent). Everything the owner has actually reported is closed and serving on http://danserver:8143/ (sha b046779cbf2a8b4c), analyze clean, 706 green. Phase 34 is scoped in ROADMAP.md and NOT started — run /gsd-plan-phase 34, but take the (a)/(b)/(c) ruling from the owner first."
-last_updated: "2026-09-08T12:00:00.000Z"
+current_phase: 34
+current_phase_name: Adding a Goal Feels Like Onboarding
+status: planning
+current_phase_next: none
+stopped_at: "Phase 33 CLOSED 2026-09-08 by owner review — he reviewed the build himself and accepted items 1/3/5/6 without running 33-UAT-R2.md. Phase 34 is the last phase in ROADMAP.md; the (a)/(b)/(c) ruling is TAKEN — owner chose (a) after seeing sketch 006 side by side. Running /gsd-autonomous 34."
+last_updated: "2026-09-08T18:00:00.000Z"
 last_activity: 2026-09-08
-last_activity_desc: Phase 34 scoped (add-a-goal like onboarding); phase 33 UAT still open on items 1/3/5/6
-state_head: 1587fff
+last_activity_desc: Phase 33 closed by owner review; sketch 006 served, ruling (a) taken; phase 34 autonomous started
+state_head: 8ef2508
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 35
-  completed_plans: 34
+  completed_plans: 35
 milestone_name: milestone
 ---
 
@@ -28,32 +28,34 @@ milestone_name: milestone
 
 ## Current Position
 
-**Two things are open, and they are different kinds of open.**
+**Phase 34 is the last phase in the roadmap, and it is now unblocked.** Phase 33 is closed.
 
-### 1. Phase 33's UAT — four items still need the owner's eyes (`33-UAT-R2.md`)
+### Phase 33 — CLOSED 2026-09-08 by owner review, not by the script
 
-Items **1, 3, 5, 6** are **UNJUDGED, not passed**. Everything he has actually reported is fixed and
-serving on `http://danserver:8143/` (sha `b046779cbf2a8b4c`), `flutter analyze` clean, **706 green**.
+`33-UAT-R2.md` was **never run**. The owner reviewed the build himself and said *"skip the uat for
+the previous phase and mark it done i reviewed it."* Items **1, 3, 5, 6** are therefore closed as
+**accepted by owner review** — which is a different, weaker kind of evidence than a scripted round,
+and is recorded that way on purpose rather than flattened into "4/4 PASS".
 
-**Item 5 leads that script on purpose.** Its tap count has been asked five times now — three in
-Phase 32, once in round 1, once in round 2 — and missed every time by sitting behind items that ran
-long. **It cannot be closed by an agent**: "is the button there" is a browser question and was
-settled that way, but "do five taps land under a thumb" is not. Do not route it to a driver again.
+**Item 5's tap count was never taken.** It was asked five times across Phases 32 and 33 and is now
+closed unmeasured. If a future phase touches the restoratives quick-pick chips, that number is still
+unknown — do not cite Phase 33 as having established it.
 
-**Round 2 REVERSES round 1's Step 0: ⟳ Re-check-in is now required**, because SEED-006 put
-`schedule_generator.dart` into this phase's diff on 2026-09-03 and trap #4 binds.
+### Phase 34 — the ruling is taken: **(a)**
 
-### 2. Phase 34 — scoped, not started
+The owner picked **(a) tap a preset → goal created immediately** on 2026-09-08, after seeing all
+three variants live and clickable in **sketch 006** (`sketches/006-adding-a-goal/`, served on
+`http://danserver:8150/`). He chose it with variant A's cost on screen in front of him — the sketch
+renders the three assumed values (`type=timeTarget`, `budget=3.0 hrs/week`, `priority=Normal`) in a
+red callout labelled *"the defect deleted on 2026-09-08, re-opened"*. This was an informed override
+of the on-file recommendation of (b), not a decision made without the tradeoff.
 
-**`/gsd-plan-phase 34`.** Full entry in `ROADMAP.md`. The short version: *"i want when you press the
-button for it to be the same flow as onboarding. with the pre chosen options plus an easy way for
-you to add your own."* The pattern already ships twice (onboarding's `_ChipCloud`, the restoratives
-screen's `_QuickPickSection`) and the Goals screen is the only add-surface without it — so it is
-mostly extract-and-reuse.
-
-**Take one ruling from the owner before planning:** does tapping a preset create the goal outright
-(fast, but re-opens the silent-defaults defect Phase 33 just closed), open a pre-filled form
-(recommended), or batch-select then one form pass? The ROADMAP entry lays out (a)/(b)/(c).
+**The mitigation that keeps (a) honest, and the thing to hold onto while building:** (a)'s danger is
+not that a default exists, it is that the default is **invisible**. The "help" goal became a
+three-hour weekly commitment because nothing on screen ever said so. So under (a): the created goal
+row **states its budget on its face**, and tapping the row opens the full form. One tap to create,
+zero taps to see what you got, one tap to change it. That is within (a) as chosen — it does not
+quietly convert it into (b).
 
 ---
 

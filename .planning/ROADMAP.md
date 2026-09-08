@@ -936,7 +936,7 @@ was *just* deleted (2026-09-08, commit `1587fff`) is a fast path that created a 
 the top slot. **Tapping a preset chip must not quietly do the same thing.** Restoratives can be
 one-tap because a `RestorativeItem` has no attributes; a `Goal` has type, budget and priority.
 
-Resolve that explicitly, with the owner, before building:
+The three options were:
 
 - **(a) Tap a preset → created immediately with defaults.** Fastest, matches restoratives, and
   re-opens the exact defect Phase 33 closed.
@@ -945,9 +945,21 @@ Resolve that explicitly, with the owner, before building:
 - **(c) Multi-select the chips, then one form pass over the batch.** Closest to onboarding's
   "lay down a slate" feel; the most work.
 
-**Recommendation on file: (b)**, unless the owner overrides. It is the only one of the three that
-cannot re-create the silent-default trap, and his own words are "options … plus an easy way to add
-your own", not "one tap and done".
+**RULED 2026-09-08: (a).** The recommendation on file was (b); the owner overrode it. He ruled after
+seeing all three built and clickable side by side in **sketch 006** (`sketches/006-adding-a-goal/`),
+where variant A displays its own cost in a red callout — `type=timeTarget`, `budget=3.0 hrs/week`,
+`priority=Normal`, labelled *"the defect deleted on 2026-09-08, re-opened."* **He chose it with that
+on screen.** Build (a). Do not re-litigate it, and do not quietly build (b) and call it (a).
+
+**But (a) ships with a mitigation, because the defect was invisibility, not the default itself.**
+"help" became a three-hour weekly commitment because no screen ever said three hours. So:
+
+- **The created goal row states its weekly budget on its face.** One tap creates; zero taps to see
+  what you got.
+- **Tapping the row opens the full form**, so changing it is one tap from the thing you just made.
+- **This stays inside (a)** — creation is still one tap and nothing interrupts it. If a plan finds
+  itself adding a confirmation step or a pre-create form, it has drifted into (b); stop and re-read
+  this paragraph.
 
 **What the phase must deliver:**
 
@@ -955,10 +967,11 @@ your own", not "one tap and done".
    this sits *after* "Something to make time for", not before it.
 2. **`kCommonGoals` as `(name, emoji)` pairs.** `_goalPresets` is currently bare strings with no
    emojis, which is why the Goals screen has never shown any; the restorative list is the shape to
-   copy. Seed it from `_goalPresets` (Exercise, Reading, Family time, Side project, Learn
-   something, Outdoors, Creative time, Rest) and give each an emoji. **The list contents are a
-   taste call — put it to the owner rather than guessing**, and note that onboarding shares this
-   list, so changing it changes onboarding too (which is the point).
+   copy. **Use the eight names unchanged, with the emoji shown in sketch 006 and not objected to:**
+   🏃 Exercise · 📚 Reading · 👨‍👩‍👧 Family time · 💻 Side project · 🌱 Learn something · 🌲 Outdoors ·
+   🎨 Creative time · 😴 Rest. Onboarding shares this list, so it gains the emoji too (which is the
+   point). The wording is still a taste call the owner may revise on sight — it is one const in one
+   file, so treat a later rewrite as cheap rather than pre-negotiating it.
 3. **An easy way to add your own**, alongside the presets — the second half of his sentence, and
    the thing the chips alone do not give.
 4. **One shared preset-chip widget**, replacing the two private copies.

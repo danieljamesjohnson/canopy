@@ -1,5 +1,22 @@
 # Phase 33 UAT — Round 2 (the open items)
 
+> ## ⛔ NOT RUN — superseded 2026-09-08. This script was never executed.
+>
+> The owner closed Phase 33 by his own review of the running build: *"skip the uat for the previous
+> phase and mark it done i reviewed it."* Items **1, 3, 5, 6** are **accepted by owner review**.
+>
+> **Record this as what it is.** Owner review is real evidence — he is the person the phase is for —
+> but it is not the same as a scripted round, and the difference matters in one specific place:
+>
+> - **Item 5's tap count was never taken.** Asked three times in Phase 32, once in round 1, once
+>   here; closed unmeasured. The nine restorative chips' thumb-hittability is **still unknown**.
+>   Phase 33 does **not** establish it. If a later phase touches those chips, ask again — and do not
+>   cite this phase as having answered it.
+> - Items 1 and 3 depended on Step 0's ⟳ Re-check-in below. Whether the owner pressed it before
+>   forming his judgment is unrecorded.
+>
+> Everything below is preserved unaltered as the script that would have run.
+
 **URL:** **http://danserver:8143/**
 **Bundle sha256:** `b046779cbf2a8b4c…` — identical on disk and on the wire
 **Suite:** `flutter analyze` clean · `flutter test` **706 passing** (678 when round 1 was written)
