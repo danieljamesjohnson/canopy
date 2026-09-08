@@ -42,6 +42,27 @@ class GoalsNotifier extends ChangeNotifier {
   /// Returns next color from palette based on current goals count.
   String autoColor() => _colorPalette[_goals.length % _colorPalette.length];
 
+  /// Trimmed-lowercased names with an [addPresetGoal] save in flight —
+  /// checked synchronously, before any `await`, so two taps on the identical
+  /// preset chip (a real double-tap, or two taps a Hive-write's worth of
+  /// milliseconds apart) cannot both pass the "not already claimed" check and
+  /// create two goals with the same name. 34-REVIEW.md WR-01 reproduced this
+  /// exact defect directly against this method with a 20ms-delayed fake
+  /// repository: two concurrent `addPresetGoal('Reading', ...)` calls
+  /// produced two goals both named "Reading".
+  ///
+  /// This ONLY suppresses a second, *concurrent* call for the identical name
+  /// — it returns null immediately, the same contract as any other
+  /// [addPresetGoal] no-op. Ruling (a) ("tapping a preset creates the goal
+  /// immediately, nothing interrupts") is untouched: the FIRST tap always
+  /// creates, with no gating or delay of any kind.
+  ///
+  /// Also doubles as the source of the "how many other addPresetGoal calls
+  /// are already in flight" count [addPresetGoal] uses to keep `sortOrder`
+  /// and `autoColor()` from colliding when two *different* presets are
+  /// tapped before either save resolves (WR-02).
+  final Set<String> _pendingPresetNames = {};
+
   /// Loads all active (non-archived) goals, sorted by sortOrder.
   Future<void> loadGoals() async {
     final active = await _repository.getActive();
@@ -139,13 +160,32 @@ class GoalsNotifier extends ChangeNotifier {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return null;
 
+    final key = trimmed.toLowerCase();
+    // WR-01 guard: a save for this exact preset is already in flight, so
+    // this is a second, concurrent tap on the same chip — a no-op, not a
+    // second creation. See _pendingPresetNames' doc comment.
+    if (_pendingPresetNames.contains(key)) return null;
+
+    // WR-02 guard: reserve this call's sortOrder/color synchronously, offset
+    // by however many OTHER addPresetGoal calls are already in flight for a
+    // DIFFERENT preset (allowed — the check above only blocks the *same*
+    // name), so two presets tapped before either save resolves can't both
+    // read the same stale `_goals` snapshot and collide. Reproduced in
+    // 34-REVIEW.md WR-02 as two goals landing with identical sortOrder AND
+    // identical auto-assigned color.
+    final offset = _pendingPresetNames.length;
+    _pendingPresetNames.add(key);
+
     final nextSort = _goals.isEmpty
-        ? 0
-        : _goals.map((g) => g.sortOrder).reduce((a, b) => a > b ? a : b) + 1;
+        ? offset
+        : _goals.map((g) => g.sortOrder).reduce((a, b) => a > b ? a : b) +
+              1 +
+              offset;
+    final color = _colorPalette[(_goals.length + offset) % _colorPalette.length];
 
     final goal = _newDefaultGoal(
       name: trimmed,
-      color: autoColor(),
+      color: color,
       sortOrder: nextSort,
       emoji: emoji,
     );
@@ -153,9 +193,15 @@ class GoalsNotifier extends ChangeNotifier {
     try {
       await _repository.save(goal);
     } catch (_) {
+      _pendingPresetNames.remove(key);
       return null;
     }
     await loadGoals();
+    // Only released once `_goals` has actually been refreshed, so a THIRD
+    // tap landing in the narrow gap between the save resolving and
+    // loadGoals() completing still sees this name as pending rather than
+    // racing the reload.
+    _pendingPresetNames.remove(key);
     return goal;
   }
 
