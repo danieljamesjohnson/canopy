@@ -1,5 +1,66 @@
 # Phase 34 UAT — Adding a Goal Feels Like Onboarding
 
+> ## Agent round, 2026-09-09 — structural half closed, two findings raised
+>
+> The owner said "run the uat". A UAT of this phase splits into questions a browser can settle and
+> questions it cannot, and the split is a property of the QUESTION, not of the item — this project
+> established that in Phase 32, where "is the button there" was routed to a human three times and
+> returned three non-answers, while a driver answered it in one run.
+>
+> Driven with `.planning/spikes/001-live-row-in-a-true-grid/tools/drive.cjs` against the served
+> bundle (`b479e2c449f0b0bf`, wire hash re-confirmed identical at run time). Screenshots in `shots/`.
+>
+> **Closed by driving (do not re-judge):**
+>
+> | Item | Question | Result |
+> |---|---|---|
+> | 1 (structural half) | Does the sheet have chips + add-your-own + Done, in onboarding's shape? | **YES** — `shots/05-item1-side-by-side.png` puts the two screens side by side |
+> | 3b | Does tapping the Just-added card open the full form? | **YES** — Edit Goal opens pre-filled (`shots/06`) |
+> | 4 (structural half) | Does "Add your own" open the real blank form, not a bare field? | **YES** — blank Add Goal, name focused, nothing pre-selected (`shots/07`) |
+> | 6 | Did onboarding's restorative wording change to the shared list? | **YES** — "🚶 Walk outside", all nine with emoji (`shots/08`) |
+> | — | Does the picker filter goals you already have? | **YES** — Exercise absent once it exists |
+>
+> **Measured, because item 2 deserves a number from BOTH ends.** The owner supplies the thumb; the
+> driver can at least supply the target. Preset chips render **34dp tall** (widths 80–160dp).
+> Material's minimum touch target is **48dp**. The chips clear the guideline on *area*
+> (2 720–5 440dp² vs 2 304dp²) but are **14dp short on height**, which is the dimension that matters
+> for a thumb on a wrapped grid — vertical precision, with only 8dp of gap between rows.
+> **This predicts item 2 may come back badly, and says exactly what to change if it does.** It is
+> also the same 34dp on the restoratives screen now, so item 2's answer finally covers the nine
+> restorative chips whose count has been open since Phase 32.
+>
+> ### Finding A — the second half of the sentence is NOT the same as onboarding
+>
+> The ask was *"the pre chosen options **plus an easy way for you to add your own**."* The side-by-side
+> shows the chips match and the add-your-own does **not**: onboarding gives you an inline text field
+> with a ↵; the Goals screen gives you a button into the full form. That is deliberate — a bare
+> quick-add field on the Goals screen is the exact control deleted on 2026-09-08 — but it means
+> **item 4 is a real open question, not a formality.** Typing your own on the Goals screen is now
+> `Add goal → door → Add your own → form`, versus onboarding's `type → ↵`.
+>
+> ### Finding B — GOALADD-03 is met on the Goals screen and NOT met in onboarding
+>
+> Verified in code, not inferred. `GoalsNotifier._newDefaultGoal` (`goals_notifier.dart`) assigns
+> `goalTypeIndex: timeTarget` and **`weeklyHourBudget: 3.0`**, and BOTH onboarding paths use it — the
+> chip tap via `addPresetGoal` and the typed field via `quickAddGoals`. **`onboarding_screen.dart`
+> never renders a budget anywhere** (grep for `hrs/week` returns only a doc comment). So a user
+> finishing onboarding has goals carrying a 3.0 hrs/week commitment that was never shown at the
+> moment it was made.
+>
+> The amended GOALADD-03 reads *"**no add path** creates a goal with attributes that are hidden from
+> the user."* Onboarding is an add path. The phase's `must_haves` were scoped to the Goals screen and
+> were written **before** the amendment, which is why 12/12 verified and this still slipped through.
+>
+> **Mitigating, and the reason this is a question rather than a defect call:** the value is not
+> hidden *permanently* — the Goals screen shows `3.0 hrs/week` on every row the moment onboarding
+> ends. And onboarding is a one-time flow where the user is actively laying out a slate, not a
+> control they will hit absent-mindedly later, which is what made the deleted quick-add field
+> dangerous. **Owner's call whether that is close enough.**
+>
+> **Still genuinely open and untouched by this round: items 1 (feel), 2 (the digit), 3a (is the
+> number *noticed*), 4 (is the trade acceptable), 5 (accept/reject onboarding's new chips).**
+
+
 **URL:** **http://danserver:8143/**
 **Bundle sha256:** `b479e2c449f0b0bf…` — identical on disk and on the wire
 **Suite:** `flutter analyze` clean · `flutter test` **740 passing** (706 before this phase)
