@@ -1014,14 +1014,22 @@ output, it binds. State the reason either way rather than copying the rule.**
 > not by asserting the budget equals 3.0, which is a symbolic assertion that would move with the
 > constant and cannot fail (see CLAUDE.md, "assertions that cannot fail").
 
+**Status:** ✅ **COMPLETE 2026-09-09** — accepted by the owner after running the flow on the served
+build (*"i'm satisfied with teh flow. close it out"*). `flutter analyze` clean, **740 tests green**
+(706 at phase start), 12/12 automated must-haves verified against the code.
+**Two things that acceptance does NOT cover, recorded so they are not cited as settled:** the
+five-chip thumb count was again never given as a number (now open across Phases 32-34; the target
+measures **34dp tall vs Material's 48dp minimum**), and onboarding still hides the `3.0 hrs/week` it
+assigns — carried to **`SEED-007`**, not accepted.
+
 **Depends on:** Phase 33 (owns the fork, the single add path, and the form this extends)
-**Plans:** 3 plans (planned 2026-09-08). The (a)/(b)/(c) ruling is **taken: (a)**, see above. Do not
-re-open it at discuss time.
+**Plans:** 3 plans (planned 2026-09-08, executed 2026-09-08/09). The (a)/(b)/(c) ruling was
+**taken: (a)** and shipped as ruled — one tap creates, nothing interposed.
 
 Plans:
-- [ ] 34-01-PLAN.md — wave 1, tracer: the goal door opens a preset picker; one tap creates the goal and the created row states its `3.0 hrs/week` budget; "Add your own" and a just-added row each reach the form in one tap; a failed write restores the chip rather than lying
-- [ ] 34-02-PLAN.md — wave 2: onboarding and the restoratives screen adopt the shared `PresetChipGrid`, retiring both private copies; onboarding gains the emoji; restoratives' geometry pinned to numbers measured before the refactor
-- [ ] 34-03-PLAN.md — wave 3: debug build served on 8143 with a proven pre-flight, then the blocking human UAT (`34-UAT.md`) that asks for the thumb count as a number
+- [x] 34-01-PLAN.md — wave 1, tracer: the goal door opens a preset picker; one tap creates the goal and the created row states its `3.0 hrs/week` budget; "Add your own" and a just-added row each reach the form in one tap; a failed write restores the chip rather than lying
+- [x] 34-02-PLAN.md — wave 2: onboarding and the restoratives screen adopt the shared `PresetChipGrid`, retiring both private copies; onboarding gains the emoji; restoratives' geometry pinned to numbers measured before the refactor
+- [x] 34-03-PLAN.md — wave 3: debug build served on 8143 with a proven pre-flight, then the blocking human UAT (`34-UAT.md`) that asks for the thumb count as a number
 
 ---
 

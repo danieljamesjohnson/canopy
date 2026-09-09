@@ -1,5 +1,33 @@
 # Phase 34 UAT — Adding a Goal Feels Like Onboarding
 
+> ## ✅ ACCEPTED BY THE OWNER — 2026-09-09
+>
+> He ran the flow on the build and said: *"i ran throught hte prcess. i'm satisfied with teh flow.
+> close it out."* **Phase 34 is closed on that verdict.**
+>
+> **Recorded as what it is: a blanket acceptance of the flow, not six itemised verdicts.** That is
+> real evidence — he is the person the phase is for, and he used the thing — but it is not the same
+> as a per-item round, and two specific things it does NOT contain are worth carrying forward rather
+> than burying under a green tick:
+>
+> **1. The thumb count was never given. Again.** Item 2 asked for a digit (n/5). It has now been
+> asked across Phases 32, 33 and 34 and has never been answered as a number. **Do not cite this
+> phase as having established that preset chips are thumb-hittable.** What we DO have is the target
+> measurement taken in the agent round: **34dp tall against Material's 48dp minimum** — clears the
+> guideline on area, 14dp short on height. If chip mis-taps are ever reported, that number is the
+> first place to look and no further investigation is needed to know where to start.
+>
+> **2. Finding B was not ruled on.** `_newDefaultGoal` assigns `weeklyHourBudget: 3.0`, both
+> onboarding paths use it, and `onboarding_screen.dart` renders a budget nowhere — so onboarding
+> still creates goals carrying a commitment the user was never shown at the moment they made it. The
+> amended GOALADD-03 says "no add path". Onboarding is one. This is **carried to `SEED-007`**, not
+> silently accepted: the owner's "satisfied with the flow" was about the Goals screen he was asked
+> to judge, and reading it as a ruling on an onboarding defect he was not walked through would be
+> putting words in his mouth.
+>
+> Items 1, 3, 4 and 5 are fairly covered by the blanket acceptance — they are all "does this flow
+> feel right", which is exactly what he answered.
+
 > ## Agent round, 2026-09-09 — structural half closed, two findings raised
 >
 > The owner said "run the uat". A UAT of this phase splits into questions a browser can settle and

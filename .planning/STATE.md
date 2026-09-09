@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: none
 current_phase: 34
 current_phase_name: Adding a Goal Feels Like Onboarding
-status: awaiting-human-uat
+status: complete
 current_phase_next: none
-stopped_at: "Phase 34 BUILT and SERVING on http://danserver:8143/ (sha b479e2c449f0b0bf), 740 green, analyze clean, code review done and its two reproduced race defects fixed. Verification is human_needed: 12/12 automated must-haves verified, 6 UAT items need the owner — script is 34-UAT.md, and item 2 wants a DIGIT (n/5 thumb count), not an adjective. Nothing else is planned; 34 is the last phase in ROADMAP.md."
-last_updated: "2026-09-08T21:30:00.000Z"
-last_activity: 2026-09-08
-last_activity_desc: Phase 34 executed end-to-end (3 plans, 740 green); awaiting owner UAT on 34-UAT.md
-state_head: 90c8b5c
+stopped_at: "Phase 34 COMPLETE 2026-09-09 — owner ran the flow and accepted it. 740 green, analyze clean, 12/12 verified. THE ROADMAP IS EMPTY: every phase through 34 is closed and nothing is planned. Next action is the owner's call, not an agent's — see 'Where this leaves the project'. Two open items deliberately NOT closed by his acceptance: the five-chip thumb count (never given as a number across Phases 32-34; target measures 34dp vs Material's 48dp) and SEED-007 (onboarding still hides the 3.0 hrs/week it assigns)."
+last_updated: "2026-09-09T00:00:00.000Z"
+last_activity: 2026-09-09
+last_activity_desc: Phase 34 accepted by the owner and closed; SEED-007 planted; roadmap now empty
+state_head: a94ac23
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 38
   completed_plans: 38
 milestone_name: milestone
@@ -28,9 +28,46 @@ milestone_name: milestone
 
 ## Current Position
 
-**Phase 34 is BUILT and waiting on one thing: the owner's thumb.** It is the last phase in the
-roadmap. Serving on `http://danserver:8143/` (sha `b479e2c449f0b0bf`), **740 green** (706 at phase
-start), `flutter analyze` clean. Script: **`34-UAT.md`**.
+**Phase 34 is COMPLETE (2026-09-09), and the roadmap is now empty.** The owner ran the flow on the
+served build and accepted it: *"i ran throught hte prcess. i'm satisfied with teh flow. close it
+out."* **740 green** (706 at phase start), `flutter analyze` clean, 12/12 automated must-haves
+verified against the code.
+
+### Where this leaves the project — read before starting anything
+
+**Every phase through 34 is closed and nothing is planned.** Do not invent a Phase 35. The last time
+an agent was pointed at "what's next" here, the honest answer came from auditing the seed backlog
+against the code rather than from a proposal document — and `NEXT-MILESTONE-PROPOSAL.md` is still
+banner-marked SUPERSEDED precisely because it would send an agent to redo finished work.
+
+The live inputs for whatever comes next are the **seeds** (`.planning/seeds/`), of which
+**`SEED-007` is new and unharvested**, and the two carried-forward items below. Anything bigger is
+a milestone conversation with the owner, not an agent's call.
+
+### Two things the owner's acceptance did NOT cover — do not cite Phase 34 as settling them
+
+1. **The five-chip thumb count was never given as a number.** Asked in Phases 32, 33 and 34;
+   answered in prose or not at all every time. What Phase 34 *did* add is the other half of the
+   measurement, taken by driving the app: preset chips render **34dp tall** (widths 80–160dp)
+   against **Material's 48dp minimum** — they clear the guideline on area (2 720–5 440dp² vs
+   2 304dp²) and fall **14dp short on height**, which is the dimension that matters for a thumb on
+   a wrapped grid with 8dp row gaps. **If chip mis-taps are ever reported, start there.** The same
+   34dp now applies to the restoratives screen, since both render through `PresetChipGrid`.
+2. **`SEED-007` — onboarding still hides the `3.0 hrs/week` it assigns.** `_newDefaultGoal` sets it,
+   both onboarding paths use it, `onboarding_screen.dart` renders a budget nowhere. The amended
+   GOALADD-03 says "no add path". The owner accepted the *Goals screen* flow he was asked to judge
+   and was never walked through this case, so his acceptance is **not** a ruling on it.
+
+### Why SEED-007 survived a 12/12 verification — the reusable lesson
+
+Not a verifier failure. **GOALADD-03 was amended mid-phase** (from "attributes the user did not
+choose" to "attributes that are *hidden from* the user", because ruling (a) made the original
+unsatisfiable), and the plans' `must_haves` had already been written against the old wording, scoped
+to the Goals screen. Verification then checked that scope faithfully and passed.
+
+**A requirement amended after its must_haves are written does not retroactively widen them.** Next
+time a requirement changes mid-phase, re-read the must_haves against the new wording before
+execution — that is the cheap moment to catch it.
 
 ### What the automated side established, so it is not re-judged
 
