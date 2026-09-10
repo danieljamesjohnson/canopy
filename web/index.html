@@ -22,17 +22,55 @@
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="canopy">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Canopy">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>canopy</title>
+  <title>Canopy</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
+
+  <!-- Explicit service-worker registration — belt and braces, deliberately.
+
+       Flutter 3.44 still generates flutter_service_worker.js and still passes
+       serviceWorkerSettings into _flutter.loader.load(), but the generated file
+       carries the comment "Flutter's service worker is deprecated and will be
+       removed in a future Flutter release". Registering here ourselves uses the
+       plain web platform API instead of that deprecated path, and re-registering
+       an already-registered script is a no-op, so this is safe whether or not
+       Flutter's loader also does it.
+
+       WHAT IS NOT KNOWN, stated honestly because the obvious check misleads:
+       whether the worker actually registers could NOT be established from this
+       machine. Headless Chromium reports flatly contradictory things about it —
+       navigator.serviceWorker.register() resolves with a valid scope AND
+       navigator.serviceWorker.ready resolves, while getRegistrations() returns 0
+       and caches.keys() is empty, in both ephemeral and persistent profiles.
+       That is an automation artifact (CLAUDE.md trap #2: do not conclude a web
+       build is broken from headless behaviour), not evidence about the app.
+
+       The real test is the device: install to the home screen, enable airplane
+       mode, and open it. If it launches, the worker registered and the offline
+       cache is populated. If it shows a network error, it did not, and THAT is
+       the signal worth acting on — not anything a headless run reports.
+
+       No ?v= version query on purpose: tools/serve-pwa.py sends
+       `Cache-Control: no-cache` for this file, so the browser revalidates the
+       script on every load and picks up a rebuild without a templated version
+       token to keep in sync. -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("flutter_service_worker.js").catch(function (e) {
+          console.warn("Canopy: service worker registration failed; app will work online only.", e);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
