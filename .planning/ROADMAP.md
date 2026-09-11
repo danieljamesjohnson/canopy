@@ -1178,6 +1178,25 @@ observation, which is the same move that finally closed Phase 32's G-32-05.
 
 **Requirements:** CAL-01 (commitments can be imported from the device's calendar without retyping), CAL-02 (the user chooses which calendars feed the schedule, from the list the device actually exposes), CAL-03 (Canopy never writes to the user's calendar), CAL-04 (a platform with no calendar access, or a denied permission, still gives a fully usable app with hand-entered commitments)
 **Depends on:** nothing — `CommitmentBlock` and the generator already exist and are unchanged.
-**Plans:** not yet planned — run `/gsd-plan-phase 35`.
+**Plans:** 6 plans, in 4 waves.
+
+Plans:
+- [ ] 35-01-PLAN.md — ICS package ruling, then the tracer: an `.ics` feed becomes a one-off `CommitmentBlock` the untouched generator chunks (wave 1)
+- [ ] 35-02-PLAN.md — every mapping rule a real calendar contains: all-day, cancelled, too-short, multi-day, foreign timezone, overlap, recurrence exceptions (wave 2)
+- [ ] 35-03-PLAN.md — `NullCalendarSource` + the platform switch, and somewhere for the calendar selection to live (wave 2)
+- [ ] 35-04-PLAN.md — the Calendars screen: show the device's own list, remember the ticks, degrade honestly when denied (wave 3)
+- [ ] 35-05-PLAN.md — `DeviceCalendarSource` over `device_calendar_plus`, read-only by construction, verified on the owner's MacBook (wave 3)
+- [ ] 35-06-PLAN.md — an imported commitment looks imported on both surfaces, then the browser UAT (wave 4)
+
+**Where the work can actually be verified.** Neither mobile platform can be built on danserver (no
+Android SDK, no Xcode, confirmed by `flutter doctor -v`). Waves 1–2 and the desktop/web half of waves
+3–4 are `flutter analyze` + `flutter test` + a served web build. The device path (35-05) is the
+owner's MacBook, every time — its plan carries a blocking checkpoint rather than a `verify` command
+no agent here can run.
+
+**Two owner rulings gate the phase**, both surfaced rather than assumed: the ICS package
+(`firstfloor_calendar` is flagged SUS — 52 weekly downloads and a GitHub-ownership mismatch against
+pub.dev's own metadata), and whether an all-day calendar entry blocks the day (research A3, the one
+`⚠ unresolved` row in the UI-SPEC).
 
 ---
