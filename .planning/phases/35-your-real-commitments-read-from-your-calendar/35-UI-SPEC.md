@@ -50,13 +50,19 @@ use in the screens this phase extends — reused, not invented:
 |-------|-------|-------|
 | xs | 4dp | Icon-to-text gaps, `SizedBox` micro-spacing (e.g. between color swatch and name) |
 | sm | 8dp | `Wrap`/`Column` inter-element spacing, `Card` vertical margin |
-| card-gap | 12dp | `Card` horizontal margin and internal padding (`commitments_screen.dart`'s existing `_CommitmentRow`) |
+| card-gap | 12dp | `Card` horizontal margin and internal padding (`commitments_screen.dart`'s existing `_CommitmentRow`) — **approved exception, see below** |
 | md | 16dp | Row/section horizontal padding, `ListTile` default content padding, section-heading `Padding` |
 | lg | 24dp | Space above/below a full-width CTA card |
 | xl | 32dp | Vertical space between the icon and headline in an empty/CTA state (matches `_emptyState()`) |
 
-Exceptions: none. Every new element in this phase fits the existing scale — no new constant is
-needed to describe spacing.
+Exceptions: **`card-gap` (12dp)**, used for `Card` horizontal margin and internal padding. 12 is a
+multiple of 4 but is not in the standard 4/8/16/24/32/48/64 set. It is named as an exception rather
+than mapped onto `sm`(8dp)/`md`(16dp) because it is not a value this phase introduces — it is
+`commitments_screen.dart`'s existing, already-shipped `_CommitmentRow` `Card` margin
+(`EdgeInsets.symmetric(horizontal: 12, vertical: 4)`), which the new imported-row treatment (Screen &
+State Inventory §3) lands inside unchanged. Remapping the table's number to 8 or 16 would describe a
+value the actual code does not use; naming it as an approved exception keeps the document honest
+about what's on screen.
 
 **Tap targets — the PresetChipGrid trap does not apply here, by construction.** This phase must not
 render a chip-like control for the calendar picker. `CheckboxListTile` and `ListTile` both default to
@@ -76,13 +82,24 @@ picking new numbers here would silently diverge from every other screen in the a
 
 | Role | M3 TextTheme member | Size/Line-height (M3 default) | Weight | Usage in this phase |
 |------|---------------------|-------------------------------|--------|----------------------|
-| Section heading | `bodyMedium` + explicit `FontWeight.w600` | 14sp / 20sp (1.43) | 600 (explicit override, matching `settings_screen.dart`'s "Notifications"/"Data" headings) | "Calendar" section heading in Settings; account-group headers in the calendar picker |
+| Section heading | `bodyMedium`, unmodified — no explicit weight override | 14sp / 20sp (1.43) | 400 (M3 default) | "Calendar" section heading in Settings; account-group headers in the calendar picker |
 | Row title | `titleMedium` | 16sp / 24sp (1.5) | 500 (M3 default) | Calendar name, commitment name |
 | Body | `bodyMedium` | 14sp / 20sp (1.43) | 400 (M3 default) | CTA card explanatory copy, dialog body text |
 | Secondary/caption | `bodySmall` | 12sp / 16sp (1.33) | 400 (M3 default) | Row subtitles (sync status, account name, skip reasons) |
 
-No new size or weight is introduced. Two effective weights are in play across this phase's surfaces
-(400 body/caption, 500-600 titles/headings) — identical to every other screen this phase touches.
+No new size is introduced, and exactly **two** weight values are declared: **400** (section heading,
+body, secondary/caption — all unmodified M3 defaults) and **500** (row title — unmodified M3 default
+`titleMedium`). Neither weight is a new override; both are what `bodyMedium`/`titleMedium` already
+render without any styling applied.
+
+**Acknowledged, deliberate deviation:** `settings_screen.dart`'s existing "Notifications" and "Data"
+section headings use an explicit `FontWeight.w600` override (`bodyMedium?.copyWith(fontWeight:
+FontWeight.w600)`); this phase's new "Calendar" heading does not, specifically to stay within the
+2-weight cap rather than introduce a third value. This creates a small, visible weight mismatch
+between the new heading and its two immediate neighbors on the same Settings list. Accepted and
+stated here rather than hidden — if a future pass wants pixel-parity across all three headings, the
+fix is a one-line style change to this phase's new heading, not a re-architecture, and is out of
+scope to chase in this phase.
 
 ---
 
@@ -156,8 +173,9 @@ needs — the four scoped surfaces, concretely.
 ### 1. Settings entry point (new row, existing screen)
 
 `lib/screens/settings/settings_screen.dart` gains one new section, **"Calendar,"** placed after the
-existing "Notifications" section (before "Data") — same section-heading treatment
-(`Padding(16,16,16,8)` + `bodyMedium` w600) as the existing sections. One `ListTile`:
+existing "Notifications" section (before "Data") — same `Padding(16,16,16,8)` layout as the existing
+sections, with `bodyMedium` **unmodified** (400, not the existing headings' `w600` — see Typography's
+acknowledged deviation above). One `ListTile`:
 `leading: Icon(Icons.calendar_month)`, `title: Text('Calendars')`, `subtitle`: per the Copywriting
 Contract's "Settings entry row" rows above, `trailing: Icon(Icons.chevron_right)`, `onTap` pushes the
 new Calendar settings screen (route suggestion: `/settings/calendars`, matching the existing
