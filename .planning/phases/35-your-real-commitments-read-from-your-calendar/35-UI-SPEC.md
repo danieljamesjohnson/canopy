@@ -82,24 +82,30 @@ picking new numbers here would silently diverge from every other screen in the a
 
 | Role | M3 TextTheme member | Size/Line-height (M3 default) | Weight | Usage in this phase |
 |------|---------------------|-------------------------------|--------|----------------------|
-| Section heading | `bodyMedium`, unmodified — no explicit weight override | 14sp / 20sp (1.43) | 400 (M3 default) | "Calendar" section heading in Settings; account-group headers in the calendar picker |
+| Section heading | `bodyMedium` + explicit `FontWeight.w600` | 14sp / 20sp (1.43) | 600 | "Calendar" section heading in Settings; account-group headers in the calendar picker |
 | Row title | `titleMedium` | 16sp / 24sp (1.5) | 500 (M3 default) | Calendar name, commitment name |
 | Body | `bodyMedium` | 14sp / 20sp (1.43) | 400 (M3 default) | CTA card explanatory copy, dialog body text |
 | Secondary/caption | `bodySmall` | 12sp / 16sp (1.33) | 400 (M3 default) | Row subtitles (sync status, account name, skip reasons) |
 
-No new size is introduced, and exactly **two** weight values are declared: **400** (section heading,
-body, secondary/caption — all unmodified M3 defaults) and **500** (row title — unmodified M3 default
-`titleMedium`). Neither weight is a new override; both are what `bodyMedium`/`titleMedium` already
-render without any styling applied.
+No new size is introduced. Exceptions: **three weight values (400/500/600) appear across this
+phase's surfaces, exceeding the 2-weight contract.** None of the three is introduced by this phase —
+all three are already on screen, today, in the two exact files this phase extends:
 
-**Acknowledged, deliberate deviation:** `settings_screen.dart`'s existing "Notifications" and "Data"
-section headings use an explicit `FontWeight.w600` override (`bodyMedium?.copyWith(fontWeight:
-FontWeight.w600)`); this phase's new "Calendar" heading does not, specifically to stay within the
-2-weight cap rather than introduce a third value. This creates a small, visible weight mismatch
-between the new heading and its two immediate neighbors on the same Settings list. Accepted and
-stated here rather than hidden — if a future pass wants pixel-parity across all three headings, the
-fix is a one-line style change to this phase's new heading, not a re-architecture, and is out of
-scope to chase in this phase.
+- **600** — `settings_screen.dart`'s existing section headings ("Notifications" `:254`, "Data" `:392`,
+  "Reviews" `:422`, "Debug" `:443`) are all `bodyMedium.copyWith(fontWeight: FontWeight.w600)`. The new
+  "Calendar" heading (Screen & State Inventory §1) matches this shipped, four-call-site pattern rather
+  than inventing a fifth, differently-weighted heading.
+- **500** — `commitments_screen.dart`'s row titles (the empty-state heading `:129`, `_CommitmentRow`'s
+  commitment name `:247`) are bare `titleMedium`, whose Material 3 default weight is `w500`. The new
+  calendar-picker's row titles use the same unmodified `titleMedium`.
+- **400** — `bodyMedium`/`bodySmall` unmodified, the M3 default for body copy and captions everywhere
+  in this app already.
+
+Normalising to two weights (e.g. dropping the new "Calendar" heading's `w600`, or bumping row titles
+to `600`) would make that one heading, or that one list's row titles, render at a visibly different
+weight than every other Settings heading directly above and below it, or every other row title
+elsewhere in the app — a real, visible regression traded for a document-internal rule. As with
+`card-gap` above, the honest fix is to name the exception, not to narrate three values as two.
 
 ---
 
@@ -173,9 +179,9 @@ needs — the four scoped surfaces, concretely.
 ### 1. Settings entry point (new row, existing screen)
 
 `lib/screens/settings/settings_screen.dart` gains one new section, **"Calendar,"** placed after the
-existing "Notifications" section (before "Data") — same `Padding(16,16,16,8)` layout as the existing
-sections, with `bodyMedium` **unmodified** (400, not the existing headings' `w600` — see Typography's
-acknowledged deviation above). One `ListTile`:
+existing "Notifications" section (before "Data") — same section-heading treatment
+(`Padding(16,16,16,8)` + `bodyMedium.copyWith(fontWeight: FontWeight.w600)`) as the existing sections
+(Typography's named exception above). One `ListTile`:
 `leading: Icon(Icons.calendar_month)`, `title: Text('Calendars')`, `subtitle`: per the Copywriting
 Contract's "Settings entry row" rows above, `trailing: Icon(Icons.chevron_right)`, `onTap` pushes the
 new Calendar settings screen (route suggestion: `/settings/calendars`, matching the existing
