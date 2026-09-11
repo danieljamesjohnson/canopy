@@ -678,6 +678,12 @@ Plans:
 
 - [x] 31-08-PLAN.md — Blocking human UAT round two — **judged 2026-08-27: Item 2 FAIL (icon means the wrong verb), Item 1 SUPERSEDED, Item 3 UNJUDGED. Approach replaced; work routed to Phase 32.**
 
+**Status:** ⏹ **SUPERSEDED 2026-08-27 — not failed, and not to be resumed.** 31-06 and 31-07 shipped
+and are green; 31-08's UAT was judged and the owner replaced the swipe approach rather than repairing
+it. The `STATE.md` Deferred Verification row for this phase carries **no resume command on purpose**
+— an earlier `/gsd-plan-phase 31 --gaps` entry is wrong and must not be run. Phase 32 carries the
+work.
+
 **Cross-cutting constraints:**
 
 - A break that is currently in progress (the now-line falls inside its slot) can also be skipped, and the live-row treatment must compose with the skipped treatment rather than fight it — the row keeps its slot height, stays on the timeline, and does not move the now-line.
@@ -826,6 +832,11 @@ geometry; the owner chose **C · Adaptive fill**.
 
 **Decisions already ruled by the owner (do not re-ask):** D-32-01 (`kPixelsPerMinute` 6.0), D-32-02 (button-only, retire the swipe machinery), D-32-03 (~64×30dp Skip button).
 
+**Status:** ✅ **COMPLETE 2026-08-31** — round-two UAT judged **4/4 PASS** (`32-UAT-R2.md`), with
+Items 1 and 3 taken by the owner on a real device and Item 2 agent-verified structurally and
+recorded as such. The thumb count that four earlier rounds failed to obtain came back **5/5 on the
+64×30dp visible rail**. `32-REVIEW.md` finding 1 was fixed after the gate closed.
+
 ### Phase 33: Make The Obvious Thing Obvious
 
 Standalone phase, no milestone. **Scoped 2026-08-31 from a full audit of the seed backlog, not
@@ -893,12 +904,19 @@ restorative is tappable, and declaring something energizing does not force it to
 **Plans:** 5 plans in 4 waves (planned 2026-09-01 against `33-UI-SPEC.md`, which transcribes the
 owner's verdicts on sketches 003/004/005 — the design is settled, the plans implement it)
 
+**Status:** ✅ **CLOSED 2026-09-08 by owner review, not by the scripted gate.** `33-UAT-R2.md` was
+never run — the owner reviewed the build himself and said *"skip the uat for the previous phase and
+mark it done i reviewed it."* Items 1, 3, 5 and 6 are closed as **accepted by owner review**, which
+is weaker evidence than a scripted round and is recorded that way rather than flattened into
+"4/4 PASS". **Item 5's tap count was never taken** — asked five times across Phases 32 and 33 and
+closed unmeasured; do not cite this phase as having established it.
+
 Plans:
-- [ ] 33-01-PLAN.md — the chunk row says its own state (`To do`/`Done`/`Skipped`), free time becomes a filled card *(wave 1)*
-- [ ] 33-02-PLAN.md — `WeeklyProgressService`, the one pure helper that turns `CompletionLog` rows into this week's progress *(wave 1)*
-- [ ] 33-03-PLAN.md — Goals as one ranked `Priority order` list; the left border becomes a fixed-geometry progress line *(wave 2)*
-- [ ] 33-04-PLAN.md — nine one-tap restoratives, and the goal/restorative fork at the front door *(wave 3)*
-- [ ] 33-05-PLAN.md — seed a real fixture, drive the running app for evidence, then the one human UAT gate on port 8143 *(wave 4)*
+- [x] 33-01-PLAN.md — the chunk row says its own state (`To do`/`Done`/`Skipped`), free time becomes a filled card *(wave 1)*
+- [x] 33-02-PLAN.md — `WeeklyProgressService`, the one pure helper that turns `CompletionLog` rows into this week's progress *(wave 1)*
+- [x] 33-03-PLAN.md — Goals as one ranked `Priority order` list; the left border becomes a fixed-geometry progress line *(wave 2)*
+- [x] 33-04-PLAN.md — nine one-tap restoratives, and the goal/restorative fork at the front door *(wave 3)*
+- [ ] 33-05-PLAN.md — seed a real fixture, drive the running app for evidence, then the one human UAT gate on port 8143 *(wave 4)* — **never executed; superseded by the owner's own review of the build**
 
 ---
 
@@ -1053,8 +1071,9 @@ Plans:
 | 30. Breaks In Committed Time | — (standalone) | 5/5 | Complete    | 2026-08-25 |
 | 31. Breaks You Can Skip | — (standalone) | 7/8 | Superseded by Phase 32 (round-two UAT 2026-08-27: swipe approach rejected) |  |
 | 32. Breaks You Can Tap | — (standalone) | 3/3 + gap closure | Complete | 2026-08-31 |
-| 33. Make The Obvious Thing Obvious | — (standalone) | 5/5 + 4 owner rounds | UAT in progress — items 1/3/5/6 unjudged | |
-| 34. Adding a Goal Feels Like Onboarding | — (standalone) | 0/TBD | Not started | |
+| 33. Make The Obvious Thing Obvious | — (standalone) | 4/5 + 4 owner rounds | Complete — closed by owner review; 33-05's scripted UAT never run | 2026-09-08 |
+| 34. Adding a Goal Feels Like Onboarding | — (standalone) | 3/3 | Complete | 2026-09-09 |
+| 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 0/TBD | Scoped, not yet planned | |
 
 ### Phase 35: Your Real Commitments, Read From Your Calendar
 

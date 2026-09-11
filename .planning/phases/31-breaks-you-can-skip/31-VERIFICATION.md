@@ -1,8 +1,11 @@
 ---
 phase: 31-breaks-you-can-skip
 verified: 2026-08-25T15:30:00Z
-status: gaps_found
-score: 12/12 code truths verified; human UAT judged 2026-08-26 — 2 of 3 items PASS, Item 1 (SKIPBREAK-01) FAILED
+status: superseded
+superseded_on: 2026-08-27
+superseded_by: phase 32 (Breaks You Can Tap)
+prior_status: gaps_found
+score: 12/12 code truths verified; human UAT judged 2026-08-26 — 2 of 3 items PASS, Item 1 (SKIPBREAK-01) FAILED; round-two UAT 2026-08-27 replaced the approach rather than repairing it
 behavior_unverified: 0
 overrides_applied: 0
 behavior_unverified_items: []
@@ -25,6 +28,23 @@ human_verification:
 ---
 
 # Phase 31: Breaks You Can Skip — Verification Report
+
+> ## ⏹ SUPERSEDED 2026-08-27 — do NOT run `/gsd-plan-phase 31 --gaps`
+>
+> This report's `status` was `gaps_found` from 2026-08-26 until 2026-09-11, and for those sixteen
+> days `gsd-tools query init.manager` recommended **`/gsd-plan-phase 31 --gaps`** — a command
+> `STATE.md` explicitly says must not be run. `status: superseded` is the sanctioned non-standard
+> marker for a hand-set retired state (`verification.cjs` treats it as "no action needed"), so the
+> recommendation now stops rather than pointing the next agent at retired work.
+>
+> **Superseded is not failed.** 31-06 and 31-07 shipped and are green; 31-08's UAT was judged. The
+> owner **replaced the swipe approach rather than repairing it** on 2026-08-27, and **Phase 32
+> carries the work**. The gap analysis below is retained because Phase 32 inherits its lesson — not
+> because Phase 31 will ever act on it.
+>
+> **One thing is permanently unmeasured and must not be back-filled by inference:** whether 68dp beat
+> 52dp for raw acquisition. The owner rejected the approach instead of counting five attempts, so
+> that comparison was never taken. It is not a PASS just because a redesign followed it.
 
 > **UPDATE 2026-08-26 — the human verification came back, and it changed the verdict.**
 > This report's `status` moved `human_needed` -> `gaps_found`. The owner judged the three UAT items

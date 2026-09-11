@@ -782,6 +782,14 @@ the swipe approach rather than repairing it, and Phase 32 (`Breaks You Can Tap`)
 The gap analysis below is retained because Phase 32 inherits its lesson, not because Phase 31 will
 act on it.
 
+> **⚠ The tooling will still suggest a Phase 31 command, and every version of it is wrong.**
+> `31-VERIFICATION.md` now carries `status: superseded` (2026-09-11) — the sanctioned hand-set marker,
+> whose `next_action` text correctly reads *"no action is needed."* But GSD has no first-class
+> superseded-verification state, so `superseded` falls through to `unknown` and
+> `gsd-tools query init.manager` prints **`/gsd-execute-phase 31`** in `recommended_actions`. That is
+> a tooling limitation, not an instruction. **This table is the authority** — the autonomous workflow
+> drops phases listed here from its queue. Do not run any Phase 31 command.
+
 **Phase 31's UAT was judged on 2026-08-26 and Item 1 FAILED.** The owner, on a real phone after a
 real ⟳ Re-check-in: *"hard to do this with a thumb."* Clarified on follow-up as an **acquisition**
 failure — hard to *grab* the 20dp row, not hard to complete the swipe once grabbed. Items 2
