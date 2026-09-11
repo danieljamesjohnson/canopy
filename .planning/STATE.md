@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: none
-current_phase: 34
-current_phase_name: Adding a Goal Feels Like Onboarding
-status: complete
+current_phase: 35
+current_phase_name: Your Real Commitments, Read From Your Calendar
+status: phase-scoped
 current_phase_next: none
-stopped_at: "Phase 34 COMPLETE 2026-09-09 — owner ran the flow and accepted it. 740 green, analyze clean, 12/12 verified. THE ROADMAP IS EMPTY: every phase through 34 is closed and nothing is planned. Next action is the owner's call, not an agent's — see 'Where this leaves the project'. Two open items deliberately NOT closed by his acceptance: the five-chip thumb count (never given as a number across Phases 32-34; target measures 34dp vs Material's 48dp) and SEED-007 (onboarding still hides the 3.0 hrs/week it assigns)."
-last_updated: "2026-09-09T00:00:00.000Z"
-last_activity: 2026-09-09
-last_activity_desc: Phase 34 accepted by the owner and closed; SEED-007 planted; roadmap now empty
+stopped_at: "Phase 35 SCOPED, not started — run /gsd-plan-phase 35. Calendar import was promoted from v2 to a v1 requirement by the owner on 2026-09-11; PROJECT.md Out of Scope is struck through accordingly. Key decisions are already taken in the ROADMAP entry (CalendarSource interface, device_calendar_plus, do NOT write our own plugin, engine unchanged) — research should settle recurrence, event->CommitmentBlock mapping, editability and sync trigger. NOTE: iOS cannot be compiled on danserver; the owner builds on his MacBook."
+last_updated: "2026-09-11T00:00:00.000Z"
+last_activity: 2026-09-11
+last_activity_desc: Phase 35 scoped (calendar import, promoted to v1); PWA installable on iPhone; pubdev-stale-scan lane launched
 state_head: a94ac23
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 8
   total_plans: 38
   completed_plans: 38
@@ -27,6 +27,37 @@ milestone_name: milestone
 ---
 
 ## Current Position
+
+**Phase 35 is scoped and unstarted: calendar import.** Run `/gsd-plan-phase 35`. The full entry is
+in `ROADMAP.md` and the decisions listed there are taken, not suggestions.
+
+### The three things a fresh agent most needs to know
+
+1. **A written scope boundary was deliberately moved.** `PROJECT.md` listed calendar sync as out of
+   scope / v2. The owner promoted it to v1 on 2026-09-11 — *"it needs to be able to read from apple
+   calendar and google calendar. as a v1."* The Out of Scope entry is struck through with the ruling
+   recorded beside it. **Do not "helpfully" refuse to build this** on the strength of a boundary that
+   has been consciously moved.
+2. **iOS cannot be built on danserver.** No Xcode, and there never will be. `flutter analyze` and the
+   740-test suite run fine here; anything requiring an actual iOS build is the owner's MacBook. Do
+   not claim an iOS build works — you cannot have observed it.
+3. **The engine is not in scope.** Calendar events map onto `CommitmentBlock`, which
+   `schedule_generator.dart` already consumes and already chunks inside a commitment window. This is
+   an input-layer phase. Touching the generator means you have misunderstood it.
+
+### Also new since Phase 34 closed
+
+- **Canopy is installable on the owner's iPhone** as a home-screen app:
+  `https://danserver.tailc2efd2.ts.net:8446` (release build, `tools/serve-pwa.py` behind
+  `tailscale serve`). HTTPS is not cosmetic — iOS refuses to run a service worker outside a secure
+  context, so the old plain-HTTP tailnet URL could never have worked as an installed app.
+  **Whether the offline cache actually works is UNVERIFIED**: headless Chromium contradicts itself
+  about service-worker registration here, and `web/index.html` documents that honestly rather than
+  claiming a verification that did not hold. The device is the only real test.
+- **The web build is scaffolding, not the destination.** The owner's words: Flutter was chosen so
+  this becomes a phone app. Web is how he tests over the tailnet.
+- **A separate Mission Control lane, `pubdev-stale-scan`, is hunting abandoned-but-used pub.dev
+  packages** as a portfolio opportunity. Unrelated to Canopy's roadmap; do not fold its output in.
 
 **Phase 34 is COMPLETE (2026-09-09), and the roadmap is now empty.** The owner ran the flow on the
 served build and accepted it: *"i ran throught hte prcess. i'm satisfied with teh flow. close it

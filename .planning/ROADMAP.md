@@ -1055,3 +1055,110 @@ Plans:
 | 32. Breaks You Can Tap | — (standalone) | 3/3 + gap closure | Complete | 2026-08-31 |
 | 33. Make The Obvious Thing Obvious | — (standalone) | 5/5 + 4 owner rounds | UAT in progress — items 1/3/5/6 unjudged | |
 | 34. Adding a Goal Feels Like Onboarding | — (standalone) | 0/TBD | Not started | |
+
+### Phase 35: Your Real Commitments, Read From Your Calendar
+
+Standalone phase, no milestone. **Raised by the owner on 2026-09-11** while setting the app up for
+real daily use: *"it needs to be able to read from apple calendar and google calendar. as a v1."*
+
+This **promotes a written scope boundary** — `PROJECT.md` listed calendar sync as a v2
+consideration, and the Out of Scope entry is now struck through with the owner's ruling recorded
+beside it. It does **not** reopen the AI boundary: a calendar is deterministic input to the same
+rule-based engine, which is the opposite of a model guessing at your day.
+
+**Goal:** The commitments Canopy schedules around come from the calendar the user already keeps,
+instead of being typed in twice — read-only, on every platform where a calendar exists, and
+degrading honestly on the platforms where one does not.
+
+**Why this is the thing blocking real use.** `CommitmentBlock` already supports recurring weekly
+blocks and one-off dated ones, so a *stable* week is a one-time setup that works today. The failure
+mode is ad-hoc meetings: miss one and the generator schedules work chunks straight over it, and the
+day is wrong in the way that makes someone stop trusting the app. The owner hit this reasoning
+himself before writing a line of it — *"i don't see how it's gonna be able to work without calendar
+sync."*
+
+**The engine does not change.** `schedule_generator.dart` already consumes `CommitmentBlock` and
+already chunks work up inside a commitment's window (`COMMITBREAK-01`, D-30-04). Calendar events map
+onto that existing model, so this is an **input-layer phase** sitting on machinery that has shipped
+since v1.0. Resist any temptation to touch the generator.
+
+#### Decisions already taken — do not re-litigate these
+
+**1. The platform-agnostic layer is OURS, not a plugin's.** The owner's instinct was to look for a
+plugin that handles every platform. There isn't one and there cannot be:
+
+| Platform | Native calendar | Covered by any pub.dev plugin? |
+|---|---|---|
+| iOS | EventKit | yes |
+| Android | CalendarContract | yes |
+| macOS | EventKit | **no plugin does it** |
+| Windows / Linux | partial / none | no |
+| **Web** | **none — no browser calendar API exists, and none is coming** | never |
+
+So the abstraction goes where the codebase already puts abstractions — an interface with swappable
+implementations, exactly as `lib/data/repositories/` does with its `hive_*` / `in_memory_*` pair:
+
+```
+CalendarSource            interface — the only thing the app talks to
+├── DeviceCalendarSource  plugin-backed; iOS + Android
+├── IcsCalendarSource     .ics URL subscription; works EVERYWHERE incl. web + desktop
+└── NullCalendarSource    platforms with neither — the app degrades, never breaks
+```
+
+**2. Do NOT write our own plugin.** Researched 2026-09-11 rather than assumed. A federated Flutter
+plugin means maintaining Swift *and* Kotlin *and* a platform-interface package indefinitely, and
+after all that it still would not cover web or desktop — so it does not buy the agnosticism that
+motivated the question. The interface above does. Wrapping a third-party plugin behind our own
+interface also defuses the dependency risk: if the plugin rots, one implementation class is
+replaced, not the app.
+
+**3. Plugin choice: `device_calendar_plus`, to be confirmed in research.** The landscape, measured:
+
+| Package | Last release | Recurrence | Notes |
+|---|---|---|---|
+| `device_calendar` | **23 months ago**; last commit 2025-03-08; 118 open issues | yes | 80.6k downloads but effectively abandoned — its own successor calls it that |
+| `eventide` | 8 days ago | **not implemented (🏗)** | disqualifying: recurring meetings are the commitments that matter most |
+| **`device_calendar_plus`** | 49 days ago | **full RRULE** | verified publisher (bullet.to), maintained for their own product |
+
+**4. One device integration covers both vendors.** EventKit and CalendarContract do not read "Apple
+Calendar" — they read the *device's calendar store*, which already aggregates every account the user
+has added (iCloud, Google, Exchange, subscribed). So Google needs no OAuth, no API and no separate
+integration, **provided the account is added at OS level**.
+
+**Do not ask the owner whether his Google account is added — show him.** The settings surface lists
+whatever calendars the device actually exposes, with checkboxes. If Google is there he ticks it; if
+it is not, that is an OS Settings fix, not a code path. This replaces a question with an
+observation, which is the same move that finally closed Phase 32's G-32-05.
+
+#### Open questions for research — these are genuinely unsettled
+
+1. **Recurrence, end to end.** `device_calendar_plus` advertises full RRULE. Verify it against a real
+   recurring event, including exceptions ("this and following", a single moved occurrence). This is
+   the load-bearing capability and the reason `eventide` was rejected.
+2. **Event → `CommitmentBlock` mapping.** All-day events (a whole day blocked, or ignored?).
+   Timezones — `CommitmentBlock` stores minutes-from-midnight and the engine has already been bitten
+   once by a time-of-day normalisation bug (SEED-006). Declined invitations. Overlapping events.
+   Multi-day events. Events with no end time.
+3. **Are imported commitments editable in Canopy?** If the user edits one, the next sync overwrites
+   it. Read-only-with-a-reason is probably right, but it is a real UX decision, not an obvious one.
+4. **Sync trigger.** On check-in, on app resume, on a timer? The app is local-first and offline by
+   design; a stale calendar must degrade visibly rather than silently.
+
+#### Constraints
+
+- **Nothing writes to the user's calendar, ever.** Read-only is a product guarantee, not an
+  implementation detail.
+- **Permissions are a first-class surface.** `NSCalendarsFullAccessUsageDescription` (iOS 17+) and
+  its pre-17 counterpart are needed in `Info.plist`, which currently has neither. A denied
+  permission must leave the app fully usable with hand-entered commitments.
+- **The build workflow splits.** `flutter analyze` and the full test suite run on danserver, but
+  **iOS cannot be compiled here at all** — that happens on the owner's MacBook. Plan for the owner
+  as the compile-and-run step, and do not claim an iOS build works without him running it.
+- `com.example.canopy` is still the bundle identifier. Out of scope here, but it blocks any future
+  App Store distribution.
+
+**Requirements:** CAL-01 (commitments can be imported from the device's calendar without retyping), CAL-02 (the user chooses which calendars feed the schedule, from the list the device actually exposes), CAL-03 (Canopy never writes to the user's calendar), CAL-04 (a platform with no calendar access, or a denied permission, still gives a fully usable app with hand-entered commitments)
+**Depends on:** nothing — `CommitmentBlock` and the generator already exist and are unchanged.
+**Plans:** not yet planned — run `/gsd-plan-phase 35`.
+
+---

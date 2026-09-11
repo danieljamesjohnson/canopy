@@ -57,7 +57,7 @@ dead space below a break live row; several `VALIDATION.md` files (15/16/17, 21, 
 
 The engine is solid; the UI is plain. Effort has gone into correct, predictable scheduling rather than visual polish, and that trade is deliberate at this stage.
 
-**Next:** Executing milestone **v1.5 "Right Now"** (below). Tracked tech debt: onboarding desktop polish (full-bleed + day-chip labels), chunk_card color-token hygiene.
+**Next:** Phase 35 — calendar import. (v1.5 "Right Now" shipped and was archived 2026-08-14; this line previously still said it was executing, which was stale and would have sent an agent to redo finished work.) Tracked tech debt: onboarding desktop polish (full-bleed + day-chip labels), chunk_card color-token hygiene.
 
 </details>
 
@@ -113,7 +113,11 @@ Milestone v1.5 "Right Now" — full list with REQ-IDs in [`REQUIREMENTS.md`](REQ
 - LLM-powered scheduling — **permanently out**, not deferred. A model deciding the day contradicts the reason the app exists (user control over their own time), and an unpredictable schedule is one you can't trust.
 - In-app AI features generally — the app stays "dumb". Any AI integration goes at the edge (see below), not into the product surface.
 - Multi-user / team features — personal tool only
-- Calendar sync (Google Calendar, etc.) — v2 consideration
+- ~~Calendar sync (Google Calendar, etc.) — v2 consideration~~ — **PROMOTED TO v1 on 2026-09-11 by
+  the owner: "it needs to be able to read from apple calendar and google calendar. as a v1."**
+  Scoped as Phase 35. Read-only in both directions of meaning: Canopy reads the calendar and never
+  writes to it. This does NOT reopen the AI boundary above — a calendar is deterministic input to
+  the same rule-based engine, not a model guessing at your day.
 
 ### Considered, not committed
 
@@ -148,7 +152,7 @@ Milestone v1.5 "Right Now" — full list with REQ-IDs in [`REQUIREMENTS.md`](REQ
 | Rule-based scheduling (not AI) | Product position, not a shortcut: the app exists to give the user control of their time, and a schedule you can't predict is one you won't trust | ✓ Good — engine is deterministic and testable; a surprising schedule is a bug, not a mystery |
 | 25-minute Chunks | Proven focused session length (Pomodoro research), familiar concept | ✓ Good |
 | Three goal types | Relationships/wellness need time targets; projects need outcomes; habits need consistency | ✓ Good |
-| Commitment blocks | Real-world obligations (job, school) always scheduled; v2 will read from calendar | ✓ Good |
+| Commitment blocks | Real-world obligations (job, school) always scheduled; **v1 now reads them from the device calendar (Phase 35)** | ✓ Good |
 | Break structure | 5-min after each chunk, 25-min long break every 3–4 chunks (mood-adaptive); breaks shown in schedule | ✓ Good |
 | Local storage only | Personal tool, no server complexity in v1 | ✓ Good |
 | Priority drives scheduling (v1.2) | Make priority observable: habit sort + time-target composite score, not a tiebreaker | ✓ Good — proven by deterministic engine tests (PRIORITY-01) |
