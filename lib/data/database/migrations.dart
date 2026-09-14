@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-const int currentSchemaVersion = 9;
+const int currentSchemaVersion = 10;
 
 typedef MigrationFn = Future<void> Function();
 
@@ -16,6 +16,7 @@ final List<MigrationFn> _migrations = [
   _migration6to7,
   _migration7to8,
   _migration8to9,
+  _migration9to10,
 ];
 
 Future<void> _migration0to1() async {
@@ -87,6 +88,16 @@ Future<void> _migration8to9() async {
   // box — restorative activities kept separate from goals, surfaced only on
   // low-energy days. Brand-new empty box; no existing records to transform.
   // The box is opened in HiveDatabase.init before migrations run.
+}
+
+Future<void> _migration9to10() async {
+  // Phase 35: CommitmentBlock gains externalEventId (HiveField 7, String?,
+  // default null) and isFromCalendar (HiveField 8, bool, default false) —
+  // read-only calendar-import support (CAL-01/CAL-03). Both additive fields
+  // — Hive CE binary reader returns null/false for missing fields in
+  // existing records. Old records deserialize with externalEventId == null
+  // and isFromCalendar == false, i.e. every pre-existing commitment is
+  // correctly treated as hand-entered. No data transformation needed.
 }
 
 Future<void> runMigrations(SharedPreferences prefs) async {

@@ -185,6 +185,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.12"
+  enough_icalendar:
+    dependency: "direct main"
+    description:
+      name: enough_icalendar
+      sha256: d35e64b5499c5e7154fa2ff9b29a16ebe269400f8b23e7f9f1981c4787fc319a
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.17.0"
   equatable:
     dependency: transitive
     description:
@@ -353,7 +361,7 @@ packages:
     source: hosted
     version: "1.0.1"
   http:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: http
       sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
@@ -624,6 +632,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.0"
+  rrule:
+    dependency: "direct main"
+    description:
+      name: rrule
+      sha256: f6f6ad5bf7b19d218d4c985d6055d3c9717f1d6efd5d1c0127b1146f1eb3640c
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.18"
   screen_retriever:
     dependency: transitive
     description:
@@ -829,6 +845,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.11"
+  time:
+    dependency: transitive
+    description:
+      name: time
+      sha256: "46187cf30bffdab28c56be9a63861b36e4ab7347bf403297595d6a97e10c789f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.6"
   timezone:
     dependency: "direct main"
     description:

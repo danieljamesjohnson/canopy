@@ -39,6 +39,9 @@ dependencies:
   share_plus: ^12.0.2
   fl_chart: ^1.2.0
   window_manager: ^0.5.1
+  enough_icalendar: ^0.17.0
+  rrule: ^0.2.18
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

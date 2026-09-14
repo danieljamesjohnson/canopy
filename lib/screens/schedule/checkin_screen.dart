@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/calendar/calendar_source_factory.dart';
 import '../../data/models/daily_schedule.dart';
 import '../../data/models/goal.dart';
 import '../../data/models/scheduled_chunk.dart';
@@ -124,8 +125,13 @@ class _CheckinScreenState extends State<CheckinScreen> {
     // WR-02 pattern — protects against context-after-await bugs in future refactors).
     final scheduleNotifier = context.read<ScheduleNotifier>();
     final goals = context.read<GoalsNotifier>().goals;
-    final blocks = context.read<CommitmentsNotifier>().blocks;
+    final commitmentsNotifier = context.read<CommitmentsNotifier>();
     try {
+      // D-35-13: sync runs immediately before blocks is read. A failed sync
+      // degrades to last-known blocks rather than blocking check-in — the
+      // notifier itself never throws (CommitmentsNotifier.syncFromCalendar).
+      await commitmentsNotifier.syncFromCalendar(source: defaultCalendarSource());
+      final blocks = commitmentsNotifier.blocks;
       await scheduleNotifier.generateToday(
         moodIndex: _selectedMood!,
         goals: goals,

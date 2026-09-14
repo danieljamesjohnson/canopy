@@ -20,17 +20,18 @@ void main() {
   // Schema constant tests (no Hive I/O needed)
   // ---------------------------------------------------------------------------
 
-  // Bumped to 9 when the RestorativeItem aggregate (typeId 7) was added in its
-  // own box with migration 8→9. The WR-06 count invariant moves in lockstep.
-  test('currentSchemaVersion equals 9', () {
-    expect(currentSchemaVersion, equals(9));
+  // Bumped to 10 when Phase 35 added CommitmentBlock.externalEventId
+  // (HiveField 7) and CommitmentBlock.isFromCalendar (HiveField 8) with
+  // migration 9→10. The WR-06 count invariant moves in lockstep.
+  test('currentSchemaVersion equals 10', () {
+    expect(currentSchemaVersion, equals(10));
   });
 
   // The WR-06 assert in migrations.dart enforces
   // _migrations.length == currentSchemaVersion at runtime in debug mode.
   // We confirm the constant value here; the assert is the count gate.
   test('currentSchemaVersion is consistent with WR-06 migration count', () {
-    expect(currentSchemaVersion, equals(9));
+    expect(currentSchemaVersion, equals(10));
   });
 
   // ---------------------------------------------------------------------------
