@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: none
 current_phase: 35
 current_phase_name: Your Real Commitments, Read From Your Calendar
-status: phase-scoped
-current_phase_next: none
-stopped_at: "Phase 35 plan 01 (wave 1 of 4, the tracer) COMPLETE and committed — an .ics feed becomes a real CommitmentBlock the unmodified schedule_generator chunks, proven by 6 new tests (746/746 green, flutter analyze clean). D-35-05 ruled by the owner (enough_icalendar + rrule, not firstfloor_calendar) and recorded in 35-01-SUMMARY.md. Auto-mode is OFF for this project (workflow.auto_advance/_auto_chain_active both false) — per the tracer-task protocol, wave 2 (plans 35-02 onward) should not be dispatched until a human has reviewed this tracer's verification. Next: owner review, then /gsd-execute-phase 35 to continue with wave 2."
-last_updated: "2026-09-14T13:12:25.000Z"
+status: executing
+current_phase_next: "tracer feedback gate — review 35-01, then /gsd-execute-phase 35 for wave 2 (35-02 + 35-03)"
+stopped_at: "Phase 35 wave 1 of 4 COMPLETE, merged to master, verified on the primary checkout (4e526ad): an .ics feed becomes a real CommitmentBlock the UNMODIFIED schedule_generator chunks. flutter analyze clean, 746/746 green (740 baseline + 6 new), schedule_generator.dart byte-identical to its pre-phase state. HELD at the tracer feedback gate — partly by protocol (auto_advance is false), but mainly because the tracer did its job and surfaced a risk NOBODY had flagged: only Z-suffixed UTC timestamps are proven. A real Google Calendar feed emits DTSTART;TZID=... with a VTIMEZONE block, which currently falls through to Dart's system-local DateTime instead of the app's tz.local override — the SEED-006 shape again, one layer out. WINDOWS.md entries 1 (EXDATE/RDATE/RECURRENCE-ID unimplemented) and 2 (floating/TZID time) are both open. BOTH owner checkpoints are already RULED (see 35-DECISIONS.md), so waves 2-4 need no further decisions to run."
+last_updated: "2026-09-14T13:30:00.000Z"
 last_activity: 2026-09-14
-last_activity_desc: Phase 35 plan 01 (tracer) executed — ICS calendar import proven end to end on the local machine; awaiting owner review before wave 2
-state_head: a165f69
+last_activity_desc: "Phase 35 planned (6 plans, 4 waves) and wave 1 executed; roadmap bookkeeping for phases 31/32/33 reconciled with what the owner actually closed"
+state_head: 4e526ad
 progress:
   total_phases: 9
   completed_phases: 8
-  total_plans: 38
-  completed_plans: 38
+  total_plans: 44
+  completed_plans: 39
 milestone_name: milestone
 ---
 
