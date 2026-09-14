@@ -1073,7 +1073,7 @@ Plans:
 | 32. Breaks You Can Tap | — (standalone) | 3/3 + gap closure | Complete | 2026-08-31 |
 | 33. Make The Obvious Thing Obvious | — (standalone) | 4/5 + 4 owner rounds | Complete — closed by owner review; 33-05's scripted UAT never run | 2026-09-08 |
 | 34. Adding a Goal Feels Like Onboarding | — (standalone) | 3/3 | Complete | 2026-09-09 |
-| 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 0/TBD | Scoped, not yet planned | |
+| 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 1/6 | In progress — wave 1 (tracer, 35-01) complete; awaiting owner review before wave 2 | |
 
 ### Phase 35: Your Real Commitments, Read From Your Calendar
 

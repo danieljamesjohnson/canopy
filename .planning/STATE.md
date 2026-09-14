@@ -5,11 +5,11 @@ current_phase: 35
 current_phase_name: Your Real Commitments, Read From Your Calendar
 status: phase-scoped
 current_phase_next: none
-stopped_at: "Phase 35 SCOPED, not started — run /gsd-plan-phase 35. Calendar import was promoted from v2 to a v1 requirement by the owner on 2026-09-11; PROJECT.md Out of Scope is struck through accordingly. Key decisions are already taken in the ROADMAP entry (CalendarSource interface, device_calendar_plus, do NOT write our own plugin, engine unchanged) — research should settle recurrence, event->CommitmentBlock mapping, editability and sync trigger. NOTE: iOS cannot be compiled on danserver; the owner builds on his MacBook."
-last_updated: "2026-09-11T00:00:00.000Z"
-last_activity: 2026-09-11
-last_activity_desc: Phase 35 scoped (calendar import, promoted to v1); PWA installable on iPhone; pubdev-stale-scan lane launched
-state_head: a94ac23
+stopped_at: "Phase 35 plan 01 (wave 1 of 4, the tracer) COMPLETE and committed — an .ics feed becomes a real CommitmentBlock the unmodified schedule_generator chunks, proven by 6 new tests (746/746 green, flutter analyze clean). D-35-05 ruled by the owner (enough_icalendar + rrule, not firstfloor_calendar) and recorded in 35-01-SUMMARY.md. Auto-mode is OFF for this project (workflow.auto_advance/_auto_chain_active both false) — per the tracer-task protocol, wave 2 (plans 35-02 onward) should not be dispatched until a human has reviewed this tracer's verification. Next: owner review, then /gsd-execute-phase 35 to continue with wave 2."
+last_updated: "2026-09-14T13:12:25.000Z"
+last_activity: 2026-09-14
+last_activity_desc: Phase 35 plan 01 (tracer) executed — ICS calendar import proven end to end on the local machine; awaiting owner review before wave 2
+state_head: a165f69
 progress:
   total_phases: 9
   completed_phases: 8
@@ -22,14 +22,35 @@ milestone_name: milestone
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-08-27T15:22:43.488Z
+**Last session:** 2026-09-14T13:12:25.000Z
 
 ---
 
 ## Current Position
 
-**Phase 35 is scoped and unstarted: calendar import.** Run `/gsd-plan-phase 35`. The full entry is
-in `ROADMAP.md` and the decisions listed there are taken, not suggestions.
+**Phase 35, plan 01 (the tracer, wave 1 of 4) is COMPLETE — commit `a165f69`.** An `.ics` feed,
+parsed with `enough_icalendar` and expanded with `rrule` (D-35-05, owner-ruled 2026-09-14 —
+`firstfloor_calendar` was rejected for a real, re-checked GitHub-ownership mismatch), becomes a
+one-off `CommitmentBlock` in local wall-clock time that the UNMODIFIED `schedule_generator.dart`
+chunks into the day. Proven by 6 new tests including a mutation proof of the local-time conversion
+(`test/services/calendar_sync_service_test.dart`) — full detail in
+`.planning/phases/35-your-real-commitments-read-from-your-calendar/35-01-SUMMARY.md`.
+
+**Two things flagged in that SUMMARY that the next plan (or the owner) needs, not hidden in prose:**
+EXDATE/RDATE/RECURRENCE-ID overrides are explicitly NOT implemented (a moved/cancelled single
+occurrence of a recurring event still shows at its original time), and a DTSTART without a `Z`
+suffix (floating time, or bare `TZID` with no `VTIMEZONE` block) is not yet correctly localised —
+only `Z`-suffixed UTC timestamps are proven correct by this plan's fixture.
+
+**Auto-mode is OFF for this project** (`workflow.auto_advance` / `workflow._auto_chain_active` both
+false). Per the executor's tracer-task protocol, **wave 2 (plans 35-02 through 35-06) should not be
+dispatched until a human has reviewed this tracer's verification** — `flutter analyze` clean,
+746/746 tests green. Next step: owner review, then continue with `/gsd-execute-phase 35`.
+
+Older position notes below (pre-Phase-35) are retained for history.
+
+**Phase 35 was scoped before planning began.** The full ROADMAP entry and decisions taken there are
+still the reference for plans 02-06.
 
 ### The three things a fresh agent most needs to know
 
