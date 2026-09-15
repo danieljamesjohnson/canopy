@@ -9,6 +9,7 @@ import '../../data/models/scheduled_chunk.dart';
 import '../../providers/commitments_notifier.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
+import '../../providers/settings_notifier.dart';
 import '../../providers/theme_notifier.dart';
 import '../../services/notification_service.dart';
 
@@ -126,11 +127,24 @@ class _CheckinScreenState extends State<CheckinScreen> {
     final scheduleNotifier = context.read<ScheduleNotifier>();
     final goals = context.read<GoalsNotifier>().goals;
     final commitmentsNotifier = context.read<CommitmentsNotifier>();
+    final settingsNotifier = context.read<SettingsNotifier>();
     try {
       // D-35-13: sync runs immediately before blocks is read. A failed sync
       // degrades to last-known blocks rather than blocking check-in — the
       // notifier itself never throws (CommitmentsNotifier.syncFromCalendar).
-      await commitmentsNotifier.syncFromCalendar(source: defaultCalendarSource());
+      // Built from the PERSISTED configuration (never empty argument list —
+      // Task 3 closed the tracer's deliberate no-op) so the feed the owner
+      // actually configured on the Calendars screen is what check-in syncs.
+      final syncResult = await commitmentsNotifier.syncFromCalendar(
+        source: defaultCalendarSource(icsUrls: settingsNotifier.icsUrls),
+      );
+      // lastCalendarSyncAt is written on success only — a failing sync
+      // leaves the prior timestamp in place, so the Settings row and the
+      // Calendars screen's own status line can never disagree with what a
+      // check-in-triggered sync actually did.
+      if (!syncResult.failed) {
+        await settingsNotifier.setLastCalendarSyncAt(syncResult.syncedAt);
+      }
       final blocks = commitmentsNotifier.blocks;
       await scheduleNotifier.generateToday(
         moodIndex: _selectedMood!,

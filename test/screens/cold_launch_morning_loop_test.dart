@@ -19,6 +19,7 @@ import 'package:canopy/data/repositories/in_memory_app_settings_repository.dart'
 import 'package:canopy/providers/commitments_notifier.dart';
 import 'package:canopy/providers/goals_notifier.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
+import 'package:canopy/providers/settings_notifier.dart';
 import 'package:canopy/providers/theme_notifier.dart';
 import 'package:canopy/screens/schedule/checkin_screen.dart';
 import 'package:canopy/services/schedule_generator.dart';
@@ -173,6 +174,15 @@ void main() {
       final scheduleNotifier = _InMemoryScheduleNotifier();
       await scheduleNotifier.init();
 
+      // Task 3 (35-04): check-in now builds its calendar source from
+      // SettingsNotifier.icsUrls — a fresh in-memory notifier defaults to an
+      // empty list, matching this test's pre-Phase-35 "no calendar
+      // configured" behavior exactly (NullCalendarSource, sync is a real
+      // no-op, so the seeded-goal assertion below is unaffected).
+      final settingsNotifier = SettingsNotifier(
+        repository: InMemoryAppSettingsRepository(),
+      );
+
       final themeNotifier = ThemeNotifier(
         repository: InMemoryAppSettingsRepository(),
         timeModulationEnabled: false,
@@ -197,6 +207,9 @@ void main() {
             ),
             ChangeNotifierProvider<ScheduleNotifier>.value(
               value: scheduleNotifier,
+            ),
+            ChangeNotifierProvider<SettingsNotifier>.value(
+              value: settingsNotifier,
             ),
             ChangeNotifierProvider<ThemeNotifier>.value(value: themeNotifier),
           ],

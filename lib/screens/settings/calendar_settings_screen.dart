@@ -25,6 +25,17 @@ import '../../widgets/adaptive_form_modal.dart';
 /// Permission is read live every time this screen is opened; no permission
 /// result is ever persisted anywhere (D-35-10) — see [_isMobile]'s CTA-gated
 /// flow below.
+///
+/// **CORS on the web build.** A Flutter **web** build fetching a third-party
+/// `.ics` URL is subject to the browser's cross-origin rules, and most
+/// public calendar feeds (Google, Outlook, etc.) do not send permissive CORS
+/// headers. A perfectly valid feed URL can therefore fail to load in the
+/// browser build while working fine on desktop or mobile — this is a browser
+/// policy, not a bug in this screen and not a bad URL, and there is no
+/// in-app fix without a proxy this app does not have. The locked failure
+/// copy in [_syncAndReport] already covers it; documented here so the next
+/// reader does not re-diagnose it (Task 3, 35-04-PLAN.md). 35-06's UAT
+/// sidesteps it by serving a fixture feed from the same origin as the app.
 class CalendarSettingsScreen extends StatefulWidget {
   const CalendarSettingsScreen({super.key, this.source});
 
@@ -187,9 +198,39 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
                 ),
               ),
             ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => _syncNow(context),
+              child: const Text('Sync now'),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  /// Manual re-trigger (Task 3) — a settings screen that shows sync status
+  /// and offers no way to refresh it can only ever tell you it is stale.
+  /// Reuses the same state-loading methods the initial open already runs
+  /// through, so there is exactly one sync code path per branch, not two.
+  void _syncNow(BuildContext context) {
+    final settings = context.read<SettingsNotifier>();
+    if (_isMobile) {
+      final commitments = context.read<CommitmentsNotifier>();
+      final messenger = ScaffoldMessenger.of(context);
+      final source = _resolveSource(settings);
+      setState(() {
+        _mobileFuture = _requestMobilePermission(
+          source,
+          commitments,
+          settings,
+          messenger,
+        );
+      });
+    } else {
+      setState(() => _desktopFuture = _loadDesktopState(context, settings.icsUrls));
+    }
   }
 
   Widget _ctaCard({
