@@ -18,6 +18,17 @@ const int kCalendarSyncWindowDays = 14;
 /// `import-as-blocking`) means an all-day entry is imported, never skipped.
 enum SkipReason { tooShort, cancelled }
 
+/// The user-facing copy for [SkipReason] — verbatim from the UI-SPEC's
+/// Copywriting Contract "Skipped-event reason strings" row (35-UI-SPEC.md).
+/// The skip is disclosed, never silent (CAL-04's spirit). No `allDay` case
+/// exists here because it is not a [SkipReason] member (D-35-06).
+extension SkipReasonLabel on SkipReason {
+  String get label => switch (this) {
+    SkipReason.tooShort => 'Too short to schedule',
+    SkipReason.cancelled => 'Cancelled',
+  };
+}
+
 /// One event that was fetched but not imported, and why.
 class SkippedEvent {
   SkippedEvent({required this.title, required this.reason});
@@ -215,11 +226,7 @@ class CalendarSyncService {
       localStart.month,
       localStart.day,
     );
-    final eventEndDate = DateTime(
-      localEnd.year,
-      localEnd.month,
-      localEnd.day,
-    );
+    final eventEndDate = DateTime(localEnd.year, localEnd.month, localEnd.day);
 
     // T-35-06: clip the day RANGE to the sync window before splitting — a
     // feed-supplied span (not the parse-time overlap check, which only

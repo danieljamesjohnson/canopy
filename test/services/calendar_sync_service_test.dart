@@ -393,6 +393,9 @@ void main() {
         expect(result.imported.single.name, 'Maybe lunch');
         expect(result.skipped, hasLength(1));
         expect(result.skipped.single.reason, SkipReason.cancelled);
+        // Asserted against the RENDERED reason string (UI-SPEC Copywriting
+        // Contract), not just the enum name.
+        expect(result.skipped.single.reason.label, 'Cancelled');
       },
     );
 
@@ -420,6 +423,13 @@ void main() {
         expect(result.skipped, hasLength(3));
         expect(
           result.skipped.every((s) => s.reason == SkipReason.tooShort),
+          isTrue,
+        );
+        // Asserted against the RENDERED reason string, not just the enum.
+        expect(
+          result.skipped.every(
+            (s) => s.reason.label == 'Too short to schedule',
+          ),
           isTrue,
         );
       },
@@ -463,6 +473,7 @@ void main() {
         expect(result.imported, isEmpty);
         expect(result.skipped, hasLength(1));
         expect(result.skipped.single.reason, SkipReason.tooShort);
+        expect(result.skipped.single.reason.label, 'Too short to schedule');
       },
     );
 
