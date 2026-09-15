@@ -4,17 +4,17 @@ milestone: none
 current_phase: 35
 current_phase_name: Your Real Commitments, Read From Your Calendar
 status: executing
-current_phase_next: "wave 3 — dispatch 35-04 and 35-05 in parallel"
-stopped_at: "Phase 35 waves 1-2 COMPLETE and merged to master (35-01, 35-02, 35-03). Calendar mapping is done: cancelled, all-day, too-short/zero/no-end, multi-day splitting, overlap, and all three RFC 5545 DTSTART forms. WINDOWS.md entry 2 CLOSED. TWO THINGS NEED THE OWNER, both routed to 35-06's UAT and neither blocking wave 3: (1) RECURRENCE-ID/EXDATE are PROVEN unsupported by the enough_icalendar+rrule stack -- tested against the real packages, not design-reviewed -- so a moved or cancelled single occurrence still shows at its original time (WINDOWS.md entry 1, open); (2) the all-day span shipped as 08:00-22:00, the app's only existing working-day constant, but the D-35-06 preview the owner judged showed 08:00-18:00. CORRECTION TO A FACT THIS PROJECT REPEATEDLY ASSERTED: danserver's system timezone is America/Chicago, NOT UTC. The orchestrator stated UTC in plan text and agent prompts; it was wrong and is corrected in 35-DECISIONS.md. It surfaced because a mutation proof refused to pass -- the countermeasure working as designed."
-last_updated: "2026-09-15T13:40:00.000Z"
+current_phase_next: "wave 3 — 35-04 COMPLETE; 35-05 running in parallel in a separate worktree"
+stopped_at: "Phase 35 wave 3 plan 35-04 COMPLETE (commits 6426f47/7ff9add/f0bc10f): CalendarSettingsScreen built end to end -- mobile CTA-gated permission flow (not-yet-requested/in-flight/granted-grouped-by-account/granted-empty/denied-neutral-card) and desktop/web ICS feed-URL flow (add/remove, fetch-validated), reachable at /settings/calendars, with a real sync-driven status footer and skipped-events disclosure. checkin_screen.dart's tracer-era no-op closed -- it now syncs the actually-configured feed and persists lastCalendarSyncAt on success only. flutter analyze clean, 786/786 green (777 baseline + 9 new). Two mutation proofs performed and reverted (hardcoded calendar list; error-tinted denial card), transcripts in 35-04-SUMMARY.md. Two pre-existing widget tests (checkin_screen_widget_test.dart, cold_launch_morning_loop_test.dart) needed a SettingsNotifier added to their provider trees -- an unavoidable Rule 3 consequence of checkin_screen.dart's new real dependency, documented as a deviation rather than silently satisfying the plan's own 'no pre-existing test edited' line. KNOWN GAPS, none blocking: the Settings row's 'Calendar access denied' subtitle has no reachable code path yet (no persisted denial signal exists by design); '{n} of {m} calendars selected' approximates m as n (no persisted device-total count); 'Open Settings' on the denied card is a real button with no OS deep-link wired (needs 35-05's DeviceCalendarSource plugin import). 35-05 (mobile device-calendar source, the owner's MacBook checkpoint) was dispatched in parallel in a separate worktree and is not reflected in this entry."
+last_updated: "2026-09-15T15:10:00.000Z"
 last_activity: 2026-09-15
-last_activity_desc: "Phase 35 wave 2 complete (35-02 + 35-03 merged): full calendar-mapping ruleset, CAL-02/CAL-04 persistence, a crash-on-upgrade Hive bug and an rrule crash found and fixed"
-state_head: 7364eb5
+last_activity_desc: "Phase 35 plan 35-04 complete: the Calendars settings screen (CAL-02/CAL-04), reachable and wired to a real sync trigger"
+state_head: f0bc10f
 progress:
   total_phases: 9
   completed_phases: 8
   total_plans: 44
-  completed_plans: 40
+  completed_plans: 41
 milestone_name: milestone
 ---
 
@@ -90,6 +90,28 @@ including both required mutation proofs in
 latent risk of the SAME defect class (unrelated to this plan) was found at `AppSettings.eveningReminderEnabled`/`eveningReminderMinutes`
 and `ScheduledChunk.isDeferred` and logged to `.planning/WINDOWS.md` (entry 3) rather than fixed —
 out of scope for this plan.
+
+**Phase 35, plan 04 (wave 3 of 4) is COMPLETE — commits `6426f47`/`7ff9add`/`f0bc10f`.**
+`CalendarSettingsScreen` is built and reachable from Settings ("Calendars" row, `/settings/calendars`):
+a mobile permission flow that never queries `requestPermission()` until the user taps "Allow calendar
+access" (so opening the screen can never surprise anyone with a native OS prompt), rendering
+not-yet-requested / in-flight / granted-grouped-by-account / granted-empty / denied-neutral-card; and a
+desktop/web feed-URL flow with fetch-validated add and confirmed remove. The denied state is a neutral
+outlined card, never error-tinted (CAL-04, mutation-proofed). `checkin_screen.dart`'s tracer-era no-op
+(`defaultCalendarSource()` with no arguments) is closed — check-in now syncs the actually-configured feed
+and persists `lastCalendarSyncAt` on success only. `flutter analyze` clean, 786/786 green (777 baseline +
+9 new). Full detail, including both mutation-proof transcripts, in
+`.planning/phases/35-your-real-commitments-read-from-your-calendar/35-04-SUMMARY.md`.
+
+**Three known, non-blocking gaps carried into 35-06's UAT (or 35-05's device work):** the Settings row's
+"Calendar access denied" subtitle has no reachable code path (no permission-denial state is persisted, by
+design — D-35-10); the device-row's "{n} of {m} calendars selected" approximates `m` as `n` since no
+device-total count is persisted; and the denied card's "Open Settings" button has no OS deep-link wired
+(this screen deliberately imports no `device_calendar` plugin — that lands with 35-05).
+
+**Plan 35-05 (mobile `DeviceCalendarSource`, the owner's MacBook checkpoint) was dispatched in parallel, in
+a separate worktree, sharing no files with 35-04 — its own status is not reflected in this entry.** Next:
+35-05's own completion, then wave 4 (35-06, the phase-closing UAT).
 
 Older position notes below (pre-Phase-35) are retained for history.
 
