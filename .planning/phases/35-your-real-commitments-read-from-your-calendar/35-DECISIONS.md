@@ -154,3 +154,45 @@ scoped honestly rather than hidden. A moved or cancelled single occurrence of a 
 appears at its original time. `35-02`'s existing `must_have` asserting MOVED/EXDATE behaviour is
 therefore still at risk of passing vacuously, which the plan already flags as the phase's most
 important honesty requirement.
+
+---
+
+## ⚠ CORRECTION — danserver's system timezone is `America/Chicago`, NOT UTC
+
+**Recorded 2026-09-15. The wrong claim is the orchestrator's, and it is in committed artifacts.**
+
+`35-01-PLAN.md`, `35-02-PLAN.md`, this file's earlier sections, and both wave-2 executor prompts all
+assert — as a load-bearing fact — that *"danserver's system zone is UTC, so a fixture that passes only
+because of that proves nothing."* **The reasoning was right. The fact was wrong.**
+
+```
+$ timedatectl
+Time zone: America/Chicago (CDT, -0500)
+```
+
+**How it was caught, which is the part worth keeping.** `35-02`'s floating-time mutation proof
+*refused to pass on its first attempt*. The plan predicted that mutation might produce no failure
+(because UTC would make the correct and buggy paths agree) and instructed the executor to treat a
+no-change result as a non-discriminating test. Instead it failed properly — which was only possible
+because the machine is **not** UTC. The instruction that would have caught a fake proof is what
+surfaced the bad premise behind it.
+
+**What this changes, and what it does not:**
+
+- **It does not invalidate any test.** Every timezone test in this phase sets `tz.local` explicitly
+  rather than relying on ambient system zone — which is what the plans demanded for the *wrong*
+  reason but the right outcome. `35-02`'s proofs stand.
+- **It does change the standing advice.** Do NOT write "danserver is UTC so this can't discriminate"
+  into a future plan. The opposite is true: an America/Chicago host will *expose* naive local-time
+  bugs rather than mask them, which makes this box a better place to catch them than previously
+  assumed — but also means a test that accidentally relies on ambient zone will pass here and fail in
+  CI or on a UTC host. **Set `tz.local` explicitly either way.**
+- **It is worth checking beyond this project.** Other lanes on danserver may carry the same stale
+  assumption. Not fixed here — `~/.claude/CLAUDE.md` is outside this repo and is not this phase's to
+  edit.
+
+**The general lesson, which is the reusable part:** the UTC claim was never verified — it was asserted
+confidently by the orchestrator, repeated across four artifacts, and inherited by two subagents as
+given. `timedatectl` takes one second and was never run until a test disagreed with the premise. This
+repo's documented failure mode is assertions that cannot fail; this is its sibling — **premises that
+were never checked**, propagated by confident repetition.
