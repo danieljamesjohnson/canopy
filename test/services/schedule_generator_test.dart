@@ -1872,6 +1872,61 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // Overlap tolerance (35-02, D-35-09) — CHARACTERISATION of EXISTING
+  // generator behaviour, not a requirement this phase introduces. The
+  // per-block loop in `generate()` has never detected or rejected
+  // overlapping commitment blocks — it processes each block independently
+  // via `buildCommitmentChunks`. This pins that tolerance so
+  // `CalendarSyncService` can rely on it when it imports a calendar the
+  // user has genuinely double-booked (D-35-09: overlaps are imported
+  // exactly as given, never merged or dropped). schedule_generator.dart
+  // itself is NOT modified anywhere in this phase — see the plan's own
+  // `git diff --stat -- lib/services/schedule_generator.dart` proof.
+  // ---------------------------------------------------------------------------
+  group('CALENDAR IMPORT — overlap tolerance (35-02, characterisation)', () {
+    test(
+      'two overlapping one-off commitment blocks on the same day both '
+      'produce chunks and the generator does not throw',
+      () {
+        final blockA = CommitmentBlock(
+          name: 'Overlap A',
+          daysOfWeek: const [],
+          startMinutes: 540, // 09:00
+          endMinutes: 600, // 10:00
+          date: DateTime(2026, 3, 23),
+        );
+        final blockB = CommitmentBlock(
+          name: 'Overlap B',
+          daysOfWeek: const [],
+          startMinutes: 570, // 09:30 — overlaps blockA by 30 minutes
+          endMinutes: 630, // 10:30
+          date: DateTime(2026, 3, 23),
+        );
+
+        // No try/catch needed: if generate() throws, the test fails on
+        // that exception — this IS the "does not throw" assertion.
+        final result = sut.generate(
+          goals: [],
+          blocks: [blockA, blockB],
+          moodIndex: 3,
+          date: monday,
+          completionLogs: [],
+        );
+
+        final commitmentIds = result
+            .where((c) => c.commitmentId != null)
+            .map((c) => c.commitmentId)
+            .toSet();
+        // Both block ids named explicitly — not merely a chunk count, which
+        // would pass for the wrong reason if one block produced twice as
+        // many chunks as the other.
+        expect(commitmentIds, contains(blockA.id));
+        expect(commitmentIds, contains(blockB.id));
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------------
   // Mood-indexed break cadence (requirement BREAK-01). Each test below pins
   // the full chunk sequence (not just the long-break index) for one mood, so
   // the cadence is a verified behavior instead of an unconstrained constant.

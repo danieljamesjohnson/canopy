@@ -208,12 +208,31 @@ class IcsCalendarSource implements CalendarSource {
       return const [];
     }
     final utcStart = eventStart.toUtc();
+    final windowEnd = end.toUtc();
+    if (utcStart.isAfter(windowEnd)) {
+      // The recurring event's own first occurrence is entirely after our
+      // query window — nothing to expand yet. Returning early here avoids
+      // calling getInstances with `before < start`, which would violate
+      // its own assertion and crash (discovered while writing Task 3's
+      // recurrence test — a genuinely common shape: any recurring event
+      // whose series hasn't started within the current sync window).
+      return const [];
+    }
+    // getInstances asserts `after >= start` (the RRULE's own DTSTART) —
+    // clamp rather than pass the query window's start verbatim, since a
+    // sync window commonly starts before a recurring event's own DTSTART
+    // (any event whose series began in the past, which is the ordinary
+    // case).
+    final windowStart = start.toUtc();
+    final effectiveAfter = windowStart.isBefore(utcStart)
+        ? utcStart
+        : windowStart;
     final results = <CalendarEvent>[];
     final occurrences = recurrenceRule.getInstances(
       start: utcStart,
-      after: start.toUtc(),
+      after: effectiveAfter,
       includeAfter: true,
-      before: end.toUtc(),
+      before: windowEnd,
     );
     for (final occurrenceStart in occurrences) {
       // Deliberately left UTC-flagged (never `.toLocal()`, which would use
