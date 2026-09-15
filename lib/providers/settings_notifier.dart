@@ -4,7 +4,10 @@ import '../data/repositories/app_settings_repository.dart';
 import '../data/repositories/hive_app_settings_repository.dart';
 
 class SettingsNotifier extends ChangeNotifier {
-  final AppSettingsRepository _repository = HiveAppSettingsRepository();
+  SettingsNotifier({AppSettingsRepository? repository})
+    : _repository = repository ?? HiveAppSettingsRepository();
+
+  final AppSettingsRepository _repository;
 
   bool _onboardingComplete = false;
   bool get onboardingComplete => _onboardingComplete;
@@ -27,6 +30,15 @@ class SettingsNotifier extends ChangeNotifier {
   int _eveningReminderMinutes = 1200;
   int get eveningReminderMinutes => _eveningReminderMinutes;
 
+  List<String> _selectedCalendarIds = [];
+  List<String> get selectedCalendarIds => List.unmodifiable(_selectedCalendarIds);
+
+  List<String> _icsUrls = [];
+  List<String> get icsUrls => List.unmodifiable(_icsUrls);
+
+  DateTime? _lastCalendarSyncAt;
+  DateTime? get lastCalendarSyncAt => _lastCalendarSyncAt;
+
   /// Reads persisted settings from Hive and caches the values.
   /// Call once at startup after HiveDatabase.init(), before runApp().
   Future<void> init() async {
@@ -38,6 +50,9 @@ class SettingsNotifier extends ChangeNotifier {
     _midDayNudgeMinutes = settings?.midDayNudgeMinutes ?? 720;
     _eveningReminderEnabled = settings?.eveningReminderEnabled ?? false;
     _eveningReminderMinutes = settings?.eveningReminderMinutes ?? 1200;
+    _selectedCalendarIds = settings?.selectedCalendarIds ?? [];
+    _icsUrls = settings?.icsUrls ?? [];
+    _lastCalendarSyncAt = settings?.lastCalendarSyncAt;
     notifyListeners();
   }
 
@@ -94,6 +109,45 @@ class SettingsNotifier extends ChangeNotifier {
     _eveningReminderMinutes = value;
     final settings = await _repository.getSettings() ?? AppSettings();
     settings.eveningReminderMinutes = value;
+    await _repository.saveSettings(settings);
+    notifyListeners();
+  }
+
+  /// Replaces the full CAL-02 calendar selection.
+  Future<void> setSelectedCalendarIds(List<String> value) async {
+    _selectedCalendarIds = List.unmodifiable(value);
+    final settings = await _repository.getSettings() ?? AppSettings();
+    settings.selectedCalendarIds = List.of(value);
+    await _repository.saveSettings(settings);
+    notifyListeners();
+  }
+
+  /// Adds [url] to the subscribed feed list, unless it's already present.
+  Future<void> addIcsUrl(String url) async {
+    if (_icsUrls.contains(url)) return;
+    _icsUrls = List.unmodifiable([..._icsUrls, url]);
+    final settings = await _repository.getSettings() ?? AppSettings();
+    settings.icsUrls = List.of(_icsUrls);
+    await _repository.saveSettings(settings);
+    notifyListeners();
+  }
+
+  /// Removes [url] from the subscribed feed list, if present.
+  Future<void> removeIcsUrl(String url) async {
+    _icsUrls = List.unmodifiable(
+      _icsUrls.where((existing) => existing != url),
+    );
+    final settings = await _repository.getSettings() ?? AppSettings();
+    settings.icsUrls = List.of(_icsUrls);
+    await _repository.saveSettings(settings);
+    notifyListeners();
+  }
+
+  /// Records when the last calendar sync completed (or clears it).
+  Future<void> setLastCalendarSyncAt(DateTime? value) async {
+    _lastCalendarSyncAt = value;
+    final settings = await _repository.getSettings() ?? AppSettings();
+    settings.lastCalendarSyncAt = value;
     await _repository.saveSettings(settings);
     notifyListeners();
   }

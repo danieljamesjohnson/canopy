@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-const int currentSchemaVersion = 10;
+const int currentSchemaVersion = 11;
 
 typedef MigrationFn = Future<void> Function();
 
@@ -17,6 +17,7 @@ final List<MigrationFn> _migrations = [
   _migration7to8,
   _migration8to9,
   _migration9to10,
+  _migration10to11,
 ];
 
 Future<void> _migration0to1() async {
@@ -98,6 +99,19 @@ Future<void> _migration9to10() async {
   // existing records. Old records deserialize with externalEventId == null
   // and isFromCalendar == false, i.e. every pre-existing commitment is
   // correctly treated as hand-entered. No data transformation needed.
+}
+
+Future<void> _migration10to11() async {
+  // Phase 35: AppSettings gains selectedCalendarIds (HiveField 9,
+  // List<String>, default []), icsUrls (HiveField 10, List<String>,
+  // default []) and lastCalendarSyncAt (HiveField 11, DateTime?, default
+  // null) — CAL-02's persisted calendar selection/feed/last-sync state.
+  // All additive fields — Hive CE binary reader returns an empty list for
+  // a missing non-nullable List<String> HiveField and null for a missing
+  // nullable HiveField in existing records. Old records deserialize with
+  // selectedCalendarIds == [], icsUrls == [] and lastCalendarSyncAt ==
+  // null, i.e. every pre-existing user has no calendar configured. No data
+  // transformation needed.
 }
 
 Future<void> runMigrations(SharedPreferences prefs) async {

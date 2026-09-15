@@ -44,4 +44,25 @@ class AppSettings extends HiveObject {
   /// Evening reminder time in minutes from midnight (default 1200 = 8:00pm).
   @HiveField(8)
   int eveningReminderMinutes = 1200;
+
+  /// The calendar ids the user has chosen to import from, out of the full
+  /// list the current [CalendarSource] reports via `listCalendars()`
+  /// (CAL-02). Additive field — old records deserialize with an empty list,
+  /// i.e. an upgrading user has no calendar selected until they visit the
+  /// new calendar settings screen.
+  @HiveField(9, defaultValue: <String>[])
+  List<String> selectedCalendarIds = [];
+
+  /// Subscribed `.ics` feed URLs (desktop/web path, D-35-12) — one row per
+  /// URL in the calendar settings screen. Additive field — old records
+  /// deserialize with an empty list, i.e. an upgrading user has no feeds
+  /// configured until they add one.
+  @HiveField(10, defaultValue: <String>[])
+  List<String> icsUrls = [];
+
+  /// When the last calendar sync completed, for the "synced {relative
+  /// time}" status line. Additive field — old records deserialize with
+  /// null, i.e. an upgrading user has never synced.
+  @HiveField(11)
+  DateTime? lastCalendarSyncAt;
 }

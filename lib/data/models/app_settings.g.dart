@@ -25,13 +25,18 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..moodSeedArgb = (fields[5] as num?)?.toInt()
       ..lastMoodSetYmdInt = (fields[6] as num?)?.toInt()
       ..eveningReminderEnabled = fields[7] as bool
-      ..eveningReminderMinutes = (fields[8] as num).toInt();
+      ..eveningReminderMinutes = (fields[8] as num).toInt()
+      ..selectedCalendarIds = fields[9] == null
+          ? []
+          : (fields[9] as List).cast<String>()
+      ..icsUrls = fields[10] == null ? [] : (fields[10] as List).cast<String>()
+      ..lastCalendarSyncAt = fields[11] as DateTime?;
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.morningNotificationMinutes)
       ..writeByte(1)
@@ -49,7 +54,13 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(7)
       ..write(obj.eveningReminderEnabled)
       ..writeByte(8)
-      ..write(obj.eveningReminderMinutes);
+      ..write(obj.eveningReminderMinutes)
+      ..writeByte(9)
+      ..write(obj.selectedCalendarIds)
+      ..writeByte(10)
+      ..write(obj.icsUrls)
+      ..writeByte(11)
+      ..write(obj.lastCalendarSyncAt);
   }
 
   @override

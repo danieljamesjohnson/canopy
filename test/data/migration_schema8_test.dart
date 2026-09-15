@@ -20,18 +20,19 @@ void main() {
   // Schema constant tests (no Hive I/O needed)
   // ---------------------------------------------------------------------------
 
-  // Bumped to 10 when Phase 35 added CommitmentBlock.externalEventId
-  // (HiveField 7) and CommitmentBlock.isFromCalendar (HiveField 8) with
-  // migration 9→10. The WR-06 count invariant moves in lockstep.
-  test('currentSchemaVersion equals 10', () {
-    expect(currentSchemaVersion, equals(10));
+  // Bumped to 11 when Phase 35 added AppSettings.selectedCalendarIds
+  // (HiveField 9), .icsUrls (HiveField 10) and .lastCalendarSyncAt
+  // (HiveField 11) with migration 10→11. The WR-06 count invariant moves
+  // in lockstep.
+  test('currentSchemaVersion equals 11', () {
+    expect(currentSchemaVersion, equals(11));
   });
 
   // The WR-06 assert in migrations.dart enforces
   // _migrations.length == currentSchemaVersion at runtime in debug mode.
   // We confirm the constant value here; the assert is the count gate.
   test('currentSchemaVersion is consistent with WR-06 migration count', () {
-    expect(currentSchemaVersion, equals(10));
+    expect(currentSchemaVersion, equals(11));
   });
 
   // ---------------------------------------------------------------------------
