@@ -4,17 +4,17 @@ milestone: none
 current_phase: 35
 current_phase_name: Your Real Commitments, Read From Your Calendar
 status: executing
-current_phase_next: "tracer feedback gate — review 35-01, then /gsd-execute-phase 35 for wave 2 (35-02 + 35-03)"
-stopped_at: "Phase 35 wave 1 of 4 COMPLETE, merged to master, verified on the primary checkout (4e526ad): an .ics feed becomes a real CommitmentBlock the UNMODIFIED schedule_generator chunks. flutter analyze clean, 746/746 green (740 baseline + 6 new), schedule_generator.dart byte-identical to its pre-phase state. HELD at the tracer feedback gate — partly by protocol (auto_advance is false), but mainly because the tracer did its job and surfaced a risk NOBODY had flagged: only Z-suffixed UTC timestamps are proven. A real Google Calendar feed emits DTSTART;TZID=... with a VTIMEZONE block, which currently falls through to Dart's system-local DateTime instead of the app's tz.local override — the SEED-006 shape again, one layer out. WINDOWS.md entries 1 (EXDATE/RDATE/RECURRENCE-ID unimplemented) and 2 (floating/TZID time) are both open. BOTH owner checkpoints are already RULED (see 35-DECISIONS.md), so waves 2-4 need no further decisions to run."
-last_updated: "2026-09-14T13:30:00.000Z"
-last_activity: 2026-09-14
-last_activity_desc: "Phase 35 planned (6 plans, 4 waves) and wave 1 executed; roadmap bookkeeping for phases 31/32/33 reconciled with what the owner actually closed"
-state_head: 4e526ad
+current_phase_next: "35-03 (parallel wave-2 sibling, separate worktree) then wave 3/4 (35-04..35-06)"
+stopped_at: "Phase 35 wave 2 plan 35-02 COMPLETE (worktree agent-a43ac4bd8c3b6a33c, commits 79f1768/4247cbd/2ee206a/7364eb5): every mapping rule the tracer left open is now implemented -- cancelled, all-day (D-35-06 import-as-blocking, spanning ScheduleGeneratorService.dayStartMinutes..dayEndMinutes), too-short/zero-duration/no-end-time (subsumed by the multi-day split's one-day case), multi-day/midnight-crossing (window-clipped, T-35-06), overlapping events, and BOTH remaining DTSTART forms (TZID+VTIMEZONE, floating) -- closing WINDOWS.md entry 2. flutter analyze clean, 760/760 green, schedule_generator.dart byte-identical across every commit. Two real bugs found and fixed that the plan did not name: an unbounded multi-day split (T-35-06 threat-model gap) and a real rrule crash on any past-started or future-dated recurring event. WINDOWS.md entry 1 (EXDATE/RDATE/RECURRENCE-ID) CONFIRMED still open by an actual test against the real package stack, not hand-rolled around -- owner decision needed (accept the gap / fall back to the other D-35-05 candidate / scope a follow-up). Full detail: 35-02-SUMMARY.md. Plan 35-03 was dispatched in parallel in a separate worktree and its own status is not reflected here."
+last_updated: "2026-09-15T13:25:00.000Z"
+last_activity: 2026-09-15
+last_activity_desc: "Phase 35 wave 2 plan 35-02 executed: full calendar-mapping ruleset, WINDOWS.md entry 2 closed, T-35-06 and an rrule crash found+fixed"
+state_head: 7364eb5
 progress:
   total_phases: 9
   completed_phases: 8
   total_plans: 44
-  completed_plans: 39
+  completed_plans: 40
 milestone_name: milestone
 ---
 
@@ -22,30 +22,56 @@ milestone_name: milestone
 
 **Project:** Canopy
 **Created:** 2026-02-24
-**Last session:** 2026-09-14T13:12:25.000Z
+**Last session:** 2026-09-15T13:25:00.000Z
 
 ---
 
 ## Current Position
 
-**Phase 35, plan 01 (the tracer, wave 1 of 4) is COMPLETE — commit `a165f69`.** An `.ics` feed,
-parsed with `enough_icalendar` and expanded with `rrule` (D-35-05, owner-ruled 2026-09-14 —
-`firstfloor_calendar` was rejected for a real, re-checked GitHub-ownership mismatch), becomes a
-one-off `CommitmentBlock` in local wall-clock time that the UNMODIFIED `schedule_generator.dart`
-chunks into the day. Proven by 6 new tests including a mutation proof of the local-time conversion
-(`test/services/calendar_sync_service_test.dart`) — full detail in
-`.planning/phases/35-your-real-commitments-read-from-your-calendar/35-01-SUMMARY.md`.
+**Phase 35, plan 02 (wave 2 of 4) is COMPLETE — commits `79f1768`/`4247cbd`/`2ee206a`/`7364eb5`.**
+Every mapping rule the 35-01 tracer left open is now implemented in `CalendarSyncService`/
+`IcsCalendarSource`: cancelled events, all-day events (D-35-06 RULED `import-as-blocking`, spanning
+`ScheduleGeneratorService.dayStartMinutes`..`dayEndMinutes` — NOT a per-user setting, none exists),
+too-short/zero-duration/no-end-time (subsumed by the multi-day split's degenerate one-day case),
+multi-day/midnight-crossing splitting (clipped to the sync window per T-35-06), overlapping events,
+and **both** remaining RFC 5545 `DTSTART` forms — `TZID`+`VTIMEZONE` (the real Google Calendar form)
+and floating (no `Z`, no `TZID`) — closing **WINDOWS.md entry 2**. `flutter analyze` clean, 760/760
+green, `schedule_generator.dart` byte-identical across every commit in this plan. Full detail,
+including 6 mutation-proof transcripts, in
+`.planning/phases/35-your-real-commitments-read-from-your-calendar/35-02-SUMMARY.md`.
 
-**Two things flagged in that SUMMARY that the next plan (or the owner) needs, not hidden in prose:**
-EXDATE/RDATE/RECURRENCE-ID overrides are explicitly NOT implemented (a moved/cancelled single
-occurrence of a recurring event still shows at its original time), and a DTSTART without a `Z`
-suffix (floating time, or bare `TZID` with no `VTIMEZONE` block) is not yet correctly localised —
-only `Z`-suffixed UTC timestamps are proven correct by this plan's fixture.
+**Two real bugs found and fixed that neither the plan nor 35-01 named:** an unbounded multi-day
+split (a feed claiming a multi-year "event" produced 3653 blocks before the fix — the T-35-06
+threat-model mitigation was simply absent from the first pass), and a real `rrule` crash
+(`getInstances` asserts `after >= start`, which throws for ANY recurring event whose sync window
+starts before the series began — the ordinary case — or whose series starts after the window ends).
 
-**Auto-mode is OFF for this project** (`workflow.auto_advance` / `workflow._auto_chain_active` both
-false). Per the executor's tracer-task protocol, **wave 2 (plans 35-02 through 35-06) should not be
-dispatched until a human has reviewed this tracer's verification** — `flutter analyze` clean,
-746/746 tests green. Next step: owner review, then continue with `/gsd-execute-phase 35`.
+**WINDOWS.md entry 1 (EXDATE/RDATE/RECURRENCE-ID) is CONFIRMED still open — by an actual test
+against the real package stack, not by design review this time.** `enough_icalendar`+`rrule`
+genuinely do not apply either override: an EXDATE'd occurrence is still returned, and a
+RECURRENCE-ID override does not replace the base occurrence (it appears as an ADDITIONAL duplicate
+event instead). Per the plan's own instruction this was NOT hand-rolled around. **Owner decision
+needed:** accept the gap, fall back to the other D-35-05 candidate package, or scope a dedicated
+follow-up.
+
+**One more thing that needs the owner's thumb, not just a green suite:** the all-day working-window
+span implements 08:00–22:00 (the app's ONE existing "working day" constant,
+`ScheduleGeneratorService.dayStartMinutes`/`dayEndMinutes`) — but the D-35-06 checkpoint preview he
+actually judged showed 08:00–18:00. `35-DECISIONS.md` already flagged this gap for 35-06's UAT;
+35-02-SUMMARY.md narrows it to these concrete numbers.
+
+**A significant, unrelated infrastructure finding, recorded so it isn't lost:** this execution
+environment's real system timezone is `America/Chicago`, not UTC as `~/.claude/CLAUDE.md`'s global
+operating guide states — discovered because a mutation proof (correctly) refused to pass on the
+first attempt. See 35-02-SUMMARY.md's Decisions Made for the full account. Not fixed here (outside
+this project's repo).
+
+**Plan 35-03 was dispatched in parallel, in a separate worktree, sharing no files with 35-02 — its
+own status is not reflected in this entry.** Next: 35-03's own completion, then waves 3-4
+(35-04 → 35-05 → 35-06). Both owner checkpoints for the whole phase were already RULED before wave 2
+started (see `35-DECISIONS.md`), so no further decisions block continuing — except the two flagged
+above (RECURRENCE-ID fallback, all-day span confirmation), which are UAT/owner items, not blockers
+to running the next plan.
 
 Older position notes below (pre-Phase-35) are retained for history.
 
@@ -976,3 +1002,4 @@ a previous phase was squatting that port this session.
 | Phase 29-breaks-you-can-see P01 | ~20min | 3 tasks | 5 files |
 | Phase 29-breaks-you-can-see P02 | ~15min | 2 tasks | 3 files |
 | Phase 29-breaks-you-can-see P03 | ~35min | 2 tasks | 3 files |
+| Phase 35-your-real-commitments-read-from-your-calendar P02 | ~95min | 2 tasks | 15 files |

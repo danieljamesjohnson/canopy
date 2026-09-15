@@ -888,6 +888,7 @@ more visible at 6.0 px/min. Left open at the end of Phase 32 rather than ruled o
 
 - **Do not re-open the priority model** (item 3 is legibility) or the scheduling engine at all.
   Nothing here touches `schedule_generator.dart`.
+
 - **Do not lower `kPixelsPerMinute`.** 6.0 passed round-two UAT and the thumb count came back 5/5.
 - **Do not re-litigate the short break's 64×30dp Skip rail.** Measured, 5/5, settled.
 - **Do not add an LLM or any "smart" suggestion.** See CLAUDE.md — dumb on purpose.
@@ -912,6 +913,7 @@ is weaker evidence than a scripted round and is recorded that way rather than fl
 closed unmeasured; do not cite this phase as having established it.
 
 Plans:
+
 - [x] 33-01-PLAN.md — the chunk row says its own state (`To do`/`Done`/`Skipped`), free time becomes a filled card *(wave 1)*
 - [x] 33-02-PLAN.md — `WeeklyProgressService`, the one pure helper that turns `CompletionLog` rows into this week's progress *(wave 1)*
 - [x] 33-03-PLAN.md — Goals as one ranked `Priority order` list; the left border becomes a fixed-geometry progress line *(wave 2)*
@@ -958,8 +960,10 @@ The three options were:
 
 - **(a) Tap a preset → created immediately with defaults.** Fastest, matches restoratives, and
   re-opens the exact defect Phase 33 closed.
+
 - **(b) Tap a preset → the goal form opens pre-filled with the name and emoji**, and you pick type,
   budget and priority. One extra tap; "options and emojis" in the literal sense he asked for.
+
 - **(c) Multi-select the chips, then one form pass over the batch.** Closest to onboarding's
   "lay down a slate" feel; the most work.
 
@@ -974,6 +978,7 @@ on screen.** Build (a). Do not re-litigate it, and do not quietly build (b) and 
 
 - **The created goal row states its weekly budget on its face.** One tap creates; zero taps to see
   what you got.
+
 - **Tapping the row opens the full form**, so changing it is one tap from the thing you just made.
 - **This stays inside (a)** — creation is still one tap and nothing interrupts it. If a plan finds
   itself adding a confirmation step or a pre-create form, it has drifted into (b); stop and re-read
@@ -983,6 +988,7 @@ on screen.** Build (a). Do not re-litigate it, and do not quietly build (b) and 
 
 1. **A preset row inside the goal door of the fork.** The fork stays in front (UI-SPEC item 24) —
    this sits *after* "Something to make time for", not before it.
+
 2. **`kCommonGoals` as `(name, emoji)` pairs.** `_goalPresets` is currently bare strings with no
    emojis, which is why the Goals screen has never shown any; the restorative list is the shape to
    copy. **Use the eight names unchanged, with the emoji shown in sketch 006 and not objected to:**
@@ -990,16 +996,20 @@ on screen.** Build (a). Do not re-litigate it, and do not quietly build (b) and 
    🎨 Creative time · 😴 Rest. Onboarding shares this list, so it gains the emoji too (which is the
    point). The wording is still a taste call the owner may revise on sight — it is one const in one
    file, so treat a later rewrite as cheap rather than pre-negotiating it.
+
 3. **An easy way to add your own**, alongside the presets — the second half of his sentence, and
    the thing the chips alone do not give.
+
 4. **One shared preset-chip widget**, replacing the two private copies.
 
 **What this phase must NOT do:**
 
 - **Do not put a bare quick-add field back on the Goals screen.** That is the control Phase 33
   deleted, for the reason above. "Add your own" belongs inside the guided flow, past the fork.
+
 - **Do not re-introduce a second add-goal entry point.** `goals_add_fork_test.dart` asserts there
   is exactly one and it is at the top; that assertion is load-bearing, not incidental.
+
 - **Do not touch the scheduling engine.** Nothing here needs `schedule_generator.dart`.
 - **Do not add an LLM or "smart" suggestions.** The presets are a hard-coded list. See CLAUDE.md.
 
@@ -1045,6 +1055,7 @@ assigns — carried to **`SEED-007`**, not accepted.
 **taken: (a)** and shipped as ruled — one tap creates, nothing interposed.
 
 Plans:
+
 - [x] 34-01-PLAN.md — wave 1, tracer: the goal door opens a preset picker; one tap creates the goal and the created row states its `3.0 hrs/week` budget; "Add your own" and a just-added row each reach the form in one tap; a failed write restores the chip rather than lying
 - [x] 34-02-PLAN.md — wave 2: onboarding and the restoratives screen adopt the shared `PresetChipGrid`, retiring both private copies; onboarding gains the emoji; restoratives' geometry pinned to numbers measured before the refactor
 - [x] 34-03-PLAN.md — wave 3: debug build served on 8143 with a proven pre-flight, then the blocking human UAT (`34-UAT.md`) that asks for the thumb count as a number
@@ -1073,7 +1084,7 @@ Plans:
 | 32. Breaks You Can Tap | — (standalone) | 3/3 + gap closure | Complete | 2026-08-31 |
 | 33. Make The Obvious Thing Obvious | — (standalone) | 4/5 + 4 owner rounds | Complete — closed by owner review; 33-05's scripted UAT never run | 2026-09-08 |
 | 34. Adding a Goal Feels Like Onboarding | — (standalone) | 3/3 | Complete | 2026-09-09 |
-| 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 1/6 | In progress — wave 1 (tracer, 35-01) complete; awaiting owner review before wave 2 | |
+| 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 2/6 | In progress — wave 2 (35-02) complete, WINDOWS.md entry 2 closed; 35-03 running in parallel |  |
 
 ### Phase 35: Your Real Commitments, Read From Your Calendar
 
@@ -1154,12 +1165,15 @@ observation, which is the same move that finally closed Phase 32's G-32-05.
 1. **Recurrence, end to end.** `device_calendar_plus` advertises full RRULE. Verify it against a real
    recurring event, including exceptions ("this and following", a single moved occurrence). This is
    the load-bearing capability and the reason `eventide` was rejected.
+
 2. **Event → `CommitmentBlock` mapping.** All-day events (a whole day blocked, or ignored?).
    Timezones — `CommitmentBlock` stores minutes-from-midnight and the engine has already been bitten
    once by a time-of-day normalisation bug (SEED-006). Declined invitations. Overlapping events.
    Multi-day events. Events with no end time.
+
 3. **Are imported commitments editable in Canopy?** If the user edits one, the next sync overwrites
    it. Read-only-with-a-reason is probably right, but it is a real UX decision, not an obvious one.
+
 4. **Sync trigger.** On check-in, on app resume, on a timer? The app is local-first and offline by
    design; a stale calendar must degrade visibly rather than silently.
 
@@ -1167,12 +1181,15 @@ observation, which is the same move that finally closed Phase 32's G-32-05.
 
 - **Nothing writes to the user's calendar, ever.** Read-only is a product guarantee, not an
   implementation detail.
+
 - **Permissions are a first-class surface.** `NSCalendarsFullAccessUsageDescription` (iOS 17+) and
   its pre-17 counterpart are needed in `Info.plist`, which currently has neither. A denied
   permission must leave the app fully usable with hand-entered commitments.
+
 - **The build workflow splits.** `flutter analyze` and the full test suite run on danserver, but
   **iOS cannot be compiled here at all** — that happens on the owner's MacBook. Plan for the owner
   as the compile-and-run step, and do not claim an iOS build works without him running it.
+
 - `com.example.canopy` is still the bundle identifier. Out of scope here, but it blocks any future
   App Store distribution.
 
@@ -1181,8 +1198,9 @@ observation, which is the same move that finally closed Phase 32's G-32-05.
 **Plans:** 6 plans, in 4 waves.
 
 Plans:
-- [ ] 35-01-PLAN.md — ICS package ruling, then the tracer: an `.ics` feed becomes a one-off `CommitmentBlock` the untouched generator chunks (wave 1)
-- [ ] 35-02-PLAN.md — every mapping rule a real calendar contains: all-day, cancelled, too-short, multi-day, foreign timezone, overlap, recurrence exceptions (wave 2)
+
+- [x] 35-01-PLAN.md — ICS package ruling, then the tracer: an `.ics` feed becomes a one-off `CommitmentBlock` the untouched generator chunks (wave 1)
+- [x] 35-02-PLAN.md — every mapping rule a real calendar contains: all-day, cancelled, too-short, multi-day, foreign timezone, overlap, recurrence exceptions (wave 2)
 - [ ] 35-03-PLAN.md — `NullCalendarSource` + the platform switch, and somewhere for the calendar selection to live (wave 2)
 - [ ] 35-04-PLAN.md — the Calendars screen: show the device's own list, remember the ticks, degrade honestly when denied (wave 3)
 - [ ] 35-05-PLAN.md — `DeviceCalendarSource` over `device_calendar_plus`, read-only by construction, verified on the owner's MacBook (wave 3)
