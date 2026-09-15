@@ -7,16 +7,16 @@ import '../data/models/commitment_block.dart';
 import '../data/repositories/commitment_block_repository.dart';
 import '../data/repositories/hive_commitment_block_repository.dart';
 import '../utils/commitment_window.dart';
+import 'schedule_generator.dart';
 
 /// The rolling look-ahead window a sync imports events for (D-35-15).
 const int kCalendarSyncWindowDays = 14;
 
 /// Why one calendar event was not imported as a [CommitmentBlock].
 ///
-/// `tooShort` is the only reason this plan produces — the all-day and
-/// cancelled-event rules are plan 35-02's territory (see
-/// `CalendarSyncService.sync`'s doc comment).
-enum SkipReason { tooShort }
+/// `allDay` is deliberately NOT a member — D-35-06 (RULED 2026-09-14,
+/// `import-as-blocking`) means an all-day entry is imported, never skipped.
+enum SkipReason { tooShort, cancelled }
 
 /// One event that was fetched but not imported, and why.
 class SkippedEvent {
@@ -76,12 +76,26 @@ String _stableHash(String input) {
 /// `CommitmentBlock` (D-35-07); `daysOfWeek` stays the user's own
 /// hand-entered weekly commitments and this service never writes to it.
 ///
-/// This plan implements the single happy-path mapping only: a timed event
-/// becomes one localised block, gated by the existing
-/// [commitmentWindowTooShort] check, upserted by [CommitmentBlock.externalEventId]
-/// so a repeat sync never duplicates. All-day events, cancelled events, and
-/// multi-day/overnight splitting are explicitly **plan 35-02's** job — see
-/// that plan's mapping rules.
+/// Mapping rules (35-02):
+/// - A **cancelled** event is skipped with [SkipReason.cancelled]. A
+///   tentative event imports normally (no per-attendee decline filtering —
+///   RESEARCH Assumption A2).
+/// - An **all-day** event (D-35-06 RULED `import-as-blocking`) is imported
+///   as one block spanning the app's configured working window
+///   ([ScheduleGeneratorService.dayStartMinutes]..[dayEndMinutes]) on its
+///   own local calendar day — NOT `0..1440`. See 35-DECISIONS.md for why.
+/// - A **multi-day** (or midnight-crossing) timed event is split into one
+///   slice per local calendar day it touches, each clipped to that day's
+///   `0..1440` window, each independently re-gated by
+///   [commitmentWindowTooShort] — this also naturally subsumes the
+///   single-day "too short / zero duration / no end time" cases, which are
+///   just a multi-day split of length one.
+/// - **Overlapping** events are imported exactly as given (D-35-09) — no
+///   overlap detection here.
+///
+/// Every surviving slice is upserted by [CommitmentBlock.externalEventId]
+/// so a repeat sync never duplicates; a multi-day event's per-day slices
+/// each get their own id suffix so they don't collide with each other.
 class CalendarSyncService {
   CalendarSyncService({
     CalendarSource? source,
@@ -126,15 +140,15 @@ class CalendarSyncService {
     final skipped = <SkippedEvent>[];
 
     for (final event in events) {
-      final block = _mapToBlock(event, existing);
-      if (block == null) {
-        skipped.add(
-          SkippedEvent(title: event.title, reason: SkipReason.tooShort),
-        );
+      final mapped = _mapEvent(event, existing);
+      if (mapped.skip != null) {
+        skipped.add(SkippedEvent(title: event.title, reason: mapped.skip!));
         continue;
       }
-      await _repository.save(block);
-      imported.add(block);
+      for (final block in mapped.blocks) {
+        await _repository.save(block);
+        imported.add(block);
+      }
     }
 
     return CalendarSyncResult(
@@ -145,28 +159,104 @@ class CalendarSyncService {
     );
   }
 
-  /// Maps one [CalendarEvent] occurrence to a [CommitmentBlock], or null if
-  /// it's gated out (too short — the only rule this plan implements).
+  /// Maps one [CalendarEvent] occurrence to zero or more [CommitmentBlock]s.
   ///
-  /// Converts to the device's LOCAL zone via the app's existing `timezone`
-  /// stack, exactly as `notification_service.dart` already does —
-  /// `tz.TZDateTime.from(event.start, tz.local)` then
-  /// `hour * 60 + minute`. No conversion to the zero meridian happens here
-  /// (D-35-08) — [CommitmentBlock.startMinutes]/[CommitmentBlock.endMinutes]
-  /// are local wall-clock, matching every other writer of those fields.
-  CommitmentBlock? _mapToBlock(
+  /// Returns a non-null [SkipReason] (and an empty block list) when the
+  /// WHOLE event is skipped — cancelled, or every day-slice it produces is
+  /// too short to hold a chunk. Otherwise returns one block per surviving
+  /// local calendar day.
+  ({List<CommitmentBlock> blocks, SkipReason? skip}) _mapEvent(
     CalendarEvent event,
     List<CommitmentBlock> existing,
   ) {
+    if (event.status == CalendarEventStatus.cancelled) {
+      return (blocks: const [], skip: SkipReason.cancelled);
+    }
+
+    if (event.isAllDay) {
+      // D-35-06 RULED `import-as-blocking`: the whole configured working
+      // window on the event's own local calendar day — NOT 0..1440. See
+      // this file's class doc comment and 35-DECISIONS.md.
+      final localDay = tz.TZDateTime.from(event.start, tz.local);
+      final block = _buildBlock(
+        event: event,
+        existing: existing,
+        date: DateTime(localDay.year, localDay.month, localDay.day),
+        startMinutes: ScheduleGeneratorService.dayStartMinutes,
+        endMinutes: ScheduleGeneratorService.dayEndMinutes,
+        daySuffix: null,
+      );
+      return (blocks: [block], skip: null);
+    }
+
+    // Converts to the device's LOCAL zone via the app's existing `timezone`
+    // stack, exactly as `notification_service.dart` already does —
+    // `tz.TZDateTime.from(event.start, tz.local)`. No conversion to the
+    // zero meridian happens here (D-35-08).
     final localStart = tz.TZDateTime.from(event.start, tz.local);
     final localEnd = tz.TZDateTime.from(event.end, tz.local);
-    final startMinutes = localStart.hour * 60 + localStart.minute;
-    final endMinutes = localEnd.hour * 60 + localEnd.minute;
-    if (commitmentWindowTooShort(startMinutes, endMinutes)) return null;
+    final startDate = DateTime(
+      localStart.year,
+      localStart.month,
+      localStart.day,
+    );
+    final endDate = DateTime(localEnd.year, localEnd.month, localEnd.day);
+    final dayCount = endDate.difference(startDate).inDays + 1;
 
+    final blocks = <CommitmentBlock>[];
+    for (var i = 0; i < dayCount; i++) {
+      final day = startDate.add(Duration(days: i));
+      final isFirstDay = i == 0;
+      final isLastDay = i == dayCount - 1;
+      final sliceStart = isFirstDay
+          ? localStart.hour * 60 + localStart.minute
+          : 0;
+      final sliceEnd = isLastDay
+          ? localEnd.hour * 60 + localEnd.minute
+          : 1440;
+      // Every slice — including a single-day event's only slice — is
+      // re-gated by the SAME shared rule that guards hand-entry and
+      // onboarding. This is also how a too-short, zero-duration, or
+      // no-end-time event is caught: each is just a one-day split whose
+      // only slice fails this gate.
+      if (commitmentWindowTooShort(sliceStart, sliceEnd)) continue;
+      blocks.add(
+        _buildBlock(
+          event: event,
+          existing: existing,
+          date: day,
+          startMinutes: sliceStart,
+          endMinutes: sliceEnd,
+          // Only a genuinely multi-day split needs a per-day id suffix —
+          // a single-day event keeps the tracer's original externalEventId
+          // shape so already-synced blocks are not orphaned.
+          daySuffix: dayCount > 1 ? day : null,
+        ),
+      );
+    }
+
+    if (blocks.isEmpty) {
+      return (blocks: const [], skip: SkipReason.tooShort);
+    }
+    return (blocks: blocks, skip: null);
+  }
+
+  CommitmentBlock _buildBlock({
+    required CalendarEvent event,
+    required List<CommitmentBlock> existing,
+    required DateTime date,
+    required int startMinutes,
+    required int endMinutes,
+    required DateTime? daySuffix,
+  }) {
+    final suffix = daySuffix == null
+        ? ''
+        : ':${daySuffix.year.toString().padLeft(4, '0')}'
+              '${daySuffix.month.toString().padLeft(2, '0')}'
+              '${daySuffix.day.toString().padLeft(2, '0')}';
     final externalEventId =
         'ics:${_stableHash(event.calendarId)}:${event.uid}:'
-        '${event.recurrenceId ?? ''}';
+        '${event.recurrenceId ?? ''}$suffix';
     final existingBlock = existing
         .where((b) => b.externalEventId == externalEventId)
         .firstOrNull;
@@ -177,7 +267,7 @@ class CalendarSyncService {
       daysOfWeek: const [],
       startMinutes: startMinutes,
       endMinutes: endMinutes,
-      date: DateTime(localStart.year, localStart.month, localStart.day),
+      date: date,
       externalEventId: externalEventId,
       isFromCalendar: true,
     );

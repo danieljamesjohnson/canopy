@@ -1,6 +1,7 @@
 import 'package:enough_icalendar/enough_icalendar.dart';
 import 'package:http/http.dart' as http;
 import 'package:rrule/rrule.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import 'calendar_event.dart';
 import 'calendar_source.dart';
@@ -142,6 +143,11 @@ class IcsCalendarSource implements CalendarSource {
   /// explicit scoping note. A moved or cancelled single occurrence of a
   /// recurring event will therefore still appear at its ORIGINAL time until
   /// that logic is added.
+  ///
+  /// An event with no `DTEND` (and this app never consumes `DURATION`) is
+  /// treated as a zero-duration point in time per RFC 5545 convention —
+  /// [CalendarSyncService]'s existing `commitmentWindowTooShort` gate is
+  /// what turns that into a reported skip, not a silent drop here.
   List<CalendarEvent> _expand(
     VEvent event, {
     required String calendarId,
@@ -150,9 +156,19 @@ class IcsCalendarSource implements CalendarSource {
   }) {
     final uid = event.uid;
     final title = event.summary ?? '';
-    final eventStart = event.start;
-    final eventEnd = event.end;
-    if (eventStart == null || eventEnd == null) return const [];
+    final startProperty = event.getProperty<DateTimeProperty>(
+      DateTimeProperty.propertyNameStart,
+    );
+    if (startProperty == null) return const []; // no DTSTART: unmappable.
+    final eventStart = _resolveInstant(startProperty);
+
+    final endProperty = event.getProperty<DateTimeProperty>(
+      DateTimeProperty.propertyNameEnd,
+    );
+    final eventEnd = endProperty == null
+        ? eventStart
+        : _resolveInstant(endProperty);
+
     final isAllDay = _isAllDay(event);
     final status = _mapStatus(event.status);
     final duration = eventEnd.difference(eventStart);
@@ -221,6 +237,63 @@ class IcsCalendarSource implements CalendarSource {
       );
     }
     return results;
+  }
+
+  /// Resolves a `DTSTART`/`DTEND` [property] to the correct absolute
+  /// instant — closes WINDOWS.md entry 2.
+  ///
+  /// `enough_icalendar` parses every value WITHOUT a trailing `Z` using
+  /// Dart's plain `DateTime(y, m, d, h, mi, s)` constructor, which is
+  /// anchored to THIS MACHINE's real system timezone — never to the ICS
+  /// `TZID` parameter and never to the app's `tz.local` override (the gap
+  /// discovered and documented in 35-01-SUMMARY.md). This is the one place
+  /// that re-resolves the wall-clock reading against the CORRECT zone
+  /// before anything else in the app sees it; `CalendarSyncService`
+  /// remains the only place that then converts an already-correct instant
+  /// to LOCAL wall-clock minutes (D-35-08) — this function never does that
+  /// conversion itself, it only fixes what instant is being described.
+  DateTime _resolveInstant(DateTimeProperty property) {
+    final raw = property.dateTime;
+    if (raw.isUtc) return raw; // `...T140000Z` — already an absolute instant.
+
+    final timezoneId = property.timezoneId;
+    if (timezoneId != null) {
+      // Zoned: `DTSTART;TZID=America/Chicago:...T140000` + a VTIMEZONE
+      // block — the form a real Google Calendar feed actually sends.
+      // Reinterpret the wall-clock reading in the NAMED zone via the app's
+      // own IANA timezone database, never via the embedded VTIMEZONE
+      // block content (unused, deliberately) and never via this machine's
+      // system zone.
+      try {
+        final namedZone = tz.getLocation(timezoneId);
+        return tz.TZDateTime(
+          namedZone,
+          raw.year,
+          raw.month,
+          raw.day,
+          raw.hour,
+          raw.minute,
+          raw.second,
+        );
+      } catch (_) {
+        // An unrecognised TZID (malformed feed) falls through to the
+        // floating interpretation below rather than crashing the sync.
+      }
+    }
+
+    // Floating: `DTSTART:...T140000` — no `Z`, no usable TZID. RFC 5545:
+    // "this clock reading, in the viewer's own zone." Reinterpret the SAME
+    // digits directly against tz.local — never against Dart's system-local
+    // DateTime, which is what [raw] already, silently, is.
+    return tz.TZDateTime(
+      tz.local,
+      raw.year,
+      raw.month,
+      raw.day,
+      raw.hour,
+      raw.minute,
+      raw.second,
+    );
   }
 
   bool _isAllDay(VEvent event) {
