@@ -112,6 +112,26 @@ END:VEVENT
 END:VCALENDAR
 ''';
 
+// T-35-06: a feed claiming an implausible multi-YEAR "event" (2020-2030) —
+// built inline since it exists purely to pin the DoS bound, not a shape a
+// real calendar sends. The multi-day split must clip to the sync window
+// rather than materialising one block per day of the claimed span.
+const _implausibleMultiYearIcs = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Canopy Test Fixtures//inline//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:inline-implausible-multi-year-event@canopy.test
+DTSTAMP:20260301T000000Z
+DTSTART:20200101T000000Z
+DTEND:20300101T000000Z
+SUMMARY:Implausible decade-long event
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR
+''';
+
 void main() {
   tzdata.initializeTimeZones();
 
@@ -640,6 +660,45 @@ void main() {
           result.imported.map((b) => b.name),
           containsAll(['Overlap A', 'Overlap B']),
         );
+      },
+    );
+
+    test(
+      'a feed claiming an implausible multi-year "event" splits into AT '
+      'MOST kCalendarSyncWindowDays blocks, not one per claimed day '
+      '(T-35-06)',
+      () async {
+        tz.setLocalLocation(tz.UTC);
+        final service = CalendarSyncService(
+          source: IcsCalendarSource(
+            urls: ['https://example.com/feed.ics'],
+            fetch: (_) async => _implausibleMultiYearIcs,
+          ),
+          repository: repo,
+          now: () => DateTime(2026, 3, 1),
+        );
+
+        final result = await service.sync();
+
+        // The sync window is [2026-03-01, 2026-03-15) — 14 days — so the
+        // clipped split produces at most 15 blocks (both boundary dates
+        // inclusive), never anywhere close to the ~3653 days the feed
+        // itself claims.
+        expect(result.imported.length, lessThanOrEqualTo(15));
+        expect(result.imported.length, greaterThan(0));
+        for (final block in result.imported) {
+          final date = block.date!;
+          expect(
+            date.isBefore(DateTime(2026, 3, 1)),
+            isFalse,
+            reason: 'no block before the sync window start',
+          );
+          expect(
+            date.isAfter(DateTime(2026, 3, 15)),
+            isFalse,
+            reason: 'no block after the sync window end',
+          );
+        }
       },
     );
   });

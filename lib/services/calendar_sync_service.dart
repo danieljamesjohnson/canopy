@@ -140,7 +140,12 @@ class CalendarSyncService {
     final skipped = <SkippedEvent>[];
 
     for (final event in events) {
-      final mapped = _mapEvent(event, existing);
+      final mapped = _mapEvent(
+        event,
+        existing,
+        windowStart: syncedAt,
+        windowEnd: windowEnd,
+      );
       if (mapped.skip != null) {
         skipped.add(SkippedEvent(title: event.title, reason: mapped.skip!));
         continue;
@@ -161,14 +166,24 @@ class CalendarSyncService {
 
   /// Maps one [CalendarEvent] occurrence to zero or more [CommitmentBlock]s.
   ///
+  /// [windowStart]/[windowEnd] are the SAME sync-window bounds passed to
+  /// [CalendarSource.listEvents] — required here (not just there) so a
+  /// multi-day split can be clipped to them (T-35-06): the ICS source's own
+  /// overlap filter only requires an event to TOUCH the window, so an event
+  /// whose feed-supplied span runs far outside the window (a malformed or
+  /// implausible multi-year "event") must not turn into thousands of
+  /// day-slices — the worst case stays bounded by [kCalendarSyncWindowDays].
+  ///
   /// Returns a non-null [SkipReason] (and an empty block list) when the
   /// WHOLE event is skipped — cancelled, or every day-slice it produces is
   /// too short to hold a chunk. Otherwise returns one block per surviving
   /// local calendar day.
   ({List<CommitmentBlock> blocks, SkipReason? skip}) _mapEvent(
     CalendarEvent event,
-    List<CommitmentBlock> existing,
-  ) {
+    List<CommitmentBlock> existing, {
+    required DateTime windowStart,
+    required DateTime windowEnd,
+  }) {
     if (event.status == CalendarEventStatus.cancelled) {
       return (blocks: const [], skip: SkipReason.cancelled);
     }
@@ -195,23 +210,62 @@ class CalendarSyncService {
     // zero meridian happens here (D-35-08).
     final localStart = tz.TZDateTime.from(event.start, tz.local);
     final localEnd = tz.TZDateTime.from(event.end, tz.local);
-    final startDate = DateTime(
+    final eventStartDate = DateTime(
       localStart.year,
       localStart.month,
       localStart.day,
     );
-    final endDate = DateTime(localEnd.year, localEnd.month, localEnd.day);
+    final eventEndDate = DateTime(
+      localEnd.year,
+      localEnd.month,
+      localEnd.day,
+    );
+
+    // T-35-06: clip the day RANGE to the sync window before splitting — a
+    // feed-supplied span (not the parse-time overlap check, which only
+    // requires the event to TOUCH the window) is otherwise unbounded.
+    final localWindowStart = tz.TZDateTime.from(windowStart, tz.local);
+    final localWindowEnd = tz.TZDateTime.from(windowEnd, tz.local);
+    final windowStartDate = DateTime(
+      localWindowStart.year,
+      localWindowStart.month,
+      localWindowStart.day,
+    );
+    final windowEndDate = DateTime(
+      localWindowEnd.year,
+      localWindowEnd.month,
+      localWindowEnd.day,
+    );
+    final startDate = eventStartDate.isBefore(windowStartDate)
+        ? windowStartDate
+        : eventStartDate;
+    final endDate = eventEndDate.isAfter(windowEndDate)
+        ? windowEndDate
+        : eventEndDate;
     final dayCount = endDate.difference(startDate).inDays + 1;
+    if (dayCount <= 0) {
+      // The event's span and the sync window do not actually overlap on
+      // any local calendar day (can happen at a window edge) — nothing to
+      // import, nothing to report as skipped either; this is not the
+      // event's fault.
+      return (blocks: const [], skip: null);
+    }
 
     final blocks = <CommitmentBlock>[];
     for (var i = 0; i < dayCount; i++) {
       final day = startDate.add(Duration(days: i));
-      final isFirstDay = i == 0;
-      final isLastDay = i == dayCount - 1;
-      final sliceStart = isFirstDay
+      // "First/last" here means the EVENT's own first/last day, not the
+      // window's — a day that only appears because we clipped FORWARD to
+      // windowStartDate (the event actually started earlier) is not the
+      // event's first day, so it gets a full 0..1440 slice like any other
+      // interior day; likewise for a day clipped BACK from the event's
+      // real end.
+      final isEventFirstDay = day.isAtSameMomentAs(eventStartDate);
+      final isEventLastDay = day.isAtSameMomentAs(eventEndDate);
+      final sliceStart = isEventFirstDay
           ? localStart.hour * 60 + localStart.minute
           : 0;
-      final sliceEnd = isLastDay
+      final sliceEnd = isEventLastDay
           ? localEnd.hour * 60 + localEnd.minute
           : 1440;
       // Every slice — including a single-day event's only slice — is
