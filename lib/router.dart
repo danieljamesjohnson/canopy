@@ -12,6 +12,7 @@ import 'screens/today/today_screen.dart';
 import 'screens/focus/focus_screen.dart';
 import 'screens/quarterly_review/quarterly_review_screen.dart';
 import 'screens/restoratives/restoratives_screen.dart';
+import 'screens/settings/calendar_settings_screen.dart';
 import 'screens/settings/past_reviews_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'widgets/responsive_shell.dart';
@@ -95,6 +96,10 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
                   GoRoute(
                     path: 'past-reviews',
                     builder: (context, state) => const PastReviewsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'calendars',
+                    builder: (context, state) => const CalendarSettingsScreen(),
                   ),
                 ],
               ),

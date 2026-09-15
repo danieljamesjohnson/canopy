@@ -25,6 +25,42 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _exporting = false;
 
+  /// Computes the Calendars row subtitle from persisted state only — no live
+  /// CalendarSource/permission query happens here (D-35-10 applies to the
+  /// detail screen; this row must not trigger an OS prompt just from
+  /// opening the Settings tab). "Calendar access denied" therefore has no
+  /// reachable code path yet: 35-03 deliberately added no persisted denial
+  /// field, and mobile has no real device source until 35-05 — see
+  /// 35-04-SUMMARY.md.
+  String _calendarSubtitle(SettingsNotifier settings) {
+    final hasSelection = settings.selectedCalendarIds.isNotEmpty;
+    final hasFeeds = settings.icsUrls.isNotEmpty;
+    if (!hasSelection && !hasFeeds) return 'Not connected';
+    final syncSuffix = settings.lastCalendarSyncAt == null
+        ? 'Not synced yet'
+        : 'synced ${_relativeSyncTime(settings.lastCalendarSyncAt!)}';
+    if (hasSelection) {
+      final n = settings.selectedCalendarIds.length;
+      // "m" (total calendars available on the device) is not knowable
+      // synchronously without a live query — approximated as n until a
+      // real device source (35-05) gives this row a signal to read.
+      return '$n of $n calendars selected · $syncSuffix';
+    }
+    final n = settings.icsUrls.length;
+    return n == 1
+        ? '1 calendar subscribed · $syncSuffix'
+        : '$n calendars subscribed · $syncSuffix';
+  }
+
+  String _relativeSyncTime(DateTime time) {
+    final now = DevClock.now();
+    final diff = now.difference(time);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+
   String _formatMinutes(int minutes) {
     final h = minutes ~/ 60;
     final m = minutes % 60;
@@ -379,6 +415,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+
+          const Divider(indent: 16, endIndent: 16),
+
+          // Calendar section heading
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text(
+              'Calendar',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+
+          // Calendars row — subtitle computed from persisted state only
+          // (CAL-02/D-35-10): no live OS permission query happens just from
+          // opening the main Settings list, only from opening the Calendars
+          // screen itself.
+          ListTile(
+            leading: const Icon(Icons.calendar_month),
+            title: const Text('Calendars'),
+            subtitle: Text(_calendarSubtitle(settings)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/calendars'),
+          ),
 
           const Divider(indent: 16, endIndent: 16),
 
