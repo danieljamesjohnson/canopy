@@ -6,9 +6,9 @@ current_phase_name: Your Real Commitments, Read From Your Calendar
 status: executing
 current_phase_next: "tracer feedback gate — review 35-01, then /gsd-execute-phase 35 for wave 2 (35-02 + 35-03)"
 stopped_at: "Phase 35 wave 1 of 4 COMPLETE, merged to master, verified on the primary checkout (4e526ad): an .ics feed becomes a real CommitmentBlock the UNMODIFIED schedule_generator chunks. flutter analyze clean, 746/746 green (740 baseline + 6 new), schedule_generator.dart byte-identical to its pre-phase state. HELD at the tracer feedback gate — partly by protocol (auto_advance is false), but mainly because the tracer did its job and surfaced a risk NOBODY had flagged: only Z-suffixed UTC timestamps are proven. A real Google Calendar feed emits DTSTART;TZID=... with a VTIMEZONE block, which currently falls through to Dart's system-local DateTime instead of the app's tz.local override — the SEED-006 shape again, one layer out. WINDOWS.md entries 1 (EXDATE/RDATE/RECURRENCE-ID unimplemented) and 2 (floating/TZID time) are both open. BOTH owner checkpoints are already RULED (see 35-DECISIONS.md), so waves 2-4 need no further decisions to run."
-last_updated: "2026-09-14T13:30:00.000Z"
-last_activity: 2026-09-14
-last_activity_desc: "Phase 35 planned (6 plans, 4 waves) and wave 1 executed; roadmap bookkeeping for phases 31/32/33 reconciled with what the owner actually closed"
+last_updated: "2026-09-15T13:15:00.000Z"
+last_activity: 2026-09-15
+last_activity_desc: "Phase 35 wave 2 plan 35-03 executed (CAL-04 proof + CAL-02 persisted calendar settings, schema 10->11); 35-02 running in parallel in a separate worktree"
 state_head: 4e526ad
 progress:
   total_phases: 9
@@ -46,6 +46,24 @@ only `Z`-suffixed UTC timestamps are proven correct by this plan's fixture.
 false). Per the executor's tracer-task protocol, **wave 2 (plans 35-02 through 35-06) should not be
 dispatched until a human has reviewed this tracer's verification** — `flutter analyze` clean,
 746/746 tests green. Next step: owner review, then continue with `/gsd-execute-phase 35`.
+
+**Phase 35, plan 03 (wave 2 of 4, parallel with 35-02 in a separate worktree) is COMPLETE —
+commits `cedee3f` (test) and `5c2dd27` (feat).** `NullCalendarSource`'s CAL-04 guarantee is now
+proven by a real test — every interface method returns a safe empty answer, none throws, and a
+`CalendarSyncService.sync()` run against it over two hand-entered blocks changes nothing (mutation-
+proofed). `AppSettings` gains `selectedCalendarIds`/`icsUrls`/`lastCalendarSyncAt` (CAL-02), schema
+10→11. **A genuine crash-on-upgrade bug was found and fixed before this could be called done:** the
+plan's literal `List<String>` field declaration (no `@HiveField(defaultValue:...)`) generates a
+straight cast that throws on a truly old (field-physically-absent) record — caught by writing a real
+old-adapter→new-adapter Hive round-trip test, not by trusting the migration comment's claim. Fixed
+with `@HiveField(9, defaultValue: <String>[])` / `(10, ...)`. `calendar_source_factory.dart` needed
+NO code change — 35-01 had already implemented this task's exact platform-branch shape; only the
+proof was missing. `flutter analyze` clean, 763/763 green (754 baseline + 9 new). Full detail
+including both required mutation proofs in
+`.planning/phases/35-your-real-commitments-read-from-your-calendar/35-03-SUMMARY.md`. A pre-existing
+latent risk of the SAME defect class (unrelated to this plan) was found at `AppSettings.eveningReminderEnabled`/`eveningReminderMinutes`
+and `ScheduledChunk.isDeferred` and logged to `.planning/WINDOWS.md` (entry 3) rather than fixed —
+out of scope for this plan.
 
 Older position notes below (pre-Phase-35) are retained for history.
 

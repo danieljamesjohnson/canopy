@@ -1073,7 +1073,7 @@ Plans:
 | 32. Breaks You Can Tap | — (standalone) | 3/3 + gap closure | Complete | 2026-08-31 |
 | 33. Make The Obvious Thing Obvious | — (standalone) | 4/5 + 4 owner rounds | Complete — closed by owner review; 33-05's scripted UAT never run | 2026-09-08 |
 | 34. Adding a Goal Feels Like Onboarding | — (standalone) | 3/3 | Complete | 2026-09-09 |
-| 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 1/6 | In progress — wave 1 (tracer, 35-01) complete; awaiting owner review before wave 2 | |
+| 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 2/6 | In progress — wave 1 (35-01) and 35-03 (wave 2) complete; 35-02 (wave 2) running in parallel | |
 
 ### Phase 35: Your Real Commitments, Read From Your Calendar
 
@@ -1181,9 +1181,9 @@ observation, which is the same move that finally closed Phase 32's G-32-05.
 **Plans:** 6 plans, in 4 waves.
 
 Plans:
-- [ ] 35-01-PLAN.md — ICS package ruling, then the tracer: an `.ics` feed becomes a one-off `CommitmentBlock` the untouched generator chunks (wave 1)
+- [x] 35-01-PLAN.md — ICS package ruling, then the tracer: an `.ics` feed becomes a one-off `CommitmentBlock` the untouched generator chunks (wave 1)
 - [ ] 35-02-PLAN.md — every mapping rule a real calendar contains: all-day, cancelled, too-short, multi-day, foreign timezone, overlap, recurrence exceptions (wave 2)
-- [ ] 35-03-PLAN.md — `NullCalendarSource` + the platform switch, and somewhere for the calendar selection to live (wave 2)
+- [x] 35-03-PLAN.md — `NullCalendarSource` + the platform switch, and somewhere for the calendar selection to live (wave 2)
 - [ ] 35-04-PLAN.md — the Calendars screen: show the device's own list, remember the ticks, degrade honestly when denied (wave 3)
 - [ ] 35-05-PLAN.md — `DeviceCalendarSource` over `device_calendar_plus`, read-only by construction, verified on the owner's MacBook (wave 3)
 - [ ] 35-06-PLAN.md — an imported commitment looks imported on both surfaces, then the browser UAT (wave 4)
