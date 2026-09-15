@@ -113,3 +113,44 @@ deleted — only the all-day row leaves it.
   and the pattern mapper. D-35-05's UTC boundary above makes fixing this comment more load-bearing,
   not less — `rrule` genuinely does want UTC, so a stale comment claiming the field already is UTC is
   now actively dangerous.
+
+---
+
+## Folded in — WINDOWS.md entry 2 (TZID / floating time) → plan 35-02
+
+**Owner instruction, 2026-09-15: "fold the TZID gap into 35-02 and keep going."**
+
+The tracer (`35-01`) proved exactly one of RFC 5545's three `DTSTART` forms — and it proved the wrong
+one to be confident about. A real Google Calendar feed emits
+`DTSTART;TZID=America/Chicago:20260302T140000` with a `VTIMEZONE` block; the tracer's only fixture is
+`Z`-suffixed UTC, which a Google feed will rarely produce.
+
+| Form | Meaning | After 35-01 | After 35-02 |
+|---|---|---|---|
+| `...T140000Z` | absolute instant | ✅ proven | proven |
+| `;TZID=America/Chicago:...T140000` | instant in a named zone | ❌ **the Google form** | must be proven |
+| `...T140000` (bare) | floating — "2pm wherever you are" | ❌ falls through to system-local | must be proven |
+
+**The defect:** for a non-`Z` value, `enough_icalendar` returns a `DateTime` with `isUtc == false`
+constructed against **the machine's real system timezone**, not the app's injected `tz.local`. Every
+other date path in this app goes through `tz.local`; this is the one that silently disagrees.
+
+**Why this specific gap is dangerous to test, and the reason it earns a third mutation proof:**
+danserver's system timezone is **UTC**, so for the floating case `tz.local`-correct and
+system-local-correct produce **identical numbers here**. A test written without explicitly setting a
+non-UTC `tz.local` passes on this machine whether or not the bug exists, and fails on the owner's
+phone. That is `SEED-006` exactly — 3248 green lines that only ever exercised the one input where the
+bug could not fire. The plan now requires that the floating-case mutation be *observed to fail*, and
+says out loud that a mutation producing no failure on danserver means the test is not discriminating
+and must be rewritten — not recorded as "no change observed".
+
+**Closing rule, so this cannot be closed by having been looked at:** `gsd-tools windows fixed 2` runs
+only if both new truths are green AND both were mutation-proven. Otherwise entry 2 stays open and the
+SUMMARY names which forms remain unproven.
+
+**WINDOWS.md entry 1 (`EXDATE` / `RDATE` / `RECURRENCE-ID`) is NOT folded in and stays open.** It is a
+genuine capability gap — neither chosen package provides it, so it is ours to write — and it was
+scoped honestly rather than hidden. A moved or cancelled single occurrence of a recurring event still
+appears at its original time. `35-02`'s existing `must_have` asserting MOVED/EXDATE behaviour is
+therefore still at risk of passing vacuously, which the plan already flags as the phase's most
+important honesty requirement.
