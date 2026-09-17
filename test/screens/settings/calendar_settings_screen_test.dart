@@ -517,4 +517,39 @@ void main() {
       }),
     );
   });
+
+  group(
+    'D-35-15 — Android takes the desktop/ICS branch, not the device '
+    'permission branch (35-DECISIONS.md)',
+    () {
+      testWidgets(
+        'on Android, the screen shows the feed-URL CTA and never the '
+        'device permission CTA, even though a device-capable source is '
+        'passed in',
+        (tester) async {
+          debugDefaultTargetPlatformOverride = TargetPlatform.android;
+          try {
+            // A source that WOULD grant device permission if asked — if the
+            // screen still routed Android through the mobile branch, this
+            // fake would drive it there. It must not be reached at all: on
+            // Android the desktop branch renders before source.
+            // requestPermission() is ever called.
+            final source = _FakeCalendarSource(
+              permission: CalendarPermissionState.granted,
+              calendars: [
+                CalendarInfo(id: 'cal-1', name: 'Work', isReadOnly: true),
+              ],
+            );
+            await _pumpCalendarScreen(tester, source: source);
+
+            expect(find.text('Subscribe to a calendar'), findsOneWidget);
+            expect(find.text('Add calendar URL'), findsOneWidget);
+            expect(find.text('Allow calendar access'), findsNothing);
+          } finally {
+            debugDefaultTargetPlatformOverride = null;
+          }
+        },
+      );
+    },
+  );
 }

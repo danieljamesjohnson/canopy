@@ -16,11 +16,13 @@ import '../../widgets/adaptive_form_modal.dart';
 /// feed) exposes, remembers what they tick, and stays honest and usable when
 /// the answer is "no access."
 ///
-/// Branches by platform (D-35-12): mobile (iOS/Android) takes the device
-/// permission path, desktop/web take the feed-URL path. There is no combined
-/// multi-source picker and no fourth "calendar unavailable" screen — the
-/// absence of configuration IS the not-connected CTA state on both branches
-/// (35-UI-SPEC.md §5).
+/// Branches by platform: iOS takes the device permission path; Android,
+/// desktop, and web all take the feed-URL path (D-35-12 originally routed
+/// Android through the device branch too, but D-35-15 moved it here — see
+/// [_isMobile] and `device_calendar_source.dart`'s class doc comment for why).
+/// There is no combined multi-source picker and no fourth "calendar
+/// unavailable" screen — the absence of configuration IS the not-connected
+/// CTA state on both branches (35-UI-SPEC.md §5).
 ///
 /// Permission is read live every time this screen is opened; no permission
 /// result is ever persisted anywhere (D-35-10) — see [_isMobile]'s CTA-gated
@@ -80,10 +82,15 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   /// add/remove so the next build re-fetches from the fresh configuration.
   Future<_DesktopState>? _desktopFuture;
 
-  bool get _isMobile =>
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS);
+  // iOS-only as of D-35-15 (35-05, 35-DECISIONS.md): Android's calendar
+  // source moved from the device plugin to IcsCalendarSource, the same
+  // feed-URL mechanism desktop/web already use, so Android now takes the
+  // desktop branch below rather than this permission-CTA branch. Was
+  // `Platform.iOS || Platform.android` under the original D-35-12 plan;
+  // narrowed to iOS-only when D-35-15 reversed which mechanism Android
+  // uses (device_calendar_plus cannot be scoped read-only on Android — see
+  // device_calendar_source.dart's class doc comment for the full reason).
+  bool get _isMobile => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
   CalendarSource _resolveSource(SettingsNotifier settings) =>
       widget.source ?? defaultCalendarSource(icsUrls: settings.icsUrls);

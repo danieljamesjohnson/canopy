@@ -24,6 +24,18 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- CAL-01/CAL-02 (D-35-15, iOS-only device calendar path). Canopy reads
+	     your calendar events to schedule around them and never changes them
+	     (CAL-03). Both keys are required: the pre-17 legacy key satisfies
+	     device_calendar_plus's own Info.plist guard on every iOS version,
+	     and iOS 17+ separately requires the full-access key at the OS level
+	     for EventKit's requestFullAccessToEvents to work at all. Canopy
+	     never requests NSCalendarsWriteOnlyAccessUsageDescription's tier —
+	     it has no use for write access (CAL-03, Security V4). -->
+	<key>NSCalendarsUsageDescription</key>
+	<string>Canopy reads your calendar events to schedule your day around them. Canopy never changes or deletes anything in your calendar.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Canopy reads your calendar events to schedule your day around them. Canopy never changes or deletes anything in your calendar.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
