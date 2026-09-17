@@ -155,6 +155,7 @@ class SwipeableChunkCard extends StatelessWidget {
     this.onTap,
     this.showStartTime = true,
     this.density = ChunkCardDensity.detailed,
+    this.isImportedCommitment = false,
   });
 
   final ScheduledChunk chunk;
@@ -194,6 +195,13 @@ class SwipeableChunkCard extends StatelessWidget {
   /// slot just because this early return forgot to forward it.
   final ChunkCardDensity density;
 
+  /// Forwarded to [ChunkCard] — see [ChunkCard.isImportedCommitment].
+  /// Deliberately NOT forwarded on the break-card early-return path below —
+  /// a break never has a `commitmentId` (D-31-01's `isCommitment` gate is
+  /// work-chunk-only), so it is never true there and the parameter is simply
+  /// omitted rather than threading a value that can never matter.
+  final bool isImportedCommitment;
+
   @override
   Widget build(BuildContext context) {
     // Phase 32 (TAPBREAK-01, D-32-02): RESTORED — this is a revert of
@@ -229,6 +237,7 @@ class SwipeableChunkCard extends StatelessWidget {
         goalValence: goalValence,
         showStartTime: showStartTime,
         density: density,
+        isImportedCommitment: isImportedCommitment,
         // A break never receives onTap, at any density — the owner's
         // 2026-08-21 instruction. This isWork gate is the ONLY thing
         // enforcing that after the `promote` decision deleted the old

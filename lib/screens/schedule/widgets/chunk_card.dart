@@ -59,6 +59,7 @@ class ChunkCard extends StatelessWidget {
     this.onTap,
     this.showStartTime = true,
     this.density = ChunkCardDensity.detailed,
+    this.isImportedCommitment = false,
   });
 
   final ScheduledChunk chunk;
@@ -105,6 +106,17 @@ class ChunkCard extends StatelessWidget {
   /// — today's card, unchanged — so this parameter is purely additive.
   final ChunkCardDensity density;
 
+  /// Phase 35 (D-35-11, UI-SPEC §4). True when this work chunk is anchored
+  /// to a `CommitmentBlock` imported from a calendar — resolved at render
+  /// time by the caller (`today_screen._lookupIsImportedCommitment`), never
+  /// carried on [ScheduledChunk] itself (see that lookup's doc comment for
+  /// why). Renders the same 14dp glyph the Commitments screen uses, beside
+  /// the title, at [ChunkCardDensity.detailed]/[ChunkCardDensity.full] only
+  /// — [ChunkCardDensity.compact] omits it (the file's own content-degrades-
+  /// never-the-box rule). Defaults to false so every existing call site is
+  /// unaffected.
+  final bool isImportedCommitment;
+
   @override
   Widget build(BuildContext context) {
     switch (chunk.chunkType) {
@@ -123,6 +135,7 @@ class ChunkCard extends StatelessWidget {
           onTap: onTap,
           showStartTime: showStartTime,
           density: density,
+          isImportedCommitment: isImportedCommitment,
         );
     }
   }
@@ -414,6 +427,7 @@ class _WorkChunkContent extends StatelessWidget {
     this.onTap,
     this.showStartTime = true,
     this.density = ChunkCardDensity.detailed,
+    this.isImportedCommitment = false,
   });
 
   final ScheduledChunk chunk;
@@ -431,6 +445,13 @@ class _WorkChunkContent extends StatelessWidget {
   /// left bar, the commitment tertiaryContainer treatment and the resolved
   /// Opacity(0.5) rule are shared by all three densities and never resized.
   final ChunkCardDensity density;
+
+  /// See [ChunkCard.isImportedCommitment]. Read only by
+  /// [_buildContentShell] (shared by `detailed`/`full`) — `compact`'s
+  /// [_buildCompactContent] never reads this field, which IS the omission
+  /// (D-35-11, UI-SPEC §4): there is no density-specific `if` to bypass,
+  /// the glyph-rendering code simply does not exist on that path.
+  final bool isImportedCommitment;
 
   String get _titleText =>
       '${goalEmojiTag != null ? "$goalEmojiTag " : ""}'
@@ -720,6 +741,10 @@ class _WorkChunkContent extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (isImportedCommitment) ...[
+                          const SizedBox(width: 4),
+                          _ImportedGlyph(color: theme.colorScheme.onSurfaceVariant),
+                        ],
                         const SizedBox(width: 8),
                         Text(timeText, style: timeStyle),
                       ],
@@ -728,10 +753,23 @@ class _WorkChunkContent extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          _titleText,
-                          style: titleStyle,
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                _titleText,
+                                style: titleStyle,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isImportedCommitment) ...[
+                              const SizedBox(width: 4),
+                              _ImportedGlyph(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Text(timeText, style: timeStyle),
@@ -855,6 +893,26 @@ class _WorkChunkContent extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// File-private imported-commitment glyph (D-35-11, UI-SPEC §4). Identical
+/// icon/size/color/semantics to `_CommitmentRow`'s treatment on the
+/// Commitments screen (`commitments_screen.dart`) — deliberately duplicated
+/// per this file's own file-private-widget convention (see [_StatusChip],
+/// [_ValenceChip], [_PriorityChip] below) rather than shared across the two
+/// screens.
+class _ImportedGlyph extends StatelessWidget {
+  const _ImportedGlyph({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Imported from your calendar',
+      child: Icon(Icons.calendar_today_outlined, size: 14, color: color),
     );
   }
 }

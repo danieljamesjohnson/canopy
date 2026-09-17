@@ -21,6 +21,7 @@ class ChunkDetailSheet extends StatelessWidget {
     this.goalColor,
     this.goalName,
     required this.displayRationale,
+    this.isImportedCommitment = false,
   });
 
   final ScheduledChunk chunk;
@@ -28,6 +29,14 @@ class ChunkDetailSheet extends StatelessWidget {
   final Color? goalColor;
   final String? goalName;
   final String displayRationale;
+
+  /// Phase 35 (D-35-11, UI-SPEC §4). True when [chunk] is anchored to a
+  /// calendar-imported `CommitmentBlock`. This sheet carries the glyph AND
+  /// a visible "Imported from your calendar" label — unlike `ChunkCard`,
+  /// which omits the glyph at compact density, this header is what makes
+  /// that omission acceptable rather than a hole: the full distinction stays
+  /// reachable by tapping through, here.
+  final bool isImportedCommitment;
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +97,31 @@ class ChunkDetailSheet extends StatelessWidget {
                         style: theme.textTheme.bodyMedium?.copyWith(
                           height: 1.5,
                         ),
+                      ),
+                    ],
+                    // Imported-commitment marker (D-35-11, UI-SPEC §4). Both
+                    // glyph AND a visible label — this header is what makes
+                    // ChunkCard's compact-density glyph omission acceptable
+                    // rather than a hole, since the full distinction stays
+                    // reachable by tapping through to here.
+                    if (isImportedCommitment) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Imported from your calendar',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ],

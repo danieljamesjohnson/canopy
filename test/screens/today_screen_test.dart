@@ -13,6 +13,7 @@
 import 'package:canopy/data/models/daily_schedule.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/dev/dev_clock.dart';
+import 'package:canopy/providers/commitments_notifier.dart';
 import 'package:canopy/providers/goals_notifier.dart';
 import 'package:canopy/providers/restoratives_notifier.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
@@ -177,6 +178,7 @@ Future<void> _pumpTodayScreen(
   required ScheduleNotifier scheduleNotifier,
   DateTime Function()? now,
   RestorativesNotifier? restorativesNotifier,
+  CommitmentsNotifier? commitmentsNotifier,
 }) async {
   final theme = ThemeData(
     useMaterial3: true,
@@ -194,6 +196,16 @@ Future<void> _pumpTodayScreen(
         ),
         ChangeNotifierProvider<RestorativesNotifier>.value(
           value: restorativesNotifier ?? _FakeRestorativesNotifier(),
+        ),
+        // Phase 35 (D-35-11): _buildChunkCard's new
+        // _lookupIsImportedCommitment reads CommitmentsNotifier for any
+        // chunk with a non-null commitmentId. A bare CommitmentsNotifier()
+        // is safe here — its default HiveCommitmentBlockRepository only
+        // touches Hive.box() lazily inside a method call, and nothing in
+        // TodayScreen ever calls loadBlocks()/saveBlock() itself, so
+        // `.blocks` stays its in-memory default ([]) with zero I/O.
+        ChangeNotifierProvider<CommitmentsNotifier>.value(
+          value: commitmentsNotifier ?? CommitmentsNotifier(),
         ),
       ],
       child: MaterialApp(
@@ -2043,6 +2055,9 @@ void main() {
             ),
             ChangeNotifierProvider<RestorativesNotifier>.value(
               value: _FakeRestorativesNotifier(),
+            ),
+            ChangeNotifierProvider<CommitmentsNotifier>.value(
+              value: CommitmentsNotifier(),
             ),
           ],
           child: MaterialApp.router(theme: theme, routerConfig: router),

@@ -14,6 +14,7 @@ import '../../data/models/scheduled_chunk.dart';
 import '../../data/repositories/hive_completion_log_repository.dart';
 import '../../data/repositories/hive_quarterly_snapshot_repository.dart';
 import '../../dev/dev_clock.dart';
+import '../../providers/commitments_notifier.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/restoratives_notifier.dart';
 import '../../providers/schedule_notifier.dart';
@@ -309,6 +310,25 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
 
   String? _lookupGoalEmojiTag(BuildContext context, ScheduledChunk chunk) =>
       _resolveGoal(context, chunk)?.emojiTag;
+
+  /// Render-time lookup joining a work chunk's `commitmentId` to the
+  /// `isFromCalendar` flag on its backing `CommitmentBlock` (D-35-11,
+  /// `35-06-PLAN.md`). Deliberately NOT a field on `ScheduledChunk`: adding
+  /// one would be a third Hive schema bump this phase, and every day already
+  /// persisted in Hive would deserialize it at its default and show no glyph
+  /// until its next check-in — the served bytes correct, the code correct,
+  /// the screen wrong (CLAUDE.md trap #4). Returns false for a work chunk
+  /// with no commitmentId, and false (not a throw) when the id matches
+  /// nothing in the notifier — a stale/unresolved block is not this lookup's
+  /// problem to surface.
+  bool _lookupIsImportedCommitment(BuildContext context, ScheduledChunk chunk) {
+    final commitmentId = chunk.commitmentId;
+    if (commitmentId == null) return false;
+    for (final block in context.read<CommitmentsNotifier>().blocks) {
+      if (block.id == commitmentId) return block.isFromCalendar;
+    }
+    return false;
+  }
 
   /// Maps the raw generator rationale string to a human-readable display
   /// string. Delegates to the shared [toDisplayRationale] helper so the
@@ -652,6 +672,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     final goalColor = _lookupGoalColor(context, chunk);
     final goalName = _lookupGoalName(context, chunk);
     final displayRationale = _toDisplayRationale(chunk.rationale);
+    final isImportedCommitment = _lookupIsImportedCommitment(context, chunk);
     return SwipeableChunkCard(
       chunk: chunk,
       goalColor: goalColor,
@@ -667,6 +688,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       // becomes an hour axis").
       showStartTime: true,
       density: density,
+      isImportedCommitment: isImportedCommitment,
       // The isWork gate inside SwipeableChunkCard is what actually keeps a
       // break untappable (PD-31-02's promote decision deleted the old
       // break-only early return) — this closure is unchanged and simply
@@ -679,6 +701,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
               goalColor,
               goalName,
               displayRationale,
+              isImportedCommitment,
             ),
     );
   }
@@ -998,6 +1021,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
             goalColor,
             goalName,
             displayRationale,
+            _lookupIsImportedCommitment(context, chunk),
           )
         : null;
 
@@ -1030,6 +1054,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     Color? goalColor,
     String? goalName,
     String displayRationale,
+    bool isImportedCommitment,
   ) {
     final notifier = context.read<ScheduleNotifier>();
     showModalBottomSheet<void>(
@@ -1044,6 +1069,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
         goalColor: goalColor,
         goalName: goalName,
         displayRationale: displayRationale,
+        isImportedCommitment: isImportedCommitment,
       ),
     );
   }
