@@ -4,17 +4,17 @@ milestone: none
 current_phase: 35
 current_phase_name: Your Real Commitments, Read From Your Calendar
 status: executing
-current_phase_next: "wave 3 — 35-04 COMPLETE; 35-05 running in parallel in a separate worktree"
-stopped_at: "Phase 35 wave 3 plan 35-04 COMPLETE (commits 6426f47/7ff9add/f0bc10f): CalendarSettingsScreen built end to end -- mobile CTA-gated permission flow (not-yet-requested/in-flight/granted-grouped-by-account/granted-empty/denied-neutral-card) and desktop/web ICS feed-URL flow (add/remove, fetch-validated), reachable at /settings/calendars, with a real sync-driven status footer and skipped-events disclosure. checkin_screen.dart's tracer-era no-op closed -- it now syncs the actually-configured feed and persists lastCalendarSyncAt on success only. flutter analyze clean, 786/786 green (777 baseline + 9 new). Two mutation proofs performed and reverted (hardcoded calendar list; error-tinted denial card), transcripts in 35-04-SUMMARY.md. Two pre-existing widget tests (checkin_screen_widget_test.dart, cold_launch_morning_loop_test.dart) needed a SettingsNotifier added to their provider trees -- an unavoidable Rule 3 consequence of checkin_screen.dart's new real dependency, documented as a deviation rather than silently satisfying the plan's own 'no pre-existing test edited' line. KNOWN GAPS, none blocking: the Settings row's 'Calendar access denied' subtitle has no reachable code path yet (no persisted denial signal exists by design); '{n} of {m} calendars selected' approximates m as n (no persisted device-total count); 'Open Settings' on the denied card is a real button with no OS deep-link wired (needs 35-05's DeviceCalendarSource plugin import). 35-05 (mobile device-calendar source, the owner's MacBook checkpoint) was dispatched in parallel in a separate worktree and is not reflected in this entry."
-last_updated: "2026-09-15T15:10:00.000Z"
-last_activity: 2026-09-15
-last_activity_desc: "Phase 35 plan 35-04 complete: the Calendars settings screen (CAL-02/CAL-04), reachable and wired to a real sync trigger"
-state_head: f0bc10f
+current_phase_next: "TWO owner gates: the browser UAT (35-UAT.md, http://danserver:8161/) and the iOS device check (35-05 Task 3, his MacBook). Both blocking."
+stopped_at: "Phase 35 ALL SIX PLANS BUILT, all four waves merged and verified on master (8ed6df3). flutter analyze clean, 821/821 green (740 at phase start), schedule_generator.dart byte-identical across the entire phase. HELD at TWO independent owner gates, neither of which an agent can close: (1) BROWSER UAT — 35-UAT.md, live at http://danserver:8161/ served from the MAIN checkout (not a worktree) with fixture at /sample.ics; verified reachable over the tailnet at 100.108.146.112, Cache-Control no-store, served-bytes probe 3 hits, and the app confirmed rendering via headless screenshot. Step 0 is a MANDATORY re-check-in. Steps 7a and 7b are real decisions: 7a the all-day span SHIPS AS 08:00-22:00 but the owner was shown 08:00-18:00 in the option he ruled on (orchestrator error, twice over), 7b RECURRENCE-ID/EXDATE proven unsupported on the ICS path so a moved occurrence shows twice. (2) iOS DEVICE CHECK — 35-05 Task 3, the ONLY thing needing his MacBook after D-35-15 routed Android to ICS. WINDOWS.md: entry 2 closed, entries 1 and 3 open."
+last_updated: "2026-09-17T14:00:00.000Z"
+last_activity: 2026-09-17
+last_activity_desc: "Phase 35 fully built (6 plans, 4 waves): calendar import via ICS everywhere plus iOS device path; served for UAT at danserver:8161"
+state_head: 8ed6df3
 progress:
   total_phases: 9
   completed_phases: 8
   total_plans: 44
-  completed_plans: 41
+  completed_plans: 44
 milestone_name: milestone
 ---
 
