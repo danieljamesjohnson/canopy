@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/commitment_block.dart';
@@ -37,6 +38,21 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
         // Re-anchor today's schedule so an added/edited event renders at its
         // current time immediately, without waiting for a mood re-check-in.
         onSaved: (saved) => scheduleNotifier.addEventToday(saved),
+      ),
+    );
+  }
+
+  /// Opens the read-only sheet for an imported commitment (D-35-14). Never
+  /// `CommitmentFormSheet` — that stays reachable only for hand-entered rows
+  /// via `_openAddSheet`. The sole interactive element besides dismissal is
+  /// "Manage calendars", routing to the Calendars settings screen rather
+  /// than into an edit form this row must not offer.
+  void _openReadOnlySheet(BuildContext context, CommitmentBlock block) {
+    showAdaptiveFormModal(
+      context: context,
+      builder: (_) => _ImportedCommitmentSheet(
+        name: block.name,
+        timeRange: _commitmentCardSubtitle(block),
       ),
     );
   }
@@ -136,6 +152,12 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
             ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () => context.push('/settings/calendars'),
+            icon: const Icon(Icons.calendar_month),
+            label: const Text('Import from your calendar'),
+          ),
         ],
       ),
     );
@@ -144,7 +166,16 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Commitments')),
+      appBar: AppBar(
+        title: const Text('Commitments'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month_outlined),
+            tooltip: 'Calendar settings',
+            onPressed: () => context.push('/settings/calendars'),
+          ),
+        ],
+      ),
       body: Consumer<CommitmentsNotifier>(
         builder: (ctx, notifier, _) {
           if (notifier.blocks.isEmpty) {
@@ -170,6 +201,7 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
                     subtitle: _commitmentCardSubtitle(block),
                     onEdit: () => _openAddSheet(context, block),
                     onDelete: () => _confirmDelete(context, block),
+                    onTapImported: () => _openReadOnlySheet(context, block),
                   );
                 },
               ),
@@ -198,6 +230,7 @@ class _CommitmentRow extends StatefulWidget {
     required this.subtitle,
     required this.onEdit,
     required this.onDelete,
+    required this.onTapImported,
   });
 
   final CommitmentBlock block;
@@ -205,6 +238,10 @@ class _CommitmentRow extends StatefulWidget {
   final String subtitle;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+
+  /// Tapped instead of [onEdit] when [block.isFromCalendar] is true — opens
+  /// the read-only sheet rather than `CommitmentFormSheet` (D-35-14).
+  final VoidCallback onTapImported;
 
   @override
   State<_CommitmentRow> createState() => _CommitmentRowState();
@@ -218,11 +255,12 @@ class _CommitmentRowState extends State<_CommitmentRow> {
     final isMobileTouch =
         defaultTargetPlatform == TargetPlatform.android ||
         defaultTargetPlatform == TargetPlatform.iOS;
+    final isImported = widget.block.isFromCalendar;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: InkWell(
-        onTap: widget.onEdit,
+        onTap: isImported ? widget.onTapImported : widget.onEdit,
         onHover: (hovered) => setState(() => _hovered = hovered),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -238,6 +276,20 @@ class _CommitmentRowState extends State<_CommitmentRow> {
                 ),
               ),
               const SizedBox(width: 12),
+              // Imported-source marker (D-35-11/D-35-14, UI-SPEC §3). Carries
+              // meaning with no visible text, so a screen reader gets
+              // nothing without the Semantics label.
+              if (isImported) ...[
+                Semantics(
+                  label: 'Imported from your calendar',
+                  child: Icon(
+                    Icons.calendar_today_outlined,
+                    size: 14,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,6 +297,8 @@ class _CommitmentRowState extends State<_CommitmentRow> {
                     Text(
                       widget.block.name,
                       style: Theme.of(context).textTheme.titleMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -254,41 +308,99 @@ class _CommitmentRowState extends State<_CommitmentRow> {
                   ],
                 ),
               ),
-              if (isMobileTouch)
-                // Mobile keeps the always-visible delete IconButton so
-                // delete access is never gated behind a hover that
-                // mobile pointer events can't trigger (cross-cutting
-                // landmine resolution).
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: 'Delete commitment',
-                  onPressed: widget.onDelete,
-                )
-              else
-                // Desktop reveals edit + delete on hover.
-                AnimatedOpacity(
-                  opacity: _hovered ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 120),
-                  curve: Curves.easeOut,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined),
-                        tooltip: 'Edit commitment',
-                        onPressed: _hovered ? widget.onEdit : null,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        tooltip: 'Delete commitment',
-                        onPressed: _hovered ? widget.onDelete : null,
-                      ),
-                    ],
+              // An imported row offers no edit or delete affordance at all —
+              // not even a disabled one. Editing belongs in the calendar
+              // app, and a delete would be silently undone by the next
+              // upsert-by-external-id sync (D-35-14). Nothing replaces the
+              // trailing slot; leaving it empty keeps the row honest about
+              // what's possible.
+              if (!isImported)
+                if (isMobileTouch)
+                  // Mobile keeps the always-visible delete IconButton so
+                  // delete access is never gated behind a hover that
+                  // mobile pointer events can't trigger (cross-cutting
+                  // landmine resolution).
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    tooltip: 'Delete commitment',
+                    onPressed: widget.onDelete,
+                  )
+                else
+                  // Desktop reveals edit + delete on hover.
+                  AnimatedOpacity(
+                    opacity: _hovered ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 120),
+                    curve: Curves.easeOut,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined),
+                          tooltip: 'Edit commitment',
+                          onPressed: _hovered ? widget.onEdit : null,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          tooltip: 'Delete commitment',
+                          onPressed: _hovered ? widget.onDelete : null,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Read-only sheet for an imported commitment (D-35-14, UI-SPEC §3
+/// Copywriting Contract). No edit affordance anywhere in this sheet — the
+/// only interactive element besides dismissal is "Manage calendars", which
+/// routes to the Calendars settings screen rather than back into
+/// `CommitmentFormSheet`.
+class _ImportedCommitmentSheet extends StatelessWidget {
+  const _ImportedCommitmentSheet({required this.name, required this.timeRange});
+
+  final String name;
+  final String timeRange;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        24,
+        24,
+        24 + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(name, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(timeRange, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 16),
+          Text(
+            'This commitment comes from your calendar. To change it, edit '
+            'the event in your calendar app — the update appears here after '
+            'the next sync.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                context.pop();
+                context.push('/settings/calendars');
+              },
+              child: const Text('Manage calendars'),
+            ),
+          ),
+        ],
       ),
     );
   }
