@@ -196,3 +196,72 @@ confidently by the orchestrator, repeated across four artifacts, and inherited b
 given. `timedatectl` takes one second and was never run until a test disagreed with the premise. This
 repo's documented failure mode is assertions that cannot fail; this is its sibling — **premises that
 were never checked**, propagated by confident repetition.
+
+---
+
+## D-35-15 — Android reads calendars via ICS, not via the device plugin
+
+**Ruled by the owner 2026-09-17, mid-execution, when plan 35-05 surfaced a conflict between
+`device_calendar_plus` and CAL-03.**
+
+### The finding that forced the decision — verified in source, twice
+
+`35-05`'s executor read the plugin's **native Kotlin**, not its docs, and found a conflict nobody had
+anticipated. The orchestrator then re-verified it independently before escalating, because it reversed
+a constraint the executor had just been told to hold:
+
+`device_calendar_plus_android-0.7.1/android/src/main/kotlin/to/bullet/device_calendar_plus_android/PermissionService.kt:37-59`
+
+```kotlin
+val required = if (writeOnly) { listOf(writePermission) }
+               else { listOf(readPermission, writePermission) }
+if (required.any { it !in declaredPermissions }) { /* throws PERMISSIONS_NOT_DECLARED */ }
+```
+
+- `CalendarAccessLevel` has exactly two values — `full` and `writeOnly`. **There is no read-only tier**,
+  so `full` is the only way to get read access.
+- A `full` request therefore requires **both** `READ_CALENDAR` **and** `WRITE_CALENDAR` *declared* in
+  the manifest, or every permission call — including a bare status check — throws.
+- And per the plugin's own `doc/permissions.md`: *"`READ_CALENDAR` and `WRITE_CALENDAR` share one
+  permission group"*, so on Android **granting calendar access auto-grants write**, with no second
+  dialog.
+
+**So shipping the device plugin on Android means Canopy genuinely holds OS-level write capability.**
+CAL-03 would degrade from *the operating system prevents us from writing* to *we promise our code
+never calls a write verb*. The ROADMAP calls CAL-03 "a product guarantee, not an implementation
+detail", which is why this went to the owner rather than being resolved as a technical detail.
+
+**iOS has no equivalent problem** — `PermissionService.swift`'s `full` guard only requires
+`NSCalendarsUsageDescription`. This is Android-only.
+
+### The ruling
+
+**Android does not ship the device plugin. It uses `IcsCalendarSource`, like web and desktop.**
+
+- **`WRITE_CALENDAR` is never declared. Neither is `READ_CALENDAR`.** No calendar permission appears in
+  the Android manifest at all, so CAL-03 is enforced **by the platform**, not by our discipline. There
+  is nothing for the user to take on trust.
+- **iOS keeps the native device path** — checkbox list of the device's real calendars, which is what
+  makes "don't ask him whether Google is added, show him" work there.
+- **Android is not losing calendar import.** `IcsCalendarSource` is platform-agnostic by construction
+  and already works — Android subscribes to a calendar feed URL exactly as web and desktop do. This
+  reframing is what made the decision tractable: the choice was never "Android calendar support or
+  not", it was "which mechanism".
+
+**The accepted cost, stated because it is real:** on Android the user pastes a feed URL once, instead
+of ticking calendars in a list. That is a worse first-run experience than iOS gets, and it is the
+price of an OS-enforced guarantee rather than a promised one.
+
+### What this changes in the plans
+
+`35-05` was mid-flight when this was ruled and is being redirected, not silently amended:
+
+- `DeviceCalendarSource` becomes **iOS-only**. The factory routes Android to `IcsCalendarSource`.
+- **T-35-17's manifest assertions invert.** The plan asserted `READ_CALENDAR` present exactly once and
+  `WRITE_CALENDAR` absent. It must now assert **neither is present**. This is a stronger claim than the
+  original, not a weaker one — and it is machine-checkable, which the original `READ`-present form was
+  too.
+- The `Info.plist` work is **unchanged** — both iOS usage-description keys are still required.
+- `35-04`'s three known stubs that expected 35-05 to close them ("Open Settings" deep-link, the denial
+  subtitle, the `{n} of {m}` count) are now **iOS-only concerns**. On Android those states are
+  unreachable because the permission flow never runs there.
