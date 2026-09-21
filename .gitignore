@@ -53,3 +53,6 @@ backlog/
 
 # scratch dir for eyeballing screenshots — never repo content
 look/
+
+# Private calendar .ics address used for UAT (read-credential — never commit)
+.uat-calendar-url
