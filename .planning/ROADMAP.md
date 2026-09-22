@@ -1084,7 +1084,8 @@ Plans:
 | 32. Breaks You Can Tap | — (standalone) | 3/3 + gap closure | Complete | 2026-08-31 |
 | 33. Make The Obvious Thing Obvious | — (standalone) | 4/5 + 4 owner rounds | Complete — closed by owner review; 33-05's scripted UAT never run | 2026-09-08 |
 | 34. Adding a Goal Feels Like Onboarding | — (standalone) | 3/3 | Complete | 2026-09-09 |
-| 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 4/6 | In progress — waves 1–2 complete (35-01, 35-02, 35-03); 35-04 (Calendars screen) complete; 35-05 (device source) running in parallel; WINDOWS.md entry 2 closed, entries 1 and 3 open | |
+| 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 6/6 built | **Built, awaiting owner verdict.** All four waves merged, 821/821 green. Two gates open: browser UAT (`35-UAT.md`) and the iOS device check (`35-05` Task 3). WINDOWS.md entry 2 closed; 1 and 3 open | |
+| 36. Connect Google Calendar Without Hunting For a URL | — (standalone) | 0/TBD | Scoped 2026-09-22, not yet planned. Folds into Phase 35's UAT gate rather than opening a second one | |
 
 ### Phase 35: Your Real Commitments, Read From Your Calendar
 
@@ -1215,5 +1216,88 @@ no agent here can run.
 (`firstfloor_calendar` is flagged SUS — 52 weekly downloads and a GitHub-ownership mismatch against
 pub.dev's own metadata), and whether an all-day calendar entry blocks the day (research A3, the one
 `⚠ unresolved` row in the UI-SPEC).
+
+---
+
+### Phase 36: Connect Google Calendar Without Hunting For a URL
+
+Standalone phase, no milestone. **Raised by the owner on 2026-09-21**, reacting to the friction of
+Phase 35's browser path: find a secret `.ics` address, save it to a file, run a shell script, paste a
+localhost URL. His words: *"are you gonna do a simplified login flow? maybe just build that first as
+a phase."*
+
+**Goal:** Connecting the calendar Canopy schedules around is a button, not a scavenger hunt — one tap
+to Google's consent screen, read-only, and back to a list of your real calendars.
+
+#### ⚠ The cost, ruled and accepted before scoping — do not re-raise it as a discovery
+
+**Google expires refresh tokens after 7 days for any app in "Testing" publishing status.** This is
+Google policy for unverified apps and applies regardless of scope. So **the owner will have to
+re-consent roughly weekly**, unless the app is published — and `calendar.readonly` is a *sensitive*
+scope, so publishing means submitting a personal single-user app to Google's verification review.
+
+**He was shown this explicitly and chose to build it anyway.** That is an informed override, not an
+oversight. Do not "discover" the 7-day expiry mid-phase and treat it as a blocker; do not quietly
+pursue verification without asking. **What the phase MUST do is make the expiry degrade visibly** —
+when the token dies, the app says so plainly and offers a one-tap reconnect. A calendar that silently
+stops updating is the failure mode that makes someone stop trusting the app, which is the same
+reasoning that put CAL-04 in Phase 35.
+
+The cheaper alternative (cron the existing `tools/fetch-my-calendar.sh` hourly — no expiry, no
+consent screen, works today, and covers Apple too) was offered and declined. It remains available as
+a fallback if verification proves unworkable.
+
+#### Decisions already taken — do not re-litigate
+
+1. **Authorization Code + PKCE, public client, NO client secret.** The implicit flow is deprecated and
+   insecure for browser apps. PKCE means the client ID is public and no secret exists to leak —
+   which matters here specifically because **this repo is public as a work sample**. A phase that
+   requires a committed secret would be unshippable; this one does not.
+2. **Scope: read-only (`calendar.readonly` or `calendar.events.readonly` — research picks which).**
+   This makes **CAL-03 enforced by Google itself**, not by our code discipline. That is a *stronger*
+   guarantee than either existing path: on iOS it rests on never calling a write verb, and the Google
+   scope rests on the token being incapable of writing. Note this in the phase's own verification.
+3. **A fourth `CalendarSource` implementation, not a rewrite.** `GoogleCalendarSource implements
+   CalendarSource`, slotting into the existing `calendar_source_factory`. Phase 35's interface was
+   built precisely so a new backend is an added class, not a migration. If this phase finds itself
+   changing the interface, that is a signal something is wrong.
+4. **HTTPS redirect URI — the tailnet origin.** Google requires HTTPS for redirect URIs (localhost is
+   the only exemption). `http://danserver:8161` is therefore disqualified. `tailscale serve` already
+   fronts TLS at `https://danserver.tailc2efd2.ts.net:8446`; **UAT serving moves there for this
+   phase.** Confirm Google accepts a `.ts.net` host as a registered redirect URI — if it does not,
+   that is a real finding and `http://localhost:PORT` is the fallback.
+5. **Google only. Apple Calendar is unaffected and unaddressed.** There is no equivalent public OAuth
+   calendar API for Apple. Apple continues via the iOS device path (already shipped, no login needed)
+   or an `.ics` subscription. **Do not attempt CalDAV with app-specific passwords.**
+
+#### Open questions for research
+
+1. **Which package, or none?** `google_sign_in`'s web support, `oauth2`, `flutter_appauth`, or a hand-
+   rolled PKCE flow. Weigh against Phase 35's own lesson: a load-bearing path behind a low-adoption
+   package is not defensible on a public repo (`firstfloor_calendar` was rejected on exactly that).
+2. **Does this close `WINDOWS.md` entry 1 for the Google path?** The Google Calendar API's
+   `events.list` supports `singleEvents=true`, which is documented to expand recurrences **with
+   exceptions applied**. If true, a moved or deleted occurrence would resolve correctly here — the
+   defect the ICS path provably cannot fix. **Verify against the real API, not the docs.** If it
+   holds, say so loudly: it changes the recommendation about which path the owner should prefer.
+3. **Token storage and refresh.** Hive, like the rest of the app's persistence. How is the refresh
+   handled, and what exactly happens at the 7-day revocation — the error shape matters for
+   requirement CALAUTH-03.
+4. **What does the app do on a platform where this flow cannot run?** iOS already has the device path;
+   desktop has `.ics`. Confirm the factory's fallback order and that nothing regresses.
+
+#### Constraints
+
+- **Nothing writes to the user's calendar, ever.** CAL-03 carries forward unchanged and is
+  strengthened, not relaxed, by the read-only scope.
+- **No client secret in the repo.** Non-negotiable — see decision 1.
+- **The scheduling engine is still out of scope.** Same as Phase 35: this is an input-layer phase.
+  `schedule_generator.dart` must remain byte-identical.
+- **No LLM, no "smart" suggestions.** CLAUDE.md — dumb on purpose.
+- **iOS cannot be built on danserver.** Unchanged. Any device verification is the owner's MacBook.
+
+**Requirements:** CALAUTH-01 (connecting Google Calendar is a button, not a manual URL hunt), CALAUTH-02 (Canopy holds a read-only Google token and cannot write, enforced by scope), CALAUTH-03 (an expired or revoked token degrades visibly with a one-tap reconnect, never a silently stale calendar), CALAUTH-04 (no client secret exists in the repository)
+**Depends on:** Phase 35 (owns `CalendarSource`, the factory, and the settings surface this extends). **Phase 35 is still at its UAT gate** — this phase folds into the SAME gate rather than opening a second one, which is the one-gate shape this project has repeatedly found cheaper.
+**Plans:** not yet planned — run `/gsd-plan-phase 36`.
 
 ---
