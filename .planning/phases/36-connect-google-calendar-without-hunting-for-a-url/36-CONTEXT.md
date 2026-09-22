@@ -38,10 +38,21 @@ buildable work behind it.
    path.
 3. **A fourth `CalendarSource` implementation, not a rewrite.** If this phase finds itself changing
    the interface, that is a signal something is wrong.
-4. **HTTPS redirect URI — the tailnet origin** `https://danserver.tailc2efd2.ts.net:8446`, already
-   fronted by `tailscale serve`. `http://danserver:8161` is disqualified (Google requires HTTPS;
-   localhost is the only exemption). **UAT serving moves to the TLS origin for this phase.**
-   `http://localhost:8161` is registered as the documented fallback.
+4. **NATIVE iOS client with a custom URI scheme. REVISED 2026-09-22 — reverses the original
+   decision 4.** Google's *Web application* client is confidential and will not do a secret-free PKCE
+   exchange; a browser page cannot hold a secret. Owner ruled **build it native**. Google: *"the
+   `client_secret` is not applicable to ... iOS"* and *"refresh tokens are always returned for
+   installed applications."*
+   - Cloud Console registers an **iOS** client keyed on **bundle ID**. No redirect URI or JS origins.
+   - Redirect is the reversed client ID, registered via `CFBundleURLTypes` in `Info.plist` (which
+     currently has **no** `CFBundleURLTypes` key at all — it must be added).
+   - **The tailnet HTTPS origin is irrelevant. UAT serving does NOT move.**
+   - **The button will NOT exist in the hosted browser build.** Accepted cost, not an oversight.
+     Browser keeps Phase 35's `.ics` path.
+   - `google_sign_in`'s web flow was rejected on evidence: no refresh token, ~1 hour expiry, i.e.
+     hourly re-consent — worse than the accepted 7-day cadence.
+   - Bundle ID is still `com.example.canopy` and the OAuth client binds to it; surfaced to the owner
+     as an explicit choice rather than decided silently.
 5. **Google only. Apple is unaffected and unaddressed.** No equivalent public OAuth calendar API
    exists for Apple. **Do not attempt CalDAV with app-specific passwords.**
 

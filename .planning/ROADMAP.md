@@ -1261,11 +1261,31 @@ a fallback if verification proves unworkable.
    CalendarSource`, slotting into the existing `calendar_source_factory`. Phase 35's interface was
    built precisely so a new backend is an added class, not a migration. If this phase finds itself
    changing the interface, that is a signal something is wrong.
-4. **HTTPS redirect URI — the tailnet origin.** Google requires HTTPS for redirect URIs (localhost is
-   the only exemption). `http://danserver:8161` is therefore disqualified. `tailscale serve` already
-   fronts TLS at `https://danserver.tailc2efd2.ts.net:8446`; **UAT serving moves there for this
-   phase.** Confirm Google accepts a `.ts.net` host as a registered redirect URI — if it does not,
-   that is a real finding and `http://localhost:PORT` is the fallback.
+4. **NATIVE iOS client, custom URI scheme redirect. REVISED 2026-09-22 — this reverses the original
+   decision 4, which was wrong.** The original said: HTTPS redirect on the tailnet origin, browser
+   build. That premise died on contact with Google — the **Web application** client type is a
+   *confidential* client that will not complete a secret-free PKCE exchange, and a browser page
+   cannot hold a secret. There is no proper secret-free browser client at Google.
+
+   The owner ruled **build it native**. Google's native-app docs are unambiguous: *"The
+   `client_secret` is **not applicable** to requests from clients registered as Android, iOS, or
+   Chrome applications"* and *"refresh tokens are **always** returned for installed applications."*
+   So the flow the owner actually asked for — tap, pick account, stay signed in — is fully supported
+   on iOS and needs no secret.
+
+   Consequences: Cloud Console registers an **iOS** client keyed on the **bundle ID** (no redirect
+   URI, no JavaScript origins to enter); the redirect is the reversed client ID
+   (`com.googleusercontent.apps.<id>:/oauth2redirect`) registered as a `CFBundleURLTypes` scheme; and
+   **the tailnet HTTPS origin is irrelevant — UAT serving does NOT move.**
+
+   **The sign-in button will NOT exist in the hosted browser build.** That is the accepted cost of
+   this ruling, not an oversight. The browser keeps Phase 35's `.ics` path. A `google_sign_in`-style
+   browser flow was rejected on evidence: its web implementation returns **no refresh token** and
+   expires in ~1 hour, i.e. hourly re-consent — far worse than the 7-day cadence already accepted.
+
+   **`com.example.canopy` is still the bundle ID**, and the OAuth client binds to it. Surfaced to the
+   owner as a 30-second decision (register against the placeholder now and re-register later, or pick
+   the real identifier now) rather than decided silently.
 5. **Google only. Apple Calendar is unaffected and unaddressed.** There is no equivalent public OAuth
    calendar API for Apple. Apple continues via the iOS device path (already shipped, no login needed)
    or an `.ics` subscription. **Do not attempt CalDAV with app-specific passwords.**
