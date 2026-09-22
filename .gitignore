@@ -56,3 +56,6 @@ look/
 
 # Private calendar .ics address used for UAT (read-credential — never commit)
 .uat-calendar-url
+
+# Google OAuth client ID for Phase 36 (identifies Dan's cloud project — public repo)
+.google-client-id
