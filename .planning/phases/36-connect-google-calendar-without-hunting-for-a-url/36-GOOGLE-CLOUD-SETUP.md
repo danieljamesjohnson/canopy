@@ -1,5 +1,23 @@
 # Phase 36 — Google Cloud setup (Dan's part, ~15 minutes)
 
+> # ⛔ ON HOLD — 2026-09-22. Do not follow Step 4 yet.
+>
+> **Steps 1–3 are still correct and safe to do** (project, enable Calendar API, consent screen +
+> read-only scope + add yourself as a test user). They are needed under every option below.
+>
+> **Step 4 — creating a "Web application" OAuth client — is on hold**, because research found that
+> Google's Web-application client type is a *confidential* client: its token exchange is widely
+> reported to reject a secret-free PKCE exchange with `400 client_secret is missing`, and Google's own
+> docs say *"a JavaScript application does not require a secret, but a web server application does"*
+> without documenting PKCE-as-substitute for this client type at all.
+>
+> That collides head-on with **decision 1 (no client secret)** and **CALAUTH-04**. A browser SPA
+> cannot hold a secret — it ships in the JS bundle where anyone can read it.
+>
+> **This is an architecture fork, not a config tweak.** Awaiting the owner's ruling before Step 4
+> is rewritten. See the conversation, and the "Finding B" section of `36-RESEARCH.md`.
+
+
 > **Do this while the code is being built, not after.** You called it: the scaffolding is the slow
 > part, and it is the part only you can do — it lives in your Google account, not in this repo.
 > Everything here produces exactly **one value** the app needs: an OAuth **client ID**. There is no
