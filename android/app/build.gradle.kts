@@ -13,6 +13,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Required by flutter_local_notifications, which uses java.time APIs that do not
+        // exist below API 26. Without this the Android build fails outright at
+        // :app:checkDebugAarMetadata — it is not a warning.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -20,7 +24,6 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.danjjohnson.canopy"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -41,4 +44,11 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Supplies the desugared java.time implementation that
+    // `isCoreLibraryDesugaringEnabled` above depends on. Both halves are required —
+    // enabling the flag without this dependency fails the build with a different error.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
