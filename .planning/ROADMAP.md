@@ -1318,6 +1318,18 @@ a fallback if verification proves unworkable.
 
 **Requirements:** CALAUTH-01 (connecting Google Calendar is a button, not a manual URL hunt), CALAUTH-02 (Canopy holds a read-only Google token and cannot write, enforced by scope), CALAUTH-03 (an expired or revoked token degrades visibly with a one-tap reconnect, never a silently stale calendar), CALAUTH-04 (no client secret exists in the repository)
 **Depends on:** Phase 35 (owns `CalendarSource`, the factory, and the settings surface this extends). **Phase 35 is still at its UAT gate** — this phase folds into the SAME gate rather than opening a second one, which is the one-gate shape this project has repeatedly found cheaper.
-**Plans:** not yet planned — run `/gsd-plan-phase 36`.
+**Plans:** 7 plans, 5 waves.
+
+Plans:
+- [ ] 36-01-PLAN.md — Tracer: a canned Google token persists and a canned `events.list` response becomes a `CommitmentBlock` through the unchanged sync service (+ package gate, schema 11→12)
+- [ ] 36-02-PLAN.md — CALAUTH-03's three-way failure classification (`invalid_grant` vs. offline vs. routine refresh), cancellation as a real state, and the reconnect flag's full lifecycle
+- [ ] 36-03-PLAN.md — Google event/calendar mapping against Google-shaped fixtures (moved occurrence, cancelled stub, all-day, timeless) + CALAUTH-02's read-only scope proven by grep
+- [ ] 36-04-PLAN.md — `CFBundleURLTypes` via a build setting, `tools/build-ios.sh` injecting the gitignored client ID, and CALAUTH-04's no-secret gates
+- [ ] 36-05-PLAN.md — D-36-03: composite source so both iOS sources coexist, factory routing, and the double-tick overlap detector
+- [ ] 36-06-PLAN.md — The screen: one Connect button, the reconnect card and Settings subtitle, and the overlap warning at tick time
+- [ ] 36-07-PLAN.md — The owner's MacBook: `36-UAT.md`, folded into Phase 35's still-open device gate
+
+**Wave structure:** 1 → `36-01`; 2 → `36-02` ‖ `36-03` ‖ `36-04`; 3 → `36-05`; 4 → `36-06`; 5 → `36-07`.
+**Two blocking human gates:** `36-01` Task 1 (pub package legitimacy, before the install) and `36-07` Task 2 (the device UAT, the only place any of this phase can run).
 
 ---
