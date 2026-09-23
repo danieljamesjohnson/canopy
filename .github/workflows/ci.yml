@@ -1,0 +1,245 @@
+name: CI
+
+# WHY THIS EXISTS
+# ---------------
+# Canopy is developed on danserver, which has **no Xcode and no Android SDK** — and never will.
+# That is not a temporary gap: it means nobody can answer "does the iOS project still compile?"
+# without the owner opening his MacBook. That question has been live and unanswerable more than
+# once (the com.example -> com.danjjohnson bundle-ID rename; Phase 36's Info.plist changes).
+#
+# GitHub's macos-latest runners have Xcode. This workflow turns "does it build on a real Apple
+# toolchain" from a trip to the MacBook into a push.
+#
+# It does NOT replace the human gates. Whether a button feels right, whether a warning reads
+# clearly, whether a thumb can hit a target — those are still the owner's, on a device. CI
+# collapses "does it build", never "is it good".
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      # This project generates a LOT of planning commits. Burning a 10x-billed macOS runner to
+      # rebuild iOS because a markdown file changed is pure waste.
+      - '.planning/**'
+      - '**/*.md'
+      - '.mission-control/**'
+  pull_request:
+    paths-ignore:
+      - '.planning/**'
+      - '**/*.md'
+      - '.mission-control/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_CHANNEL: stable
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Decide whether the expensive macOS job needs to run at all. A change that
+  # only touches Dart or Android paths does not need an Apple toolchain.
+  # ---------------------------------------------------------------------------
+  changes:
+    name: Detect Apple-relevant changes
+    runs-on: ubuntu-latest
+    outputs:
+      apple: ${{ steps.filter.outputs.apple }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine whether Apple-relevant paths changed
+        id: filter
+        run: |
+          set -euo pipefail
+
+          # workflow_dispatch has no meaningful diff range — always run the expensive job
+          # rather than guess wrong and report a false green.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "apple=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+            HEAD="${{ github.sha }}"
+          fi
+
+          # A brand-new branch (or a force-push) can give an all-zero / unreachable BASE.
+          # Fail OPEN: run the Apple job. A wasted runner is cheaper than a missed break.
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] \
+             || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "apple=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          CHANGED=$(git diff --name-only "$BASE" "$HEAD")
+          echo "changed files:"; echo "$CHANGED"
+
+          # Anything that can plausibly affect an iOS build: the iOS project itself, shared
+          # Dart source, dependencies, or this workflow.
+          if echo "$CHANGED" | grep -qE '^(ios/|macos/|lib/|pubspec\.(yaml|lock)|\.github/workflows/)'; then
+            echo "apple=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "apple=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ---------------------------------------------------------------------------
+  # The suite. This is the one that runs on danserver too, so a failure here
+  # means CI and local genuinely disagree — worth investigating, not retrying.
+  # ---------------------------------------------------------------------------
+  analyze-and-test:
+    name: Analyze + test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        # The suite is ~820 tests and takes well under a minute. No sharding needed.
+        run: flutter test
+
+      - name: Assert no client secret is committed (CALAUTH-04)
+        # Phase 36 uses a native PKCE public client, for which no client secret exists at all.
+        # This is a machine check of a product guarantee, not a style rule: the repo is PUBLIC,
+        # and a committed secret would be both a leak and a contradiction of the phase's premise.
+        run: |
+          set -euo pipefail
+          # Matches a secret-shaped VALUE, not the words "client secret".
+          #
+          # Both refinements came from dry-running this locally before the first push, and both
+          # matter: (1) written literally the pattern matched its OWN source and failed every
+          # run; it is assembled from fragments so it cannot. (2) scanning for the bare phrase
+          # lit up ~19 lines of .planning/ prose that legitimately *discusses* client secrets —
+          # this phase's entire design rationale is about not having one. A check that cries
+          # wolf gets ignored, which is worse than no check.
+          #
+          # So: docs are excluded, and the pattern requires Google's actual secret prefix
+          # followed by secret-length entropy, or an assignment with a real-looking value.
+          PREFIX='GOCSPX''-[A-Za-z0-9_-]{10,}'
+          ASSIGN='client''_''secret["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']?[A-Za-z0-9_-]{15,}'
+          if grep -rIn --exclude-dir=.git --exclude-dir=build --exclude-dir=.planning \
+               --exclude='*.md' -E "$PREFIX|$ASSIGN" . ; then
+            echo "::error::A Google client secret appears to be committed. CALAUTH-04 forbids this, and this repository is PUBLIC."
+            exit 1
+          fi
+          echo "No client secret found."
+
+  # ---------------------------------------------------------------------------
+  # The whole point. danserver structurally cannot do this.
+  # ---------------------------------------------------------------------------
+  ios-build:
+    name: iOS build (the thing danserver can't do)
+    runs-on: macos-latest
+    needs: changes
+    if: needs.changes.outputs.apple == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS (simulator, unsigned)
+        # --simulator --no-codesign is deliberate: it exercises the real Xcode toolchain,
+        # the Podfile, and every native plugin, WITHOUT needing signing certificates in CI.
+        # A signing failure would otherwise masquerade as a build failure.
+        run: |
+          set -euo pipefail
+          flutter build ios --simulator --no-codesign || {
+            echo "::warning::iOS build failed. Retrying once after clearing CocoaPods state — Flutter's project migrator can leave Podfile.lock out of sync with the Pods sandbox on a newer stable than the template was generated against."
+            rm -rf ios/Pods ios/Podfile.lock ios/.symlinks
+            flutter build ios --simulator --no-codesign
+          }
+
+      - name: Confirm the bundle identifier is not the placeholder
+        # com.example.* is Apple's sample namespace and is rejected for distribution.
+        # This was renamed to com.danjjohnson.canopy on 2026-09-23 and the rename could not
+        # be verified on danserver — no Xcode. This step is where it actually gets checked.
+        run: |
+          set -euo pipefail
+          if grep -q 'PRODUCT_BUNDLE_IDENTIFIER = com\.example' ios/Runner.xcodeproj/project.pbxproj; then
+            echo "::error::iOS bundle identifier is still the com.example placeholder."
+            exit 1
+          fi
+          grep -m1 'PRODUCT_BUNDLE_IDENTIFIER = ' ios/Runner.xcodeproj/project.pbxproj
+
+  # ---------------------------------------------------------------------------
+  # The other platform danserver can't build (no Android SDK — verified by
+  # flutter doctor during Phase 35, not assumed).
+  # ---------------------------------------------------------------------------
+  android-build:
+    name: Android build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Android (debug APK)
+        run: flutter build apk --debug
+
+  # ---------------------------------------------------------------------------
+  # The surface the owner actually tests on over the tailnet.
+  # ---------------------------------------------------------------------------
+  web-build:
+    name: Web build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web
+        # Matches how UAT builds are produced locally (CLAUDE.md "Local hosting for UAT"):
+        # debug mode, single dart2js bundle, no service worker.
+        run: flutter build web --debug --source-maps --pwa-strategy=none
