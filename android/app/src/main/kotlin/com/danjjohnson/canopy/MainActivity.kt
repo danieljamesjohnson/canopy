@@ -1,4 +1,4 @@
-package com.example.canopy
+package com.danjjohnson.canopy
 
 import io.flutter.embedding.android.FlutterActivity
 
