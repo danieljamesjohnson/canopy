@@ -30,13 +30,17 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
           ? []
           : (fields[9] as List).cast<String>()
       ..icsUrls = fields[10] == null ? [] : (fields[10] as List).cast<String>()
-      ..lastCalendarSyncAt = fields[11] as DateTime?;
+      ..lastCalendarSyncAt = fields[11] as DateTime?
+      ..googleAccessToken = fields[12] as String?
+      ..googleRefreshToken = fields[13] as String?
+      ..googleAccessTokenExpiresAt = fields[14] as DateTime?
+      ..googleReconnectNeeded = fields[15] == null ? false : fields[15] as bool;
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.morningNotificationMinutes)
       ..writeByte(1)
@@ -60,7 +64,15 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(10)
       ..write(obj.icsUrls)
       ..writeByte(11)
-      ..write(obj.lastCalendarSyncAt);
+      ..write(obj.lastCalendarSyncAt)
+      ..writeByte(12)
+      ..write(obj.googleAccessToken)
+      ..writeByte(13)
+      ..write(obj.googleRefreshToken)
+      ..writeByte(14)
+      ..write(obj.googleAccessTokenExpiresAt)
+      ..writeByte(15)
+      ..write(obj.googleReconnectNeeded);
   }
 
   @override

@@ -65,4 +65,43 @@ class AppSettings extends HiveObject {
   /// null, i.e. an upgrading user has never synced.
   @HiveField(11)
   DateTime? lastCalendarSyncAt;
+
+  /// The persisted Google OAuth access token (CALAUTH-01/02). Additive
+  /// field — old records deserialize with null, i.e. an upgrading user has
+  /// no Google connection until they sign in.
+  @HiveField(12)
+  String? googleAccessToken;
+
+  /// The persisted Google OAuth refresh token, used to obtain a fresh access
+  /// token without re-prompting the user (CALAUTH-01/02). Additive field —
+  /// old records deserialize with null.
+  @HiveField(13)
+  String? googleRefreshToken;
+
+  /// When [googleAccessToken] expires, in UTC. Additive field — old records
+  /// deserialize with null.
+  @HiveField(14)
+  DateTime? googleAccessTokenExpiresAt;
+
+  /// True when the stored Google credential has been found dead (e.g. an
+  /// expired 7-day refresh token) and the user must reconnect (CALAUTH-03).
+  /// Additive field — old records deserialize with false, i.e. an upgrading
+  /// user with no Google connection is correctly not shown a reconnect
+  /// prompt.
+  ///
+  /// Carries `defaultValue: false` DELIBERATELY, unlike this class's other
+  /// bool fields (Deviation from plan: measured, not assumed — a genuinely
+  /// old 9-field record fed through `AppSettingsAdapter.read` crashes with
+  /// `type 'Null' is not a subtype of type 'bool'` on the generated
+  /// `fields[15] as bool` cast when this annotation is absent, because
+  /// unlike a NULLABLE field's `as bool?`, hive_ce_generator emits a
+  /// non-nullable cast for a plain `bool` with no default and does not
+  /// itself supply a `false` fallback. Proven by
+  /// `test/providers/settings_notifier_calendar_test.dart`'s existing old
+  /// -record round-trip, which failed until this annotation was added — see
+  /// 36-01-SUMMARY.md for the observed stack trace and WINDOWS.md entry 3,
+  /// which already flagged this exact latent risk in this class's other
+  /// bool fields.
+  @HiveField(15, defaultValue: false)
+  bool googleReconnectNeeded = false;
 }
