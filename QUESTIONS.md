@@ -54,25 +54,57 @@ the right answer needs a considered call rather than a five-minute reaction.
 
 ---
 
-## Q-02 — `WINDOWS.md` entry 3 is now CONFIRMED, not suspected: four bool fields can crash on upgrade
+## Q-02 — Every migration comment in `migrations.dart` rests on a premise that is now disproven
 
-**Found 2026-09-25** during `36-01`, by a pre-existing test, and verified by the orchestrator in the
-generated adapter.
+**Found 2026-09-25** during `36-01`, by a pre-existing test, then traced by the orchestrator through
+the generated adapter and the migration history.
 
-`AppSettings` has four non-nullable `bool` fields with no `defaultValue:` —
-`onboardingComplete` (field 1), `midDayNudgeEnabled` (2), `morningNotificationEnabled` (4),
-`eveningReminderEnabled` (7). `hive_ce_generator` compiles each to a bare `fields[N] as bool` with no
-fallback, which throws `type 'Null' is not a subtype of type 'bool'` when the field is absent from an
-older record's byte stream.
+### The premise, and why it is false
 
-This is the same crash class Phase 35 already fixed once. It stopped being theoretical during
-`36-01`: adding a fifth such field reproduced the crash for real, and `defaultValue: false` fixed it
-(recorded as a deviation in `36-01-SUMMARY.md`, since the plan had explicitly instructed otherwise on
-the strength of a claim that turned out to be false).
+`lib/data/database/migrations.dart` states, in the comments on `_migration2to3`, `_migration3to4`
+and `_migration4to5`:
 
-**No existing old-record test exercises those four fields**, so the suite will keep passing green
-regardless. That is precisely the "assertion that cannot fail" shape `CLAUDE.md` warns about.
+> All additive nullable/defaulted fields — Hive CE binary reader returns null/false/0 for missing
+> fields in existing records. No data transformation needed.
 
-**Not fixed** — out of Phase 36's scope, and it touches onboarding state, which deserves its own
-plan rather than a drive-by edit. Worth a small dedicated phase: add `defaultValue:` to all four,
-plus one genuine old-record round-trip test that would have caught it.
+**It does not return `false` or `0`.** For a *non-nullable* `bool` or `int` with no `defaultValue:`,
+`hive_ce_generator` emits an unguarded cast — `fields[7] as bool`, `(fields[8] as num).toInt()` —
+which throws `type 'Null' is not a subtype of type 'bool'` when the field is genuinely absent.
+Nullable fields (`String?`, `int?`) are fine; non-nullable ones are not. `36-01` reproduced the crash
+for real on a new field, and `defaultValue: false` fixed it.
+
+**No migration in the file backfills anything.** Every one is a comment-only no-op resting on this.
+
+### What is actually exposed, scoped honestly
+
+Seven fields compile to unguarded casts: 0, 1, 2, 3 (`morningNotificationMinutes`,
+`onboardingComplete`, `midDayNudgeEnabled`, `midDayNudgeMinutes`), 4
+(`morningNotificationEnabled`), and 7, 8 (`eveningReminderEnabled`, `eveningReminderMinutes`).
+
+But the *cast shape* being unsafe is not the same as being reachable:
+
+- **Fields 0–3 shipped in the very first commit** (`17f0713`, `feat(01-02)`). Every record ever
+  written contains them. **Unreachable.**
+- **Field 4** arrived in phase 4 — exposed only to a record last written before phase 4.
+- **Fields 7 and 8** arrived in phase 10 (`29f1040`) — exposed to any record last written before
+  phase 10. **This is the realistic window, and it is exactly what `WINDOWS.md` entry 3 already
+  names.** Entry 3 was correctly scoped.
+
+Practical exposure is further limited because Hive rewrites a record in full on every `put`: once the
+app has saved settings even once since phase 10, all fields are present. For a daily-use install the
+risk is near nil. It is real for a fresh install of an old build, or a record never written since.
+
+### Why it is still worth fixing
+
+Not for the crash — for the comments. The next agent to add a non-nullable field to any Hive model
+will read `migrations.dart`, believe "the reader returns false for missing fields", omit
+`defaultValue:`, and reintroduce the same defect. `36-01`'s plan did exactly that, on exactly this
+reasoning, and only a pre-existing test caught it. **The stale comment is the defect that keeps
+reproducing.**
+
+Also: no old-record test exercises fields 4/7/8, so the suite stays green regardless — the
+"assertion that cannot fail" shape `CLAUDE.md` warns about.
+
+**Not fixed** — out of Phase 36's scope, and it touches onboarding state. Worth a small dedicated
+plan: add `defaultValue:` to fields 0–4, 7, 8; correct the false claim in all three migration
+comments; and add one genuine pre-phase-10 old-record round-trip test that would have caught it.
