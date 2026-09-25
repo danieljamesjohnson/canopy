@@ -36,6 +36,29 @@
 	<string>Canopy reads your calendar events to schedule your day around them. Canopy never changes or deletes anything in your calendar.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Canopy reads your calendar events to schedule your day around them. Canopy never changes or deletes anything in your calendar.</string>
+	<!-- CALAUTH-01/CALAUTH-04 (Google Calendar sign-in, native iOS OAuth client,
+	     plan 36-04). Registers the redirect Google's consent screen returns to.
+	     The scheme below is the REVERSED form of the Google OAuth client ID
+	     (Google's documented rule for native/iOS clients) — it is not a scheme
+	     this app chose. The value is supplied at build time by
+	     tools/build-ios.sh from the gitignored .google-client-id, via a
+	     generated (gitignored) xcconfig build setting — see
+	     ios/Flutter/GoogleOAuth.xcconfig and ios/Flutter/Debug.xcconfig —
+	     CALAUTH-04 requires no client ID ever be committed. Only the scheme
+	     belongs here: the /oauth2redirect path
+	     component is matched by AppAuth at runtime, not by iOS launch
+	     services, so it must not appear in the scheme string below. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+			</array>
+		</dict>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

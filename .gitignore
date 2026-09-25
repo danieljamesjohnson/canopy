@@ -59,3 +59,7 @@ look/
 
 # Google OAuth client ID for Phase 36 (identifies Dan's cloud project — public repo)
 .google-client-id
+
+# Generated from .google-client-id by tools/build-ios.sh (Phase 36) — never
+# hand-edited, never committed, regenerated on every iOS build.
+ios/Flutter/GoogleOAuth.xcconfig
