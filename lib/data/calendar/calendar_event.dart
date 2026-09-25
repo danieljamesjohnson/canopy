@@ -98,6 +98,7 @@ class CalendarInfo {
     this.accountType,
     this.colorHex,
     required this.isReadOnly,
+    this.sourceLabel,
   });
 
   /// Stable identifier for this calendar — an OS calendar id on-device, or
@@ -122,4 +123,15 @@ class CalendarInfo {
   /// every [CalendarSource] implementation reports every calendar as
   /// read-only regardless of what the OS itself would allow.
   final bool isReadOnly;
+
+  /// The user-facing name of the source this calendar came from (D-36-03) —
+  /// e.g. "Google" or "This device". Used only for grouping in the
+  /// calendar-selection picker (plan 36-06); this is a DTO field, not part
+  /// of the [CalendarSource] interface (CONTEXT decision 3's "do not change
+  /// the interface" is untouched) — additive with a null default so no
+  /// existing caller has to change. Two sources can otherwise report the
+  /// same [accountName] (e.g. the same Google account reached both via
+  /// sign-in and via the device's own copy of it), which would collapse
+  /// into one indistinguishable group without this field.
+  final String? sourceLabel;
 }
