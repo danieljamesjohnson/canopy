@@ -1325,7 +1325,7 @@ Plans:
 - [x] 36-02-PLAN.md — CALAUTH-03's three-way failure classification (`invalid_grant` vs. offline vs. routine refresh), cancellation as a real state, and the reconnect flag's full lifecycle
 - [x] 36-03-PLAN.md — Google event/calendar mapping against Google-shaped fixtures (moved occurrence, cancelled stub, all-day, timeless) + CALAUTH-02's read-only scope proven by grep
 - [x] 36-04-PLAN.md — `CFBundleURLTypes` via a build setting, `tools/build-ios.sh` injecting the gitignored client ID, and CALAUTH-04's no-secret gates
-- [ ] 36-05-PLAN.md — D-36-03: composite source so both iOS sources coexist, factory routing, and the double-tick overlap detector
+- [x] 36-05-PLAN.md — D-36-03: composite source so both iOS sources coexist, factory routing, and the double-tick overlap detector
 - [ ] 36-06-PLAN.md — The screen: one Connect button, the reconnect card and Settings subtitle, and the overlap warning at tick time
 - [ ] 36-07-PLAN.md — The owner's MacBook: `36-UAT.md`, folded into Phase 35's still-open device gate
 
