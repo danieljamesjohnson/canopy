@@ -88,6 +88,42 @@ perceptual judgment, the class this project's green suites have missed repeatedl
 
 ---
 
+## D-36-04 — The three pub packages are cleared for install
+
+**Ruled 2026-09-25**, clearing `36-01` Task 1's `blocking-human` gate. The orchestrator loaded the
+four pages and put the readings in front of the owner; he approved the install.
+
+**What was on the pages on 2026-09-25** — observations, not the word "verified":
+
+| Package | Version shown | Published | Publisher badge | Discontinued marker |
+|---|---|---|---|---|
+| `flutter_appauth` | 12.1.0 | 27 days ago | `dexterx.dev` | none |
+| `googleapis_auth` | 2.3.4 | 7 days ago | `google.dev` | none |
+| `googleapis` | 17.0.0 | 31 days ago | `google.dev` | none |
+
+`github.com/MaikuB/flutter_appauth` showed as a standard public repository — **not** "Public archive"
+— 308 stars, 84 open issues, 240 commits, owner display name `MaikuB`. `googleapis_auth` showed
+1.74M downloads; `flutter_appauth` showed 379k.
+
+**Every version is exactly what `36-RESEARCH.md` recorded**, so the ~14-day freshness horizon its
+registry claims carried is satisfied by re-reading rather than by assumption. Open issues on
+`flutter_appauth` are **down** from research's 102 to 84, and `googleapis_auth` downloads are **up**
+from 1.6M. Nothing moved in a direction that changes the verdict.
+
+**Two things this gate did NOT establish, recorded so the SUMMARY does not overclaim:**
+
+1. The `googleapis` **download count was not re-read.** The "1.1k" figure on that page is the *likes*
+   count; the orchestrator initially misread it as downloads and corrected itself before asking. So
+   research's 1.1M/30d stands as `[CITED: pub.dev]`, not re-verified.
+2. **No commit date was obtained** for `MaikuB/flutter_appauth` — the rendered page showed the commit
+   *count* but not the date of the most recent one. "Not archived" is established; "has recent
+   commits" rests on the repo-pushed date research recorded (2026-09-13), not on a fresh reading.
+
+Neither gap is load-bearing for the ruling: the decisive facts are the verified publishers, the
+absent discontinued markers, the unarchived repo, and versions matching research exactly.
+
+---
+
 ## Correction on the record — the recurrence advantage does NOT apply to the device path
 
 Earlier in this phase the orchestrator told the owner that the Google path "fixes the
