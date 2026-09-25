@@ -2,28 +2,41 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
 
 import 'calendar_source.dart';
+import 'composite_calendar_source.dart';
 import 'device_calendar_source.dart';
+import 'google_auth_client.dart';
+import 'google_calendar_source.dart';
 import 'ics_calendar_source.dart';
 import 'null_calendar_source.dart';
 
-/// Selects the right [CalendarSource] for the current platform (D-35-12: one
-/// active source type per platform, never a combined multi-source picker).
+/// Selects the right [CalendarSource] for the current platform.
+///
+/// D-35-12 established "one active source type per platform, never a
+/// combined multi-source picker" — **D-36-03 overrides that rule for iOS
+/// specifically, and only iOS**: when a Google auth client is supplied, iOS
+/// returns both the Google and device sources together (see
+/// [iosCalendarSource]), because the owner chose to keep device-only
+/// calendars (iCloud Personal, a local calendar, a subscribed OS-level
+/// feed) reachable while signed in to Google. This is a narrow, deliberate
+/// carve-out, not a quiet violation of the rule it overrides — every other
+/// platform keeps D-35-12's original rule untouched.
 ///
 /// Follows `notification_service.dart`'s platform-branching idiom: an
 /// explicit branch per platform with a trailing comment for every one that's
 /// a no-op — never a silent fallthrough.
-CalendarSource defaultCalendarSource({List<String> icsUrls = const []}) {
+CalendarSource defaultCalendarSource({
+  List<String> icsUrls = const [],
+  GoogleAuthClient? googleAuth,
+}) {
   if (kIsWeb) {
-    // Web: no device calendar API exists — ICS is the only path.
+    // Web: no device calendar API exists — ICS is the only path. D-36-01's
+    // accepted cost: the Google sign-in button does not exist here.
     return icsUrls.isEmpty
         ? NullCalendarSource()
         : IcsCalendarSource(urls: icsUrls);
   }
   if (Platform.isIOS) {
-    // iOS: the native device calendar (D-35-15) — every calendar the user
-    // has added at the OS level (iCloud, Google, Exchange, subscribed
-    // feeds), no OAuth, no vendor-specific integration.
-    return DeviceCalendarSource();
+    return iosCalendarSource(googleAuth: googleAuth);
   }
   // Android, macOS, Windows, Linux: ICS is the path. Android was originally
   // meant to get its own DeviceCalendarSource too (D-35-12), but D-35-15
@@ -40,4 +53,48 @@ CalendarSource defaultCalendarSource({List<String> icsUrls = const []}) {
   return icsUrls.isEmpty
       ? NullCalendarSource()
       : IcsCalendarSource(urls: icsUrls);
+}
+
+/// The iOS composition decision (D-36-03), factored out from the real
+/// `Platform.isIOS` check above purely for testability — deliberately a
+/// plain top-level function taking `googleAuth` directly, mirroring this
+/// codebase's existing pure-function/adapter split (`mapGoogleEvent`,
+/// `mapDeviceEvent`): this is the seam a test can call directly, exercising
+/// exactly the same code [defaultCalendarSource] runs when `Platform.isIOS`
+/// is true. `dart:io`'s `Platform.isIOS` itself cannot be forced inside
+/// `flutter test` the way Flutter's own `defaultTargetPlatform` can via
+/// `debugDefaultTargetPlatformOverride` — this file (like
+/// `device_calendar_source.dart`'s own `Platform.isIOS` check) deliberately
+/// keeps `dart:io.Platform` rather than switching to `defaultTargetPlatform`,
+/// so the real OS read above is, like that existing check, unverifiable on
+/// danserver and left to CI/the owner's device rather than a host test.
+///
+/// The Google child must be harmless when nobody has signed in:
+/// [GoogleCalendarSource.listCalendars]/[GoogleCalendarSource.listEvents] on
+/// a client with no stored token already return empty rather than throwing
+/// (36-01), so composing it unconditionally on iOS is safe — there is no
+/// need for a separate connected-or-not flag here, one less piece of state
+/// that could disagree with Hive. Google is ordered first, device second,
+/// so the picker (plan 36-06) renders the signed-in account above the
+/// device's own list.
+///
+/// **`calendarIds: const []`, a known limitation, not an oversight.** Unlike
+/// `DeviceCalendarSource` (whose plugin resolves an empty list to "every
+/// calendar" internally) or `IcsCalendarSource` (whose feed list IS its
+/// configuration), `GoogleCalendarSource` has no way to enumerate "every
+/// calendar" on its own — it must be told which calendar ids to query. This
+/// plan does not yet thread `AppSettings.selectedCalendarIds` (filtered to
+/// the `google:` prefix) into this constructor, because doing so is plan
+/// 36-06's job once the picker exists to write those ids in the first
+/// place. Until then, `listCalendars()` still returns the full Google
+/// account (so the picker CAN display it), but `listEvents()` returns no
+/// Google events — recorded honestly in 36-05-SUMMARY.md rather than
+/// overclaimed here.
+CalendarSource iosCalendarSource({GoogleAuthClient? googleAuth}) {
+  final device = DeviceCalendarSource();
+  if (googleAuth == null) return device;
+  return CompositeCalendarSource([
+    GoogleCalendarSource(authClient: googleAuth, calendarIds: const []),
+    device,
+  ]);
 }

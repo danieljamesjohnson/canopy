@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/calendar/calendar_source_factory.dart';
+import '../../data/calendar/google_auth_client.dart';
 import '../../data/models/daily_schedule.dart';
 import '../../data/models/goal.dart';
 import '../../data/models/scheduled_chunk.dart';
@@ -135,8 +136,18 @@ class _CheckinScreenState extends State<CheckinScreen> {
       // Built from the PERSISTED configuration (never empty argument list —
       // Task 3 closed the tracer's deliberate no-op) so the feed the owner
       // actually configured on the Calendars screen is what check-in syncs.
+      // D-36-03: on iOS, `googleAuth` composes the signed-in Google account
+      // alongside the device calendar — a no-op on every other platform,
+      // where `defaultCalendarSource` never reads it. Built from the
+      // settings notifier already in hand, the same `SettingsNotifier`
+      // instance that implements `GoogleTokenStore` (plan 36-01) — without
+      // this, connecting Google would populate the picker and then never
+      // actually import anything at check-in.
       final syncResult = await commitmentsNotifier.syncFromCalendar(
-        source: defaultCalendarSource(icsUrls: settingsNotifier.icsUrls),
+        source: defaultCalendarSource(
+          icsUrls: settingsNotifier.icsUrls,
+          googleAuth: GoogleAuthClient(store: settingsNotifier),
+        ),
       );
       // lastCalendarSyncAt is written on success only — a failing sync
       // leaves the prior timestamp in place, so the Settings row and the
