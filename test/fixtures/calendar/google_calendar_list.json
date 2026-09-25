@@ -1,0 +1,24 @@
+{
+  "kind": "calendar#calendarList",
+  "items": [
+    {
+      "kind": "calendar#calendarListEntry",
+      "id": "dan@example.com",
+      "summary": "dan@example.com",
+      "primary": true,
+      "backgroundColor": "#0088aa"
+    },
+    {
+      "kind": "calendar#calendarListEntry",
+      "id": "abcdef1234567890@group.calendar.google.com",
+      "summary": "Family",
+      "backgroundColor": "#ff8800"
+    },
+    {
+      "kind": "calendar#calendarListEntry",
+      "id": "en.usa#holiday@group.v.calendar.google.com",
+      "summary": "Holidays in United States",
+      "backgroundColor": "#33aa33"
+    }
+  ]
+}
