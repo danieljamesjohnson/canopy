@@ -1,0 +1,58 @@
+{
+  "kind": "calendar#events",
+  "summary": "dan@example.com",
+  "items": [
+    {
+      "kind": "calendar#event",
+      "id": "series1_20260302T140000Z",
+      "status": "confirmed",
+      "summary": "Weekly sync",
+      "recurringEventId": "series1",
+      "originalStartTime": {
+        "dateTime": "2026-03-02T14:00:00Z",
+        "timeZone": "UTC"
+      },
+      "start": { "dateTime": "2026-03-02T14:00:00Z", "timeZone": "UTC" },
+      "end": { "dateTime": "2026-03-02T14:25:00Z", "timeZone": "UTC" }
+    },
+    {
+      "kind": "calendar#event",
+      "id": "series1_20260309T140000Z",
+      "status": "confirmed",
+      "summary": "Weekly sync",
+      "recurringEventId": "series1",
+      "originalStartTime": {
+        "dateTime": "2026-03-09T14:00:00Z",
+        "timeZone": "UTC"
+      },
+      "start": { "dateTime": "2026-03-09T15:00:00Z", "timeZone": "UTC" },
+      "end": { "dateTime": "2026-03-09T15:25:00Z", "timeZone": "UTC" }
+    },
+    {
+      "kind": "calendar#event",
+      "id": "series1_20260316T140000Z",
+      "status": "confirmed",
+      "summary": "Weekly sync",
+      "recurringEventId": "series1",
+      "originalStartTime": {
+        "dateTime": "2026-03-16T14:00:00Z",
+        "timeZone": "UTC"
+      },
+      "start": { "dateTime": "2026-03-16T14:00:00Z", "timeZone": "UTC" },
+      "end": { "dateTime": "2026-03-16T14:25:00Z", "timeZone": "UTC" }
+    },
+    {
+      "kind": "calendar#event",
+      "id": "series1_20260323T140000Z",
+      "status": "confirmed",
+      "summary": "Weekly sync",
+      "recurringEventId": "series1",
+      "originalStartTime": {
+        "dateTime": "2026-03-23T14:00:00Z",
+        "timeZone": "UTC"
+      },
+      "start": { "dateTime": "2026-03-23T14:00:00Z", "timeZone": "UTC" },
+      "end": { "dateTime": "2026-03-23T14:25:00Z", "timeZone": "UTC" }
+    }
+  ]
+}

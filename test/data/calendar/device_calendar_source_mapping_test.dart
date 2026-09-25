@@ -91,6 +91,23 @@ void main() {
     });
 
     test(
+      'sourceLabel is always "This device" — byte-identical to the '
+      'account-less fallback calendar_settings_screen.dart already renders '
+      '(D-36-03), so the picker gains no second vocabulary for the same '
+      'idea',
+      () {
+        const calendar = plugin.Calendar(
+          id: 'cal-1',
+          name: 'Work',
+          readOnly: false,
+          accountName: 'dan@gmail.com',
+        );
+
+        expect(mapDeviceCalendar(calendar).sourceLabel, 'This device');
+      },
+    );
+
+    test(
       'always reports isReadOnly true, regardless of the plugin\'s own '
       'readOnly field — CAL-03 means every CalendarSource implementation '
       'reports every calendar read-only no matter what the OS would allow',

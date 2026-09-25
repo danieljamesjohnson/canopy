@@ -1,5 +1,6 @@
 import 'package:googleapis/calendar/v3.dart';
 import 'package:http/http.dart' as http;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'calendar_event.dart';
 import 'calendar_source.dart';
@@ -30,14 +31,137 @@ typedef GoogleApiClientFactory = Future<http.Client> Function();
 /// being unambiguous). Stripped before ever being sent to Google.
 const String _googleIdPrefix = 'google:';
 
+/// The user-facing label this source stamps on every calendar it returns
+/// (D-36-03) — the picker's group-header text (plan 36-06), not an
+/// identifier. Kept in exactly one place per [CalendarInfo.sourceLabel]'s
+/// own contract.
+const String _googleSourceLabel = 'Google';
+
+// ── Pure mapping functions ──────────────────────────────────────────────
+//
+// Deliberately top-level, taking plain googleapis-shaped values rather than
+// reaching into the authenticated CalendarApi client — this is the seam
+// that lets the mapping be unit-tested against fixture JSON with no
+// network, mirroring device_calendar_source.dart's own pure/adapter split.
+// Nothing below this comment can reach the adapter, the auth client, or the
+// network; nothing above it needs any of those to prove correct.
+
+/// Maps Google's `status` string onto this app's [CalendarEventStatus].
+///
+/// Mirrors `IcsCalendarSource._mapStatus`'s own default: anything that
+/// isn't explicitly `cancelled` or `tentative` reads as confirmed.
+CalendarEventStatus mapGoogleEventStatus(String? status) => switch (status) {
+  'cancelled' => CalendarEventStatus.cancelled,
+  'tentative' => CalendarEventStatus.tentative,
+  _ => CalendarEventStatus.confirmed,
+};
+
+/// Resolves one Google `EventDateTime` to an absolute instant, or `null`
+/// when [value] itself is `null` or carries neither a `dateTime` nor a
+/// `date` (the minimal cancelled-stub shape Google returns for a deleted
+/// instance).
+///
+/// A `dateTime` value already carries an explicit UTC `Z` or a numeric
+/// offset — `googleapis`'s own `EventDateTime.fromJson` parses it with
+/// `DateTime.parse`, which already resolves an offset to the correct
+/// absolute instant (confirmed against the installed `googleapis` 17.0.0:
+/// `DateTime.parse('...T19:00:00-05:00')` returns a UTC `DateTime` at the
+/// right instant, `isUtc == true`, not a value re-anchored to any other
+/// zone). This function therefore returns [EventDateTime.dateTime]
+/// UNCHANGED. Never call `.toLocal()` on it, here or downstream — that
+/// would re-anchor to THIS MACHINE's real system timezone rather than the
+/// app's `tz.local` override, the exact trap `IcsCalendarSource
+/// ._resolveInstant` documents (a mutation proof caught it in Phase 35).
+///
+/// A `date`-only value (all-day) carries no timezone info at all —
+/// `DateTime.parse('yyyy-mm-dd')` resolves it as a system-local `DateTime`
+/// at midnight, which is unsafe to use directly for the same reason. Only
+/// the year/month/day are extracted and reinterpreted as midnight in the
+/// app's `tz.local`, mirroring `IcsCalendarSource._resolveInstant`'s
+/// floating-value discipline.
+DateTime? resolveGoogleInstant(EventDateTime? value) {
+  if (value == null) return null;
+  final dateTime = value.dateTime;
+  if (dateTime != null) return dateTime;
+  final date = value.date;
+  if (date == null) return null;
+  return tz.TZDateTime(tz.local, date.year, date.month, date.day);
+}
+
+/// Maps one Google `Event` onto this app's uniform [CalendarEvent], or
+/// `null` when it carries no usable start at all (see the null-guard
+/// below).
+///
+/// **`originalStartTime` is read and then deliberately discarded**, except
+/// as the last-resort fallback below. It names where a recurring occurrence
+/// WOULD have started before it moved — using it as the occurrence's actual
+/// start is precisely the duplicate-meeting bug this whole path exists to
+/// fix (`WINDOWS.md` entry 1, scoped to the `.ics` path only — see this
+/// file's class doc comment). `singleEvents: true` has already applied the
+/// move; this function must not "correct" it back. Do not "fix" the unused
+/// look of this field by wiring it into the primary start — a future reader
+/// who does that reintroduces the bug.
+///
+/// `uid`/`recurrenceId` follow [CalendarEvent]'s documented contract, the
+/// mirror image of `device_calendar_source.dart`'s `mapDeviceEvent`: when
+/// Google's `recurringEventId` is present, it — the SERIES id — becomes
+/// [CalendarEvent.uid], and this occurrence's own `id` becomes
+/// [CalendarEvent.recurrenceId]. A non-recurring event has no
+/// `recurringEventId`, so its own `id` is both its uid and its only
+/// occurrence identity ([CalendarEvent.recurrenceId] stays null).
+CalendarEvent? mapGoogleEvent(Event event, {required String calendarId}) {
+  final uid = event.recurringEventId ?? event.id;
+  if (uid == null) return null;
+
+  final ownStart = resolveGoogleInstant(event.start);
+  final fallbackStart = resolveGoogleInstant(event.originalStartTime);
+  // The null-guard the mandatory second mutation proof targets (recorded in
+  // 36-03-SUMMARY.md): a cancelled stub can carry NEITHER a usable `start`
+  // NOR a usable `originalStartTime` at all — Google's minimal shape for a
+  // deleted instance (only id/status/recurringEventId populated). Without
+  // this check, the force-unwrap on the next line throws "Null check
+  // operator used on a null value" instead of this function returning a
+  // clean null.
+  if (ownStart == null && fallbackStart == null) return null;
+  final start = ownStart ?? fallbackStart!;
+  final end = resolveGoogleInstant(event.end) ?? start;
+
+  return CalendarEvent(
+    uid: uid,
+    recurrenceId: event.recurringEventId != null ? event.id : null,
+    // Cancelled stubs routinely carry no summary at all — an ordinary
+    // shape, not an edge case worth throwing over.
+    title: event.summary ?? '',
+    start: start,
+    end: end,
+    isAllDay: event.start?.date != null,
+    status: mapGoogleEventStatus(event.status),
+    calendarId: calendarId,
+  );
+}
+
+// ── The adapter ──────────────────────────────────────────────────────────
+
 /// The fourth [CalendarSource] implementation (CONTEXT decision 3) — reads
 /// events from the signed-in Google account via `googleapis`'s typed
 /// Calendar client.
 ///
-/// Read-only by construction: the [CalendarSource] interface declares no
-/// write verb, this file never calls a mutating `CalendarApi` verb, and the
-/// read-only scope means Google would refuse a write call even if one were
-/// attempted (CONTEXT decision 2, T-36-03).
+/// Read-only by construction, but on a STRONGER footing than
+/// `DeviceCalendarSource`'s equivalent guarantee, and the phase can
+/// demonstrate the difference rather than merely claim it. The device path
+/// rests on this app simply never calling a write verb — enforced by code
+/// review and by `flutter analyze` confirming every [CalendarSource]
+/// implementation satisfies exactly this interface (see
+/// `calendar_source.dart`'s own doc comment). This path rests on something
+/// stronger: the OAuth token itself is INCAPABLE of writing, because Google
+/// issued it for the `calendar.readonly` scope alone (CONTEXT decision 2,
+/// CALAUTH-02, T-36-09) — Google refuses a write call at the API layer even
+/// if this code attempted one. Both halves are machine-checked, not just
+/// asserted: no mutating `CalendarApi` verb is reachable anywhere in
+/// `lib/data/calendar/` (grep-proven), and the scope handed to the auth
+/// client is exactly one element, asserted against a bare literal in
+/// `google_calendar_source_test.dart` — never re-derived from the constant
+/// it checks.
 class GoogleCalendarSource implements CalendarSource {
   GoogleCalendarSource({
     required GoogleAuthClient authClient,
@@ -72,16 +196,32 @@ class GoogleCalendarSource implements CalendarSource {
     try {
       final api = CalendarApi(client);
       final result = await api.calendarList.list();
-      return (result.items ?? const [])
+      final entries = result.items ?? const [];
+      // The PRIMARY entry's id IS the account email (Google's documented
+      // convention) — a secondary or subscribed calendar's own id is not an
+      // account identifier (often synthetic, e.g. ending in
+      // `@group.calendar.google.com` or a holiday feed's opaque id).
+      // Grouping (the settings picker) and plan 36-05's overlap detector
+      // both need one shared account value per source, so every calendar in
+      // this response uses the primary entry's id, never its own.
+      String? accountEmail;
+      for (final entry in entries) {
+        if (entry.primary == true) {
+          accountEmail = entry.id;
+          break;
+        }
+      }
+      return entries
           .where((entry) => entry.id != null)
           .map(
             (entry) => CalendarInfo(
               id: '$_googleIdPrefix${entry.id}',
               name: entry.summary ?? entry.id!,
-              accountName: entry.id,
+              accountName: accountEmail,
               accountType: 'Google',
               colorHex: entry.backgroundColor,
               isReadOnly: true,
+              sourceLabel: _googleSourceLabel,
             ),
           )
           .toList();
@@ -123,7 +263,7 @@ class GoogleCalendarSource implements CalendarSource {
             pageToken: pageToken,
           );
           for (final item in response.items ?? const []) {
-            final mapped = _mapEvent(item, calendarId: prefixedId);
+            final mapped = mapGoogleEvent(item, calendarId: prefixedId);
             if (mapped != null) events.add(mapped);
           }
           pageToken = response.nextPageToken;
@@ -141,32 +281,4 @@ class GoogleCalendarSource implements CalendarSource {
       id.startsWith(_googleIdPrefix)
           ? id.substring(_googleIdPrefix.length)
           : id;
-
-  CalendarEvent? _mapEvent(Event event, {required String calendarId}) {
-    final uid = event.id;
-    if (uid == null) return null;
-    final start = _resolveInstant(event.start);
-    final end = _resolveInstant(event.end);
-    if (start == null || end == null) return null;
-    return CalendarEvent(
-      uid: uid,
-      title: event.summary ?? '',
-      start: start,
-      end: end,
-      isAllDay: event.start?.date != null,
-      status: _mapStatus(event.status),
-      calendarId: calendarId,
-    );
-  }
-
-  DateTime? _resolveInstant(EventDateTime? dateTime) {
-    if (dateTime == null) return null;
-    return dateTime.dateTime ?? dateTime.date;
-  }
-
-  CalendarEventStatus _mapStatus(String? status) => switch (status) {
-    'cancelled' => CalendarEventStatus.cancelled,
-    'tentative' => CalendarEventStatus.tentative,
-    _ => CalendarEventStatus.confirmed,
-  };
 }

@@ -1,0 +1,52 @@
+{
+  "kind": "calendar#events",
+  "summary": "dan@example.com",
+  "items": [
+    {
+      "kind": "calendar#event",
+      "id": "cancelled_with_fallback_20260304T090000Z",
+      "status": "cancelled",
+      "recurringEventId": "series2",
+      "originalStartTime": {
+        "dateTime": "2026-03-04T09:00:00Z",
+        "timeZone": "UTC"
+      }
+    },
+    {
+      "kind": "calendar#event",
+      "id": "cancelled_no_usable_time",
+      "status": "cancelled"
+    },
+    {
+      "kind": "calendar#event",
+      "id": "all_day_conference",
+      "status": "confirmed",
+      "summary": "Conference day",
+      "start": { "date": "2026-03-06" },
+      "end": { "date": "2026-03-07" }
+    },
+    {
+      "kind": "calendar#event",
+      "id": "foreign_offset_dinner",
+      "status": "confirmed",
+      "summary": "Dinner in New York",
+      "start": { "dateTime": "2026-03-05T19:00:00-05:00", "timeZone": "America/New_York" },
+      "end": { "dateTime": "2026-03-05T21:00:00-05:00", "timeZone": "America/New_York" }
+    },
+    {
+      "kind": "calendar#event",
+      "id": "no_summary_event",
+      "status": "confirmed",
+      "start": { "dateTime": "2026-03-05T08:00:00Z", "timeZone": "UTC" },
+      "end": { "dateTime": "2026-03-05T08:30:00Z", "timeZone": "UTC" }
+    },
+    {
+      "kind": "calendar#event",
+      "id": "tentative_hold",
+      "status": "tentative",
+      "summary": "Tentative hold",
+      "start": { "dateTime": "2026-03-05T10:00:00Z", "timeZone": "UTC" },
+      "end": { "dateTime": "2026-03-05T10:30:00Z", "timeZone": "UTC" }
+    }
+  ]
+}
