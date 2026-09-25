@@ -4,8 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/calendar/calendar_event.dart';
+import '../../data/calendar/calendar_overlap.dart';
 import '../../data/calendar/calendar_source.dart';
 import '../../data/calendar/calendar_source_factory.dart';
+import '../../data/calendar/device_calendar_source.dart';
+import '../../data/calendar/google_auth_client.dart';
+import '../../data/calendar/google_calendar_source.dart';
 import '../../dev/dev_clock.dart';
 import '../../providers/commitments_notifier.dart';
 import '../../providers/settings_notifier.dart';
@@ -39,11 +43,24 @@ import '../../widgets/adaptive_form_modal.dart';
 /// reader does not re-diagnose it (Task 3, 35-04-PLAN.md). 35-06's UAT
 /// sidesteps it by serving a fixture feed from the same origin as the app.
 class CalendarSettingsScreen extends StatefulWidget {
-  const CalendarSettingsScreen({super.key, this.source});
+  const CalendarSettingsScreen({super.key, this.source, this.googleSource});
 
   /// Test-only override. Production always builds via [defaultCalendarSource]
-  /// from the current [SettingsNotifier.icsUrls].
+  /// from the current [SettingsNotifier.icsUrls]. On iOS this is the DEVICE
+  /// source specifically (see [_resolveDeviceSource]) — never the composite
+  /// [defaultCalendarSource] builds when a Google client is supplied, since a
+  /// composite's own `requestPermission()` always answers `notApplicable`,
+  /// which would break this screen's device-permission gating.
   final CalendarSource? source;
+
+  /// Test-only override for the Google section specifically (Plan 36-06),
+  /// mirroring [source] but scoped to the Google side of the picker —
+  /// D-36-03 renders Google and device as two independent, always-present
+  /// sections rather than one combined source. Production builds a real
+  /// [GoogleCalendarSource] backed by a [GoogleAuthClient] whose token store
+  /// is the current [SettingsNotifier] (it already implements
+  /// [GoogleTokenStore]).
+  final CalendarSource? googleSource;
 
   @override
   State<CalendarSettingsScreen> createState() =>
@@ -72,6 +89,20 @@ class _DesktopState {
   final CalendarSyncResult? syncResult;
 }
 
+/// The outcome of the Google section's own flow (Plan 36-06) — independent
+/// of [_MobileState], since D-36-03 renders Google and device as two
+/// separate, always-present sections rather than one combined state.
+/// `connected: false` covers BOTH "never connected" and "the user cancelled
+/// the consent sheet" — [GoogleCalendarSource.requestPermission] already
+/// maps a cancellation onto [CalendarPermissionState.notDetermined]
+/// precisely so this state needs no separate "cancelled" case.
+class _GoogleState {
+  const _GoogleState({required this.connected, this.calendars = const []});
+
+  final bool connected;
+  final List<CalendarInfo> calendars;
+}
+
 class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   /// Null = "not yet requested" (the CTA state). Set only when the user taps
   /// "Allow calendar access" — never fired automatically, so opening this
@@ -81,6 +112,27 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   /// Loaded once per set of configured feed URLs; reset to null after any
   /// add/remove so the next build re-fetches from the fresh configuration.
   Future<_DesktopState>? _desktopFuture;
+
+  /// Null = "not connected yet" (the Google CTA state) — set only when the
+  /// user taps "Connect Google Calendar", mirroring [_mobileFuture]'s own
+  /// lazy pattern. Reset to null on Disconnect. Unlike the device flow,
+  /// re-opening this screen in a fresh session always starts here too
+  /// (a known, documented limitation — see 36-06-SUMMARY.md) UNLESS
+  /// [SettingsNotifier.reconnectNeeded] is set, which is checked directly
+  /// from persisted state regardless of this field (Task 2).
+  Future<_GoogleState>? _googleFuture;
+
+  /// The most recent sync result from EITHER section's connect/grant flow
+  /// or a manual "Sync now" — Task 1 renders ONE shared footer for both
+  /// sources rather than two competing status lines.
+  CalendarSyncResult? _lastSyncResult;
+
+  /// Every calendar the Google section has most recently listed, kept
+  /// alongside [_deviceCalendars] purely so Task 3's overlap detector can
+  /// see BOTH sources' full calendar lists together regardless of which
+  /// section's own future last resolved.
+  List<CalendarInfo> _googleCalendars = const [];
+  List<CalendarInfo> _deviceCalendars = const [];
 
   // iOS-only as of D-35-15 (35-05, 35-DECISIONS.md): Android's calendar
   // source moved from the device plugin to IcsCalendarSource, the same
@@ -92,8 +144,44 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   // device_calendar_source.dart's class doc comment for the full reason).
   bool get _isMobile => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
-  CalendarSource _resolveSource(SettingsNotifier settings) =>
-      widget.source ?? defaultCalendarSource(icsUrls: settings.icsUrls);
+  /// The DEVICE source specifically — used for the device section's own
+  /// `requestPermission()`/`listCalendars()`. Deliberately NOT the factory's
+  /// composite: [CompositeCalendarSource.requestPermission] always answers
+  /// `notApplicable` (permission is a per-child concept), which would break
+  /// this gate if used here instead.
+  CalendarSource _resolveDeviceSource(SettingsNotifier settings) =>
+      widget.source ?? DeviceCalendarSource();
+
+  /// Google-prefixed ids from the persisted selection — the exact filter
+  /// [GoogleCalendarSource] needs at construction time, since
+  /// `CalendarSyncService.sync()` always calls `listEvents` with an EMPTY
+  /// `calendarIds` argument, so the constructor-time list is the only place
+  /// this can ever take effect (WINDOWS.md entry 5).
+  List<String> _googleSelectedIds(SettingsNotifier settings) => settings
+      .selectedCalendarIds
+      .where((id) => id.startsWith('google:'))
+      .toList();
+
+  /// The Google source specifically — used for the Google section's own
+  /// connect/list/disconnect flow.
+  CalendarSource _resolveGoogleSource(SettingsNotifier settings) =>
+      widget.googleSource ??
+      GoogleCalendarSource(
+        authClient: GoogleAuthClient(store: settings),
+        calendarIds: _googleSelectedIds(settings),
+      );
+
+  /// The FULL composite (Google + device) — used ONLY to actually sync
+  /// events into commitments (Task 1: "the sync... sees the composite").
+  /// Never used for `requestPermission()`/`listCalendars()` — see
+  /// [_resolveDeviceSource]'s own doc comment for why.
+  CalendarSource _resolveSyncSource(SettingsNotifier settings) =>
+      widget.source ??
+      defaultCalendarSource(
+        icsUrls: settings.icsUrls,
+        googleAuth: GoogleAuthClient(store: settings),
+        googleCalendarIds: _googleSelectedIds(settings),
+      );
 
   // ── Shared: sync + status ────────────────────────────────────────────
 
@@ -121,6 +209,9 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     } else {
       await settings.setLastCalendarSyncAt(result.syncedAt);
     }
+    // Task 1: one shared footer for both sections reads this, whichever
+    // flow (device grant, Google connect, or manual "Sync now") last ran.
+    if (mounted) setState(() => _lastSyncResult = result);
     return result;
   }
 
@@ -226,7 +317,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     if (_isMobile) {
       final commitments = context.read<CommitmentsNotifier>();
       final messenger = ScaffoldMessenger.of(context);
-      final source = _resolveSource(settings);
+      final source = _resolveDeviceSource(settings);
       setState(() {
         _mobileFuture = _requestMobilePermission(
           source,
@@ -293,7 +384,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     final settings = context.read<SettingsNotifier>();
     final commitments = context.read<CommitmentsNotifier>();
     final messenger = ScaffoldMessenger.of(context);
-    final source = _resolveSource(settings);
+    final source = _resolveDeviceSource(settings);
     setState(() {
       _mobileFuture = _requestMobilePermission(
         source,
@@ -315,8 +406,12 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
       return _MobileState(permission: permission, calendars: const []);
     }
     final calendars = await source.listCalendars();
+    if (mounted) setState(() => _deviceCalendars = calendars);
+    // Sync via the FULL composite (Task 1: "the sync... sees the
+    // composite"), not the device-only [source] above — on iOS this also
+    // imports a signed-in Google account's events, if one exists.
     final syncResult = await _syncAndReport(
-      source,
+      _resolveSyncSource(settings),
       commitments,
       settings,
       messenger,
@@ -438,59 +533,332 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     );
   }
 
-  Widget _groupedCalendarList(
+  /// Renders one calendar per row, grouped by account — shared by BOTH
+  /// sections (D-36-03: Google's own list flows through the SAME machinery
+  /// the device list uses). Unlike the pre-36-06 version of this method,
+  /// this does NOT wrap in a `ListView` or append [_footer] — Task 1 needs
+  /// exactly one shared footer for the whole combined body, not one per
+  /// section, so the caller (the combined [_buildMobileBody]) owns both.
+  ///
+  /// [allCalendars] is the FULL calendar list from BOTH sources (not just
+  /// [calendars], which is this call's own section) — Task 3's overlap
+  /// detector needs to see both sides to find a cross-source pair
+  /// regardless of which section is rendering a given row.
+  List<Widget> _calendarRows(
     BuildContext context,
     List<CalendarInfo> calendars,
-    SettingsNotifier settings,
-    CalendarSyncResult? syncResult,
-  ) {
+    SettingsNotifier settings, {
+    required List<CalendarInfo> allCalendars,
+  }) {
     final theme = Theme.of(context);
     final groups = <String, List<CalendarInfo>>{};
     for (final calendar in calendars) {
       groups.putIfAbsent(calendar.accountName ?? '', () => []).add(calendar);
     }
     final selected = settings.selectedCalendarIds.toSet();
-    return ListView(
-      children: [
-        for (final entry in groups.entries) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              entry.key.isEmpty ? 'This device' : entry.key,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+    // D-36-03's REQUIRED mitigation (Task 3): disclose a same-calendar
+    // double-tick across sources at the moment of ticking — never merge,
+    // never filter, never drop either side (T-36-25). This function only
+    // ever ADDS an advisory note; it must never change what [calendars] or
+    // [selected] contains.
+    final overlaps = detectSelectedCalendarOverlaps(
+      calendars: allCalendars,
+      selectedIds: selected,
+    );
+    final overlappingIds = <String>{
+      for (final overlap in overlaps) overlap.google.id,
+      for (final overlap in overlaps) overlap.device.id,
+    };
+    return [
+      for (final entry in groups.entries) ...[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            entry.key.isEmpty ? 'This device' : entry.key,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        for (final calendar in entry.value) ...[
+          CheckboxListTile(
+            secondary: Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: _parseColor(calendar.colorHex),
+                shape: BoxShape.circle,
               ),
+            ),
+            title: Text(
+              calendar.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+            value: selected.contains(calendar.id),
+            onChanged: (checked) =>
+                _toggleCalendar(settings, calendar.id, checked ?? false),
           ),
-          for (final calendar in entry.value)
-            CheckboxListTile(
-              secondary: Container(
-                width: 16,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: _parseColor(calendar.colorHex),
-                  shape: BoxShape.circle,
-                ),
+          if (overlappingIds.contains(calendar.id))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 14,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'These may be the same calendar — events could '
+                      'appear twice.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              title: Text(
-                calendar.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              value: selected.contains(calendar.id),
-              onChanged: (checked) =>
-                  _toggleCalendar(settings, calendar.id, checked ?? false),
             ),
         ],
-        _footer(context, syncResult),
+      ],
+    ];
+  }
+
+  // ── Google branch (Plan 36-06, D-36-03) ─────────────────────────────────
+
+  Widget _googleCtaCard(BuildContext context, SettingsNotifier settings) =>
+      _ctaCard(
+        context: context,
+        headline: 'Connect your Google Calendar',
+        body:
+            'Sign in once and Canopy reads your Google calendars directly '
+            '— no links to find, nothing to paste. Canopy asks Google for '
+            'read-only access, so it can never change anything in your '
+            'calendar.',
+        buttonLabel: 'Connect Google Calendar',
+        onPressed: () => _startGoogleConnect(context, settings),
+      );
+
+  /// CALAUTH-03: the login has expired and the screen says so at the exact
+  /// spot the Google calendar list would otherwise be — the list cannot be
+  /// fetched anyway, since the token that would fetch it is the dead one.
+  /// Structure copied verbatim from [_deniedCard]: neutral surface, outline
+  /// border, one action. The ICON alone renders in [ColorScheme.error] —
+  /// see 36-06-PLAN.md's objective for why this is consistent with (not an
+  /// exception to) 35-UI-SPEC's "error is for a genuine failure" rule: a
+  /// dead refresh token is a real operation that really failed, unlike
+  /// [_deniedCard]'s denied permission, which is a user's normal choice.
+  Widget _googleReconnectCard(BuildContext context, SettingsNotifier settings) {
+    final theme = Theme.of(context);
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Card(
+            color: theme.colorScheme.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: theme.colorScheme.outline),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.calendar_month,
+                    size: 48,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Google sign-in expired',
+                    style: theme.textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Canopy can't read your Google calendar until you sign "
+                    'in again, so what it shows you may be out of date. '
+                    'Everything else still works — your other calendars '
+                    'and anything you added by hand are unaffected.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => _startGoogleConnect(context, settings),
+                    child: const Text('Reconnect Google Calendar'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _startGoogleConnect(BuildContext context, SettingsNotifier settings) {
+    final commitments = context.read<CommitmentsNotifier>();
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      _googleFuture = _connectGoogle(settings, commitments, messenger);
+    });
+  }
+
+  Future<_GoogleState> _connectGoogle(
+    SettingsNotifier settings,
+    CommitmentsNotifier commitments,
+    ScaffoldMessengerState messenger,
+  ) async {
+    final source = _resolveGoogleSource(settings);
+    try {
+      final permission = await source.requestPermission();
+      if (permission != CalendarPermissionState.granted) {
+        // Cancelled — GoogleCalendarSource.requestPermission() already maps
+        // a cancellation onto notDetermined precisely so this reads
+        // identically to "not connected": no error card, no SnackBar.
+        return const _GoogleState(connected: false);
+      }
+      final calendars = await source.listCalendars();
+      if (mounted) setState(() => _googleCalendars = calendars);
+      await _syncAndReport(
+        _resolveSyncSource(settings),
+        commitments,
+        settings,
+        messenger,
+      );
+      return _GoogleState(connected: true, calendars: calendars);
+    } catch (_) {
+      // A genuine launcher/API failure (GoogleAuthException/
+      // GoogleSourceException) has no locked failure copy in this plan —
+      // fold it into the same "back to the connect button" state as a
+      // cancellation rather than inventing new, unspecced copy.
+      return const _GoogleState(connected: false);
+    }
+  }
+
+  Widget _googleConnectedSection(
+    BuildContext context,
+    SettingsNotifier settings,
+    List<CalendarInfo> calendars,
+  ) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            'Google',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        ..._calendarRows(
+          context,
+          calendars,
+          settings,
+          allCalendars: [..._googleCalendars, ..._deviceCalendars],
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => _disconnectGoogle(context, settings),
+              child: const Text('Disconnect'),
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildMobileBody(BuildContext context) {
-    final settings = context.watch<SettingsNotifier>();
+  /// `_removeFeed`'s existing `AlertDialog` shape (see that method below),
+  /// but with copy that says what `CalendarSyncService.sync()` actually
+  /// does — see 36-06-PLAN.md's objective for why this does NOT copy the
+  /// existing ICS dialog's "will disappear the next time you sync" sentence
+  /// (that sentence is not true today; `sync()` only ever upserts).
+  Future<void> _disconnectGoogle(
+    BuildContext context,
+    SettingsNotifier settings,
+  ) async {
+    final theme = Theme.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Disconnect Google Calendar?'),
+        content: const Text(
+          'Canopy will stop reading your Google calendars. Commitments '
+          'already imported stay on your schedule until you remove them.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              'Disconnect',
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await GoogleAuthClient(store: settings).disconnect();
+    if (!mounted) return;
+    setState(() {
+      _googleFuture = null;
+      _googleCalendars = const [];
+    });
+  }
+
+  Widget _buildGoogleSection(BuildContext context, SettingsNotifier settings) {
+    // CALAUTH-03 (Task 2): checked FIRST, from persisted state only (D-35-10)
+    // — a dead refresh token must never be silently overwritten by a fresh
+    // "not connected" render.
+    if (settings.reconnectNeeded) {
+      return _googleReconnectCard(context, settings);
+    }
+    if (_googleFuture == null) {
+      return _googleCtaCard(context, settings);
+    }
+    return FutureBuilder<_GoogleState>(
+      future: _googleFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          // Connecting — the spinner replaces the CARD only. The device
+          // section (rendered separately, always present) stays visible
+          // and usable underneath.
+          return const Center(child: CircularProgressIndicator());
+        }
+        final state = snapshot.data!;
+        if (!state.connected) {
+          return _googleCtaCard(context, settings);
+        }
+        return _googleConnectedSection(context, settings, state.calendars);
+      },
+    );
+  }
+
+  // ── Device branch ────────────────────────────────────────────────────
+
+  Widget _buildDeviceSection(BuildContext context, SettingsNotifier settings) {
     if (_mobileFuture == null) {
       return _ctaCard(
         context: context,
@@ -516,11 +884,14 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
             if (state.calendars.isEmpty) {
               return _emptyCalendarsState(context);
             }
-            return _groupedCalendarList(
-              context,
-              state.calendars,
-              settings,
-              state.syncResult,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: _calendarRows(
+                context,
+                state.calendars,
+                settings,
+                allCalendars: [..._googleCalendars, ..._deviceCalendars],
+              ),
             );
           case CalendarPermissionState.denied:
           case CalendarPermissionState.restricted:
@@ -543,6 +914,22 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
             );
         }
       },
+    );
+  }
+
+  // ── Combined body (D-36-03: both sources on one screen, Task 1) ───────
+
+  Widget _buildMobileBody(BuildContext context) {
+    final settings = context.watch<SettingsNotifier>();
+    final showFooter =
+        _lastSyncResult != null || settings.lastCalendarSyncAt != null;
+    return ListView(
+      children: [
+        _buildGoogleSection(context, settings),
+        const Divider(indent: 16, endIndent: 16),
+        _buildDeviceSection(context, settings),
+        if (showFooter) _footer(context, _lastSyncResult),
+      ],
     );
   }
 
