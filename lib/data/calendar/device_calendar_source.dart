@@ -61,6 +61,11 @@ CalendarInfo mapDeviceCalendar(plugin.Calendar calendar) {
     // what the OS itself would allow (see CalendarInfo.isReadOnly's own
     // doc comment).
     isReadOnly: true,
+    // D-36-03: this string is deliberately byte-identical to the
+    // account-less fallback `_groupedCalendarList` already renders at
+    // `calendar_settings_screen.dart:459`, so the picker gains no second
+    // vocabulary for the same idea.
+    sourceLabel: 'This device',
   );
 }
 
