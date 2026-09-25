@@ -116,6 +116,7 @@ class _FakeScheduleNotifier extends ScheduleNotifier {
 Future<void> _pumpCalendarScreen(
   WidgetTester tester, {
   required CalendarSource source,
+  CalendarSource? googleSource,
   SettingsNotifier? settingsNotifier,
   CommitmentsNotifier? commitmentsNotifier,
 }) async {
@@ -124,13 +125,27 @@ Future<void> _pumpCalendarScreen(
   final commitments = commitmentsNotifier ??
       CommitmentsNotifier(repository: _InMemoryCommitmentBlockRepository());
 
+  // Plan 36-06: the Calendars screen now renders TWO always-present
+  // sections (Google + device) stacked in one scrolling body, so the
+  // device CTA/list this file's existing tests tap can sit below the
+  // default 600dp test viewport. Enlarge the viewport rather than adding a
+  // scroll-into-view step to every tap call site — this changes nothing
+  // about what any test asserts, only how much of the (now taller) page a
+  // single frame can show at once.
+  tester.view.physicalSize = const Size(800, 3000);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
   await tester.pumpWidget(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<SettingsNotifier>.value(value: settings),
         ChangeNotifierProvider<CommitmentsNotifier>.value(value: commitments),
       ],
-      child: MaterialApp(home: CalendarSettingsScreen(source: source)),
+      child: MaterialApp(
+        home: CalendarSettingsScreen(source: source, googleSource: googleSource),
+      ),
     ),
   );
   await tester.pump();
@@ -282,12 +297,19 @@ void main() {
         await tester.tap(find.text('Allow calendar access'));
         await tester.pump(); // kick off the async chain — future now pending
 
-        // Exact-class assertions — CircularProgressIndicator/CheckboxListTile/
-        // ListView are Material leaf widgets with no in-app subtype to worry
-        // about, unlike the denied card's color role above.
+        // Exact-class assertions — CircularProgressIndicator/CheckboxListTile
+        // are Material leaf widgets with no in-app subtype to worry about,
+        // unlike the denied card's color role above.
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
         expect(find.byType(CheckboxListTile), findsNothing);
-        expect(find.byType(ListView), findsNothing);
+        // Plan 36-06 deliberately re-points this assertion: the combined
+        // body is now ALWAYS a ListView (both sections are always present,
+        // Task 1), so `find.byType(ListView), findsNothing` would fail
+        // regardless of whether a calendar LIST is showing — it stopped
+        // testing this state's actual invariant (no calendar rows) the
+        // moment the screen gained a structural outer ListView unrelated
+        // to this state. The CheckboxListTile check above is what actually
+        // proves "no list of calendars is shown yet."
 
         // Resolve so the pending future doesn't dangle past the test.
         gate.complete(CalendarPermissionState.granted);
@@ -514,6 +536,504 @@ void main() {
           find.widgetWithIcon(IconButton, Icons.delete_outline),
         );
         expect(deleteButton.onPressed, isNotNull);
+      }),
+    );
+  });
+
+  group('Plan 36-06 — Google connect flow (D-36-03, CALAUTH-01)', () {
+    testWidgets(
+      'the connect button renders with its locked copy on iOS',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        await _pumpCalendarScreen(tester, source: deviceSource);
+
+        expect(find.text('Connect your Google Calendar'), findsOneWidget);
+        expect(
+          find.text(
+            'Sign in once and Canopy reads your Google calendars directly '
+            '— no links to find, nothing to paste. Canopy asks Google for '
+            'read-only access, so it can never change anything in your '
+            'calendar.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Connect Google Calendar'), findsOneWidget);
+        // The device CTA's locked copy still renders alongside the Google
+        // section in every Google state (Task 1).
+        expect(find.text('Allow calendar access'), findsOneWidget);
+      }),
+    );
+
+    testWidgets(
+      'tapping it with a fake that returns connected shows the Google '
+      'calendars grouped',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final googleCalendars = [
+          CalendarInfo(
+            id: 'google:primary',
+            name: 'Work',
+            accountName: 'dan@gmail.com',
+            isReadOnly: true,
+            sourceLabel: 'Google',
+          ),
+        ];
+        final googleSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: googleCalendars,
+        );
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+        );
+
+        await tester.tap(find.text('Connect Google Calendar'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Google'), findsOneWidget);
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('dan@gmail.com'), findsOneWidget);
+        expect(find.text('Disconnect'), findsOneWidget);
+        expect(find.byType(CheckboxListTile), findsOneWidget);
+        // The device CTA's locked copy still renders alongside.
+        expect(find.text('Allow calendar access'), findsOneWidget);
+      }),
+    );
+
+    testWidgets(
+      'tapping it with a fake that cancels returns to the button with '
+      'nothing error-shaped on screen',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final googleSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.notDetermined,
+        );
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+        );
+
+        await tester.tap(find.text('Connect Google Calendar'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Connect your Google Calendar'), findsOneWidget);
+        expect(find.text('Connect Google Calendar'), findsOneWidget);
+        expect(find.byType(SnackBar), findsNothing);
+        // No error-shaped card anywhere — the device section was never
+        // touched in this test, so a Card here could only be a stray
+        // error/denied render from the Google flow itself.
+        expect(find.byWidgetPredicate((w) => w is Card), findsNothing);
+        // The device CTA's locked copy still renders alongside.
+        expect(find.text('Allow calendar access'), findsOneWidget);
+      }),
+    );
+
+    testWidgets(
+      'Disconnect shows its dialog and, on confirm, returns the Google '
+      'section to its connect card',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final googleCalendars = [
+          CalendarInfo(
+            id: 'google:primary',
+            name: 'Work',
+            accountName: 'dan@gmail.com',
+            isReadOnly: true,
+            sourceLabel: 'Google',
+          ),
+        ];
+        final googleSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: googleCalendars,
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+          settingsNotifier: settings,
+        );
+
+        await tester.tap(find.text('Connect Google Calendar'));
+        await tester.pumpAndSettle();
+        expect(find.text('Work'), findsOneWidget);
+
+        await tester.tap(find.text('Disconnect'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Disconnect Google Calendar?'), findsOneWidget);
+        expect(
+          find.text(
+            'Canopy will stop reading your Google calendars. Commitments '
+            'already imported stay on your schedule until you remove '
+            'them.',
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.text('Disconnect'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Connect Google Calendar'), findsOneWidget);
+        expect(find.text('Work'), findsNothing);
+      }),
+    );
+  });
+
+  group('Plan 36-06 — Google reconnect (CALAUTH-03, Task 2)', () {
+    testWidgets(
+      'reconnectNeeded renders the reconnect card with its locked strings, '
+      'not the calendar list — and is distinguishable from the denied '
+      'card even when both are on screen',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.setReconnectNeeded(true);
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          settingsNotifier: settings,
+        );
+
+        expect(find.text('Google sign-in expired'), findsOneWidget);
+        expect(
+          find.text(
+            "Canopy can't read your Google calendar until you sign in "
+            'again, so what it shows you may be out of date. Everything '
+            'else still works — your other calendars and anything you '
+            'added by hand are unaffected.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Reconnect Google Calendar'), findsOneWidget);
+        // The denied card is absent — device permission has not been
+        // requested yet, so only the reconnect card's Card exists.
+        expect(find.text('Calendar access is off'), findsNothing);
+        final reconnectIcon = tester.widget<Icon>(
+          find.descendant(of: find.byType(Card), matching: find.byType(Icon)),
+        );
+        final theme = Theme.of(tester.element(find.byType(Card)));
+        expect(reconnectIcon.color, equals(theme.colorScheme.error));
+        // The device section renders identically regardless of
+        // reconnectNeeded — a dead Google token has nothing to do with the
+        // device calendars.
+        expect(find.text('Allow calendar access'), findsOneWidget);
+
+        // Now bring up the device's OWN denied card too, so both cards
+        // coexist — they share Card+Icon by construction (this file's own
+        // trap 1), so the discrimination must survive both being present.
+        await tester.tap(find.text('Allow calendar access'));
+        await tester.pumpAndSettle();
+        expect(find.text('Calendar access is off'), findsOneWidget);
+        final icons = tester
+            .widgetList<Icon>(
+              find.descendant(
+                of: find.byType(Card),
+                matching: find.byType(Icon),
+              ),
+            )
+            .toList();
+        expect(icons, hasLength(2));
+        expect(
+          icons.where((i) => i.color == theme.colorScheme.error),
+          hasLength(1),
+          reason: 'exactly the reconnect card is error-tinted',
+        );
+        expect(
+          icons.where((i) => i.color != theme.colorScheme.error),
+          hasLength(1),
+          reason: 'exactly the denied card stays neutral (CAL-04)',
+        );
+      }),
+    );
+
+    testWidgets(
+      'reconnectNeeded clear renders the list, not the reconnect card',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final googleCalendars = [
+          CalendarInfo(
+            id: 'google:primary',
+            name: 'Work',
+            accountName: 'dan@gmail.com',
+            isReadOnly: true,
+            sourceLabel: 'Google',
+          ),
+        ];
+        final googleSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: googleCalendars,
+        );
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+        );
+
+        await tester.tap(find.text('Connect Google Calendar'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Google sign-in expired'), findsNothing);
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('Allow calendar access'), findsOneWidget);
+      }),
+    );
+  });
+
+  group('Plan 36-06 — overlap disclosure (D-36-03, Task 3)', () {
+    CalendarInfo deviceWork() => CalendarInfo(
+      id: 'device-1',
+      name: 'Work',
+      accountName: 'dan@gmail.com',
+      isReadOnly: true,
+      sourceLabel: 'This device',
+    );
+    CalendarInfo googleWork() => CalendarInfo(
+      id: 'google:work',
+      name: 'Work',
+      accountName: 'dan@gmail.com',
+      isReadOnly: true,
+      sourceLabel: 'Google',
+    );
+    const overlapNote =
+        'These may be the same calendar — events could appear twice.';
+
+    testWidgets(
+      'two selected calendars the detector flags: both rows show the note',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: [deviceWork()],
+        );
+        final googleSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: [googleWork()],
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.setSelectedCalendarIds(['device-1', 'google:work']);
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+          settingsNotifier: settings,
+        );
+
+        await tester.tap(find.text('Connect Google Calendar'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Allow calendar access'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(overlapNote), findsNWidgets(2));
+      }),
+    );
+
+    testWidgets(
+      'only one of a plausible pair ticked: no note anywhere',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: [deviceWork()],
+        );
+        final googleSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: [googleWork()],
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.setSelectedCalendarIds(['device-1']);
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+          settingsNotifier: settings,
+        );
+
+        await tester.tap(find.text('Connect Google Calendar'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Allow calendar access'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(overlapNote), findsNothing);
+      }),
+    );
+
+    testWidgets(
+      'two selected calendars from the SAME source: no note',
+      (tester) => _withMobilePlatform(() async {
+        final deviceCalendars = [
+          deviceWork(),
+          CalendarInfo(
+            id: 'device-2',
+            name: 'Family',
+            accountName: 'dan@gmail.com',
+            isReadOnly: true,
+            sourceLabel: 'This device',
+          ),
+        ];
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: deviceCalendars,
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.setSelectedCalendarIds(['device-1', 'device-2']);
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          settingsNotifier: settings,
+        );
+
+        await tester.tap(find.text('Allow calendar access'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(overlapNote), findsNothing);
+      }),
+    );
+
+    testWidgets(
+      'a flagged row checkbox still toggles and the selection still '
+      'persists — the warning is advisory, not a block (D-36-03)',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: [deviceWork()],
+        );
+        final googleSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: [googleWork()],
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.setSelectedCalendarIds(['device-1', 'google:work']);
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+          settingsNotifier: settings,
+        );
+
+        await tester.tap(find.text('Connect Google Calendar'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Allow calendar access'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(overlapNote), findsNWidgets(2));
+        expect(
+          settings.selectedCalendarIds,
+          containsAll(['device-1', 'google:work']),
+        );
+
+        // The Google section renders first, so its CheckboxListTile is the
+        // first of the two on screen — untick it.
+        await tester.tap(find.byType(CheckboxListTile).first);
+        await tester.pumpAndSettle();
+
+        expect(settings.selectedCalendarIds, isNot(contains('google:work')));
+        expect(settings.selectedCalendarIds, contains('device-1'));
+      }),
+    );
+
+    testWidgets(
+      'nothing is de-duplicated in the selection — ticking both sides of '
+      'an overlap keeps BOTH ids, proving the duplicate is disclosed, not '
+      'silently prevented',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: [deviceWork()],
+        );
+        final googleSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: [googleWork()],
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+          settingsNotifier: settings,
+        );
+
+        await tester.tap(find.text('Connect Google Calendar'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Allow calendar access'));
+        await tester.pumpAndSettle();
+
+        // Tick both — the Google row first, then the device row.
+        await tester.tap(find.byType(CheckboxListTile).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(CheckboxListTile).last);
+        await tester.pumpAndSettle();
+
+        expect(settings.selectedCalendarIds, hasLength(2));
+        expect(
+          settings.selectedCalendarIds,
+          containsAll(['device-1', 'google:work']),
+        );
+        expect(find.text(overlapNote), findsNWidgets(2));
+      }),
+    );
+
+    testWidgets(
+      'the note is not error-tinted',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: [deviceWork()],
+        );
+        final googleSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: [googleWork()],
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.setSelectedCalendarIds(['device-1', 'google:work']);
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+          settingsNotifier: settings,
+        );
+
+        await tester.tap(find.text('Connect Google Calendar'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Allow calendar access'));
+        await tester.pumpAndSettle();
+
+        final theme = Theme.of(tester.element(find.text(overlapNote).first));
+        final noteText = tester.widget<Text>(find.text(overlapNote).first);
+        expect(noteText.style?.color, isNot(equals(theme.colorScheme.error)));
       }),
     );
   });

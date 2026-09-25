@@ -33,6 +33,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// field, and mobile has no real device source until 35-05 — see
   /// 35-04-SUMMARY.md.
   String _calendarSubtitle(SettingsNotifier settings) {
+    // CALAUTH-03 (Task 2): checked FIRST, from persisted state only
+    // (D-35-10 applies here too) — a dead Google refresh token must never
+    // be silently reported as any of the subtitles below it.
+    if (settings.reconnectNeeded) return 'Google sign-in expired — tap to reconnect';
     final hasSelection = settings.selectedCalendarIds.isNotEmpty;
     final hasFeeds = settings.icsUrls.isNotEmpty;
     if (!hasSelection && !hasFeeds) return 'Not connected';
