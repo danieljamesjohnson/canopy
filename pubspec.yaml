@@ -43,6 +43,9 @@ dependencies:
   rrule: ^0.2.18
   http: ^1.6.0
   device_calendar_plus: ^0.8.0
+  flutter_appauth: ^12.1.0
+  googleapis_auth: ^2.3.4
+  googleapis: ^17.0.0
 
 dev_dependencies:
   flutter_test:

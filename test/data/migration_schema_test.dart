@@ -1,11 +1,18 @@
-// Regression test for schema version 8:
-// - currentSchemaVersion == 8
-// - _migrations list has exactly 8 entries (WR-06 invariant)
+// Schema-version regression tests for the AppSettings/Hive schema constant,
+// plus the Phase 19 Goal energy-valence round-trip.
+//
+// Renamed from migration_schema8_test.dart (Phase 36) to stop the filename
+// encoding a version number that goes stale at every schema bump — this
+// file's name had already drifted once (it asserted version 11 while still
+// named "8" from Phase 35 onward, flagged in 36-PATTERNS.md). A per-phase
+// migration round-trip test still gets its own numbered file
+// (migration_schema12_test.dart); this file is the one place the CURRENT
+// schema constant and the pre-Phase-36 Goal energy-valence fields are
+// checked, and neither needs a version number in its name to stay correct.
+//
+// - currentSchemaVersion == 12 (WR-06 invariant)
 // - Old Goal (no HiveField 12/13) reads as EnergyValence.neutral with no crash
 // - New Goal with energyValenceIndex + emojiTag persists through a Hive round-trip
-//
-// RED: This file fails to compile because EnergyValence /
-// Goal.energyValenceIndex / Goal.emojiTag do not exist yet.
 
 import 'dart:io';
 
@@ -20,19 +27,20 @@ void main() {
   // Schema constant tests (no Hive I/O needed)
   // ---------------------------------------------------------------------------
 
-  // Bumped to 11 when Phase 35 added AppSettings.selectedCalendarIds
-  // (HiveField 9), .icsUrls (HiveField 10) and .lastCalendarSyncAt
-  // (HiveField 11) with migration 10→11. The WR-06 count invariant moves
-  // in lockstep.
-  test('currentSchemaVersion equals 11', () {
-    expect(currentSchemaVersion, equals(11));
+  // Bumped to 12 when Phase 36 added AppSettings.googleAccessToken
+  // (HiveField 12), .googleRefreshToken (HiveField 13),
+  // .googleAccessTokenExpiresAt (HiveField 14) and .googleReconnectNeeded
+  // (HiveField 15) with migration 11→12. The WR-06 count invariant moves in
+  // lockstep. See migration_schema12_test.dart for the Hive round-trip half.
+  test('currentSchemaVersion equals 12', () {
+    expect(currentSchemaVersion, equals(12));
   });
 
   // The WR-06 assert in migrations.dart enforces
   // _migrations.length == currentSchemaVersion at runtime in debug mode.
   // We confirm the constant value here; the assert is the count gate.
   test('currentSchemaVersion is consistent with WR-06 migration count', () {
-    expect(currentSchemaVersion, equals(11));
+    expect(currentSchemaVersion, equals(12));
   });
 
   // ---------------------------------------------------------------------------

@@ -1,9 +1,13 @@
 import 'package:flutter/foundation.dart';
+import '../data/calendar/google_auth_client.dart';
 import '../data/models/app_settings.dart';
 import '../data/repositories/app_settings_repository.dart';
 import '../data/repositories/hive_app_settings_repository.dart';
 
-class SettingsNotifier extends ChangeNotifier {
+/// One writer for the four Google token fields means the UI cache can never
+/// drift from Hive — this matters because [GoogleTokenStore.reconnectNeeded]
+/// is read by the settings screen and written by [GoogleAuthClient].
+class SettingsNotifier extends ChangeNotifier implements GoogleTokenStore {
   SettingsNotifier({AppSettingsRepository? repository})
     : _repository = repository ?? HiveAppSettingsRepository();
 
@@ -39,6 +43,14 @@ class SettingsNotifier extends ChangeNotifier {
   DateTime? _lastCalendarSyncAt;
   DateTime? get lastCalendarSyncAt => _lastCalendarSyncAt;
 
+  String? _googleAccessToken;
+  String? _googleRefreshToken;
+  DateTime? _googleAccessTokenExpiresAt;
+
+  bool _googleReconnectNeeded = false;
+  @override
+  bool get reconnectNeeded => _googleReconnectNeeded;
+
   /// Reads persisted settings from Hive and caches the values.
   /// Call once at startup after HiveDatabase.init(), before runApp().
   Future<void> init() async {
@@ -53,6 +65,10 @@ class SettingsNotifier extends ChangeNotifier {
     _selectedCalendarIds = settings?.selectedCalendarIds ?? [];
     _icsUrls = settings?.icsUrls ?? [];
     _lastCalendarSyncAt = settings?.lastCalendarSyncAt;
+    _googleAccessToken = settings?.googleAccessToken;
+    _googleRefreshToken = settings?.googleRefreshToken;
+    _googleAccessTokenExpiresAt = settings?.googleAccessTokenExpiresAt;
+    _googleReconnectNeeded = settings?.googleReconnectNeeded ?? false;
     notifyListeners();
   }
 
@@ -148,6 +164,55 @@ class SettingsNotifier extends ChangeNotifier {
     _lastCalendarSyncAt = value;
     final settings = await _repository.getSettings() ?? AppSettings();
     settings.lastCalendarSyncAt = value;
+    await _repository.saveSettings(settings);
+    notifyListeners();
+  }
+
+  // --- GoogleTokenStore (CALAUTH-01/02/03) ---------------------------------
+
+  @override
+  Future<GoogleTokens?> read() async {
+    final accessToken = _googleAccessToken;
+    final expiresAt = _googleAccessTokenExpiresAt;
+    if (accessToken == null || expiresAt == null) return null;
+    return GoogleTokens(
+      accessToken: accessToken,
+      refreshToken: _googleRefreshToken,
+      expiresAt: expiresAt,
+    );
+  }
+
+  @override
+  Future<void> write(GoogleTokens tokens) async {
+    _googleAccessToken = tokens.accessToken;
+    _googleRefreshToken = tokens.refreshToken;
+    _googleAccessTokenExpiresAt = tokens.expiresAt;
+    final settings = await _repository.getSettings() ?? AppSettings();
+    settings.googleAccessToken = tokens.accessToken;
+    settings.googleRefreshToken = tokens.refreshToken;
+    settings.googleAccessTokenExpiresAt = tokens.expiresAt;
+    await _repository.saveSettings(settings);
+    notifyListeners();
+  }
+
+  @override
+  Future<void> clear() async {
+    _googleAccessToken = null;
+    _googleRefreshToken = null;
+    _googleAccessTokenExpiresAt = null;
+    final settings = await _repository.getSettings() ?? AppSettings();
+    settings.googleAccessToken = null;
+    settings.googleRefreshToken = null;
+    settings.googleAccessTokenExpiresAt = null;
+    await _repository.saveSettings(settings);
+    notifyListeners();
+  }
+
+  @override
+  Future<void> setReconnectNeeded(bool value) async {
+    _googleReconnectNeeded = value;
+    final settings = await _repository.getSettings() ?? AppSettings();
+    settings.googleReconnectNeeded = value;
     await _repository.saveSettings(settings);
     notifyListeners();
   }

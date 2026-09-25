@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-const int currentSchemaVersion = 11;
+const int currentSchemaVersion = 12;
 
 typedef MigrationFn = Future<void> Function();
 
@@ -18,6 +18,7 @@ final List<MigrationFn> _migrations = [
   _migration8to9,
   _migration9to10,
   _migration10to11,
+  _migration11to12,
 ];
 
 Future<void> _migration0to1() async {
@@ -112,6 +113,17 @@ Future<void> _migration10to11() async {
   // selectedCalendarIds == [], icsUrls == [] and lastCalendarSyncAt ==
   // null, i.e. every pre-existing user has no calendar configured. No data
   // transformation needed.
+}
+
+Future<void> _migration11to12() async {
+  // Phase 36: AppSettings gains googleAccessToken (HiveField 12, String?),
+  // googleRefreshToken (HiveField 13, String?), googleAccessTokenExpiresAt
+  // (HiveField 14, DateTime?), and googleReconnectNeeded (HiveField 15,
+  // bool, default false) — CALAUTH-01/02/03's persisted Google OAuth token
+  // state. All additive fields — Hive CE binary reader returns null/false
+  // for missing fields in existing records. Old records deserialize with
+  // no Google connection, i.e. every pre-existing user must connect fresh.
+  // No data transformation needed.
 }
 
 Future<void> runMigrations(SharedPreferences prefs) async {

@@ -1,0 +1,20 @@
+{
+  "kind": "calendar#events",
+  "summary": "dan@example.com",
+  "items": [
+    {
+      "kind": "calendar#event",
+      "id": "abc123eventid",
+      "status": "confirmed",
+      "summary": "Team standup",
+      "start": {
+        "dateTime": "2026-03-03T14:00:00Z",
+        "timeZone": "UTC"
+      },
+      "end": {
+        "dateTime": "2026-03-03T14:25:00Z",
+        "timeZone": "UTC"
+      }
+    }
+  ]
+}
