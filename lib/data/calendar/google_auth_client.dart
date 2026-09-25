@@ -31,6 +31,25 @@ abstract class GoogleTokenStore {
   Future<void> write(GoogleTokens tokens);
   Future<void> clear();
   Future<void> setReconnectNeeded(bool value);
+
+  /// True when the stored Google credential has been found dead and the
+  /// user must reconnect (CALAUTH-03). Documented here — not only on
+  /// `AppSettings`'s own field — because this seam, not the Hive model, is
+  /// what any future caller (plan 36-06's settings screen) actually reads.
+  /// Exactly five things set or clear it (plan 36-02 Task 3), and nothing
+  /// else does:
+  /// 1. A successful interactive [GoogleAuthClient.connect] -> false.
+  /// 2. A successful silent refresh, inside
+  ///    [GoogleAuthClient.authenticatedClient] -> false.
+  /// 3. A refresh that fails on the network, a timeout, or a non-matching
+  ///    status/body (e.g. a transient 5xx) -> untouched, stays whatever it
+  ///    was — a flaky connection must never masquerade as an expired login.
+  /// 4. A cancelled [GoogleAuthClient.connect] -> untouched. Backing out of
+  ///    the reconnect sheet does not pretend the problem is solved.
+  /// 5. [GoogleAuthClient.disconnect] -> false. Disconnected is not
+  ///    "expired" — the user ended it deliberately, so the screen must fall
+  ///    back to the plain not-connected CTA rather than nagging about a
+  ///    login they no longer have.
   bool get reconnectNeeded;
 }
 
@@ -71,6 +90,29 @@ class GoogleAuthException implements Exception {
   String toString() => 'GoogleAuthException: $message';
 }
 
+/// Translates a thrown object from `flutter_appauth`'s platform call into
+/// either `null` (the user cancelled the consent sheet — a real state, not
+/// an error, RESEARCH Anti-Patterns) or the [GoogleAuthException] the
+/// launcher should throw for everything else.
+///
+/// Extracted from [_defaultLauncher] as its own top-level function (Task 2)
+/// so this one boundary translation is directly unit-testable. A real
+/// [FlutterAppAuthUserCancelledException] CAN be constructed in a host test
+/// — it is a plain `PlatformException` subclass with no platform-channel
+/// dependency (confirmed by reading `flutter_appauth_platform_interface`
+/// 12.1.0's source this session), so the translation itself is proven by a
+/// test here, not merely asserted by grep — Assumption A7 is narrowed by
+/// this, though it does not confirm every native cancellation path actually
+/// throws this exception on a real device (carried to plan 36-07).
+///
+/// Deliberately narrow: only this one exception type is treated as a
+/// cancellation. A broader catch would risk swallowing a real failure,
+/// which is the worse error (RESEARCH Anti-Patterns).
+GoogleAuthException? translateGoogleLauncherError(Object thrown) {
+  if (thrown is FlutterAppAuthUserCancelledException) return null;
+  return GoogleAuthException('Google sign-in failed');
+}
+
 /// Production [GoogleAuthLauncher] — the only place in `lib/` that imports
 /// `package:flutter_appauth`.
 ///
@@ -104,10 +146,10 @@ Future<GoogleTokens?> _defaultLauncher({
         },
       ),
     );
-  } on FlutterAppAuthUserCancelledException {
-    return null; // a real state, not an error to swallow.
-  } catch (_) {
-    throw GoogleAuthException('Google sign-in failed');
+  } catch (e) {
+    final translated = translateGoogleLauncherError(e);
+    if (translated == null) return null; // cancelled — a real state.
+    throw translated;
   }
   final accessToken = result.accessToken;
   final expiresAt = result.accessTokenExpirationDateTime;
@@ -127,14 +169,35 @@ Future<gauth.AccessCredentials> _defaultRefresher(
   http.Client client,
 ) => gauth.refreshCredentials(clientId, credentials, client);
 
-/// Owns the Google token lifecycle: launching consent, persisting the
-/// result, silently refreshing an expired access token, and handing back an
-/// authenticated HTTP client for the Calendar API.
+/// True only when [error] is exactly Google's documented "this refresh
+/// token is dead" shape (CALAUTH-03): a [gauth.ServerRequestFailedException]
+/// from `googleapis_auth`, with HTTP status 400, AND a body naming Google's
+/// `invalid_grant` error code. All three conditions together, deliberately
+/// narrow — RESEARCH Pitfall 3 warns explicitly against keying off the
+/// status code alone, and this plan's own mutation proof (see SUMMARY)
+/// demonstrates why: a status-code-only check would also fire for a plain
+/// `400 invalid_request` (a malformed refresh call, not a dead token).
 ///
-/// This task implements only the success and cancellation paths plus one
-/// generic failure branch. The three-way failure classification CALAUTH-03
-/// actually requires (distinguishing "reconnect needed" from an ordinary
-/// network hiccup) is plan 36-02's whole subject.
+/// [gauth.ServerRequestFailedException.responseContent] is confirmed
+/// (Assumption A3, resolved this plan by reading the installed
+/// `googleapis_auth` 2.3.4 source directly — `lib/src/utils.dart`'s
+/// `requestJson`, which throws with `responseContent: jsonMap`) to be the
+/// PARSED JSON response body, a `Map<String, dynamic>`, not an
+/// already-summarized message. Google's own error shape puts the code in
+/// the `error` key, so this checks that key directly rather than
+/// string-matching a `.toString()` of the body.
+bool _isExpiredOrRevokedRefreshToken(Object error) {
+  if (error is! gauth.ServerRequestFailedException) return false;
+  if (error.statusCode != 400) return false;
+  final content = error.responseContent;
+  return content is Map && content['error'] == 'invalid_grant';
+}
+
+/// Owns the Google token lifecycle: launching consent, persisting the
+/// result, silently refreshing an expired access token, classifying a
+/// refresh failure into "reconnect needed" versus an ordinary hiccup
+/// (CALAUTH-03), and handing back an authenticated HTTP client for the
+/// Calendar API.
 class GoogleAuthClient {
   GoogleAuthClient({
     required GoogleTokenStore store,
@@ -197,9 +260,22 @@ class GoogleAuthClient {
         _toAccessCredentials(tokens),
         http.Client(),
       );
-    } catch (_) {
+    } catch (e) {
+      if (_isExpiredOrRevokedRefreshToken(e)) {
+        // THIS, specifically, is CALAUTH-03's case — the 7-day (or
+        // revoked) expiry. Stored tokens are left untouched (only the flag
+        // changes) so the user's last-known calendars keep rendering.
+        await _store.setReconnectNeeded(true);
+      }
+      // Anything else (network failure, timeout, a transient 5xx, a 400
+      // that doesn't name Google's expired-or-revoked code) degrades
+      // exactly like the existing ICS failure path already does: a thrown
+      // exception, no reconnect nagging, flag left exactly as it was.
       throw GoogleAuthException('Google token refresh failed');
     }
+    // A successful refresh proves the login is alive — clear any stale
+    // reconnect flag before persisting the refreshed tokens (Task 3).
+    await _store.setReconnectNeeded(false);
     await _store.write(
       GoogleTokens(
         accessToken: refreshed.accessToken.data,
