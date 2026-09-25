@@ -1321,7 +1321,7 @@ a fallback if verification proves unworkable.
 **Plans:** 7 plans, 5 waves.
 
 Plans:
-- [ ] 36-01-PLAN.md — Tracer: a canned Google token persists and a canned `events.list` response becomes a `CommitmentBlock` through the unchanged sync service (+ package gate, schema 11→12)
+- [x] 36-01-PLAN.md — Tracer: a canned Google token persists and a canned `events.list` response becomes a `CommitmentBlock` through the unchanged sync service (+ package gate, schema 11→12)
 - [ ] 36-02-PLAN.md — CALAUTH-03's three-way failure classification (`invalid_grant` vs. offline vs. routine refresh), cancellation as a real state, and the reconnect flag's full lifecycle
 - [ ] 36-03-PLAN.md — Google event/calendar mapping against Google-shaped fixtures (moved occurrence, cancelled stub, all-day, timeless) + CALAUTH-02's read-only scope proven by grep
 - [ ] 36-04-PLAN.md — `CFBundleURLTypes` via a build setting, `tools/build-ios.sh` injecting the gitignored client ID, and CALAUTH-04's no-secret gates
