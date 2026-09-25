@@ -143,10 +143,19 @@ class _CheckinScreenState extends State<CheckinScreen> {
       // instance that implements `GoogleTokenStore` (plan 36-01) — without
       // this, connecting Google would populate the picker and then never
       // actually import anything at check-in.
+      //
+      // `googleCalendarIds` closes WINDOWS.md entry 5 (plan 36-06): without
+      // the `google:`-prefixed subset of the user's own ticked selection,
+      // `GoogleCalendarSource` has no calendar id to query at all, and a
+      // signed-in, ticked account would still import zero Google events —
+      // exactly the gap plan 36-05 recorded and left open for this call.
       final syncResult = await commitmentsNotifier.syncFromCalendar(
         source: defaultCalendarSource(
           icsUrls: settingsNotifier.icsUrls,
           googleAuth: GoogleAuthClient(store: settingsNotifier),
+          googleCalendarIds: settingsNotifier.selectedCalendarIds
+              .where((id) => id.startsWith('google:'))
+              .toList(),
         ),
       );
       // lastCalendarSyncAt is written on success only — a failing sync

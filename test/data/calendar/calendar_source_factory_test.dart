@@ -62,6 +62,28 @@ void main() {
           expect(source, isA<DeviceCalendarSource>());
         },
       );
+
+      test(
+        'accepts googleCalendarIds without changing the composite '
+        'structure (WINDOWS.md entry 5) — the ids only affect what '
+        'GoogleCalendarSource.listEvents queries internally, which '
+        'google_calendar_source_test.dart already proves given this exact '
+        'constructor parameter; this factory\'s only job is to pass the '
+        'value through unchanged',
+        () {
+          final client = GoogleAuthClient(store: _FakeGoogleTokenStore());
+
+          final source = iosCalendarSource(
+            googleAuth: client,
+            googleCalendarIds: const ['google:dan@example.com'],
+          );
+
+          expect(source, isA<CompositeCalendarSource>());
+          final composite = source as CompositeCalendarSource;
+          expect(composite.children[0], isA<GoogleCalendarSource>());
+          expect(composite.children[1], isA<DeviceCalendarSource>());
+        },
+      );
     },
   );
 

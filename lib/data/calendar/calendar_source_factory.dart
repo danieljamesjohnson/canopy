@@ -27,6 +27,7 @@ import 'null_calendar_source.dart';
 CalendarSource defaultCalendarSource({
   List<String> icsUrls = const [],
   GoogleAuthClient? googleAuth,
+  List<String> googleCalendarIds = const [],
 }) {
   if (kIsWeb) {
     // Web: no device calendar API exists — ICS is the only path. D-36-01's
@@ -36,7 +37,10 @@ CalendarSource defaultCalendarSource({
         : IcsCalendarSource(urls: icsUrls);
   }
   if (Platform.isIOS) {
-    return iosCalendarSource(googleAuth: googleAuth);
+    return iosCalendarSource(
+      googleAuth: googleAuth,
+      googleCalendarIds: googleCalendarIds,
+    );
   }
   // Android, macOS, Windows, Linux: ICS is the path. Android was originally
   // meant to get its own DeviceCalendarSource too (D-35-12), but D-35-15
@@ -78,23 +82,28 @@ CalendarSource defaultCalendarSource({
 /// so the picker (plan 36-06) renders the signed-in account above the
 /// device's own list.
 ///
-/// **`calendarIds: const []`, a known limitation, not an oversight.** Unlike
+/// **`googleCalendarIds`, closing WINDOWS.md entry 5 (plan 36-06).** Unlike
 /// `DeviceCalendarSource` (whose plugin resolves an empty list to "every
 /// calendar" internally) or `IcsCalendarSource` (whose feed list IS its
 /// configuration), `GoogleCalendarSource` has no way to enumerate "every
-/// calendar" on its own — it must be told which calendar ids to query. This
-/// plan does not yet thread `AppSettings.selectedCalendarIds` (filtered to
-/// the `google:` prefix) into this constructor, because doing so is plan
-/// 36-06's job once the picker exists to write those ids in the first
-/// place. Until then, `listCalendars()` still returns the full Google
-/// account (so the picker CAN display it), but `listEvents()` returns no
-/// Google events — recorded honestly in 36-05-SUMMARY.md rather than
-/// overclaimed here.
-CalendarSource iosCalendarSource({GoogleAuthClient? googleAuth}) {
+/// calendar" on its own — it must be told which calendar ids to query, AND
+/// it must be told at CONSTRUCTION time specifically: `CalendarSyncService
+/// .sync()` always calls `listEvents` with an EMPTY `calendarIds` argument
+/// (its own "empty means every configured calendar" convention), so a
+/// constructor-time list is the only place this can ever take effect. The
+/// caller (36-06's `CalendarSettingsScreen`) is expected to pass
+/// `AppSettings.selectedCalendarIds` filtered to the `google:` prefix.
+/// Defaults to `const []` so every existing caller (every test, and any
+/// caller that hasn't opted in) is unaffected — same backward-compatible
+/// shape as `googleAuth` itself.
+CalendarSource iosCalendarSource({
+  GoogleAuthClient? googleAuth,
+  List<String> googleCalendarIds = const [],
+}) {
   final device = DeviceCalendarSource();
   if (googleAuth == null) return device;
   return CompositeCalendarSource([
-    GoogleCalendarSource(authClient: googleAuth, calendarIds: const []),
+    GoogleCalendarSource(authClient: googleAuth, calendarIds: googleCalendarIds),
     device,
   ]);
 }
