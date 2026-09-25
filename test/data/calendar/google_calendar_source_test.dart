@@ -17,6 +17,7 @@ import 'package:canopy/data/models/commitment_block.dart';
 import 'package:canopy/data/repositories/commitment_block_repository.dart';
 import 'package:canopy/services/calendar_sync_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:googleapis_auth/googleapis_auth.dart' as gauth;
 import 'package:http/http.dart' as http;
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -168,6 +169,53 @@ void main() {
       // local wall-clock minutes equal the UTC clock reading.
       expect(block.startMinutes, equals(14 * 60));
       expect(block.endMinutes, equals(14 * 60 + 25));
+    },
+  );
+
+  test(
+    'authenticatedClient() refreshes an expired access token via the '
+    'injected refresher and persists the result (Assumption A6)',
+    () async {
+      final store = _FakeGoogleTokenStore();
+      await store.write(
+        GoogleTokens(
+          accessToken: 'stale-access-token',
+          refreshToken: 'still-good-refresh-token',
+          expiresAt: DateTime.now().toUtc().subtract(
+            const Duration(minutes: 5),
+          ),
+        ),
+      );
+
+      var refresherCalled = false;
+      final authClient = GoogleAuthClient(
+        store: store,
+        clientId: '000000000000-synthtestidvalue.apps.googleusercontent.com',
+        refresher: (clientId, credentials, client) async {
+          refresherCalled = true;
+          // A null secret must reach here unchanged (Assumption A6 — Google
+          // never requires one for an installed/iOS client).
+          expect(clientId.secret, isNull);
+          expect(credentials.refreshToken, equals('still-good-refresh-token'));
+          return gauth.AccessCredentials(
+            gauth.AccessToken(
+              'Bearer',
+              'refreshed-access-token',
+              DateTime.now().toUtc().add(const Duration(hours: 1)),
+            ),
+            'still-good-refresh-token',
+            const [],
+          );
+        },
+      );
+
+      final client = await authClient.authenticatedClient();
+      client.close();
+
+      expect(refresherCalled, isTrue);
+      final persisted = await store.read();
+      expect(persisted!.accessToken, equals('refreshed-access-token'));
+      expect(persisted.refreshToken, equals('still-good-refresh-token'));
     },
   );
 }
