@@ -214,6 +214,11 @@ class GoogleAuthClient {
   final GoogleAuthLauncher _launcher;
   final GoogleCredentialsRefresher _refresher;
 
+  /// Safety buffer subtracted from a token's `expiresAt` before deciding
+  /// whether it's still usable (WR-04 code review) — see
+  /// [authenticatedClient]'s own doc comment for why.
+  static const Duration _expiryMargin = Duration(seconds: 30);
+
   /// The client id to use, preferring an injected override (tests) over the
   /// compile-time value (production) — either way going through
   /// [requireGoogleClientId] in the production case so a missing build-time
@@ -240,14 +245,22 @@ class GoogleAuthClient {
   Future<bool> hasCredentials() async => (await _store.read()) != null;
 
   /// Returns an `http.Client` carrying a valid bearer token, silently
-  /// refreshing the stored access token first if it has expired. Throws
-  /// [GoogleAuthException] if no tokens are stored at all.
+  /// refreshing the stored access token first if it has expired — or if it
+  /// is within [_expiryMargin] of expiring (WR-04 code review). Without a
+  /// margin, a token that expires in the next few hundred milliseconds is
+  /// treated as valid and handed straight to the caller: by the time the
+  /// resulting `http.Client` actually reaches Google (network latency, any
+  /// queued work before the request fires), the token can have expired
+  /// server-side, turning an avoidable race into a user-visible sync
+  /// failure. Throws [GoogleAuthException] if no tokens are stored at all.
   Future<http.Client> authenticatedClient() async {
     final tokens = await _store.read();
     if (tokens == null) {
       throw GoogleAuthException('not connected to Google');
     }
-    if (tokens.expiresAt.toUtc().isAfter(DateTime.now().toUtc())) {
+    if (tokens.expiresAt.toUtc().isAfter(
+      DateTime.now().toUtc().add(_expiryMargin),
+    )) {
       return gauth.authenticatedClient(
         http.Client(),
         _toAccessCredentials(tokens),

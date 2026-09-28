@@ -259,6 +259,47 @@ void main() {
         expect(refresherCalled, isFalse);
       },
     );
+
+    test(
+      'WR-04: an access token expiring in 15 seconds (inside the 30s '
+      'safety margin) triggers a proactive refresh rather than being '
+      'raced — the token is technically still valid right now, but must '
+      "not be handed to the caller as though it'll stay valid long enough "
+      'to actually reach Google',
+      () async {
+        var refresherCalled = false;
+        final store = _FakeGoogleTokenStore(
+          initialTokens: GoogleTokens(
+            accessToken: 'about-to-expire-access-token',
+            refreshToken: 'still-good-refresh-token',
+            expiresAt: DateTime.now().toUtc().add(const Duration(seconds: 15)),
+          ),
+        );
+        final authClient = GoogleAuthClient(
+          store: store,
+          clientId: _testClientId,
+          refresher: (clientId, credentials, client) async {
+            refresherCalled = true;
+            return gauth.AccessCredentials(
+              gauth.AccessToken(
+                'Bearer',
+                'refreshed-access-token',
+                DateTime.now().toUtc().add(const Duration(hours: 1)),
+              ),
+              credentials.refreshToken,
+              const [],
+            );
+          },
+        );
+
+        final client = await authClient.authenticatedClient();
+        client.close();
+
+        expect(refresherCalled, isTrue);
+        final persisted = await store.read();
+        expect(persisted!.accessToken, equals('refreshed-access-token'));
+      },
+    );
   });
 
   group('Task 2 — backing out of the consent sheet is a state, not an error', () {
