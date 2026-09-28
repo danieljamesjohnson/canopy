@@ -511,6 +511,41 @@ void main() {
       );
 
       test(
+        'WR-03: when calendarList.list() has no primary entry, every '
+        'calendar still gets a non-null accountName rather than null — '
+        'a null accountName would group under the empty-string bucket, '
+        "which _calendarRows renders as the literal header 'This device' "
+        '(a real mislabeling for a Google calendar), and would also make '
+        'the calendar permanently ineligible for '
+        'detectSelectedCalendarOverlaps, which requires a non-null '
+        'accountName on both sides',
+        () async {
+          final noPrimaryJson = jsonEncode({
+            'kind': 'calendar#calendarList',
+            'items': [
+              {
+                'kind': 'calendar#calendarListEntry',
+                'id': 'abcdef1234567890@group.calendar.google.com',
+                'summary': 'Family',
+                'backgroundColor': '#ff8800',
+              },
+            ],
+          });
+          final authClient = GoogleAuthClient(store: _FakeGoogleTokenStore());
+          final source = GoogleCalendarSource(
+            authClient: authClient,
+            calendarIds: const [],
+            apiClientFactory: () async => _FixtureHttpClient(noPrimaryJson),
+          );
+
+          final calendars = await source.listCalendars();
+
+          expect(calendars, hasLength(1));
+          expect(calendars.single.accountName, isNotNull);
+        },
+      );
+
+      test(
         'a Google calendar id round-trips: prefixed on the way out of '
         "listCalendars(), stripped from the outbound events.list() "
         'request (plan 36-05 depends on this being unambiguous)',

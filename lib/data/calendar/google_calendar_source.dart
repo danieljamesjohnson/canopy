@@ -37,6 +37,18 @@ const String _googleIdPrefix = 'google:';
 /// own contract.
 const String _googleSourceLabel = 'Google';
 
+/// Fallback [CalendarInfo.accountName] used only when `calendarList.list()`
+/// returns no entry with `primary == true` (WR-03 code review, an edge case
+/// — a restricted view, or a future API change). Without this fallback,
+/// every calendar in that response would carry a null `accountName`, which
+/// `_calendarRows` (calendar_settings_screen.dart) groups under the
+/// empty-string bucket — rendered as the literal header `'This device'`, a
+/// real mislabeling of the data source. A non-null label here also keeps
+/// the calendar eligible for `detectSelectedCalendarOverlaps`, which
+/// requires a non-null `accountName` on both sides before it can ever flag
+/// a possible duplicate.
+const String _googleFallbackAccountLabel = 'Google';
+
 // ── Pure mapping functions ──────────────────────────────────────────────
 //
 // Deliberately top-level, taking plain googleapis-shaped values rather than
@@ -211,6 +223,9 @@ class GoogleCalendarSource implements CalendarSource {
           break;
         }
       }
+      // WR-03: guarantee a non-null accountName even when no primary entry
+      // was found — see _googleFallbackAccountLabel's own doc comment.
+      accountEmail ??= _googleFallbackAccountLabel;
       return entries
           .where((entry) => entry.id != null)
           .map(
