@@ -5,8 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Throwaway in-test double — a full [CalendarSource] implementation with
 /// every return value configurable, and an optional exception to throw from
-/// [listEvents]. Mirrors this codebase's existing fake-double pattern (e.g.
-/// `calendar_settings_screen_test.dart`'s `_FakeCalendarSource`).
+/// [listEvents]/[listCalendars]. Mirrors this codebase's existing
+/// fake-double pattern (e.g. `calendar_settings_screen_test.dart`'s
+/// `_FakeCalendarSource`).
 class _FakeCalendarSource implements CalendarSource {
   _FakeCalendarSource({
     this.available = true,
@@ -14,13 +15,16 @@ class _FakeCalendarSource implements CalendarSource {
     this.events = const [],
     this.permission = CalendarPermissionState.notApplicable,
     Object? throwOnListEvents,
-  }) : _throwOnListEvents = throwOnListEvents;
+    Object? throwOnListCalendars,
+  }) : _throwOnListEvents = throwOnListEvents,
+       _throwOnListCalendars = throwOnListCalendars;
 
   final bool available;
   final List<CalendarInfo> calendars;
   final List<CalendarEvent> events;
   final CalendarPermissionState permission;
   final Object? _throwOnListEvents;
+  final Object? _throwOnListCalendars;
 
   /// Records the exact `calendarIds` this fake was called with, so a test
   /// can assert the composite passed it through unchanged.
@@ -33,7 +37,10 @@ class _FakeCalendarSource implements CalendarSource {
   Future<CalendarPermissionState> requestPermission() async => permission;
 
   @override
-  Future<List<CalendarInfo>> listCalendars() async => calendars;
+  Future<List<CalendarInfo>> listCalendars() async {
+    if (_throwOnListCalendars != null) throw _throwOnListCalendars;
+    return calendars;
+  }
 
   @override
   Future<List<CalendarEvent>> listEvents({
@@ -86,6 +93,46 @@ void main() {
         expect(result.map((c) => c.id).toList(), ['google:a', 'device-b']);
         expect(result[0].sourceLabel, 'Google');
         expect(result[1].sourceLabel, 'This device');
+      },
+    );
+
+    test(
+      // WR-01 code review: mirrors the equivalent listEvents test below —
+      // one child's failure (e.g. a dead Google token) must not take down
+      // the other child's own perfectly good calendar list.
+      'listCalendars: one child throws and the other succeeds: the '
+      'successful child\'s calendars are returned, and no exception escapes',
+      () async {
+        final google = _FakeCalendarSource(
+          throwOnListCalendars: Exception('dead Google token'),
+        );
+        final device = _FakeCalendarSource(
+          calendars: [info('device-b', sourceLabel: 'This device')],
+        );
+        final composite = CompositeCalendarSource([google, device]);
+
+        final result = await composite.listCalendars();
+
+        expect(result.map((c) => c.id).toList(), ['device-b']);
+      },
+    );
+
+    test(
+      'listCalendars: every child throws: the exception propagates, so the '
+      'caller sees a genuine failure rather than a silently empty list',
+      () {
+        final google = _FakeCalendarSource(
+          throwOnListCalendars: Exception('Google is down'),
+        );
+        final device = _FakeCalendarSource(
+          throwOnListCalendars: Exception('device calendar is down'),
+        );
+        final composite = CompositeCalendarSource([google, device]);
+
+        expect(
+          () => composite.listCalendars(),
+          throwsA(isA<Exception>()),
+        );
       },
     );
 

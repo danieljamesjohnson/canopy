@@ -58,9 +58,29 @@ class CompositeCalendarSource implements CalendarSource {
 
   @override
   Future<List<CalendarInfo>> listCalendars() async {
+    // WR-01 code review: mirrors listEvents()'s own per-child tolerance
+    // below — this class's doc comment states that policy applies to the
+    // whole class, not just listEvents(), and listCalendars() previously
+    // didn't honor it: one child's failure (e.g. a dead Google token) took
+    // down the other child's perfectly good calendar list too.
     final infos = <CalendarInfo>[];
+    var anySucceeded = false;
+    Object? lastError;
+    StackTrace? lastStackTrace;
     for (final child in _children) {
-      infos.addAll(await child.listCalendars());
+      try {
+        infos.addAll(await child.listCalendars());
+        anySucceeded = true;
+      } catch (e, st) {
+        lastError = e;
+        lastStackTrace = st;
+      }
+    }
+    if (!anySucceeded && _children.isNotEmpty) {
+      Error.throwWithStackTrace(
+        lastError ?? StateError('all calendar sources failed'),
+        lastStackTrace ?? StackTrace.current,
+      );
     }
     return infos;
   }
