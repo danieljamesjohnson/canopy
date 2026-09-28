@@ -1085,7 +1085,7 @@ Plans:
 | 33. Make The Obvious Thing Obvious | — (standalone) | 4/5 + 4 owner rounds | Complete — closed by owner review; 33-05's scripted UAT never run | 2026-09-08 |
 | 34. Adding a Goal Feels Like Onboarding | — (standalone) | 3/3 | Complete | 2026-09-09 |
 | 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 6/6 built | **Built, awaiting owner verdict.** All four waves merged, 821/821 green. Two gates open: browser UAT (`35-UAT.md`) and the iOS device check (`35-05` Task 3). WINDOWS.md entry 2 closed; 1 and 3 open | |
-| 36. Connect Google Calendar Without Hunting For a URL | — (standalone) | 0/TBD | Scoped 2026-09-22, not yet planned. Folds into Phase 35's UAT gate rather than opening a second one | |
+| 36. Connect Google Calendar Without Hunting For a URL | — (standalone) | 6/7 built | **Built, awaiting owner verdict.** Waves 1-4 merged, 908/908 green, `flutter analyze` clean, code review 0 critical (4 of 5 warnings fixed, WR-05 is the owner's call). `36-VERIFICATION.md` = `human_needed`, `gaps: []`. Parked at `36-07` Task 2, the MacBook gate — which also closes Phase 35's device gate, since `36-UAT.md` carries `35-05` Task 3 as Section A. WINDOWS.md entry 5 fixed; 4 and 6 open by design | |
 
 ### Phase 35: Your Real Commitments, Read From Your Calendar
 
