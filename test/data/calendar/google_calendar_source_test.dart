@@ -460,6 +460,37 @@ void main() {
   );
 
   group(
+    'filterGoogleCalendarIds (WR-02 code review) — the shared filter '
+    "calendar_settings_screen.dart's _googleSelectedIds and "
+    "checkin_screen.dart's _generate() both call, so their behavior can "
+    'never silently desync from each other or from the prefix this file '
+    'stamps on every id it hands out',
+    () {
+      test(
+        'keeps only ids carrying the googleCalendarIdPrefix, in order, '
+        'dropping every device id',
+        () {
+          final result = filterGoogleCalendarIds([
+            'device-1',
+            '${googleCalendarIdPrefix}dan@example.com',
+            'device-2',
+            '${googleCalendarIdPrefix}work@example.com',
+          ]);
+
+          expect(result, [
+            '${googleCalendarIdPrefix}dan@example.com',
+            '${googleCalendarIdPrefix}work@example.com',
+          ]);
+        },
+      );
+
+      test('an empty input yields an empty result', () {
+        expect(filterGoogleCalendarIds(const []), isEmpty);
+      });
+    },
+  );
+
+  group(
     'GoogleCalendarSource.listCalendars() — CalendarInfo mapping and '
     'sourceLabel (Task 2, D-36-03)',
     () {
@@ -566,7 +597,11 @@ void main() {
 
           final calendars = await source.listCalendars();
           final prefixedId = calendars.first.id;
-          expect(prefixedId, 'google:dan@example.com');
+          // WR-02: asserted against the shared public constant, not a
+          // second hardcoded 'google:' literal — a future rename of the
+          // prefix must fail this assertion rather than silently agreeing
+          // with a copy that no longer matches production.
+          expect(prefixedId, '${googleCalendarIdPrefix}dan@example.com');
 
           await source.listEvents(
             start: DateTime.utc(2026, 3, 1),
@@ -583,7 +618,7 @@ void main() {
           expect(eventsRequest.pathSegments, contains('dan@example.com'));
           expect(
             eventsRequest.pathSegments.any(
-              (segment) => segment.contains('google:'),
+              (segment) => segment.contains(googleCalendarIdPrefix),
             ),
             isFalse,
           );

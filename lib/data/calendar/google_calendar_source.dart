@@ -29,7 +29,26 @@ typedef GoogleApiClientFactory = Future<http.Client> Function();
 /// with this string, so a Google calendar id can never be confused with a
 /// device calendar id in the persisted selection (plan 36-05 depends on this
 /// being unambiguous). Stripped before ever being sent to Google.
-const String _googleIdPrefix = 'google:';
+///
+/// **Public and shared (WR-02 code review)** — `calendar_settings_screen.dart`
+/// and `checkin_screen.dart` both need this exact prefix to filter the
+/// persisted selection down to Google ids, and previously hardcoded their
+/// own `'google:'` literal independently. Import and reference THIS
+/// constant from any new call site instead of retyping the literal — a
+/// future rename here must break the build at every site that still needs
+/// updating, not silently desynchronize them.
+const String googleCalendarIdPrefix = 'google:';
+
+/// The exact filter `calendar_settings_screen.dart`'s `_googleSelectedIds`
+/// and `checkin_screen.dart`'s `_generate()` both need on the user's
+/// persisted calendar selection, to know which of the ticked ids are
+/// Google's — factored out (WR-02 code review) so the filtering behavior
+/// itself, not just the prefix string, has exactly one definition. Before
+/// this, each call site re-implemented `.where((id) => id.startsWith(...))`
+/// against its own copy of the prefix literal; a future change to what
+/// counts as "a Google id" now only needs to change here.
+List<String> filterGoogleCalendarIds(Iterable<String> ids) =>
+    ids.where((id) => id.startsWith(googleCalendarIdPrefix)).toList();
 
 /// The user-facing label this source stamps on every calendar it returns
 /// (D-36-03) — the picker's group-header text (plan 36-06), not an
@@ -230,7 +249,7 @@ class GoogleCalendarSource implements CalendarSource {
           .where((entry) => entry.id != null)
           .map(
             (entry) => CalendarInfo(
-              id: '$_googleIdPrefix${entry.id}',
+              id: '$googleCalendarIdPrefix${entry.id}',
               name: entry.summary ?? entry.id!,
               accountName: accountEmail,
               accountType: 'Google',
@@ -293,7 +312,7 @@ class GoogleCalendarSource implements CalendarSource {
   }
 
   String _stripPrefix(String id) =>
-      id.startsWith(_googleIdPrefix)
-          ? id.substring(_googleIdPrefix.length)
+      id.startsWith(googleCalendarIdPrefix)
+          ? id.substring(googleCalendarIdPrefix.length)
           : id;
 }

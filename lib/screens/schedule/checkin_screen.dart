@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/calendar/calendar_source_factory.dart';
 import '../../data/calendar/google_auth_client.dart';
+import '../../data/calendar/google_calendar_source.dart';
 import '../../data/models/daily_schedule.dart';
 import '../../data/models/goal.dart';
 import '../../data/models/scheduled_chunk.dart';
@@ -153,9 +154,9 @@ class _CheckinScreenState extends State<CheckinScreen> {
         source: defaultCalendarSource(
           icsUrls: settingsNotifier.icsUrls,
           googleAuth: GoogleAuthClient(store: settingsNotifier),
-          googleCalendarIds: settingsNotifier.selectedCalendarIds
-              .where((id) => id.startsWith('google:'))
-              .toList(),
+          googleCalendarIds: filterGoogleCalendarIds(
+            settingsNotifier.selectedCalendarIds,
+          ),
         ),
       );
       // lastCalendarSyncAt is written on success only — a failing sync

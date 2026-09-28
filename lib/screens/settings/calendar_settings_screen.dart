@@ -157,10 +157,8 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   /// `CalendarSyncService.sync()` always calls `listEvents` with an EMPTY
   /// `calendarIds` argument, so the constructor-time list is the only place
   /// this can ever take effect (WINDOWS.md entry 5).
-  List<String> _googleSelectedIds(SettingsNotifier settings) => settings
-      .selectedCalendarIds
-      .where((id) => id.startsWith('google:'))
-      .toList();
+  List<String> _googleSelectedIds(SettingsNotifier settings) =>
+      filterGoogleCalendarIds(settings.selectedCalendarIds);
 
   /// The Google source specifically — used for the Google section's own
   /// connect/list/disconnect flow.
