@@ -67,8 +67,9 @@ fired in 90s / 877 requests; the single-bundle debug build below fired in ~21s /
 requests.)
 
 ```bash
-# Debug MODE (assertions on, DEBUG banner, source-mapped traces), single dart2js bundle,
-# no service worker (so it can never collide on an origin):
+# Debug MODE (assertions on, DEBUG banner, source-mapped traces), single dart2js bundle.
+# NOTE: --pwa-strategy=none is deprecated in Flutter 3.44 and does NOT prevent a service
+# worker being registered here — it only empties the generated file. See trap #1.
 flutter build web --debug --source-maps --pwa-strategy=none
 
 # Serve statically, bound to all interfaces for the tailnet.
@@ -79,6 +80,28 @@ python3 tools/serve-uat.py <port> --dir build/web
 Reach it at `http://danserver:<port>/`. Use a port that has NEVER served a different
 build type (see trap #1). Switch to `flutter build web --release` only once the basics
 are solid.
+
+**If the UAT involves adding a calendar feed URL, plain `http://` is NOT enough — you must
+serve over HTTPS.** `IcsCalendarSource._requireHttps()` rejects any non-`https` feed URL
+outright (Security V6) with *"feed URL must use HTTPS"*, and there is **no** localhost,
+loopback or debug-mode exemption. A UAT that tells the owner to paste
+`http://danserver:<port>/sample.ics` cannot pass step one. Front the static server with a
+real tailnet certificate instead:
+
+```bash
+python3 tools/serve-uat.py 8161 --dir build/web
+sudo tailscale serve --bg --https=8447 http://127.0.0.1:8161
+# -> https://danserver.tailc2efd2.ts.net:8447/   (valid cert, tailnet only)
+# tear down with: sudo tailscale serve --https=8447 off
+```
+
+**This is not hypothetical.** Phase 35's browser UAT shipped on 2026-09-17 instructing an
+`http://` feed URL and sat "open, awaiting the owner" for twelve days while being impossible
+to complete. It survived review because `35-06`'s verification drove the sync through the
+`IcsFetcher` seam with an `https://example.com/...` URL while the document told the owner to
+type an `http://` one — **the harness and the instructions were never pointed at the same
+URL.** When you verify a UAT, drive the *exact* URL the human will type, through the real
+fetcher, not the seam.
 
 ### Four traps that fake a broken build (none of them means the build is broken)
 
@@ -93,9 +116,21 @@ out before concluding the build is broken:
    across reloads and even incognito-after-install. **Dedicate a port per build
    type and never cross them.** If you must reuse an origin, first unregister the
    SW (DevTools → Application → Service Workers → Unregister, then Clear storage)
-   or just pick a fresh port. The `--pwa-strategy=none` debug build above never
-   registers a SW, so it can't *create* this collision — but a SW left over from a
-   prior **release** build on the same port still will, so keep using fresh ports.
+   or just pick a fresh port. A SW left over from a prior **release** build on the
+   same port still will, so keep using fresh ports.
+
+   **Corrected 2026-09-29 — this used to claim the `--pwa-strategy=none` debug build
+   "never registers a SW". That is false, and the flag is now deprecated** (Flutter
+   3.44.1 prints *"The --pwa-strategy option is deprecated and will be removed in a
+   future Flutter release"*). Two things are true instead: the build still **emits**
+   `flutter_service_worker.js` (as a **0-byte** file — the flag neuters its contents,
+   not its existence), and this project's own committed `web/index.html` **deliberately
+   registers it** with a hand-written `navigator.serviceWorker.register(...)` block, on
+   every build. So a debug build *does* register a worker. In practice it is harmless
+   and arguably protective: an empty worker has no `fetch` handler, so everything goes
+   to network, and registering it **displaces** any stale worker previously on that
+   origin. Do not "fix" the registration out of `web/index.html` — read the long comment
+   above it first; it is there for the PWA/offline path served by `tools/serve-pwa.py`.
 2. **Headless Chromium exhausts the GPU → `CONTEXT_LOST_WEBGL` → blank.**
    Repeatedly launching headless Chromium (e.g. automated screenshot loops)
    triggers WebGL context loss, so CanvasKit can't draw and never reaches

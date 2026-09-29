@@ -4,6 +4,37 @@ Items an agent cannot settle. Nothing here blocks Phase 36's remaining waves.
 
 ---
 
+## Q-03 — RESOLVED 2026-09-29: Phase 35's browser UAT was un-runnable as written for 12 days
+
+Recorded for the record rather than as an open question — it is already fixed — because the
+*failure mode* is worth keeping.
+
+**What was wrong.** `35-UAT.md` step 2 told the owner to enter `http://danserver:8161/sample.ics`.
+`IcsCalendarSource._requireHttps()` rejects any non-`https` feed URL outright (Security V6, no
+localhost or loopback exemption) with *"feed URL must use HTTPS"*. Steps 4, 7, 7a and 7b all depend
+on step 2 succeeding, so the entire browser UAT was blocked. It shipped 2026-09-17 and sat listed as
+"open, awaiting the owner" until 2026-09-29.
+
+**Why nobody caught it.** `35-06` genuinely did verify the fixture against the real
+`CalendarSyncService`/`IcsCalendarSource` — but through the `IcsFetcher` seam with an
+`https://example.com/feed.ics` URL, while the document instructed an `http://` one. **The harness
+and the instructions were never pointed at the same URL.** The verification was real and still
+proved nothing about the thing that failed. That is the same shape as `CLAUDE.md`'s "assertions that
+cannot fail", one level up: a *document*-level assertion that could not fail.
+
+**Fixed by** serving the same build over HTTPS with a real tailnet certificate
+(`sudo tailscale serve --bg --https=8447 http://127.0.0.1:8161`) and updating both URLs in
+`35-UAT.md`. Re-verified end-to-end by driving the **real network fetcher** at the exact URL the
+owner will type — no seam — which imported 7 events and skipped 2 (`tooShort`, `cancelled`),
+`failed=false`.
+
+**Teardown when the UAT is done:** `sudo tailscale serve --https=8447 off`.
+
+**Lesson now in `CLAUDE.md`:** when verifying a UAT, drive the exact URL the human will type,
+through the real fetcher, not the seam.
+
+---
+
 ## Q-01 — The real Google client ID is committed in `36-RESEARCH.md`. Rotate, scrub, or accept?
 
 **Found 2026-09-25** by the orchestrator while spot-checking `36-04`'s CALAUTH-04 gates.

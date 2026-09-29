@@ -1,7 +1,7 @@
 # Phase 35 UAT — Your Real Commitments, Read From Your Calendar
 
 **Owner:** Dan
-**Prepared:** 2026-09-17
+**Prepared:** 2026-09-17 · **Re-served and re-verified:** 2026-09-29
 **Path tested:** the ICS feed-URL path (web build). Per D-35-15 this is what
 Android uses too, so it is the majority path, not a fallback. The iOS device
 path (checkbox list of the phone's own calendars) is verified separately on
@@ -41,49 +41,75 @@ and step 4, whether you did it. Do not assume; write "yes" or "no."
 |---|---|
 | Build command | `flutter build web --debug --source-maps --pwa-strategy=none` |
 | Build mode | **Debug** (assertions on, DEBUG banner, unminified source-mapped traces) — not release |
-| Serve command | `python3 tools/serve-uat.py 8161 --dir build/web` |
-| Port | **8161** — checked against every port this project has ever used for a UAT (grepped `.planning/` for `danserver:8xxx`); 8161 has never served any build of Canopy, so no stale service worker from a prior release build can be squatting it (trap #1) |
+| Serve command | `python3 tools/serve-uat.py 8161 --dir build/web`, fronted by `sudo tailscale serve --bg --https=8447 http://127.0.0.1:8161` so the origin is **HTTPS** with a real tailnet certificate (required — see step 2) |
+| **Re-served** | **2026-09-29** — rebuilt and re-served from scratch. The previous serve was a **2026-09-17** build whose fixture had rotted (see "Fixture freshness" below); it would have shown you an empty timeline |
+| Port | **8161** — 8161 has only ever served **debug** builds of Canopy, never a release build, so no release-era service worker can be squatting it (trap #1). It is no longer a *fresh* origin, but same-build-type reuse is the safe case |
 | Bind check | `ss -ltn \| grep 8161` → `LISTEN 0 5 0.0.0.0:8161 0.0.0.0:*` — confirmed on all interfaces, not just loopback |
-| Reachability check | `curl -s -o /dev/null -w "%{http_code}" http://100.108.146.112:8161/` → `200`, tested against the **tailnet IP**, not localhost |
+| Reachability check | `curl` against the **tailnet IP** `100.108.146.112` (not localhost): `/` → `200`, `/main.dart.js` → `200`, `/sample.ics` → `200` |
 | Cache-Control | `curl -sI .../main.dart.js \| grep -i cache-control` → `Cache-Control: no-store, max-age=0` (confirms `serve-uat.py`, not a bare `http.server`) |
-| Served-bytes check | `curl -s http://100.108.146.112:8161/main.dart.js \| grep -c 'Imported from your calendar'` → **3** (non-zero — the new code is on the wire, not a stale cache) |
-| Visual check | Headless-Chromium screenshot of `http://danserver:8161/` — app renders (onboarding screen, since this is a fresh browser profile at a fresh origin), DEBUG banner visible, no JS console errors (only expected Hive-box-open logs and a harmless GPU perf warning) |
-| Fixture feed | `http://danserver:8161/sample.ics` — copied from `.planning/phases/35-your-real-commitments-read-from-your-calendar/35-06-uat-sample.ics`, served from the **app's own origin** (so the browser's cross-origin rules for a third-party feed never enter into your first test — see step 2) |
+| **Byte identity** | `sha256` of the built `main.dart.js` and the **served** one both begin `477cf162df0bf747` — you are looking at exactly the bytes that were built, not a cached older bundle |
+| Served-bytes check | Phase 35's `'Imported from your calendar'` → **3**. Phase 36's `'googleReconnectNeeded'` → **7**, `'google:'` → **1**. Non-zero on both phases, so this build post-dates Phase 36 (the previous serve did not) |
+| Visual check | Headless-Chromium screenshot of `https://danserver.tailc2efd2.ts.net:8447/` at 430×900 — app renders the onboarding screen, DEBUG banner visible, preset goal chips and "Add your own" present. No JS errors; only expected Hive-box-open logs, a `CONTEXT_LOST_WEBGL` warning and GPU-stall messages, which are trap #2 headless artifacts (it drew correctly regardless) |
+| Fixture feed | `https://danserver.tailc2efd2.ts.net:8447/sample.ics` — **generated fresh by `python3 tools/gen-uat-calendar.py > build/web/sample.ics`**, served from the **app's own origin** (so the browser's cross-origin rules for a third-party feed never enter into your first test — see step 2) |
+| **Fixture freshness** | ⚠ `gen-uat-calendar.py` dates every event **relative to the day it is run**. It prevents a fixture being *authored* stale; it does **not** self-update. The fixture served here was generated **2026-09-29**. **If you are reading this on a later date, regenerate before looking** — otherwise every event is in the past and Today renders empty, which is a false failure manufactured by the test data. Two commands: `python3 tools/gen-uat-calendar.py > build/web/sample.ics` then restart `tools/serve-uat.py 8161 --dir build/web` |
 
-**A note before you start:** because port 8161 has never served Canopy before, your browser has no existing onboarding/data for this origin — you'll land on the "What are your goals?" onboarding screen first. That's expected, not a bug; the router gates everything behind onboarding until it's complete (unrelated to this phase). Click or tap through it (pick anything, or "Skip" if offered) to reach the main app.
+**A note before you start:** the origin you will use — `https://danserver.tailc2efd2.ts.net:8447` — has never served Canopy before (it was created on 2026-09-29 to satisfy the HTTPS requirement in step 2), so your browser has no existing onboarding or data for it. You'll land on the "What are your goals?" onboarding screen first. That's expected, not a bug; the router gates everything behind onboarding until it's complete (unrelated to this phase). Click or tap through it (pick anything, or "Skip" if offered) to reach the main app. Confirmed by a headless screenshot at that exact origin — see the Visual check row above.
 
 ---
 
 ## The fixture feed, so you know what you're looking at
 
-`sample.ics` contains, relative to **today (2026-09-17, Thursday)**:
+`sample.ics` as regenerated on **2026-09-29 (Tuesday)** contains — all clock times **local**:
 
 | Event | When | Why it's in here |
 |---|---|---|
-| "Weekly Sync: Product + Eng" | Recurring weekly, Thursdays 2:00–3:00pm, going back to Aug 6 | The base recurring series (step 4, step 7b) |
-| "Weekly Sync: Product + Eng (moved)" | **Today**, 4:00–5:00pm (a `RECURRENCE-ID` override moving today's occurrence) | Step 7b's "moved occurrence" case |
+| "Weekly Sync: Product + Eng" | Recurring weekly, **Tuesdays** 2:00–3:00pm, anchored **2026-08-18** | The base recurring series (step 4, step 7b) |
+| "Weekly Sync: Product + Eng (moved)" | **Today**, 4:00–5:00pm (a `RECURRENCE-ID` override moving today's 2:00pm occurrence) | Step 7b's "moved occurrence" case |
 | *(today's original 2:00pm occurrence is also present — the base series has no `EXDATE` for today, only for next week — see below)* | | This is the bug step 7b asks about: verified against the real stack, today's sync produces **both** the 2pm slot and the 4pm "(moved)" slot — the original was never suppressed |
-| Next Thursday (Sep 24)'s occurrence | Marked `EXDATE` (deleted) in the feed | Step 7b's "deleted occurrence" case — verified against the real stack, it **still imports** as a commitment dated Sep 24 despite the `EXDATE` |
-| "1:1 with Manager" | Today, 11:00–11:30am | Plausible weekday meeting |
-| "Product Review" | Today, 3:00–3:45pm | Plausible weekday meeting |
-| "Team Off-site (all day)" | Today, all-day | Step 7a's all-day entry |
+| **Next Tuesday (Oct 6)**'s occurrence | Marked `EXDATE` (deleted) in the feed | Step 7b's "deleted occurrence" case — verified against the real stack, it **still imports** as a commitment dated **Oct 6** despite the `EXDATE` |
+| "1:1 with Manager" | Today, 11:00–11:30am | Plausible weekday meeting (UTC `Z` form) |
+| "Product Review (zoned TZID)" | Today, 3:00–3:45pm | The `TZID`+`VTIMEZONE` `DTSTART` form — the one a real Google feed sends (WINDOWS.md entry 2) |
+| "Design Review (floating time)" | Today, 5:00–5:30pm | The **floating** `DTSTART` form (no `Z`, no `TZID`) — the third RFC 5545 shape |
+| "Team Off-site (all day)" | Today, all-day | Step 7a's all-day entry (D-35-06: spans the 08:00–22:00 working day) |
 | "Quick Check-in" | Today, 9:00–9:10am (10 minutes) | Step 7's "too short to schedule" entry |
+| "Cancelled Thing" | Today, 7:00–8:00pm, `STATUS:CANCELLED` | Should **not** appear on your timeline at all — a cancelled event must be skipped |
+
+> **These dates move every time the fixture is regenerated.** They are correct for a fixture
+> generated on 2026-09-29. If you regenerate on another day, the weekly series lands on that day's
+> weekday and the `EXDATE` occurrence is one week out — re-read the generated file rather than
+> trusting this table's literal dates.
 
 This was verified by running the actual `CalendarSyncService`/`IcsCalendarSource` code
 against this exact file before handing it to you — not assumed from reading the
 `.ics` text. The real output:
 
+**Re-verified 2026-09-29 against the regenerated fixture, over the real HTTPS URL above, using the
+real network fetcher — no `fetch` seam.** That matters: driving it through the seam is exactly what
+hid the HTTPS defect above, so this run deliberately used the URL you will type.
+
 ```
---- imported (6) ---
-Weekly Sync: Product + Eng | date=2026-09-17 | 14:00-15:00
-Weekly Sync: Product + Eng | date=2026-09-24 | 14:00-15:00   ← EXDATE'd, still here
-Weekly Sync: Product + Eng (moved) | date=2026-09-17 | 16:00-17:00
-1:1 with Manager | date=2026-09-17 | 11:00-11:30
-Product Review | date=2026-09-17 | 15:00-15:45
-Team Off-site (all day) | date=2026-09-17 | 08:00-22:00
---- skipped (1) ---
-Quick Check-in | tooShort
+--- imported (7) ---
+Team Off-site (all day)            | date=2026-09-29 | 08:00-22:00
+1:1 with Manager                   | date=2026-09-29 | 11:00-11:30
+Weekly Sync: Product + Eng         | date=2026-09-29 | 14:00-15:00
+Product Review (zoned TZID)        | date=2026-09-29 | 15:00-15:45
+Weekly Sync: Product + Eng (moved) | date=2026-09-29 | 16:00-17:00
+Design Review (floating time)      | date=2026-09-29 | 17:00-17:30
+Weekly Sync: Product + Eng         | date=2026-10-06 | 14:00-15:00   ← EXDATE'd, still here
+--- skipped (2) ---
+Quick Check-in  | tooShort
+Cancelled Thing | cancelled
+failed=false
 ```
+
+> **On the clock times.** The harness process has no device timezone, so the `timezone` package's
+> `tz.local` defaults to **UTC** there and it printed these as 16:00, 19:00, 20:00, 21:00. The times
+> above are those values converted to **America/Chicago (UTC-5)**, which is what your browser will
+> set `tz.local` to and therefore what you will actually see. Two do not shift and that is correct:
+> "Team Off-site" reads 08:00–22:00 because an all-day entry is spanned across
+> `ScheduleGeneratorService.dayStartMinutes`/`dayEndMinutes` (D-35-06) rather than derived from a
+> timezone, and "Design Review" is a **floating** time, which means "whatever local is" by
+> definition.
 
 ---
 
@@ -91,9 +117,23 @@ Quick Check-in | tooShort
 
 **0. ⟳ Re-check-in first — see above. Do this after step 2, before step 4, and any time you're about to judge Today.**
 
-1. Open `http://danserver:8161/`. Complete onboarding if it appears (see Pre-flight note). Go to **Settings → Calendars**. Does the row's subtitle say something true about the current state (should read "Not connected")?
+1. Open **`https://danserver.tailc2efd2.ts.net:8447/`**. Complete onboarding if it appears (see Pre-flight note). Go to **Settings → Calendars**. Does the row's subtitle say something true about the current state (should read "Not connected")?
 
-2. Tap **Add calendar URL** and enter `http://danserver:8161/sample.ics`. Does it accept it? (If you'd rather try a real Google or Outlook feed first, go ahead — but if it fails, that's most likely the browser's cross-origin rule kicking in for a third-party feed, not a Canopy bug. It's expected to work fine on a phone, and the fixture feed above is specifically served same-origin so this test doesn't depend on that at all.)
+2. Tap **Add calendar URL** and enter **`https://danserver.tailc2efd2.ts.net:8447/sample.ics`**. Does it accept it? (If you'd rather try a real Google or Outlook feed first, go ahead — but if it fails, that's most likely the browser's cross-origin rule kicking in for a third-party feed, not a Canopy bug. It's expected to work fine on a phone, and the fixture feed above is specifically served same-origin so this test doesn't depend on that at all.)
+
+   > **⚠ Both URLs changed on 2026-09-29, and the old ones could not have worked.**
+   > This document previously said `http://danserver:8161/` and
+   > `http://danserver:8161/sample.ics`. **`IcsCalendarSource._requireHttps()` rejects any
+   > non-HTTPS feed URL outright** — Security V6, no localhost or loopback exemption — so step 2
+   > would have failed with *"feed URL must use HTTPS"* and every step after it depends on step 2.
+   > The browser UAT was un-runnable as written from the day it was handed over.
+   >
+   > It survived because `35-06`'s verification drove the sync through the `fetch` seam with an
+   > `https://example.com/...` URL while this document told you to type an `http://` one — the
+   > harness and the instructions never met, so nothing connected them. Fixed by exposing the same
+   > build over HTTPS with a real tailnet certificate (`tailscale serve --https=8447`), which is why
+   > the port moved. The plain `http://danserver:8161/` origin is still up and still fine for
+   > *looking* at the app — it just cannot accept a feed.
 
 3. Enter a URL that is not a calendar (e.g. `https://danserver/`). Does it refuse it inline, with a message that makes sense, and leave nothing saved?
 
@@ -119,7 +159,7 @@ Quick Check-in | tooShort
 7b. **A known limitation you should meet here rather than discover in use — this is a decision, not a bug report.** `RECURRENCE-ID` and `EXDATE` are **not supported**, and that was established by running a test against the real `enough_icalendar` + `rrule` stack, not by reading docs. Concretely, **you can see it yourself in this fixture, right now**:
 
     - The "moved" occurrence: today's timeline shows the Weekly Sync **twice** — once at 2:00pm (its original, un-suppressed slot) and once at 4:00pm labeled "(moved)" (the override). The original was supposed to disappear when it moved; it didn't.
-    - The "deleted" occurrence: go to **Commitments** and look for a "Weekly Sync: Product + Eng" dated **Sep 24** — the feed marks that occurrence deleted (`EXDATE`), and Canopy imported it anyway.
+    - The "deleted" occurrence: go to **Commitments** and look for a "Weekly Sync: Product + Eng" dated **Oct 6** (next Tuesday) — the feed marks that occurrence deleted (`EXDATE`), and Canopy imported it anyway.
 
     This is `WINDOWS.md` entry 1, open. Do you want to (a) accept it for v1, (b) have it built as a follow-up phase, or (c) treat it as blocking this phase? If you move or cancel a real recurring meeting often, this will bite you regularly — if you never do, it costs nothing. Only you know which.
 
