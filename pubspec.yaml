@@ -20,6 +20,15 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.10.3
+  # Added 2026-09-30 after a real failure. Without this line `pub get` happily
+  # succeeded on Flutter 3.41.2 and the incompatibility only surfaced minutes
+  # later, deep inside an Xcode build, as
+  # "No named parameter with the name 'onReorderItem'" — an error that points at
+  # our code rather than at the toolchain. `ReorderableListView.onReorderItem`
+  # (used in goals_screen.dart and adjustments_section.dart) does not exist in
+  # 3.41.2 and does in 3.44.1; both were measured, the versions between were not,
+  # so 3.44.0 is the honest floor rather than a guess at the exact release.
+  flutter: '>=3.44.0'
 
 dependencies:
   flutter:

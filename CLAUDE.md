@@ -213,6 +213,19 @@ Key choices:
 - **Persistence**: Hive (per-aggregate boxes) for app data; `SharedPreferences` for settings bootstrap.
 - **Theme**: Material 3 with `ColorScheme.fromSeed(Colors.deepOrangeAccent)`.
 - **Linting**: `package:flutter_lints` via `analysis_options.yaml`.
-- **Dart SDK**: `^3.10.3` | **Flutter**: `>=3.18.0-18.0.pre.54`.
+- **Dart SDK**: `^3.10.3` | **Flutter**: **`>=3.44.0`** — now enforced in `pubspec.yaml`.
+  *(Corrected 2026-09-30. This line previously read `>=3.18.0-18.0.pre.54`, which was badly stale,
+  and `pubspec.yaml` carried no `flutter:` constraint at all. The result: `pub get` succeeded on a
+  7-month-old Flutter 3.41.2 and the incompatibility surfaced only inside an Xcode build as
+  `No named parameter with the name 'onReorderItem'` — an error that reads as a bug in our code.
+  `ReorderableListView.onReorderItem` is used in `goals_screen.dart` and `adjustments_section.dart`.)*
+- **iOS deployment target: 15.0** (was 13.0 until 2026-09-30). Flutter 3.47's project migration
+  raises it automatically and the iOS build cannot proceed without it, so this is toolchain-forced
+  rather than chosen — but it does mean iOS 13/14 are no longer supported.
+- **Building for iOS is the owner's MacBook, always** — no Xcode on danserver, ever. Use
+  `tools/build-ios.sh` (the only supported entrypoint; it injects the gitignored client ID).
+  `.google-client-id` is gitignored, so a fresh clone does **not** have it — recreate it before
+  building. If a build fails with a Swift Package Manager / deployment-target complaint, try
+  `flutter config --no-enable-swift-package-manager` to fall back to the CocoaPods path.
 
 Tests are in `test/` using `flutter_test`.
