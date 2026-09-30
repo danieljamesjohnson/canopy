@@ -947,6 +947,51 @@ UAT's observations before judging item 4.
 time-sensitive; `notify-dan`'s own contract puts "a run that finished" and "phases completing" in the
 record-don't-notify column. This row, `36-UAT.md` and `QUESTIONS.md` are the record.
 
+### ▶ RESUME HERE — the MacBook is primed; the owner will say when the iPhone is plugged in
+
+**Everything is staged. When he says the phone is connected, it is ONE command.** Do not re-derive
+any of the below; it was all done on 2026-09-30 and is verified.
+
+```bash
+ssh dans-macbook-air
+cd ~/CodeProjects/canopy && export PATH="/opt/homebrew/bin:$HOME/Library/Python/3.9/bin:$PATH"
+tools/build-ios.sh run          # signing already configured, DEVELOPMENT_TEAM H637CCV562
+```
+
+**Mac state, already done — do not redo:**
+
+| Thing | State |
+|---|---|
+| SSH from danserver | `ssh dans-macbook-air` works (key `mac_livesync`, tailnet `100.84.210.76`) |
+| Repo | `/Users/danjohnson/CodeProjects/canopy`, clean, synced to `4821497` |
+| `.google-client-id` | **Present**, 73 bytes, mode 600, gitignored. Recreated from `36-RESEARCH.md`. Do NOT ask him for it |
+| Flutter | Upgraded **3.41.2 → 3.47.5**. 3.41.2 could not compile this project (`onReorderItem`) |
+| Swift Package Manager | **Disabled** (`flutter config --no-enable-swift-package-manager`) — SPM integration failed with a bogus 12.0-vs-13.0 deployment-target error. CocoaPods path works |
+| PATH quirk | A non-login SSH shell lacks Homebrew, so `pod` and `idb` "vanish". Always export the PATH line above |
+| `idb` | Installed (companion via `brew`, narrow-trusted single formula; client at `~/Library/Python/3.9/bin/idb`). Lets an agent tap/screenshot a simulator |
+| Simulator | iPhone 17 Pro `1C0605A0-EA39-4AFA-A605-FAB97FF1FEF7`, booted, Canopy installed and past onboarding |
+| Old lineage | His Mac was 179 ahead / 1231 behind on a pre-history-rewrite lineage. Reset to origin; `backup-mac-pre-rewrite-20260930` still holds it |
+
+**What the phone must answer — and ONLY these.** Everything else is either already settled
+(see `36-UAT.md`'s "Pre-verified on the iOS Simulator" table) or doable on the simulator:
+
+- **A2** — his real calendars, grouped by account, Google among them
+- **A3 + A4** — create a recurring event, move one occurrence, check three days. **A4 IS Phase 35
+  Assumption A1**, the most load-bearing unverified claim in either phase
+- **A6** — Canopy changed nothing in his calendar
+- **Item 6's device half** — the same calendar ticked under both sources
+
+**Already settled on 2026-09-30, do not re-ask:** the app builds and runs on iOS; `com.danjjohnson.canopy`
+is real; `tools/build-ios.sh` injects the client id correctly; **CALAUTH-01 demonstrated** (one tap →
+iOS auth prompt → Google's live page reading *"to continue to canopy"*, proving the OAuth client is
+valid, registered, bound to this bundle, and that the read-only scope is accepted); item 1 PASS;
+item 3's Cancel half PASS with no error surface.
+
+**He can close items 2, 3, 4, 5, 7, 8 on the simulator at his desk** by signing in — no phone needed.
+The agent must NOT type his Google credentials.
+
+---
+
 > **⚠ `gsd-tools query init.milestone-op` reports `completed_phases: 10` and
 > `all_phases_complete: true`. BOTH ARE FALSE.** Three phases are open (31 superseded, 35 at two
 > gates, 36 at its device gate). The same tool's own `roadmap.analyze` contradicts it correctly
