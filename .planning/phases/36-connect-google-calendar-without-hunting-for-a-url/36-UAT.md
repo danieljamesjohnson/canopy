@@ -175,6 +175,55 @@ read-only OAuth scope rather than only by our code.
 
 ---
 
+## Pre-verified on the iOS Simulator, 2026-09-30 — read this first, it shortens your sitting
+
+The orchestrator built and ran Canopy on an **iPhone 17 Pro simulator (iOS 26.2)** on the owner's
+MacBook, driving it with `idb`. **This is the first time Canopy has ever run on iOS.** Screenshots of
+every step are in the session scratchpad. What follows is settled — you do not need to re-test it,
+though you may want to glance at it on the real device.
+
+### Settled by the simulator run
+
+| Claim | Result | How |
+|---|---|---|
+| The app builds and launches on iOS at all | ✅ | `tools/build-ios.sh` → `Runner.app` 21.4MB → launched, onboarding rendered |
+| `com.danjjohnson.canopy` (D-36-02) is the real bundle id | ✅ | build banner + `simctl listapps` both report it |
+| `tools/build-ios.sh` injects the client id and generates `GoogleOAuth.xcconfig` (36-04) | ✅ | xcconfig written with the correct reversed id; **the real value never appeared in a tracked file** |
+| Onboarding completes and Hive persists across an app restart on iOS | ✅ | terminated and relaunched; still past onboarding |
+| **Item 1** — Settings → Calendars subtitle is truthful when disconnected | ✅ **PASS** | reads exactly **"Not connected"** |
+| The Calendars screen renders both sources as separate sections (D-36-03) | ✅ | "Connect your Google Calendar" + "See your calendars here", each with its own CTA |
+| Read-only is stated to the user in plain language (CALAUTH-02) | ✅ | *"Canopy asks Google for read-only access, so it can never change anything in your calendar"* and *"commitments are only ever read"* |
+| **CALAUTH-01** — one tap reaches Google's consent screen | ✅ | one tap on Connect → iOS `ASWebAuthenticationSession` prompt → **Google's live sign-in page** |
+| The OAuth client id is valid, registered, and bound to this bundle | ✅ | `accounts.google.com` rendered **"Sign in — to continue to canopy"**. A wrong or unregistered id returns an error page, not a sign-in form. Google resolved our app name |
+| The read-only scope is accepted by Google | ✅ | no scope error on the live consent request |
+| **Item 3, first half** — tapping **Cancel** on the consent prompt | ✅ **PASS** | returned cleanly to the CTA. **No error banner, no red text, nothing alarming** — 36-02's "cancellation is a state, not an error", confirmed through the real native flow rather than the test seam |
+
+### NOT settled — and why, precisely
+
+- **Item 3, second half (dismissing the Google web sheet by swipe or by its ✕).** Synthetic gestures
+  reach the app's own views and the iOS system alert, but **not** the `ASWebAuthenticationSession`
+  web sheet, which is a separate process. Needs a real finger. Answer this one yourself.
+- **Everything past the sign-in form.** Completing sign-in needs the owner's Google credentials,
+  which the orchestrator will not type. So items 4, 5, 7, 8 — refresh-token persistence across
+  restart, the revoked-token message, the reconnect card — are all still open.
+- **All of Section A, and item 6.** A fresh simulator has **no calendar accounts and no Google
+  account added at OS level**, so the device calendar list is necessarily empty and the same
+  calendar cannot be ticked under both sources. Section A and the double-tick are *structurally*
+  unanswerable here, not merely untested.
+- **Phase 35 Assumption A1** (does `device_calendar_plus` return expanded occurrences with
+  exceptions applied) — needs real recurring calendar data on a real device.
+
+### One thing worth your eye that no test can catch
+
+The two sections on the Calendars screen are visually near-identical: same calendar glyph, same
+heading weight, same button treatment, separated only by a divider. They read as two instances of one
+thing rather than two *different sources*. That matters specifically because of D-36-03: the
+double-tick footgun is likelier if the sections don't register as distinct. Not a defect, and not
+something a widget test can judge — flagging it because it is exactly the class of perceptual call
+D-36-03 reserves for you.
+
+---
+
 ## Orchestrator observations — read these before you judge, so you don't meet a known quirk cold
 
 - **Re-opening the Calendars screen always shows the "Connect Google Calendar" button, even right
