@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
 
+import 'package:canopy/data/calendar/google_auth_client.dart';
 import 'package:canopy/data/models/app_settings.dart';
 import 'package:canopy/data/repositories/in_memory_app_settings_repository.dart';
 import 'package:canopy/providers/settings_notifier.dart';
@@ -168,6 +169,121 @@ void main() {
 
         expect(notifications, 1);
       });
+    },
+  );
+
+  group(
+    'SettingsNotifier.googleConnected — WINDOWS entry 6 '
+    '(restore without re-consenting)',
+    () {
+      late InMemoryAppSettingsRepository repo;
+
+      setUp(() {
+        repo = InMemoryAppSettingsRepository();
+      });
+
+      test(
+        'a freshly init()ed notifier over an empty repository reports false',
+        () async {
+          final notifier = SettingsNotifier(repository: repo);
+          await notifier.init();
+
+          expect(notifier.googleConnected, isFalse);
+        },
+      );
+
+      test(
+        'after write() with an access token and an expiry it reports true',
+        () async {
+          final notifier = SettingsNotifier(repository: repo);
+          await notifier.init();
+
+          await notifier.write(
+            GoogleTokens(
+              accessToken: 'access-1',
+              refreshToken: 'refresh-1',
+              expiresAt: DateTime(2026, 3, 1, 9, 30),
+            ),
+          );
+
+          expect(notifier.googleConnected, isTrue);
+        },
+      );
+
+      test(
+        'after setReconnectNeeded(true) on a connected notifier it reports '
+        'false — a dead token is not a connection',
+        () async {
+          final notifier = SettingsNotifier(repository: repo);
+          await notifier.init();
+          await notifier.write(
+            GoogleTokens(
+              accessToken: 'access-1',
+              refreshToken: 'refresh-1',
+              expiresAt: DateTime(2026, 3, 1, 9, 30),
+            ),
+          );
+
+          await notifier.setReconnectNeeded(true);
+
+          expect(notifier.googleConnected, isFalse);
+        },
+      );
+
+      test(
+        'after setReconnectNeeded(false) again it reports true',
+        () async {
+          final notifier = SettingsNotifier(repository: repo);
+          await notifier.init();
+          await notifier.write(
+            GoogleTokens(
+              accessToken: 'access-1',
+              refreshToken: 'refresh-1',
+              expiresAt: DateTime(2026, 3, 1, 9, 30),
+            ),
+          );
+          await notifier.setReconnectNeeded(true);
+
+          await notifier.setReconnectNeeded(false);
+
+          expect(notifier.googleConnected, isTrue);
+        },
+      );
+
+      test('after clear() it reports false', () async {
+        final notifier = SettingsNotifier(repository: repo);
+        await notifier.init();
+        await notifier.write(
+          GoogleTokens(
+            accessToken: 'access-1',
+            refreshToken: 'refresh-1',
+            expiresAt: DateTime(2026, 3, 1, 9, 30),
+          ),
+        );
+
+        await notifier.clear();
+
+        expect(notifier.googleConnected, isFalse);
+      });
+
+      test(
+        'an expiry already in the past still reports true — expiry is the '
+        'auth client\'s business (silent refresh), not this getter\'s',
+        () async {
+          final notifier = SettingsNotifier(repository: repo);
+          await notifier.init();
+
+          await notifier.write(
+            GoogleTokens(
+              accessToken: 'access-1',
+              refreshToken: 'refresh-1',
+              expiresAt: DateTime(2020, 1, 1),
+            ),
+          );
+
+          expect(notifier.googleConnected, isTrue);
+        },
+      );
     },
   );
 

@@ -51,6 +51,22 @@ class SettingsNotifier extends ChangeNotifier implements GoogleTokenStore {
   @override
   bool get reconnectNeeded => _googleReconnectNeeded;
 
+  /// Synchronous counterpart of `read() != null && !reconnectNeeded`
+  /// (WINDOWS entry 6) — needed inside `build()`, which cannot await
+  /// [read]. Derived directly from the same two cached fields [read] null-
+  /// guards on (`_googleAccessToken`, `_googleAccessTokenExpiresAt`), so if
+  /// that guard ever changes this getter must change with it.
+  ///
+  /// A past expiry still counts as connected on purpose:
+  /// [GoogleAuthClient.authenticatedClient] refreshes a stale access token
+  /// silently, and only a refresh classified dead sets
+  /// [_googleReconnectNeeded] — a merely-stale access token is not a reason
+  /// to tell the user they are disconnected.
+  bool get googleConnected =>
+      _googleAccessToken != null &&
+      _googleAccessTokenExpiresAt != null &&
+      !_googleReconnectNeeded;
+
   /// Reads persisted settings from Hive and caches the values.
   /// Call once at startup after HiveDatabase.init(), before runApp().
   Future<void> init() async {
