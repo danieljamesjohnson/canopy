@@ -1318,7 +1318,7 @@ a fallback if verification proves unworkable.
 
 **Requirements:** CALAUTH-01 (connecting Google Calendar is a button, not a manual URL hunt), CALAUTH-02 (Canopy holds a read-only Google token and cannot write, enforced by scope), CALAUTH-03 (an expired or revoked token degrades visibly with a one-tap reconnect, never a silently stale calendar), CALAUTH-04 (no client secret exists in the repository)
 **Depends on:** Phase 35 (owns `CalendarSource`, the factory, and the settings surface this extends). **Phase 35 is still at its UAT gate** — this phase folds into the SAME gate rather than opening a second one, which is the one-gate shape this project has repeatedly found cheaper.
-**Plans:** 7 plans, 5 waves.
+**Plans:** 11 plans, 9 waves (7 original + 4 gap-closure plans added 2026-10-06 after the first real-device UAT).
 
 Plans:
 - [x] 36-01-PLAN.md — Tracer: a canned Google token persists and a canned `events.list` response becomes a `CommitmentBlock` through the unchanged sync service (+ package gate, schema 11→12)
@@ -1328,8 +1328,12 @@ Plans:
 - [x] 36-05-PLAN.md — D-36-03: composite source so both iOS sources coexist, factory routing, and the double-tick overlap detector
 - [x] 36-06-PLAN.md — The screen: one Connect button, the reconnect card and Settings subtitle, and the overlap warning at tick time
 - [ ] 36-07-PLAN.md — The owner's MacBook: `36-UAT.md`, folded into Phase 35's still-open device gate
+- [ ] 36-08-PLAN.md — **Gap closure (WINDOWS 7, CAL-02):** the ticked device calendars actually reach `DeviceCalendarSource`, with the id list handed to the plugin asserted in a host test
+- [ ] 36-09-PLAN.md — **Gap closure (WINDOWS 8 + 10, D-36-05):** all-day events are skipped and disclosed, a one-time migration discards the already-persisted imported blocks, and the disclosure moves to the top of the Calendars screen
+- [ ] 36-10-PLAN.md — **Gap closure (WINDOWS 6, CALAUTH-03):** a valid stored token restores the connected Google section on screen re-open, without re-launching consent
+- [ ] 36-11-PLAN.md — **Gap closure:** `36-UAT-R2.md` (the device re-verification script, mandatory Step 0) and squaring `WINDOWS.md` with what shipped
 
-**Wave structure:** 1 → `36-01`; 2 → `36-02` ‖ `36-03` ‖ `36-04`; 3 → `36-05`; 4 → `36-06`; 5 → `36-07`.
-**Two blocking human gates:** `36-01` Task 1 (pub package legitimacy, before the install) and `36-07` Task 2 (the device UAT, the only place any of this phase can run).
+**Wave structure:** 1 → `36-01`; 2 → `36-02` ‖ `36-03` ‖ `36-04`; 3 → `36-05`; 4 → `36-06`; 5 → `36-07`. **Gap-closure waves (2026-10-06):** 1 → `36-08`; 2 → `36-09`; 3 → `36-10`; 4 → `36-11`. The four gap plans are serialized rather than parallel because three of them touch `lib/screens/settings/calendar_settings_screen.dart`, and a shared file inside one wave is a merge conflict under worktree-per-wave execution.
+**Two blocking human gates:** `36-01` Task 1 (pub package legitimacy, before the install) and `36-07` Task 2 (the device UAT, the only place any of this phase can run). The gap-closure plans add **no** new gate — every owner ruling they need is already taken (D-36-05), so they run unattended and hand the owner `36-UAT-R2.md` at the end.
 
 ---
