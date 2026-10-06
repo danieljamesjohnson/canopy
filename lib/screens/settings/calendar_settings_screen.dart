@@ -273,7 +273,6 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         ? 'Not synced yet'
         : 'Synced ${_relativeTime(lastSync)} — $importedCount '
               'commitment${importedCount == 1 ? '' : 's'} imported';
-    final skipped = syncResult?.skipped ?? const <SkippedEvent>[];
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
@@ -288,20 +287,6 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          if (skipped.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: InkWell(
-                onTap: () => _showSkippedSheet(context, skipped),
-                child: Text(
-                  '${skipped.length} events not imported — tap for details',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-            ),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(
@@ -310,6 +295,71 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// The skipped-events disclosure, promoted to the TOP of the screen
+  /// (WINDOWS entry 10) rather than buried under both calendar sections.
+  /// Reads the one shared [_lastSyncResult] both branches already write via
+  /// [_syncAndReport] — not a parameter, since this is now called
+  /// unconditionally as the first child of both bodies, before either
+  /// section's own state exists.
+  ///
+  /// This is load-bearing, not cosmetic (D-36-05): once an all-day event is
+  /// always skipped rather than imported (Task 1), this disclosure is the
+  /// ONLY channel through which the user ever learns a calendar entry (e.g.
+  /// a real `Vacation`) was not imported. Shipping the skip without this
+  /// promotion would trade six visible fake blocks for one invisible
+  /// omission — which is why both land in the same plan.
+  ///
+  /// The string itself is unchanged, locked copy (35-UI-SPEC.md) — this
+  /// method changes placement and weight only.
+  Widget _skippedBanner(BuildContext context) {
+    final skipped = _lastSyncResult?.skipped ?? const <SkippedEvent>[];
+    if (skipped.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Card(
+        // Deliberately a neutral surface tone, never the error role — a
+        // skipped event (e.g. an all-day entry under D-36-05) is a normal
+        // outcome, not a fault. Same reasoning as _deniedCard's own comment
+        // (UI-SPEC Color contract, CAL-04).
+        color: theme.colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: theme.colorScheme.outline),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showSkippedSheet(context, skipped),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 20,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    // Locked copy (35-UI-SPEC.md Copywriting Contract) —
+                    // unchanged character for character; only placement and
+                    // weight moved.
+                    '${skipped.length} events not imported — tap for details',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -930,6 +980,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         _lastSyncResult != null || settings.lastCalendarSyncAt != null;
     return ListView(
       children: [
+        _skippedBanner(context),
         _buildGoogleSection(context, settings),
         const Divider(indent: 16, endIndent: 16),
         _buildDeviceSection(context, settings),
@@ -1061,6 +1112,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         final state = snapshot.data!;
         return Column(
           children: [
+            _skippedBanner(context),
             Expanded(
               child: ListView(
                 children: [
