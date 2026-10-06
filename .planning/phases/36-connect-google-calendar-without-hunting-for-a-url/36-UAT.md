@@ -298,41 +298,193 @@ turned out the same.
 *(Fill in below. A failure should record what was on screen, not a diagnosis — the routing table in
 the plan's Task 2 says which kind of conversation each failure opens.)*
 
+---
+
+### ⚠ HOW THIS SECTION WAS FILLED IN — read before trusting any answer below
+
+**Recorded 2026-10-06 by the orchestrator, NOT typed by the owner.** The owner ran Phase 36 on his
+real iPhone on 2026-10-06 and **stopped the sitting partway through**, by his own call, once two
+real defects made the rest not worth judging. His findings were logged to `WINDOWS.md` (entries
+7–10) and `STATE.md` at the time but were **never transferred into this document** — so
+`36-07` Task 3 stayed undone, and this section sat blank.
+
+This transcription exists because `/gsd-plan-phase --gaps` reads **this file and
+`36-VERIFICATION.md`** as its only inputs. It does **not** read `WINDOWS.md`. With this section
+blank and `36-VERIFICATION.md` carrying `gaps: []`, gap-closure planning would have seen **zero**
+evidence of the three open defects and planned nothing.
+
+**The discipline applied, because this is second-hand recording and that is a known way to
+manufacture a pass:**
+
+- Every answer is traceable to `WINDOWS.md` entries 7–10 or the `STATE.md` 2026-10-06 section. No
+  answer is inferred from "it probably worked."
+- An item the owner did not reach is marked **UNANSWERED**, not guessed. Several are.
+- **The strongest answers below came from reading the device's own Hive, not from the owner
+  describing a screen** — `xcrun devicectl` pulled the app container and a throwaway test dumped the
+  box through the project's own adapters. That method settled both real defects *and* overturned a
+  false alarm the orchestrator had already filed as a bug. Where an answer rests on Hive data rather
+  than the owner's eyes, it says so.
+- **One name collision, called out so it cannot silently become an answer:** `STATE.md` and commit
+  `b69ef12` say *"Assumption A1 VERIFIED"*. That is **Phase 35 Assumption A1** (does
+  `device_calendar_plus` return expanded occurrences with exceptions applied) — it is **NOT** this
+  document's item **A1** (the permission dialog wording). Phase 35's A1 is verified. Item A1 is
+  unanswered. Do not let the shared label collapse them.
+
+---
+
 **Step 0 discipline — was ⟳ Re-check-in performed every time this document asked for it? (yes/no,
 and note any time you skipped it):**
+**NOT RECORDED.** Nothing in `WINDOWS.md` or `STATE.md` states whether re-check-in was tapped before
+each judgement. **Treat this as a gap in the sitting's provenance, not as a "yes."** It matters: the
+all-day blocks and the imported-wrong-calendars findings are both judgements about imported data, and
+trap #4 is exactly the failure where a stale day is judged instead of a fresh one. The findings
+themselves survive this doubt — they were confirmed from Hive contents rather than from the timeline —
+but any **re-run** of this UAT must record it explicitly.
 
 ### Section A — Phase 35's device path
 
 **A1 (permission dialog wording — true and unalarming?):**
+**UNANSWERED.** Permission was evidently *granted* (device events imported at all), but no judgement
+of the dialog's wording was recorded. See the name-collision note above — Phase 35's Assumption A1 is
+a different claim and its verification does not answer this. Still open.
 
 **A2 (calendars grouped by account; Google account present?):**
+**PARTIALLY ANSWERED — and it surfaced defect entry 7.** The picker demonstrably worked and the owner
+ticked a calendar: `AppSettings.selectedCalendarIds` held exactly one id (`CF8A6881-…`), read from the
+device's own Hive. Whether the list was *grouped by account* on screen was not recorded.
+**The Google account was NOT present at OS level — by the owner's deliberate choice**, which is
+configuration, not a defect (and it is what makes item 6 structurally untestable for him, below).
+**What this item actually exposed:** imported commitments carried **at least four different calendar
+ids**, including a holidays calendar and a birthdays calendar, while only one calendar was ticked.
+That is `WINDOWS.md` **entry 7** — CAL-02 violated; the ticks are persisted and rendered but never
+reach the device source.
 
 **A3 (recurring event created, one occurrence moved, a different one deleted — confirm done):**
+**DONE.** A recurring event named `Canopy test` was created in the owner's own Calendar app, with one
+occurrence moved. Confirmed from imported Hive records.
 
 **A4 (moved occurrence at its NEW time / deleted occurrence ABSENT / ordinary week at base time — three separate answers):**
+Three separate answers, as the item demands:
+
+1. **Moved occurrence at its NEW time — ✅ PASS, and this is the sitting's most valuable result.**
+   `Canopy test` imported **twice**: `2026-10-06 09:00` (base) and **`2026-10-13 09:10` — the moved
+   occurrence, at its new time.** Read directly from the device's Hive. **This VERIFIES Phase 35
+   Assumption A1** — the single most load-bearing claim of Phase 35 — and therefore **CONFIRMS**
+   `36-DECISIONS.md`'s "Correction on the record": Google sign-in adds **no** recurrence advantage on
+   the device path.
+   **Worth recording how close this came to the opposite conclusion:** the owner first reported the
+   moved occurrence as *missing entirely*, and the orchestrator filed it as a bug (`WINDOWS.md` entry
+   9) that would have *reversed* that Correction and made the Google path worth materially more. It
+   was **withdrawn** after the Hive read showed the event was present all along — absent from *Today*
+   only because the moved instance falls next week. Entry 9 is **waived with its evidence, not
+   deleted.** A false alarm nearly rewrote a decision; the data settled it.
+2. **Deleted occurrence ABSENT — ❓ UNANSWERED, and genuinely ambiguous.** Both in-window dates were
+   **present**, so either the occurrence was deleted *outside* the ~14-day sync window
+   (`kCalendarSyncWindowDays`) or the deletion never took. **This cannot be scored either way from the
+   data captured.** It needs a re-run that deletes an occurrence provably *inside* the window and
+   records the date deleted. **This is the one Section A item that a re-visit must actually redo.**
+3. **Ordinary week at base time — ✅ PASS (partial).** The base occurrence imported at
+   `2026-10-06 09:00`, its expected base time.
 
 **A5 (permission off — app still fully usable, CAL-04):**
+**UNANSWERED.** Not reached — the owner stopped the sitting before this item.
 
 **A6 (Canopy changed nothing in your real calendar):**
+**UNANSWERED.** Not reached. *(Note: CAL-03 is separately supported by the device path being
+read-only in code and, on the Google path, by the read-only OAuth scope — but neither is an
+observation, and this item asks for an observation.)*
 
 ### Section B — Phase 36
 
 **Item 1 (Connect button present; Google's account picker appears — CALAUTH-01):**
+**✅ PASS — settled on the iOS Simulator 2026-09-30, not on the real device.** One tap on Connect →
+iOS `ASWebAuthenticationSession` → **Google's live sign-in page** rendering *"Sign in — to continue to
+canopy"*. That Google resolved the app name proves the client id is valid, registered and bound to
+`com.danjjohnson.canopy`. The disconnected-state subtitle read exactly **"Not connected."** See the
+"Pre-verified on the iOS Simulator" table above for the full evidence.
 
 **Item 2 (consent screen's exact wording on access level — CALAUTH-02):**
+**UNANSWERED.** Reaching the consent screen's scope wording requires completing sign-in with the
+owner's Google credentials. The simulator run confirmed Google raised **no scope error** on the live
+consent request, but **the exact sentence Google shows was never captured** — and that sentence *is*
+CALAUTH-02's evidence. Still open.
 
 **Item 3 (Cancel button AND swipe-dismiss, recorded separately — Assumption A7):**
+Two answers, as the item demands:
+
+1. **Cancel button — ✅ PASS.** Returned cleanly to the CTA with **no error banner, no red text,
+   nothing alarming** — "cancellation is a state, not an error," confirmed through the real native
+   flow rather than the test seam. (Simulator, 2026-09-30.)
+2. **Swipe-dismiss — ❓ UNANSWERED.** Synthetic gestures cannot reach the
+   `ASWebAuthenticationSession` web sheet; it is a separate process. **Needs a real finger.**
+   Assumption A7 is therefore only half-closed: the code proves one exception type is caught, and only
+   one of two cancellation paths has been observed throwing it.
 
 **Item 4 (Google calendars appear under their own heading; survives full app restart — Assumption A6):**
+**UNANSWERED.** Requires completed Google sign-in. **Assumption A6 — whether Google issues a durable
+refresh token to a secret-less iOS client — remains unverified, and it is the premise D-36-01 rests
+on.** Note before any re-judgement: `WINDOWS.md` entry 6 plus review finding WR-05 mean a reconnect
+CTA reappearing does **not** indicate the connection broke.
 
 **Item 5 (revoked-token message AND offline message, recorded separately — were they different? — CALAUTH-03):**
+**UNANSWERED, both halves.** Neither the revoked-access message nor the wifi-off message was
+observed, so **whether they read as two different sentences — the entire requirement — is untested on
+device.** The natural 7-day expiry half remains a come-back-in-a-week item by design, not a gap.
 
 **Item 6 (double-tick warning appears and reads clearly / meeting appears twice / goes back to once after unticking — your own words):**
+**STRUCTURALLY UNTESTABLE FOR THIS OWNER — not a failure, and it should stop being asked of him.**
+The item needs the *same* calendar ticked under both **Google** and **This device**, which requires the
+Google account added at OS level. **The owner deliberately does not do that.** So the same calendar
+can never appear under both sources on his phone, and D-36-03's double-tick warning can never fire
+there. The underlying question it was also meant to settle — whether a real iPhone's EventKit
+`accountName` matches Google's own account id — is therefore **unanswerable on this device** and needs
+either a different device or a different method.
 
 **Item 7 (fully usable with everything disconnected/denied — CAL-04):**
+**UNANSWERED.** Not reached.
 
 **Item 8 (Google Calendar itself unchanged — CAL-03):**
+**UNANSWERED.** Not reached.
 
 **Anything that read like a fifth trap** (something that faked a broken build or a missing feature the way `CLAUDE.md`'s existing four traps do) — describe it here with what was on screen and when:
+**YES — one, and it is worth adding to `CLAUDE.md` as a genuine fifth trap.**
+**"Today shows today" faked a dropped recurring occurrence.** The owner moved a recurring occurrence
+and it was **not on the Today timeline**, which read exactly like the event having been dropped
+entirely. The orchestrator filed it as a bug (entry 9) and drew the serious conclusion that Phase 35
+Assumption A1 was **disproven**. In fact the import was perfect — the moved instance landed on
+**2026-10-13**, a week out, and Today only ever renders today. **The absence was correct behaviour
+rendered by a screen that is scoped to a single day.**
+Shape it shares with the existing four traps: *the data was right, the screen was right, and the
+inference drawn from looking at the screen was wrong.* The thing that broke the loop was **not** more
+looking — it was reading the device's Hive directly. **Any future judgement about whether a calendar
+occurrence imported must name the date it should land on and look at THAT day, or read the box.**
 
-**Overall verdict:** *(type "approved" only if every item above passed; otherwise list which failed and which requirement each leaves unmet)*
+**Overall verdict:** **NOT APPROVED — the sitting was stopped partway by the owner's own call, and
+two real defects stand.**
+
+**What failed, and what each leaves unmet:**
+
+| Finding | Requirement left unmet |
+|---|---|
+| **Entry 7** — `sync()` passes `calendarIds: const []` and `iosCalendarSource()` builds `DeviceCalendarSource()` with no ids, so the plugin resolves empty to *every calendar*. Ticks are persisted and rendered but never reach the device source. Proven from device Hive: one id ticked, ≥4 calendar ids imported. | **CAL-02 VIOLATED.** Google's half was wired (entry 5); the device half never was. |
+| **Entry 8** — all-day events import as blocking `08:00–22:00`. **Six working days erased** in a 12-day window: Vacation, a 38th Birthday, Fall break, **Payday**, Indigenous Peoples' Day, Columbus Day. | The schedule is unusable in normal use. **Now RULED — `D-36-05` (2026-10-06) supersedes `D-35-06`: all-day events are skipped and disclosed, never imported.** Not a duplicate of entry 7 and not fixed by fixing it — `Payday` lands on a calendar nobody would untick. |
+| **Entry 10** — the skipped-events disclosure exists and is tested, but the owner did not notice it and asked for "a reminder at the top." | Not missing — **not discoverable.** Raised from real use. **Fixing entry 8 without entry 10 trades six visible fake blocks for one invisible omission**, because the disclosure becomes the only way a dropped Vacation is ever communicated. |
+
+**What PASSED and should not be re-litigated:** Phase 35 **Assumption A1 is verified on real
+hardware** (A4.1) — the highest-value result of the sitting, and it **confirms** rather than reverses
+`36-DECISIONS.md`'s Correction on the record. Item 1 / CALAUTH-01 passed on the simulator. Item 3's
+Cancel half passed.
+
+**What a re-visit must cover, in priority order:** (1) re-verify entries 7, 8 and 10 are fixed;
+(2) **A4.2 — delete an occurrence provably inside the 14-day window and record the date**, the one
+Section A item whose data was inconclusive rather than merely uncollected; (3) A1, A5, A6; (4) Section
+B items 2, 4, 5, 7, 8 — all of which need a completed Google sign-in; (5) item 3's swipe-dismiss half,
+which needs a real finger. **Item 6 should be dropped for this owner** unless the OS-level account
+situation changes.
+
+**One open question no device data answers yet**, flagged by `D-36-05` and repeated here because it
+directly threatens the validity of the next sitting: the six all-day blocks are **already persisted
+`CommitmentBlock` records**. A sync that stops *importing* all-day events is not the same as one that
+*prunes* what an earlier sync already wrote. **If they are not pruned, the next UAT must not judge a
+day that still holds them** (`CLAUDE.md` trap #4), and the owner needs either a migration or an
+explicit instruction.

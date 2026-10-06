@@ -1,11 +1,38 @@
 ---
 phase: 36-connect-google-calendar-without-hunting-for-a-url
 verified: 2026-09-28T00:00:00Z
-status: human_needed
-score: 6/6 truths verified here on danserver; 8 truths correctly deferred to the owner's device (not counted as verified, not failed)
+status: gaps_found
+score: 6/6 truths verified here on danserver; 8 truths correctly deferred to the owner's device (not counted as verified, not failed). SUPERSEDED IN PART — see the 2026-10-06 addendum below; the device gate has since run and found 3 defects.
 behavior_unverified: 0
 overrides_applied: 0
-gaps: []
+# GAPS BELOW WERE NOT FOUND BY THIS VERIFIER. They were found by the owner's real-device
+# UAT on 2026-10-06, after this report was written on 2026-09-28, and are recorded here
+# because /gsd-plan-phase --gaps reads this file and 36-UAT.md as its ONLY inputs — it does
+# NOT read WINDOWS.md, where they were originally logged. Full detail: WINDOWS.md entries
+# 7/8/10, 36-UAT.md "Your answers", and the addendum section in this file.
+# status changed human_needed -> gaps_found: the human gate DID run and returned findings.
+# A device re-visit is still required afterwards (human_verification below still stands).
+gaps:
+  - id: windows-7
+    requirement: CAL-02
+    gap: "sync() always calls listEvents(calendarIds: const []) and iosCalendarSource() builds DeviceCalendarSource() with no ids, so device_calendar_plus resolves empty to EVERY calendar. The user's ticked selection is persisted and rendered but never reaches the device source."
+    evidence: "Owner's iPhone 2026-10-06, read from the device's own Hive: AppSettings.selectedCalendarIds held exactly one id (CF8A6881-...) while imported CommitmentBlocks carried at least four distinct calendar ids, including a holidays and a birthdays calendar."
+    files: ["lib/services/calendar_sync_service.dart", "lib/data/calendar/calendar_source_factory.dart"]
+    why_missed: "The device path is iOS-only and could never execute on danserver; 35-05's device gate was open the whole time. Google's half of the same wiring WAS done (WINDOWS entry 5), which made the device half look done by association."
+  - id: windows-8
+    requirement: D-36-05
+    gap: "All-day events import as a blocking 08:00-22:00 CommitmentBlock, erasing the whole working day. Target behaviour is now RULED: skip and disclose, never import."
+    evidence: "Owner's iPhone 2026-10-06: SIX working days erased in a 12-day window — Vacation, a 38th Birthday, Fall break, Payday, Indigenous Peoples' Day, Columbus Day."
+    files: ["lib/services/calendar_sync_service.dart"]
+    ruling: "D-36-05 (2026-10-06) SUPERSEDES D-35-06. Read 36-DECISIONS.md D-36-05 before planning — it names the required changes, the now-false SkipReason doc comment, the new UI-SPEC copy string, and that schedule_generator.dart must NOT be touched."
+    not_a_duplicate_of: "windows-7 — a legitimately-ticked calendar still contains birthdays, and Payday lands regardless. Fixing 7 does not fix 8."
+    open_question: "The six blocks are ALREADY PERSISTED Hive records. A sync that stops importing all-day events is not the same as one that PRUNES what an earlier sync wrote. If not pruned, the next UAT must not judge a day still holding them (CLAUDE.md trap #4)."
+  - id: windows-10
+    requirement: CAL-04 spirit / disclosure discoverability
+    gap: "The skipped-events disclosure exists and is tested, but the owner did not notice it on device and asked for 'a reminder at the top'. Not missing — not discoverable."
+    evidence: "Owner-reported from real use, 2026-10-06."
+    files: ["lib/screens/settings/calendar_settings_screen.dart"]
+    coupled_to: "windows-8 — once all-day events are silently skipped, this disclosure becomes the ONLY channel through which a dropped Vacation is communicated. Fixing 8 without 10 trades six visible fake blocks for one invisible omission."
 human_verification:
   - test: "Run 36-UAT.md Section A (items A1-A6, Phase 35's still-open device gate) and Section B (items 1-8, Phase 36 itself) on the owner's MacBook, per the mandatory Step 0 re-check-in discipline stated at the top of that document."
     expected: "Every item in 36-UAT.md's 'Your answers' section filled in with specific, non-'it seems to work' answers, and an overall verdict recorded."
@@ -179,6 +206,8 @@ those from source code, only from a completed run of that document.
 
 ## Gaps Summary
 
+**⚠ THIS SECTION WAS ACCURATE ON 2026-09-28 AND IS NOW SUPERSEDED. See the addendum below.**
+
 No gaps. The phase's danserver-reachable work is complete, tested behaviorally (not just present),
 and every code-review warning that was claimed fixed is genuinely fixed in the current tree. The
 phase is correctly blocked on the owner's MacBook, which is the only place its remaining
@@ -189,3 +218,62 @@ an execution shortfall.
 
 _Verified: 2026-09-28_
 _Verifier: Claude (gsd-verifier)_
+
+---
+
+## ADDENDUM 2026-10-06 — the device gate RAN, and it found three defects
+
+**Added by the orchestrator, not by `gsd-verifier`. The 2026-09-28 report above is unaltered** —
+nothing in it was wrong for what it set out to check, and it is not being rewritten to look
+prescient.
+
+**What changed:** the `blocking-human` gate this report correctly stopped at is no longer
+hypothetical. The owner built Phase 36 on his MacBook and ran it on his real iPhone on **2026-10-06**.
+He stopped the sitting partway through, by his own call, once the findings made the rest not worth
+judging. `status` therefore moves `human_needed` → `gaps_found`: the human step *happened* and
+returned results. `## Human Verification Required` still stands for the re-visit afterwards.
+
+### Why these gaps are recorded in this file at all
+
+`/gsd-plan-phase <N> --gaps` takes exactly two inputs: **this file** and **`36-UAT.md`**. It does
+**not** read `WINDOWS.md`. The three defects were originally logged only to `WINDOWS.md` and
+`STATE.md`, and `36-UAT.md`'s answers section was left blank (`36-07` Task 3 was never done). Had
+gap-closure planning run against those two files as they stood, it would have read `gaps: []` and a
+blank UAT, found **no evidence any defect existed**, and planned nothing — while three real defects sat
+in a file it never opens. Both inputs have now been filled in from the same evidence.
+
+### The three gaps — see frontmatter `gaps:` for the structured form
+
+| Gap | What it breaks | Fixed by fixing the others? |
+|---|---|---|
+| **Entry 7** — ticked calendar selection never reaches the device source; the plugin imports every calendar | **CAL-02 violated** | No |
+| **Entry 8** — all-day events import as blocking `08:00–22:00`; six working days erased in 12 days | Schedule unusable in normal use | **No — and explicitly not by entry 7.** `Payday` sits on a calendar nobody would untick |
+| **Entry 10** — skipped-events disclosure exists and is tested but is not discoverable | Disclosure's purpose | No — and it becomes **more** load-bearing once entry 8 is fixed |
+
+**Entry 8's target behaviour is settled, not open:** `D-36-05` (ruled 2026-10-06) supersedes `D-35-06`
+— all-day events are **skipped and disclosed, never imported**. Do not re-ask the owner, and do not
+plan work on `D-35-06`'s old 10-vs-14-hour span question, which `D-36-05` closes by removing the
+behaviour.
+
+### What the device gate also PROVED, which this report could not
+
+**Phase 35 Assumption A1 is VERIFIED on real hardware** — the single most load-bearing claim of Phase
+35. `device_calendar_plus` does return expanded occurrences with exceptions applied: `Canopy test`
+imported twice, at `2026-10-06 09:00` (base) and `2026-10-13 09:10` (the moved occurrence, **at its new
+time**). This **confirms** `36-DECISIONS.md`'s "Correction on the record" — Google sign-in adds no
+recurrence advantage on the device path.
+
+**This nearly went the other way, and the near-miss is the most transferable lesson of the sitting.**
+The owner first reported the moved occurrence as missing entirely; it was filed as a bug (`WINDOWS.md`
+entry 9) that would have *reversed* that Correction. It was withdrawn after the device's Hive was read
+directly and showed the event present all along — absent from *Today* only because the moved instance
+falls a week out, and Today renders today. Entry 9 is **waived with its evidence, not deleted**.
+
+**The method, which outperformed asking what was on screen and should be reached for first next
+time:** `xcrun devicectl device copy from --device <id> --domain-type appDataContainer
+--domain-identifier com.danjjohnson.canopy --source / --destination <dir>`, then a throwaway test that
+`Hive.init(dir)`s and dumps the box through the project's own adapters. It settled both real defects
+*and* overturned the false alarm. Three of this project's green-suite misses were cases where a screen
+was described rather than data read.
+
+_Addendum: 2026-10-06 — orchestrator, from WINDOWS.md entries 7–10 and the STATE.md device-UAT record._
