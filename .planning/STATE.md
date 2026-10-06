@@ -947,7 +947,49 @@ UAT's observations before judging item 4.
 time-sensitive; `notify-dan`'s own contract puts "a run that finished" and "phases completing" in the
 record-don't-notify column. This row, `36-UAT.md` and `QUESTIONS.md` are the record.
 
-### ▶ RESUME HERE — the MacBook is primed; the owner will say when the iPhone is plugged in
+### ▶ RESUME HERE — 2026-10-06: FIRST REAL-DEVICE UAT DONE. Two defects + one ruling to revisit.
+
+**Phase 36 ran on the owner's real iPhone (`com.danjjohnson.canopy`) on 2026-10-06.** The device
+gate that had been open since September is now partly closed. Read `WINDOWS.md` entries 7-10.
+
+**THE BIG RESULT — Phase 35 Assumption A1 is VERIFIED TRUE.** `device_calendar_plus` does return
+expanded occurrences with exceptions applied. Proven by reading the device's own Hive: `Canopy test`
+imported twice — `2026-10-06 09:00` (base) and `2026-10-13 09:10` (the occurrence the owner moved,
+at its NEW time). This **confirms** `36-DECISIONS.md`'s "Correction on the record" — Google sign-in
+adds no recurrence benefit on the device path. The orchestrator first logged this as a bug (entry 9)
+and **withdrew it** after reading the data; it is waived, not deleted, with the evidence.
+
+**TWO REAL DEFECTS STAND — both missed by 908 green tests, two code reviews and a verifier:**
+- **Entry 7 — CAL-02 violated.** `sync()` always passes `calendarIds: const []` and the factory
+  builds `DeviceCalendarSource()` with no ids, so the plugin imports EVERY calendar. The user's ticks
+  are persisted and rendered but never reach the device source. Google's half was wired (entry 5);
+  the device half never was.
+- **Entry 8 — all-day events blank the whole working day.** D-35-06 rules all-day events import as
+  blocking `08:00-22:00`. In a 12-day span the owner got SIX full-day blocks: Vacation, a 38th
+  Birthday, Fall break, **Payday**, Indigenous Peoples' Day, Columbus Day. **This one is a RULING to
+  revisit, not just a bug** — D-35-06 was decided before anyone saw it against a real calendar, and
+  fixing entry 7 does NOT fix it, because a legitimately-ticked calendar still contains birthdays.
+- **Entry 10** — the skipped-events disclosure exists and is tested but is not discoverable.
+
+**NEW CAPABILITY, use it instead of asking the owner what he sees:** the app's Hive data can be
+pulled straight off the phone and read with the project's own adapters —
+`xcrun devicectl device copy from --device 66110258-0097-5E64-9C90-B9815966D67E --domain-type
+appDataContainer --domain-identifier com.danjjohnson.canopy --source / --destination <dir>`, then a
+throwaway test that `Hive.init(dir)` + `registerAdapter(CommitmentBlockAdapter())` + dumps the box.
+This settled both the real bugs and the false alarm definitively.
+
+**STILL UNANSWERED in the UAT:** A4.2 (was the DELETED occurrence absent? both in-window dates were
+present, so either it was deleted outside the ~14-day window or the deletion did not take), A5, A6,
+and all of Section B past item 1/item 3's Cancel half. Item 6's double-tick is **untestable for this
+owner** — he deliberately does not add Google at OS level, so the same calendar can never appear
+under both sources.
+
+**The owner's own call: stop the UAT and fix 7 + 8 first.** There is little value judging the rest
+of the experience through six fake all-day blocks.
+
+---
+
+### Mac environment (unchanged, still primed)
 
 **Everything is staged. When he says the phone is connected, it is ONE command.** Do not re-derive
 any of the below; it was all done on 2026-09-30 and is verified.
