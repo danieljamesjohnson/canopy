@@ -63,8 +63,7 @@ class CalendarSettingsScreen extends StatefulWidget {
   final CalendarSource? googleSource;
 
   @override
-  State<CalendarSettingsScreen> createState() =>
-      _CalendarSettingsScreenState();
+  State<CalendarSettingsScreen> createState() => _CalendarSettingsScreenState();
 }
 
 /// The outcome of the mobile permission flow, once the user has tapped
@@ -160,6 +159,14 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   List<String> _googleSelectedIds(SettingsNotifier settings) =>
       filterGoogleCalendarIds(settings.selectedCalendarIds);
 
+  /// The non-Google ids from the persisted selection — the exact complement
+  /// of [_googleSelectedIds], and the device half [DeviceCalendarSource]
+  /// needs at construction time for the same reason (WINDOWS.md entry 7,
+  /// CAL-02, gap plan 36-08). Deliberately paired with [_googleSelectedIds]
+  /// so the two read as the pair they are.
+  List<String> _deviceSelectedIds(SettingsNotifier settings) =>
+      filterDeviceCalendarIds(settings.selectedCalendarIds);
+
   /// The Google source specifically — used for the Google section's own
   /// connect/list/disconnect flow.
   CalendarSource _resolveGoogleSource(SettingsNotifier settings) =>
@@ -179,6 +186,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         icsUrls: settings.icsUrls,
         googleAuth: GoogleAuthClient(store: settings),
         googleCalendarIds: _googleSelectedIds(settings),
+        deviceCalendarIds: _deviceSelectedIds(settings),
       );
 
   // ── Shared: sync + status ────────────────────────────────────────────
@@ -325,7 +333,9 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         );
       });
     } else {
-      setState(() => _desktopFuture = _loadDesktopState(context, settings.icsUrls));
+      setState(
+        () => _desktopFuture = _loadDesktopState(context, settings.icsUrls),
+      );
     }
   }
 
@@ -365,10 +375,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: onPressed,
-                child: Text(buttonLabel),
-              ),
+              ElevatedButton(onPressed: onPressed, child: Text(buttonLabel)),
             ],
           ),
         ),
@@ -943,7 +950,8 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
       // Best-effort display only — fall back to the URL itself as the name.
       // The real error surfaces via the sync SnackBar, not here.
       return [
-        for (final url in urls) CalendarInfo(id: url, name: url, isReadOnly: true),
+        for (final url in urls)
+          CalendarInfo(id: url, name: url, isReadOnly: true),
       ];
     }
   }
@@ -1015,7 +1023,10 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Remove', style: TextStyle(color: theme.colorScheme.error)),
+            child: Text(
+              'Remove',
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
           ),
         ],
       ),
@@ -1064,11 +1075,8 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline),
                         tooltip: 'Remove calendar',
-                        onPressed: () => _removeFeed(
-                          context,
-                          calendar.id,
-                          calendar.name,
-                        ),
+                        onPressed: () =>
+                            _removeFeed(context, calendar.id, calendar.name),
                       ),
                     ),
                 ],

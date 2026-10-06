@@ -150,11 +150,19 @@ class _CheckinScreenState extends State<CheckinScreen> {
       // `GoogleCalendarSource` has no calendar id to query at all, and a
       // signed-in, ticked account would still import zero Google events —
       // exactly the gap plan 36-05 recorded and left open for this call.
+      //
+      // `deviceCalendarIds` closes WINDOWS.md entry 7 (gap plan 36-08,
+      // CAL-02): without the device half of the user's own ticked
+      // selection, `DeviceCalendarSource` had no configured ids to
+      // substitute and silently imported every calendar on the phone.
       final syncResult = await commitmentsNotifier.syncFromCalendar(
         source: defaultCalendarSource(
           icsUrls: settingsNotifier.icsUrls,
           googleAuth: GoogleAuthClient(store: settingsNotifier),
           googleCalendarIds: filterGoogleCalendarIds(
+            settingsNotifier.selectedCalendarIds,
+          ),
+          deviceCalendarIds: filterDeviceCalendarIds(
             settingsNotifier.selectedCalendarIds,
           ),
         ),
