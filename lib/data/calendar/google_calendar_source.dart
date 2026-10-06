@@ -50,6 +50,17 @@ const String googleCalendarIdPrefix = 'google:';
 List<String> filterGoogleCalendarIds(Iterable<String> ids) =>
     ids.where((id) => id.startsWith(googleCalendarIdPrefix)).toList();
 
+/// The exact complement of [filterGoogleCalendarIds] — every id in the
+/// user's persisted selection that is NOT a Google id, i.e. the device half
+/// `DeviceCalendarSource` needs at construction time (WINDOWS entry 7,
+/// CAL-02). Deliberately defined immediately below its Google counterpart,
+/// in this one file, so a future change to what counts as "a Google id"
+/// cannot update one filter and silently miss the other — the same failure
+/// WR-02 was raised about, one level up. Do not create a third place that
+/// knows the prefix.
+List<String> filterDeviceCalendarIds(Iterable<String> ids) =>
+    ids.where((id) => !id.startsWith(googleCalendarIdPrefix)).toList();
+
 /// The user-facing label this source stamps on every calendar it returns
 /// (D-36-03) — the picker's group-header text (plan 36-06), not an
 /// identifier. Kept in exactly one place per [CalendarInfo.sourceLabel]'s
@@ -311,8 +322,7 @@ class GoogleCalendarSource implements CalendarSource {
     }
   }
 
-  String _stripPrefix(String id) =>
-      id.startsWith(googleCalendarIdPrefix)
-          ? id.substring(googleCalendarIdPrefix.length)
-          : id;
+  String _stripPrefix(String id) => id.startsWith(googleCalendarIdPrefix)
+      ? id.substring(googleCalendarIdPrefix.length)
+      : id;
 }

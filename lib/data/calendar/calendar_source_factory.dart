@@ -28,10 +28,13 @@ CalendarSource defaultCalendarSource({
   List<String> icsUrls = const [],
   GoogleAuthClient? googleAuth,
   List<String> googleCalendarIds = const [],
+  List<String> deviceCalendarIds = const [],
 }) {
   if (kIsWeb) {
     // Web: no device calendar API exists — ICS is the only path. D-36-01's
     // accepted cost: the Google sign-in button does not exist here.
+    // deviceCalendarIds is deliberately unread here (no-silent-fallthrough
+    // idiom, notification_service.dart) — there is no device source on web.
     return icsUrls.isEmpty
         ? NullCalendarSource()
         : IcsCalendarSource(urls: icsUrls);
@@ -40,6 +43,7 @@ CalendarSource defaultCalendarSource({
     return iosCalendarSource(
       googleAuth: googleAuth,
       googleCalendarIds: googleCalendarIds,
+      deviceCalendarIds: deviceCalendarIds,
     );
   }
   // Android, macOS, Windows, Linux: ICS is the path. Android was originally
@@ -54,6 +58,7 @@ CalendarSource defaultCalendarSource({
   // promises not to" — the owner ruled against that. Android reads
   // calendars via a subscribed .ics feed URL instead, exactly like desktop
   // and web; the accepted cost is a pasted URL instead of a ticked list.
+  // deviceCalendarIds is deliberately unread here too — same reason.
   return icsUrls.isEmpty
       ? NullCalendarSource()
       : IcsCalendarSource(urls: icsUrls);
@@ -83,27 +88,42 @@ CalendarSource defaultCalendarSource({
 /// device's own list.
 ///
 /// **`googleCalendarIds`, closing WINDOWS.md entry 5 (plan 36-06).** Unlike
-/// `DeviceCalendarSource` (whose plugin resolves an empty list to "every
-/// calendar" internally) or `IcsCalendarSource` (whose feed list IS its
-/// configuration), `GoogleCalendarSource` has no way to enumerate "every
-/// calendar" on its own — it must be told which calendar ids to query, AND
-/// it must be told at CONSTRUCTION time specifically: `CalendarSyncService
-/// .sync()` always calls `listEvents` with an EMPTY `calendarIds` argument
-/// (its own "empty means every configured calendar" convention), so a
-/// constructor-time list is the only place this can ever take effect. The
-/// caller (36-06's `CalendarSettingsScreen`) is expected to pass
+/// `IcsCalendarSource` (whose feed list IS its configuration),
+/// `GoogleCalendarSource` has no way to enumerate "every calendar" on its
+/// own — it must be told which calendar ids to query, AND it must be told at
+/// CONSTRUCTION time specifically: `CalendarSyncService.sync()` always calls
+/// `listEvents` with an EMPTY `calendarIds` argument (its own "empty means
+/// every configured calendar" convention), so a constructor-time list is the
+/// only place this can ever take effect. The caller (36-06's
+/// `CalendarSettingsScreen`) is expected to pass
 /// `AppSettings.selectedCalendarIds` filtered to the `google:` prefix.
 /// Defaults to `const []` so every existing caller (every test, and any
 /// caller that hasn't opted in) is unaffected — same backward-compatible
 /// shape as `googleAuth` itself.
+///
+/// **`deviceCalendarIds`, closing WINDOWS entry 7 (gap plan 36-08, CAL-02).**
+/// This parameter used to not exist, on the reasoning that
+/// `DeviceCalendarSource`'s plugin resolves an empty list to "every calendar"
+/// internally — that reasoning WAS the defect: an unconfigured device child
+/// silently imported every calendar on the phone, not just the ones the user
+/// ticked. The device child is now configured the same way the Google child
+/// is, at construction time, and an empty configured list means "import
+/// nothing", not "import everything" (`DeviceCalendarSource`'s own doc
+/// comment). The caller is expected to pass
+/// `AppSettings.selectedCalendarIds` filtered by `filterDeviceCalendarIds`,
+/// the exact complement of the Google filter above.
 CalendarSource iosCalendarSource({
   GoogleAuthClient? googleAuth,
   List<String> googleCalendarIds = const [],
+  List<String> deviceCalendarIds = const [],
 }) {
-  final device = DeviceCalendarSource();
+  final device = DeviceCalendarSource(calendarIds: deviceCalendarIds);
   if (googleAuth == null) return device;
   return CompositeCalendarSource([
-    GoogleCalendarSource(authClient: googleAuth, calendarIds: googleCalendarIds),
+    GoogleCalendarSource(
+      authClient: googleAuth,
+      calendarIds: googleCalendarIds,
+    ),
     device,
   ]);
 }
