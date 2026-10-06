@@ -112,10 +112,44 @@ CalendarEventStatus mapDeviceEventStatus(plugin.EventStatus status) {
 
 // ── The adapter ──────────────────────────────────────────────────────────
 
+/// Produces the raw plugin events for one `listEvents` call. The production
+/// default forwards straight to `plugin.DeviceCalendar.instance.listEvents`;
+/// tests inject a recorder here instead, so the exact `calendarIds` list that
+/// would reach `device_calendar_plus` is observable on a host machine with no
+/// Android SDK and no Xcode — mirroring `IcsCalendarSource`'s `fetch:` seam
+/// and `GoogleCalendarSource`'s `apiClientFactory:` seam.
+typedef DeviceEventsFetcher =
+    Future<List<plugin.Event>> Function({
+      required DateTime start,
+      required DateTime end,
+      required List<String> calendarIds,
+    });
+
+Future<List<plugin.Event>> _defaultFetchEvents({
+  required DateTime start,
+  required DateTime end,
+  required List<String> calendarIds,
+}) => plugin.DeviceCalendar.instance.listEvents(
+  start,
+  end,
+  calendarIds: calendarIds,
+);
+
 /// The iOS device-calendar source (D-35-15): reads every calendar the user
 /// has added at the OS level — iCloud, Google, Exchange, subscribed feeds —
 /// via `device_calendar_plus`'s EventKit binding. No OAuth, no API key, no
 /// vendor-specific integration (CAL-02).
+///
+/// **CAL-02 enforcement point (WINDOWS entry 7).** This class is constructed
+/// with the exact set of calendar ids the user has ticked
+/// ([configuredCalendarIds]) and substitutes that list whenever `listEvents`
+/// is called with an empty `calendarIds` argument — the same convention
+/// `GoogleCalendarSource` already follows, since `CalendarSyncService.sync()`
+/// always passes `calendarIds: const []` as its own "every calendar this
+/// source is configured for" convention. Previously this class forwarded
+/// that empty list straight to `device_calendar_plus`, which resolves an
+/// empty id list to "every calendar on the device" — the defect this
+/// constructor-time list exists to close.
 ///
 /// **Android does not use this class**, even though `device_calendar_plus`
 /// itself supports Android. `device_calendar_plus`'s own Android
@@ -141,6 +175,23 @@ CalendarEventStatus mapDeviceEventStatus(plugin.EventStatus status) {
 /// `listEvents` — and never `createEvent`, `updateEvent`, `deleteEvent`,
 /// `createCalendar`, `updateCalendar`, or `deleteCalendar` (CAL-03).
 class DeviceCalendarSource implements CalendarSource {
+  DeviceCalendarSource({
+    List<String> calendarIds = const [],
+    DeviceEventsFetcher? fetchEvents,
+  }) : _calendarIds = calendarIds,
+       _fetchEvents = fetchEvents ?? _defaultFetchEvents;
+
+  final List<String> _calendarIds;
+  final DeviceEventsFetcher _fetchEvents;
+
+  /// The calendar ids this source was constructed with — for tests and
+  /// introspection only. Mirrors `CompositeCalendarSource.children`'s own
+  /// contract: this class never reorders or filters what the constructor
+  /// was given. As of WINDOWS entry 7, this list is also the CAL-02
+  /// enforcement point on the device path — see this class's own doc
+  /// comment.
+  List<String> get configuredCalendarIds => List.unmodifiable(_calendarIds);
+
   @override
   Future<bool> isAvailable() async {
     if (kIsWeb) return false; // Web: no EventKit binding exists.
@@ -175,10 +226,23 @@ class DeviceCalendarSource implements CalendarSource {
     required DateTime end,
     required List<String> calendarIds,
   }) async {
-    final events = await plugin.DeviceCalendar.instance.listEvents(
-      start,
-      end,
-      calendarIds: calendarIds,
+    // Empty means "every calendar this source is configured for" — the same
+    // convention GoogleCalendarSource.listEvents follows, and exactly what
+    // CalendarSyncService.sync() passes.
+    final targetIds = calendarIds.isEmpty ? _calendarIds : calendarIds;
+    if (targetIds.isEmpty) {
+      // The plugin resolves an empty id list to "every calendar on the
+      // device" — forwarding one would be precisely the CAL-02 violation
+      // WINDOWS entry 7 recorded. A user who has ticked nothing must import
+      // nothing, so the seam is never called at all here — the same outcome
+      // GoogleCalendarSource already gets for free from its own empty-list
+      // for-loop.
+      return const [];
+    }
+    final events = await _fetchEvents(
+      start: start,
+      end: end,
+      calendarIds: targetIds,
     );
     return events.map(mapDeviceEvent).toList();
   }
