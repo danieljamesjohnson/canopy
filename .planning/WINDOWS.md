@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 3
+open_count: 7
 waived_count: 0
 fixed_count: 2
-total_count: 5
-last_updated: 2026-09-25T16:05:44.417Z
+total_count: 9
+last_updated: 2026-10-06T00:00:00.000Z
 ---
 
 # Broken Windows Ledger
@@ -34,7 +34,7 @@ last_updated: 2026-09-25T16:05:44.417Z
     "phase": "35",
     "file": "lib/data/calendar/ics_calendar_source.dart",
     "line": null,
-    "description": "EXDATE/RDATE/RECURRENCE-ID overrides not implemented — a moved/cancelled single occurrence of a recurring event still appears at its original time",
+    "description": "EXDATE/RDATE/RECURRENCE-ID overrides not implemented \u2014 a moved/cancelled single occurrence of a recurring event still appears at its original time",
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-14T13:15:25.420Z",
@@ -46,7 +46,7 @@ last_updated: 2026-09-25T16:05:44.417Z
     "phase": "35",
     "file": "lib/data/calendar/ics_calendar_source.dart",
     "line": null,
-    "description": "DTSTART without a Z suffix (floating time, or bare TZID with no VTIMEZONE block) is parsed via Dart's system-local DateTime constructor, not the app's tz.local override — only Z-suffixed UTC timestamps are proven correct by this plan's test",
+    "description": "DTSTART without a Z suffix (floating time, or bare TZID with no VTIMEZONE block) is parsed via Dart's system-local DateTime constructor, not the app's tz.local override \u2014 only Z-suffixed UTC timestamps are proven correct by this plan's test",
     "status": "fixed",
     "reason": "",
     "recorded_at": "2026-09-14T13:15:28.640Z",
@@ -87,6 +87,54 @@ last_updated: 2026-09-25T16:05:44.417Z
     "reason": "",
     "recorded_at": "2026-09-25T15:23:21.055Z",
     "resolved_at": "2026-09-25T16:05:44.417Z"
+  },
+  {
+    "id": 7,
+    "kind": "bug",
+    "phase": "36",
+    "file": "lib/services/calendar_sync_service.dart",
+    "line": null,
+    "description": "CAL-02 VIOLATED on the device path: sync() always calls listEvents(calendarIds: const []), and iosCalendarSource() builds DeviceCalendarSource() with no ids, so device_calendar_plus resolves empty to \"every calendar\". The user's ticks are persisted and rendered but NEVER reach the device source. Google's half WAS wired (entry 5); the device half never was. PROVEN on the owner's iPhone 2026-10-06 from its own Hive: selectedCalendarIds held exactly one id while imported commitments carried at least four different calendar ids incl. holidays and birthdays calendars.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-06T00:00:00.000Z",
+    "resolved_at": null
+  },
+  {
+    "id": 8,
+    "kind": "bug",
+    "phase": "36",
+    "file": "lib/services/calendar_sync_service.dart",
+    "line": null,
+    "description": "All-day events import as blocking 08:00-22:00 (D-35-06). Combined with entry 7, every holiday and birthday from un-ticked calendars blanks the owner's entire working day. Observed on device: Columbus Day, Indigenous Peoples' Day, a 38th Birthday, Vacation, Fall break. Each piece behaves correctly alone; the combination makes the schedule unusable. Even with entry 7 fixed, a ticked calendar containing birthdays still does this.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-06T00:00:00.000Z",
+    "resolved_at": null
+  },
+  {
+    "id": 9,
+    "kind": "bug",
+    "phase": "36",
+    "file": "lib/data/calendar/device_calendar_source.dart",
+    "line": null,
+    "description": "A moved single occurrence of a recurring event (\"this event only\") does NOT appear at all on the device path -- not at its new time, not at its original. Owner-reported on device 2026-10-06. PENDING one check (was it still inside 08:00-22:00 and on the same day). If confirmed this DISPROVES Phase 35 Assumption A1 and REVERSES 36-DECISIONS.md's Correction on the record: the Google path would be worth materially MORE than stated. Worse than the known .ics defect, which duplicates rather than drops.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-06T00:00:00.000Z",
+    "resolved_at": null
+  },
+  {
+    "id": 10,
+    "kind": "todo",
+    "phase": "36",
+    "file": "lib/screens/settings/calendar_settings_screen.dart",
+    "line": null,
+    "description": "The skipped-events disclosure exists and is tested, but the owner did not notice it on device and asked for a reminder at the top. Not missing -- not discoverable. Prominence issue raised from real use.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-06T00:00:00.000Z",
+    "resolved_at": null
   }
 ]
 ````
