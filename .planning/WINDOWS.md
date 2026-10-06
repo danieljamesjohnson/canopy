@@ -1,7 +1,7 @@
 ---
 schema_version: 1
-open_count: 8
-waived_count: 0
+open_count: 7
+waived_count: 1
 fixed_count: 2
 total_count: 10
 last_updated: 2026-10-06T00:00:00.000Z
@@ -23,7 +23,7 @@ last_updated: 2026-10-06T00:00:00.000Z
 | 6 | 36 | deviation | lib/screens/settings/calendar_settings_screen.dart |  | Re-opening the Calendars screen always shows the "Connect Google Calendar" CTA even when a valid token is stored -- only reconnectNeeded (a dead token) is read from persisted state, never a valid-but-unconfirmed connection. Tapping re-launches real consent and re-issues a token rather than failing, so this is UX friction, not wrong data. Mirrors the device flow's identical pre-existing limitation (_mobileFuture also resets on re-open). Fixing it needs a new SettingsNotifier.googleConnected getter, outside 36-06's declared scope. LOGGED BY THE ORCHESTRATOR, not 36-06, which reasoned it was carried-by-design and left it in its SUMMARY's Known Stubs only: it is recorded here because 36-07's UAT script must tell the owner this is expected, or a reasonable person will report it as a bug at the device gate. | open |  | 2026-09-25T16:20:00.000Z |  |
 | 7 | 36 | bug | lib/services/calendar_sync_service.dart |  | CAL-02 VIOLATED on the device path: sync() always calls listEvents(calendarIds: const []), and iosCalendarSource() builds DeviceCalendarSource() with no ids, so device_calendar_plus resolves empty to "every calendar". The user's ticks are persisted and rendered but NEVER reach the device source. Google's half WAS wired (entry 5); the device half never was. PROVEN on the owner's iPhone 2026-10-06: selectedCalendarIds held exactly one id (CF8A6881-...) while imported commitments carried at least four different calendar ids incl. a holidays and a birthdays calendar. Undetectable before now because the device path is iOS-only and 35-05's gate was open. | open |  | 2026-10-06T00:00:00.000Z |  |
 | 8 | 36 | bug | lib/services/calendar_sync_service.dart |  | All-day events import as blocking 08:00-22:00 (D-35-06). Combined with entry 7, every holiday and birthday from un-ticked calendars blanks the owner's entire working day. Observed on device: Columbus Day, Indigenous Peoples' Day, a 38th Birthday, Vacation, Fall break all imported as full-day blocks. Each piece behaves "correctly" alone; the combination makes the schedule unusable. Even with entry 7 fixed, a ticked calendar containing birthdays would still do this. | open |  | 2026-10-06T00:00:00.000Z |  |
-| 9 | 36 | bug | lib/data/calendar/device_calendar_source.dart |  | A moved single occurrence of a recurring event ("this event only") does NOT appear at all on the device path -- not at its new time, not at its original. Reported by the owner on device 2026-10-06. If confirmed (pending: was it still inside 08:00-22:00 and on the same day), this DISPROVES Phase 35 Assumption A1 and REVERSES 36-DECISIONS.md's "Correction on the record": the Google path would then be worth materially MORE than stated, not neutral. Worse than the known .ics defect, which duplicates rather than drops. | open |  | 2026-10-06T00:00:00.000Z |  |
+| 9 | 36 | bug | lib/data/calendar/device_calendar_source.dart |  | WITHDRAWN 2026-10-06 — FALSE ALARM, see reason. Original report: A moved single occurrence of a recurring event ("this event only") does NOT appear at all on the device path -- not at its new time, not at its original. Reported by the owner on device 2026-10-06. If confirmed (pending: was it still inside 08:00-22:00 and on the same day), this DISPROVES Phase 35 Assumption A1 and REVERSES 36-DECISIONS.md's "Correction on the record": the Google path would then be worth materially MORE than stated, not neutral. Worse than the known .ics defect, which duplicates rather than drops. | waived | FALSE ALARM. Read the device Hive directly: "Canopy test" imported TWICE — 2026-10-06 09:00-10:00 (base) and 2026-10-13 09:10-10:10 (the MOVED occurrence, at its NEW time). It was absent from Today only because Today shows today; the moved one is next week. This VERIFIES Phase 35 Assumption A1 on real hardware and CONFIRMS 36-DECISIONS.md\'s Correction on the record rather than reversing it. | 2026-10-06T00:00:00.000Z |  |
 | 10 | 36 | todo | lib/screens/settings/calendar_settings_screen.dart |  | The skipped-events disclosure ("N events were not imported") exists and is tested, but the owner did not notice it on device and asked for "a reminder at the top". Not missing -- not discoverable. Prominence/placement issue raised from real use. | open |  | 2026-10-06T00:00:00.000Z |  |
 
 ````json
@@ -131,10 +131,10 @@ last_updated: 2026-10-06T00:00:00.000Z
     "file": "lib/data/calendar/device_calendar_source.dart",
     "line": null,
     "description": "A moved single occurrence of a recurring event (\"this event only\") does NOT appear at all on the device path -- not at its new time, not at its original. Owner-reported on device 2026-10-06. PENDING one check (was it still inside 08:00-22:00 and on the same day). If confirmed this DISPROVES Phase 35 Assumption A1 and REVERSES 36-DECISIONS.md's Correction on the record: the Google path would be worth materially MORE than stated. Worse than the known .ics defect, which duplicates rather than drops.",
-    "status": "open",
-    "reason": "",
+    "status": "waived",
+    "reason": "FALSE ALARM, verified 2026-10-06 by reading the device Hive directly: \"Canopy test\" imported twice \u2014 2026-10-06 09:00 (base) and 2026-10-13 09:10 (moved occurrence at its NEW time). Absent from Today only because Today shows today. VERIFIES Assumption A1 and CONFIRMS the Correction on the record.",
     "recorded_at": "2026-10-06T00:00:00.000Z",
-    "resolved_at": null
+    "resolved_at": "2026-10-06T00:00:00.000Z"
   },
   {
     "id": 10,
