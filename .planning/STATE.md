@@ -4,17 +4,22 @@ milestone: none
 current_phase: 36
 current_phase_name: Connect Google Calendar Without Hunting For a URL
 status: awaiting-human
-current_phase_next: "Phase 36 is BUILT AND VERIFIED AS FAR AS THIS BOX CAN. 6 of 7 plans complete, 908/908 tests green, flutter analyze clean, code review 0 critical. It is parked at 36-07 Task 2 — a blocking-human gate on the owner's MacBook — which is the CORRECT terminal state, not a stall. The owner's instrument is 36-UAT.md. One sitting closes Phase 35's two open gates as well: 36-UAT.md carries 35-05 Task 3 as its Section A. Resume with /gsd-verify-work 36 once his answers exist."
+current_phase_next: "GAP CLOSURE IS DONE AND MERGED. The three device-UAT defects are fixed in code (plans 36-08/09/10) and the re-verification instrument is written (36-11). 934/934 green, flutter analyze clean, schedule_generator.dart byte-identical. WINDOWS.md: 5 open / 5 fixed / 1 waived / 11 total, all three views agreeing. THE OWNER'S NEXT ACTION IS 36-UAT-R2.md on his MacBook + iPhone — that is the ONLY thing that can close entry 7, whose app-side wiring is mutation-proven to the plugin boundary but whose real-hardware half (does device_calendar_plus honour a non-empty calendarIds?) is unobservable on danserver. TELL HIM TO BE ONLINE FOR THE FIRST SYNC: the schema 12->13 purge means previously-imported blocks are gone until one successful sync (T-36-37), and an empty-looking calendar section before then is EXPECTED, not a defect. Resume with /gsd-verify-work 36 once his R2 answers exist. 36-07 remains incomplete by design — it is the original device gate and is superseded in practice by 36-UAT-R2.md."
 stopped_at: "PHASE 36 EXECUTED 2026-09-25..28 under /gsd-autonomous. 44 commits (37 non-merge + 7 worktree merges). Waves 1-4 all landed and merged; wave 5 halted at its human gate by design. 908/908 green (821 at phase start), flutter analyze clean, schedule_generator.dart BYTE-IDENTICAL throughout (git-verified, not assumed). || WHAT IS DONE: the whole Google path exists — google_oauth_config/google_auth_client/google_calendar_source, AppSettings schema 11->12 (4 additive fields), CALAUTH-03's three-way failure classification, Google event mapping against Google-shaped fixtures, iOS CFBundleURLTypes via a build setting + tools/build-ios.sh, CompositeCalendarSource so both iOS sources coexist (D-36-03) with the double-tick overlap detector, and the settings screen with Connect/reconnect/overlap disclosure. || CODE REVIEW: 36-REVIEW.md, 0 critical / 5 warning. WR-01..WR-04 FIXED (commits e89c766, 956daea, ae94a93, 26727dc), each mutation-proven. WR-05 DELIBERATELY NOT FIXED — it needs a new user-visible state and its copy, which belongs to an owner-reviewed UI-SPEC, not an agent. See 'WR-05 is the owner's call' below. || VERIFICATION: 36-VERIFICATION.md, status human_needed, gaps: []. Nothing was quietly skipped to get here. || DO NOT RE-ASK: every owner ruling is taken (36-DECISIONS.md D-36-01..D-36-04). D-36-04 is NEW this run — it clears 36-01 Task 1's package gate with the pub.dev/GitHub readings recorded as observations, including the two things that gate did NOT establish. || TWO NEW OWNER QUESTIONS in QUESTIONS.md, neither blocking: Q-01 the real client ID is committed in 36-RESEARCH.md and already on public origin (NOT a CALAUTH-04 violation — no secret exists for a native client — but it contradicts the deliberate gitignore posture; rotate/scrub/accept is his call). Q-02 migrations.dart asserts in three comments that the Hive reader 'returns null/false/0 for missing fields'; that is FALSE for non-nullable fields, 36-01's plan believed it and only a pre-existing test caught the resulting crash. The stale comment is the defect that keeps reproducing. || WINDOWS.md now has 6 entries. 5 was FIXED this phase and was load-bearing (GoogleCalendarSource had calendarIds: const [], so the picker would look healthy and import zero events). 4 and 6 are open and deliberate; 6 was logged by the orchestrator, not by 36-06, because 36-07's UAT must warn the owner that the Connect CTA reappearing on screen re-open is expected. || STILL UNVERIFIED AND LOAD-BEARING: Phase 35 Assumption A1 (device_calendar_plus returns expanded occurrences with exceptions applied) has NEVER been checked on a device, and 36-DECISIONS.md's correction that sign-in adds no recurrence benefit on iOS rests entirely on it. 36-UAT.md runs the recurrence check on BOTH sources so this finally gets settled."
-last_updated: "2026-09-28T00:00:00.000Z"
-last_activity: 2026-09-28
-last_activity_desc: "Phase 36 executed end-to-end under /gsd-autonomous: 5 waves, 6 of 7 plans complete, 21 commits, 908/908 green; code review found 5 warnings, 4 fixed and mutation-proven, 1 deferred to the owner; parked at the MacBook gate with 36-UAT.md ready"
-state_head: 16816cf
+last_updated: "2026-10-06T00:00:00.000Z"
+last_activity: 2026-10-06
+last_activity_desc: "D-36-05 ruled (all-day events skip, not block — supersedes D-35-06), then gap closure planned and executed: 4 waves, plans 36-08..36-11, all merged; entries 6/8/10 fixed and 11 logged; 908 -> 934 tests green; entry 7 deliberately left OPEN pending real-hardware confirmation via the new 36-UAT-R2.md"
+state_head: 0232138
 progress:
   total_phases: 10
   completed_phases: 8
-  total_plans: 58
-  completed_plans: 50
+  # NOTE 2026-10-06: these two counters were incremented by this session's actual delta
+  # (+4 plans written, +4 completed). Their BASELINE is unverified — 58/50 matched neither
+  # the 52 active PLAN.md files nor the 147 active+archived, so the convention they follow
+  # is unclear and may be drift from the known gsd-tools STATE.md writer bug. Do NOT treat
+  # them as an authoritative count; recount from the filesystem if you need a real number.
+  total_plans: 62
+  completed_plans: 54
 milestone_name: milestone
 ---
 
@@ -947,7 +952,86 @@ UAT's observations before judging item 4.
 time-sensitive; `notify-dan`'s own contract puts "a run that finished" and "phases completing" in the
 record-don't-notify column. This row, `36-UAT.md` and `QUESTIONS.md` are the record.
 
-### ▶ RESUME HERE — 2026-10-06: FIRST REAL-DEVICE UAT DONE. Two defects + one ruling to revisit.
+### ▶ RESUME HERE — 2026-10-06 (LATER): GAP CLOSURE DONE AND MERGED. The owner's next action is 36-UAT-R2.md.
+
+**This section supersedes the one below it, which is kept as the record of the device sitting that
+found the defects.** Read that one for evidence; read this one for where things stand.
+
+**What the owner asked for:** a ruling on D-35-06, then an unattended run. Both happened.
+
+**THE RULING — `D-36-05` supersedes `D-35-06`: all-day events are SKIPPED and DISCLOSED, never
+imported.** Recorded in `36-DECISIONS.md`; `35-DECISIONS.md`'s D-35-06 now carries a ⛔ SUPERSEDED
+banner. The old 10-vs-14-hour span question is **moot** — do not plan work on it.
+
+**WHAT SHIPPED — 4 gap-closure plans, 4 waves, all merged to master:**
+
+| Plan | Closes | Proven how |
+|---|---|---|
+| `36-08` | Entry 7, CAL-02 | Ticked ids now reach the exact `device_calendar_plus` call site through the real `sync()` path. Mutation red: `Expected: ['cal-A','cal-B'] / Actual: []` |
+| `36-09` | Entries 8 + 10, D-36-05 | All-day → `(blocks: const [], skip: SkipReason.allDay)`; schema 12→13 purge; disclosure moved to top of both bodies |
+| `36-10` | Entry 6, CALAUTH-03 | `googleConnected` + `_loadGoogleCalendars` restore without consent. Load-bearing mutation: `Expected: <0> / Actual: <1>` on `requestPermissionCount` |
+| `36-11` | Instrument + register | `36-UAT-R2.md` written; `WINDOWS.md` squared across all three views |
+
+**Measured on master, not claimed:** 934/934 tests (908 at session start), `flutter analyze` clean,
+`git diff 8f62a56 -- lib/services/schedule_generator.dart` **empty**. Every wave was independently
+re-verified on master after merge, not trusted from its SUMMARY.
+
+**WINDOWS.md: 5 open / 5 fixed / 1 waived / 11 total**, frontmatter + JSON + markdown table all
+agreeing (checked programmatically).
+
+**⚠ ENTRY 7 IS STILL OPEN AND THAT IS DELIBERATE — DO NOT "TIDY" IT TO FIXED.** The app-side wiring is
+mutation-proven correct *up to the plugin boundary*. What is NOT proven, and **cannot be** on danserver
+(no Xcode, no device, ever), is whether `device_calendar_plus` itself honours a non-empty `calendarIds`
+rather than ignoring it. Only `36-UAT-R2.md` item **R1** closes it.
+
+**⚠ TELL THE OWNER TO BE ONLINE FOR HIS FIRST SYNC.** The schema 12→13 purge discards every
+previously-imported block, so on first launch after upgrading the calendar section looks **empty until
+one successful sync**. Offline for that first check-in = no last-known imported blocks to degrade to —
+a real, accepted, one-window weakening of `D-35-13`, logged as `T-36-37`. `36-UAT-R2.md` Step 0 says
+so; if he reports an empty calendar section as a bug, this is why.
+
+**Entry 10's fix is proven GEOMETRICALLY, not perceptually.** The banner is first in both
+`_buildMobileBody` and `_buildDesktopBody`, mutation-proven (`dy=608.0` when moved). But the original
+finding was *"the owner didn't notice it"*, and geometry is not perception — `36-UAT-R2.md` item R3
+asks him cold. Do not treat the passing test as closure of the human question.
+
+**NEW — WINDOWS entry 11, logged and deliberately NOT fixed: `sync()` never prunes.** It only upserts.
+Verified three ways (no `delete`/`remove` in `calendar_sync_service.dart`; the four pre-existing
+`.delete(` sites in `lib/` are all outside the calendar path; and
+`calendar_settings_screen.dart` already says so in a comment). Consequence: untick a calendar, or delete
+an event in your calendar app, and the imported blocks **stay forever** — which contradicts
+`35-UI-SPEC.md`'s **locked** "Remove this calendar?" copy. Out of scope here because a window-scoped
+prune is unsafe while `CompositeCalendarSource` swallows per-child failures and returns a partial list
+with no error signal: pruning on that would delete a healthy source's blocks on a network blip.
+**This deserves its own phase.**
+
+**STILL OPEN, deliberately excluded from this closure:** entry 1 (ICS EXDATE/RDATE), entry 3
+(pre-existing `AppSettings` HiveField null-coalescing on fields 7/8), entry 4 (`connect()` outcome
+enum — a refactor), and review finding **WR-05** (a transient `listCalendars()` failure right after
+sign-in still reverts to the plain CTA; `36-10` inherits rather than fixes it, stated with evidence).
+
+**TWO TOOLING TRAPS CONFIRMED THIS SESSION — both will bite the next agent:**
+
+1. **`/gsd-plan-phase --gaps` reads ONLY `VERIFICATION.md` and `UAT.md`. It does NOT read
+   `WINDOWS.md`.** The device findings were logged to the ledger alone, `36-VERIFICATION.md` said
+   `gaps: []`, and `36-UAT.md`'s answers were blank — so a `--gaps` run would have found **zero
+   evidence any defect existed and planned nothing, silently.** Both inputs were filled in from the
+   same evidence before planning. If you log a defect you intend to close, put it where `--gaps` looks.
+2. **`gsd-tools query init.plan-phase` rejects `--gaps`** as an unknown flag. Correct — `--gaps` is
+   workflow-level only and the spec's own bash omits it from the init call. Don't pass it through.
+
+**The method that keeps outperforming asking what's on screen:** `xcrun devicectl` the app container off
+the phone and dump Hive through the project's own adapters. It settled both real defects AND overturned
+a false alarm (entry 9) that had already been filed as a bug and would have reversed a decision.
+Recorded in `36-UAT-R2.md` with the device id.
+
+**A FIFTH TRAP worth adding to `CLAUDE.md`:** *"Today shows today"* faked a dropped recurring
+occurrence. The moved instance landed a week out; Today renders today. Data right, screen right,
+inference wrong — and what broke the loop was reading the box, not looking harder.
+
+---
+
+### ▶ (SUPERSEDED — kept as the evidence record) 2026-10-06: FIRST REAL-DEVICE UAT DONE. Two defects + one ruling to revisit.
 
 **Phase 36 ran on the owner's real iPhone (`com.danjjohnson.canopy`) on 2026-10-06.** The device
 gate that had been open since September is now partly closed. Read `WINDOWS.md` entries 7-10.
