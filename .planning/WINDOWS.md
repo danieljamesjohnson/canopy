@@ -1,9 +1,9 @@
 ---
 schema_version: 1
-open_count: 7
+open_count: 8
 waived_count: 0
 fixed_count: 2
-total_count: 9
+total_count: 10
 last_updated: 2026-10-06T00:00:00.000Z
 ---
 
@@ -87,6 +87,18 @@ last_updated: 2026-10-06T00:00:00.000Z
     "reason": "",
     "recorded_at": "2026-09-25T15:23:21.055Z",
     "resolved_at": "2026-09-25T16:05:44.417Z"
+  },
+  {
+    "id": 6,
+    "kind": "deviation",
+    "phase": "36",
+    "file": "lib/screens/settings/calendar_settings_screen.dart",
+    "line": null,
+    "description": "Re-opening the Calendars screen always shows the Connect Google Calendar CTA even when a valid token is stored -- only reconnectNeeded (a dead token) is read from persisted state. Tapping re-launches real consent and re-issues a token rather than failing, so this is UX friction, not wrong data. Fixing it needs a new SettingsNotifier.googleConnected getter, outside 36-06's declared scope.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-25T16:20:00.000Z",
+    "resolved_at": null
   },
   {
     "id": 7,
