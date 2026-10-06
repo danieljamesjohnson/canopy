@@ -185,3 +185,13 @@ None introduced by this plan.
 None — every threat this plan touches (T-36-32, T-36-33, T-36-34) was already registered in the
 plan's own `<threat_model>` and is covered by the mitigations/tests described above. No new
 network endpoint, auth path, or schema change was introduced.
+
+## Self-Check: PASSED
+
+- FOUND: `.planning/phases/36-connect-google-calendar-without-hunting-for-a-url/36-08-SUMMARY.md`
+- FOUND: `lib/data/calendar/device_calendar_source.dart`
+- FOUND: `lib/data/calendar/google_calendar_source.dart`
+- FOUND: `lib/data/calendar/calendar_source_factory.dart`
+- FOUND: commit `2e5da4f` is an ancestor of HEAD
+- FOUND: commit `dc16890` is an ancestor of HEAD
+- FOUND: commit `ed15d1f` is an ancestor of HEAD
