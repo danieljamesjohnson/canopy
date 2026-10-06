@@ -27,6 +27,13 @@ gaps:
     ruling: "D-36-05 (2026-10-06) SUPERSEDES D-35-06. Read 36-DECISIONS.md D-36-05 before planning — it names the required changes, the now-false SkipReason doc comment, the new UI-SPEC copy string, and that schedule_generator.dart must NOT be touched."
     not_a_duplicate_of: "windows-7 — a legitimately-ticked calendar still contains birthdays, and Payday lands regardless. Fixing 7 does not fix 8."
     open_question: "The six blocks are ALREADY PERSISTED Hive records. A sync that stops importing all-day events is not the same as one that PRUNES what an earlier sync wrote. If not pruned, the next UAT must not judge a day still holding them (CLAUDE.md trap #4)."
+  - id: windows-6
+    requirement: CALAUTH-03
+    gap: "Re-opening the Calendars screen always shows the 'Connect Google Calendar' CTA even when a valid token is stored — only reconnectNeeded (a dead token) is read from persisted state, never a valid-but-unconfirmed connection. Tapping re-launches real consent and re-issues a token, so this is UX friction, not wrong data."
+    evidence: "Logged by the 36-06 orchestrator 2026-09-25 and carried in 36-UAT.md's 'Orchestrator observations' so the owner would not report it cold. Compounded by code-review finding WR-05: a transient listCalendars() failure right after a successful sign-in reverts to the same CTA."
+    files: ["lib/providers/settings_notifier.dart", "lib/screens/settings/calendar_settings_screen.dart"]
+    added: "2026-10-06 — ADDED TO THIS CONTRACT LATE, and the reason is worth keeping. Entry 6 was real and open in WINDOWS.md but was never in this frontmatter, so a future --gaps re-run against this file alone would not have reproduced plan 36-10's existence. Same silent-invisibility failure as the three gaps above: WINDOWS.md is not a planning input. Flagged by gsd-plan-checker as an INFO advisory."
+    note: "Sequenced LAST (plan 36-10, wave 3) so it cannot jeopardise gaps 7/8/10 landing. It is the one remaining open entry a reasonable person reports as a bug."
   - id: windows-10
     requirement: CAL-04 spirit / disclosure discoverability
     gap: "The skipped-events disclosure exists and is tested, but the owner did not notice it on device and asked for 'a reminder at the top'. Not missing — not discoverable."
