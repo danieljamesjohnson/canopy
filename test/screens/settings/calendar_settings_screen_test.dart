@@ -484,6 +484,131 @@ void main() {
     );
   });
 
+  group(
+    'Plan 36-09 — the skipped-events disclosure moves to the top '
+    '(WINDOWS entry 10)',
+    () {
+      testWidgets(
+        'the disclosure renders ABOVE the Google section\'s "Connect '
+        'Google Calendar" button on the mobile branch, proven by '
+        'comparing rendered y-offsets, not widget order in source',
+        (tester) => _withMobilePlatform(() async {
+          tz.setLocalLocation(tz.UTC);
+          final now = DateTime.now();
+          final calendars = [
+            CalendarInfo(
+              id: 'cal-1',
+              name: 'Work',
+              accountName: 'dan@gmail.com',
+              isReadOnly: true,
+            ),
+          ];
+          final events = [
+            CalendarEvent(
+              uid: 'evt-cancelled',
+              title: 'Cancelled Meeting',
+              start: now.add(const Duration(days: 1, hours: 1)),
+              end: now.add(const Duration(days: 1, hours: 2)),
+              isAllDay: false,
+              status: CalendarEventStatus.cancelled,
+              calendarId: 'cal-1',
+            ),
+            CalendarEvent(
+              uid: 'evt-short',
+              title: 'Quick Sync',
+              start: now.add(const Duration(days: 1, hours: 3)),
+              end: now.add(const Duration(days: 1, hours: 3, minutes: 10)),
+              isAllDay: false,
+              status: CalendarEventStatus.confirmed,
+              calendarId: 'cal-1',
+            ),
+          ];
+          final source = _FakeCalendarSource(
+            permission: CalendarPermissionState.granted,
+            calendars: calendars,
+            events: events,
+          );
+          // Google is deliberately left unconnected (no tap on "Connect
+          // Google Calendar") — its CTA card, with the button this test
+          // anchors on, stays on screen throughout.
+          await _pumpCalendarScreen(tester, source: source);
+
+          await tester.tap(find.text('Allow calendar access'));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text('2 events not imported — tap for details'),
+            findsOneWidget,
+          );
+          expect(find.text('Connect Google Calendar'), findsOneWidget);
+
+          final bannerY = tester
+              .getTopLeft(
+                find.text('2 events not imported — tap for details'),
+              )
+              .dy;
+          // Anchor on the Connect button's own LABEL, never the bare word
+          // "Google" — that word also appears in the CTA headline above
+          // the button (CLAUDE.md "assertions that cannot fail": an
+          // ambiguous anchor could pass for the wrong reason).
+          final googleButtonY = tester
+              .getTopLeft(find.text('Connect Google Calendar'))
+              .dy;
+
+          expect(
+            bannerY,
+            lessThan(googleButtonY),
+            reason:
+                'the disclosure must render above the Google section — '
+                'banner dy=$bannerY, Google CTA dy=$googleButtonY',
+          );
+        }),
+      );
+
+      testWidgets(
+        'the disclosure appears exactly once on screen — moved, not '
+        'duplicated',
+        (tester) => _withMobilePlatform(() async {
+          tz.setLocalLocation(tz.UTC);
+          final now = DateTime.now();
+          final calendars = [
+            CalendarInfo(
+              id: 'cal-1',
+              name: 'Work',
+              accountName: 'dan@gmail.com',
+              isReadOnly: true,
+            ),
+          ];
+          final events = [
+            CalendarEvent(
+              uid: 'evt-cancelled',
+              title: 'Cancelled Meeting',
+              start: now.add(const Duration(days: 1, hours: 1)),
+              end: now.add(const Duration(days: 1, hours: 2)),
+              isAllDay: false,
+              status: CalendarEventStatus.cancelled,
+              calendarId: 'cal-1',
+            ),
+          ];
+          final source = _FakeCalendarSource(
+            permission: CalendarPermissionState.granted,
+            calendars: calendars,
+            events: events,
+          );
+          await _pumpCalendarScreen(tester, source: source);
+
+          await tester.tap(find.text('Allow calendar access'));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text('1 events not imported — tap for details'),
+            findsOneWidget,
+          );
+        }),
+      );
+    },
+  );
+
   group('CAL-04 — a denied calendar permission leaves hand-entered '
       'commitments fully usable', () {
     testWidgets(

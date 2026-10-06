@@ -337,8 +337,8 @@ void main() {
 
   group('CalendarSyncService — every shape a real calendar contains (35-02)', () {
     test(
-      'an all-day event imports as one commitment spanning the working '
-      'window, not skipped (D-35-06 RULED import-as-blocking)',
+      'an all-day event imports zero blocks and is skipped and disclosed '
+      '(D-36-05 RULED — supersedes D-35-06 import-as-blocking)',
       () async {
         tz.setLocalLocation(tz.UTC);
         final text = await _fixture('all_day_event.ics');
@@ -355,19 +355,22 @@ void main() {
         final result = await service.sync();
 
         expect(result.failed, isFalse);
-        expect(result.imported, hasLength(1));
-        // Not in skipped — D-35-06 reversed the plan's original default.
-        expect(result.skipped, isEmpty);
-        final block = result.imported.single;
-        expect(block.date, DateTime(2026, 3, 6));
-        // Asserted against the app's OWN working-window constants, never a
-        // hardcoded literal pair — a test asserting the literal pair
-        // 480/1080 would pass for a user whose window differs and could
-        // never fail (CLAUDE.md, "assertions that cannot fail"). See the
-        // SUMMARY for why ScheduleGeneratorService.dayStartMinutes/
-        // dayEndMinutes is the value used here.
-        expect(block.startMinutes, ScheduleGeneratorService.dayStartMinutes);
-        expect(block.endMinutes, ScheduleGeneratorService.dayEndMinutes);
+        expect(result.imported, isEmpty);
+        expect(result.skipped, hasLength(1));
+        expect(result.skipped.single.reason, SkipReason.allDay);
+        // Bare literal — the locked UI-SPEC Copywriting Contract string
+        // (35-UI-SPEC.md "Skipped-event reason strings" row, Pitfall 6),
+        // never re-derived from the enum or a constant the code also uses.
+        expect(
+          result.skipped.single.reason.label,
+          'All-day — not imported automatically',
+        );
+        final persisted = await repo.getAll();
+        expect(
+          persisted,
+          isEmpty,
+          reason: 'the all-day event must leave no block in the repository',
+        );
       },
     );
 

@@ -7,25 +7,32 @@ import '../data/models/commitment_block.dart';
 import '../data/repositories/commitment_block_repository.dart';
 import '../data/repositories/hive_commitment_block_repository.dart';
 import '../utils/commitment_window.dart';
-import 'schedule_generator.dart';
 
 /// The rolling look-ahead window a sync imports events for (D-35-15).
 const int kCalendarSyncWindowDays = 14;
 
 /// Why one calendar event was not imported as a [CommitmentBlock].
 ///
-/// `allDay` is deliberately NOT a member — D-35-06 (RULED 2026-09-14,
-/// `import-as-blocking`) means an all-day entry is imported, never skipped.
-enum SkipReason { tooShort, cancelled }
+/// `allDay` IS a member — D-36-05 (RULED 2026-10-06) supersedes D-35-06
+/// (`import-as-blocking`, RULED 2026-09-14): an all-day entry is now always
+/// skipped and disclosed, never imported. On the owner's iPhone the prior
+/// behaviour erased six working days in a 12-day window (Vacation, a 38th
+/// Birthday, Fall break, Payday, Indigenous Peoples' Day, Columbus Day) —
+/// `Payday` in particular is on a calendar nobody would untick and is not a
+/// commitment of time, so no per-calendar filtering could ever reach it.
+enum SkipReason { tooShort, cancelled, allDay }
 
 /// The user-facing copy for [SkipReason] — verbatim from the UI-SPEC's
 /// Copywriting Contract "Skipped-event reason strings" row (35-UI-SPEC.md).
-/// The skip is disclosed, never silent (CAL-04's spirit). No `allDay` case
-/// exists here because it is not a [SkipReason] member (D-35-06).
+/// The skip is disclosed, never silent (CAL-04's spirit). The `allDay` case's
+/// string was locked in Phase 35 for exactly this behaviour and orphaned when
+/// D-35-06 initially declined it (35-UI-SPEC.md line ~303) — D-36-05 adopts
+/// the behaviour the string was always written for. Reused verbatim.
 extension SkipReasonLabel on SkipReason {
   String get label => switch (this) {
     SkipReason.tooShort => 'Too short to schedule',
     SkipReason.cancelled => 'Cancelled',
+    SkipReason.allDay => 'All-day — not imported automatically',
   };
 }
 
@@ -87,14 +94,15 @@ String _stableHash(String input) {
 /// `CommitmentBlock` (D-35-07); `daysOfWeek` stays the user's own
 /// hand-entered weekly commitments and this service never writes to it.
 ///
-/// Mapping rules (35-02):
+/// Mapping rules (35-02, all-day revised by D-36-05):
 /// - A **cancelled** event is skipped with [SkipReason.cancelled]. A
 ///   tentative event imports normally (no per-attendee decline filtering —
 ///   RESEARCH Assumption A2).
-/// - An **all-day** event (D-35-06 RULED `import-as-blocking`) is imported
-///   as one block spanning the app's configured working window
-///   ([ScheduleGeneratorService.dayStartMinutes]..[dayEndMinutes]) on its
-///   own local calendar day — NOT `0..1440`. See 35-DECISIONS.md for why.
+/// - An **all-day** event (D-36-05 RULED 2026-10-06, superseding D-35-06's
+///   `import-as-blocking`) is always skipped with [SkipReason.allDay] and
+///   disclosed — never imported as a block. Confirmed against real calendar
+///   data: the prior behaviour erased six working days in a 12-day window on
+///   the owner's device. See 36-DECISIONS.md D-36-05 for the full record.
 /// - A **multi-day** (or midnight-crossing) timed event is split into one
 ///   slice per local calendar day it touches, each clipped to that day's
 ///   `0..1440` window, each independently re-gated by
@@ -186,9 +194,9 @@ class CalendarSyncService {
   /// day-slices — the worst case stays bounded by [kCalendarSyncWindowDays].
   ///
   /// Returns a non-null [SkipReason] (and an empty block list) when the
-  /// WHOLE event is skipped — cancelled, or every day-slice it produces is
-  /// too short to hold a chunk. Otherwise returns one block per surviving
-  /// local calendar day.
+  /// WHOLE event is skipped — cancelled, all-day (D-36-05), or every
+  /// day-slice it produces is too short to hold a chunk. Otherwise returns
+  /// one block per surviving local calendar day.
   ({List<CommitmentBlock> blocks, SkipReason? skip}) _mapEvent(
     CalendarEvent event,
     List<CommitmentBlock> existing, {
@@ -200,19 +208,13 @@ class CalendarSyncService {
     }
 
     if (event.isAllDay) {
-      // D-35-06 RULED `import-as-blocking`: the whole configured working
-      // window on the event's own local calendar day — NOT 0..1440. See
-      // this file's class doc comment and 35-DECISIONS.md.
-      final localDay = tz.TZDateTime.from(event.start, tz.local);
-      final block = _buildBlock(
-        event: event,
-        existing: existing,
-        date: DateTime(localDay.year, localDay.month, localDay.day),
-        startMinutes: ScheduleGeneratorService.dayStartMinutes,
-        endMinutes: ScheduleGeneratorService.dayEndMinutes,
-        daySuffix: null,
-      );
-      return (blocks: [block], skip: null);
+      // D-36-05 (RULED 2026-10-06, supersedes D-35-06 `import-as-blocking`):
+      // an all-day event is always skipped and disclosed, never imported.
+      // On the owner's iPhone the old blocking behaviour erased six working
+      // days in a 12-day window (Vacation, a 38th Birthday, Fall break,
+      // Payday, Indigenous Peoples' Day, Columbus Day) — see this file's
+      // class doc comment and 36-DECISIONS.md D-36-05.
+      return (blocks: const [], skip: SkipReason.allDay);
     }
 
     // Converts to the device's LOCAL zone via the app's existing `timezone`
