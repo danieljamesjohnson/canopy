@@ -45,9 +45,16 @@ longer a span to confirm. Do not plan work to reconcile the 10-vs-14-hour questi
 - `SkipReason` gains an `allDay` member. Its doc comment currently reads *"`allDay` is deliberately
   NOT a member — D-35-06 ... means an all-day entry is imported, never skipped"* — that comment is now
   **wrong** and must be rewritten, not left standing beside contradicting code.
-- `SkipReasonLabel.label` gains the all-day copy. The existing strings came verbatim from
-  `35-UI-SPEC.md`'s locked Copywriting Contract; this is a **new** user-visible string, so it needs the
-  same treatment rather than an agent's invention.
+- `SkipReasonLabel.label` gains the all-day copy. **CORRECTED 2026-10-06 — this bullet originally said
+  the string was NEW and therefore needed owner review. That was wrong, and the error would have sent a
+  future agent to ask the owner for copy he had already approved.** The string already exists, locked, in
+  `35-UI-SPEC.md`'s Copywriting Contract: **"All-day — not imported automatically"** (line ~160,
+  "Pitfall 6"). That document's line ~303 goes further and locks the copy *for precisely this behaviour* —
+  *"do not import as blocking; report via the skipped-events disclosure"* — explicitly so "the surface is
+  ready either way" whichever way the then-open all-day question was ruled.
+  **So Phase 35 fully specified skip-and-disclose, including its copy, and `D-35-06` then declined the
+  behaviour and orphaned the string.** `D-36-05` adopts the behaviour the locked copy was always written
+  for. **Reuse the string verbatim. No new copy, no checkpoint, nothing for an agent to invent.**
 - `CalendarSyncService._mapEvent`'s `if (event.isAllDay)` branch returns
   `(blocks: const [], skip: SkipReason.allDay)` instead of building a working-window block.
 - **`schedule_generator.dart` must not be touched.** It was byte-identical through all of Phase 36
@@ -58,6 +65,30 @@ longer a span to confirm. Do not plan work to reconcile the 10-vs-14-hour questi
   prunes them must be checked on real device data, not assumed. If it does not, the owner needs either
   a migration or an explicit instruction, and the UAT must not be judged against a day still holding
   stale blocks (see CLAUDE.md trap #4).
+
+  **ANSWERED 2026-10-06 from the code, and the answer is NO — `sync()` never prunes.** Verified three
+  independent ways: `CalendarSyncService.sync()` contains no `delete` or `remove` call at all; the only
+  four `.delete(` call sites in `lib/` are `restoratives_notifier`, `schedule_notifier` (×2, schedule
+  re-anchoring) and the user-initiated `commitments_notifier.removeBlock` — **none in the calendar path**;
+  and the codebase already admits it in a comment at `calendar_settings_screen.dart:789-791`, which
+  declines to reuse the ICS dialog's *"will disappear the next time you sync"* sentence because *"that
+  sentence is not true today; `sync()` only ever upserts."*
+  **So the six fake blocks would survive every re-sync.** This is a real second defect, handled by this
+  closure as a schema 12→13 one-time cleanup (plan `36-09`), with `isFromCalendar == false` as the
+  mutation-proven survival invariant so nothing hand-entered is touched.
+  **Why the cleanup clears ALL imported blocks rather than only all-day-shaped ones** — a shape-matching
+  sweep cannot work: fixing WINDOWS entry 7 means the holidays and birthdays calendars **will no longer be
+  queried at all**, so no event-driven or shape-driven pass could ever reach `Columbus Day` or the
+  `38th Birthday`. The pre-fix set is untrustworthy on both axes this closure changes, it is derived
+  data, and the next sync re-derives it exactly.
+  **Accepted cost, recorded rather than buried:** for one post-upgrade **offline** check-in there are no
+  last-known imported blocks to degrade to, weakening `D-35-13` for that single window.
+  **A broader standing defect was found in the same reading and is NOT fixed here:** `sync()` never
+  pruning means unticking a calendar, or deleting an event in the calendar app, leaves imported blocks
+  forever — and `35-UI-SPEC.md`'s **locked** "Remove this calendar?" copy tells the user the opposite.
+  Logged as WINDOWS entry 11, open. It is deliberately out of scope: a window-scoped prune is unsafe
+  while `CompositeCalendarSource` swallows per-child failures and returns a partial list with no error
+  signal, because pruning on that would delete a healthy source's blocks on a network blip.
 
 ### Options considered and rejected
 
