@@ -57,6 +57,22 @@ supported — Monday only; no leap seconds; years outside 0–9999.
 
 ## D-35-06 — All-day events: imported as a blocking commitment
 
+> ## ⛔ SUPERSEDED 2026-10-06 by D-36-05 — DO NOT IMPLEMENT THIS RULING
+>
+> **All-day events are now SKIPPED and disclosed, never imported.** This section is kept as history
+> because the reasoning below matters, but its *ruling* is dead. See
+> `.planning/phases/36-connect-google-calendar-without-hunting-for-a-url/36-DECISIONS.md` → **D-36-05**
+> for the live behaviour and the required code changes.
+>
+> **What killed it:** the confirmation this very section demanded ("*This must be confirmed by the
+> owner in the UAT, not treated as settled*") finally happened at Phase 36's device gate, and it
+> failed. Six working days were erased in a 12-day window on the owner's real iPhone — Vacation, a
+> 38th Birthday, Fall break, **Payday**, Indigenous Peoples' Day, Columbus Day. The
+> skip-and-disclose option recommended *and declined* below is what was adopted.
+>
+> **The `08:00–18:00`-vs-`08:00–22:00` ambiguity recorded below is now MOOT**, not outstanding. There
+> is no span left to confirm. Do not plan work to reconcile it.
+
 **Ruling: import an all-day event as a commitment that blocks the day.** The owner chose the literal
 reading over the recommended skip-and-disclose.
 

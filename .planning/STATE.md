@@ -964,11 +964,21 @@ and **withdrew it** after reading the data; it is waived, not deleted, with the 
   builds `DeviceCalendarSource()` with no ids, so the plugin imports EVERY calendar. The user's ticks
   are persisted and rendered but never reach the device source. Google's half was wired (entry 5);
   the device half never was.
-- **Entry 8 — all-day events blank the whole working day.** D-35-06 rules all-day events import as
-  blocking `08:00-22:00`. In a 12-day span the owner got SIX full-day blocks: Vacation, a 38th
-  Birthday, Fall break, **Payday**, Indigenous Peoples' Day, Columbus Day. **This one is a RULING to
-  revisit, not just a bug** — D-35-06 was decided before anyone saw it against a real calendar, and
-  fixing entry 7 does NOT fix it, because a legitimately-ticked calendar still contains birthdays.
+- **Entry 8 — all-day events blank the whole working day. THE RULING IS NOW REVISED; this is a
+  plannable fix, no longer a blocked decision.** In a 12-day span the owner got SIX full-day
+  `08:00-22:00` blocks: Vacation, a 38th Birthday, Fall break, **Payday**, Indigenous Peoples' Day,
+  Columbus Day. **D-36-05 (ruled 2026-10-06) SUPERSEDES D-35-06: all-day events are SKIPPED and
+  disclosed, never imported.** Read `36-DECISIONS.md` → D-36-05 before planning — it names the code
+  changes, the `SkipReason` doc comment that is now factually wrong, the new UI-SPEC copy string,
+  that `schedule_generator.dart` must NOT be touched, and one open question (whether a sync that
+  stops importing all-day events also PRUNES the six already-persisted blocks on the owner's device —
+  if it does not, the UAT must not be judged against a day still holding them, per CLAUDE.md trap #4).
+  `35-DECISIONS.md`'s D-35-06 now carries a SUPERSEDED banner. **Do not re-ask the owner, and do not
+  plan work on the old 10-vs-14-hour span question — D-36-05 closes it by removing the behaviour.**
+  Note this is **not** a duplicate of entry 7 and is not fixed by fixing it: a legitimately-ticked
+  calendar still contains birthdays, and Payday lands regardless. Fixing 8 without **entry 10** trades
+  six visible fake blocks for one invisible omission — the disclosure becomes the only way the owner
+  learns his Vacation was dropped.
 - **Entry 10** — the skipped-events disclosure exists and is tested but is not discoverable.
 
 **NEW CAPABILITY, use it instead of asking the owner what he sees:** the app's Hive data can be

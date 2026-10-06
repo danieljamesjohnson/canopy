@@ -2,6 +2,82 @@
 
 ---
 
+## D-36-05 — D-35-06 is REVISED: all-day events are skipped and disclosed, not imported
+
+**Ruled 2026-10-06, at the device-UAT gate, against real calendar data.** This **supersedes D-35-06**
+(`import-as-blocking`, ruled 2026-09-14). An all-day calendar entry is now **never imported**. It
+appears in the skipped-events disclosure with an all-day reason. Timed events are unaffected.
+
+**The rule, in one sentence a user can hold in their head:** timed events import; all-day events do
+not.
+
+### Why the earlier ruling was revised rather than defended
+
+D-35-06 was decided **before anyone had seen it against a real calendar**, and `35-DECISIONS.md`
+said so at the time — *"This must be confirmed by the owner in the UAT, not treated as settled."*
+That confirmation has now happened and it failed. On the owner's iPhone, a 12-day window produced
+**six** full-day `08:00–22:00` blocks: Vacation, a 38th Birthday, Fall break, **Payday**, Indigenous
+Peoples' Day, Columbus Day. Six working days erased.
+
+`Payday` is the entry that settles it. It is on a calendar nobody would untick, and it is **not a
+commitment of time**. No amount of per-calendar filtering reaches it.
+
+**This is explicitly NOT a duplicate of WINDOWS entry 7.** Entry 7 (ticks never reached the device
+source, so every calendar imported) is a genuine bug and accounts for the holiday and birthday
+calendars being present at all. But fixing entry 7 does **not** fix this: a calendar the owner
+legitimately keeps ticked still contains birthdays, and `Payday` still lands. The two must be fixed
+separately or entry 8 will reappear.
+
+**The skip-and-disclose behaviour now being adopted was the original recommendation in Phase 35, and
+it was declined.** It is being adopted now on evidence, not re-litigated on preference.
+
+### The ambiguity in D-35-06 is now moot, and that is worth noting
+
+`35-DECISIONS.md` records that D-35-06's question was malformed: its label said "full-day block", its
+description said "the whole working day", and its preview rendered `08:00–18:00` while the app's real
+constants are `08:00–22:00` (`ScheduleGeneratorService.dayStartMinutes`/`dayEndMinutes`). The owner
+judged a 10-hour preview and shipped a 14-hour behaviour. That discrepancy was still carried as an
+open UAT confirmation item. **This ruling closes it by removing the behaviour entirely** — there is no
+longer a span to confirm. Do not plan work to reconcile the 10-vs-14-hour question.
+
+### What this requires in code — and what it must NOT quietly change
+
+- `SkipReason` gains an `allDay` member. Its doc comment currently reads *"`allDay` is deliberately
+  NOT a member — D-35-06 ... means an all-day entry is imported, never skipped"* — that comment is now
+  **wrong** and must be rewritten, not left standing beside contradicting code.
+- `SkipReasonLabel.label` gains the all-day copy. The existing strings came verbatim from
+  `35-UI-SPEC.md`'s locked Copywriting Contract; this is a **new** user-visible string, so it needs the
+  same treatment rather than an agent's invention.
+- `CalendarSyncService._mapEvent`'s `if (event.isAllDay)` branch returns
+  `(blocks: const [], skip: SkipReason.allDay)` instead of building a working-window block.
+- **`schedule_generator.dart` must not be touched.** It was byte-identical through all of Phase 36
+  (git-verified) and nothing here requires it to change.
+- **An existing all-day block already in Hive on the owner's device will not delete itself.** The
+  six observed blocks are persisted `CommitmentBlock` records. A sync that stops *importing* all-day
+  events is not the same as one that *removes* what a previous sync wrote — whether the upsert path
+  prunes them must be checked on real device data, not assumed. If it does not, the owner needs either
+  a migration or an explicit instruction, and the UAT must not be judged against a day still holding
+  stale blocks (see CLAUDE.md trap #4).
+
+### Options considered and rejected
+
+| Option | Why not |
+|---|---|
+| Non-blocking day marker (show the title, don't consume time) | The better end state, and **not rejected on merit — deferred on size.** `CommitmentBlock` has no non-blocking concept; every field is a blocking window. Needs HiveField 9, generator changes, and a new timeline affordance. That is a phase, not gap closure. Owner chose plain skip for 36 without committing to a follow-up phase. |
+| Per-calendar "all-day blocks my day" tick | Adds a second per-calendar decision on top of the import tick, and still cannot reach `Payday` on a kept calendar. |
+| Keep D-35-06, untick holiday/birthday calendars | Depends entirely on entry 7 being fixed, and still blanks a day for any all-day event on a calendar the owner wants. |
+
+**The accepted cost, stated plainly:** a genuine `Vacation` all-day entry no longer blanks its day.
+The owner adds a one-off commitment, or simply does not check in. This was on screen when the ruling
+was made.
+
+**This makes WINDOWS entry 10 load-bearing rather than cosmetic.** The skipped-events disclosure is
+now the *only* channel through which the owner learns his Vacation was not imported. Entry 10 records
+that the disclosure exists, is tested, and he did not notice it on device. Fixing entry 8 without
+entry 10 trades six visible fake blocks for one invisible omission.
+
+---
+
 ## D-36-01 — Build it native, not in the browser
 
 **Ruled 2026-09-22.** The phase was originally scoped as a browser PKCE flow. That premise died on
@@ -144,3 +220,16 @@ and Android use.
 load-bearing claim in the whole phase... must be the first thing verified on a real device"* — and it
 has **not** been verified, because `35-05`'s device gate is still open. So "the device path already
 handles this" is an expectation, not an established fact.
+
+**UPDATE 2026-10-06 — A1 is now VERIFIED, and this Correction therefore STANDS.** The caveat above is
+resolved and is kept only as history. Proven on the owner's iPhone by reading the device's own Hive
+(not by asking him what was on screen): `Canopy test` imported **twice** — `2026-10-06 09:00` (the
+base occurrence) and `2026-10-13 09:10` (the single occurrence he moved, at its **new** time).
+`device_calendar_plus` does return expanded occurrences with exceptions applied.
+
+The orchestrator first logged the opposite as a bug (WINDOWS entry 9: "a moved occurrence does not
+appear at all") and **withdrew it** after reading the data — it is waived with the evidence, not
+deleted. Had that report been correct it would have *reversed* this Correction and made the Google
+path worth materially more. It did the opposite: Google sign-in still adds **no recurrence advantage
+on the device path**. What it adds remains narrower and should keep being described as such — it works
+without the Google account added at OS level, and it is the login experience the owner asked for.
