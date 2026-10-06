@@ -112,13 +112,15 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   /// add/remove so the next build re-fetches from the fresh configuration.
   Future<_DesktopState>? _desktopFuture;
 
-  /// Null = "not connected yet" (the Google CTA state) — set only when the
-  /// user taps "Connect Google Calendar", mirroring [_mobileFuture]'s own
-  /// lazy pattern. Reset to null on Disconnect. Unlike the device flow,
-  /// re-opening this screen in a fresh session always starts here too
-  /// (a known, documented limitation — see 36-06-SUMMARY.md) UNLESS
-  /// [SettingsNotifier.reconnectNeeded] is set, which is checked directly
-  /// from persisted state regardless of this field (Task 2).
+  /// Null = "not connected yet" (the Google CTA state) — set either when
+  /// the user taps "Connect Google Calendar" ([_connectGoogle]) or, on
+  /// first build, when [SettingsNotifier.googleConnected] is already true
+  /// from a prior session ([_loadGoogleCalendars]) — mirroring
+  /// [_mobileFuture]'s own lazy, `??=`-in-build pattern. Reset to null on
+  /// Disconnect. [SettingsNotifier.reconnectNeeded] is still checked FIRST
+  /// and directly from persisted state, regardless of this field
+  /// (CALAUTH-03, Task 2) — a dead token wins before this field is ever
+  /// consulted.
   Future<_GoogleState>? _googleFuture;
 
   /// The most recent sync result from EITHER section's connect/grant flow
@@ -803,6 +805,29 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     }
   }
 
+  /// Restores the connected Google section on screen re-open, for a
+  /// [SettingsNotifier.googleConnected] account, WITHOUT ever launching
+  /// Google's consent sheet — the fix for WINDOWS entry 6. Lists calendars
+  /// only; never calls `requestPermission()`.
+  ///
+  /// On any throw, folds into the same `connected: false` state
+  /// [_connectGoogle] returns on its own failure path — this deliberately
+  /// inherits WR-05's behaviour (a transient `listCalendars()` failure
+  /// right after a successful sign-in still shows the plain CTA, forcing an
+  /// unnecessary full re-consent next time) rather than inventing a fourth
+  /// Google state with copy nobody has reviewed. WR-05 itself is NOT fixed
+  /// by this method; see 36-10-SUMMARY.md.
+  Future<_GoogleState> _loadGoogleCalendars(SettingsNotifier settings) async {
+    final source = _resolveGoogleSource(settings);
+    try {
+      final calendars = await source.listCalendars();
+      if (mounted) setState(() => _googleCalendars = calendars);
+      return _GoogleState(connected: true, calendars: calendars);
+    } catch (_) {
+      return const _GoogleState(connected: false);
+    }
+  }
+
   Widget _googleConnectedSection(
     BuildContext context,
     SettingsNotifier settings,
@@ -889,6 +914,13 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     // "not connected" render.
     if (settings.reconnectNeeded) {
       return _googleReconnectCard(context, settings);
+    }
+    // WINDOWS entry 6 (Task 2): a valid stored token restores the
+    // connected view on re-open — by listing calendars only, never by
+    // re-launching consent. The in-build `??=` idiom mirrors
+    // `_buildDesktopBody`'s own `_desktopFuture ??= ...` precedent.
+    if (_googleFuture == null && settings.googleConnected) {
+      _googleFuture = _loadGoogleCalendars(settings);
     }
     if (_googleFuture == null) {
       return _googleCtaCard(context, settings);

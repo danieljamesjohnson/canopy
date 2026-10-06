@@ -22,6 +22,7 @@ import 'dart:async';
 
 import 'package:canopy/data/calendar/calendar_event.dart';
 import 'package:canopy/data/calendar/calendar_source.dart';
+import 'package:canopy/data/calendar/google_auth_client.dart' show GoogleTokens;
 import 'package:canopy/data/models/commitment_block.dart';
 import 'package:canopy/data/repositories/commitment_block_repository.dart';
 import 'package:canopy/data/repositories/in_memory_app_settings_repository.dart';
@@ -57,11 +58,17 @@ class _FakeCalendarSource implements CalendarSource {
   /// completes it — lets a test observe the in-flight spinner deliberately.
   final Completer<CalendarPermissionState>? _permissionGate;
 
+  /// WINDOWS entry 6 (36-10, Task 2) — the load-bearing counter. A "fix"
+  /// that restored the connected view by re-running the consent flow would
+  /// satisfy every other assertion in that plan's tests except this one.
+  int requestPermissionCount = 0;
+
   @override
   Future<bool> isAvailable() async => true;
 
   @override
   Future<CalendarPermissionState> requestPermission() async {
+    requestPermissionCount++;
     if (_permissionGate != null) return _permissionGate.future;
     return permission;
   }
@@ -924,6 +931,184 @@ void main() {
         expect(find.text('Google sign-in expired'), findsNothing);
         expect(find.text('Work'), findsOneWidget);
         expect(find.text('Allow calendar access'), findsOneWidget);
+      }),
+    );
+  });
+
+  group('Plan 36-10 — Google section restores itself (WINDOWS entry 6)', () {
+    testWidgets(
+      'a valid stored token renders the connected section on first build, '
+      'with the Connect CTA absent and requestPermission never called',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final googleCalendars = [
+          CalendarInfo(
+            id: 'google:primary',
+            name: 'Work',
+            accountName: 'dan@gmail.com',
+            isReadOnly: true,
+            sourceLabel: 'Google',
+          ),
+        ];
+        final googleSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: googleCalendars,
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.write(
+          GoogleTokens(
+            accessToken: 'access-1',
+            refreshToken: 'refresh-1',
+            expiresAt: DateTime(2026, 3, 1, 9, 30),
+          ),
+        );
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+          settingsNotifier: settings,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Connect Google Calendar'), findsNothing);
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('Disconnect'), findsOneWidget);
+        // The load-bearing assertion: the restore path lists calendars and
+        // nothing else. A "fix" that re-ran consent would satisfy every
+        // other assertion in this test.
+        expect(googleSource.requestPermissionCount, 0);
+      }),
+    );
+
+    testWidgets(
+      'a dead token still wins — the reconnect card renders, not the '
+      'connected section, even though a token is stored',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final googleSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: const [],
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.write(
+          GoogleTokens(
+            accessToken: 'access-1',
+            refreshToken: 'refresh-1',
+            expiresAt: DateTime(2026, 3, 1, 9, 30),
+          ),
+        );
+        await settings.setReconnectNeeded(true);
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+          settingsNotifier: settings,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Google sign-in expired'), findsOneWidget);
+        expect(find.text('Reconnect Google Calendar'), findsOneWidget);
+        expect(find.text('Connect Google Calendar'), findsNothing);
+        expect(find.text('Disconnect'), findsNothing);
+        expect(googleSource.requestPermissionCount, 0);
+      }),
+    );
+
+    testWidgets(
+      'no stored token renders the Connect CTA exactly as it does today',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          settingsNotifier: settings,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Connect Google Calendar'), findsOneWidget);
+        expect(find.text('Connect your Google Calendar'), findsOneWidget);
+      }),
+    );
+
+    testWidgets(
+      'confirming Disconnect leaves the Connect CTA on screen and does not '
+      're-enter the connected section on the next build',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final googleCalendars = [
+          CalendarInfo(
+            id: 'google:primary',
+            name: 'Work',
+            accountName: 'dan@gmail.com',
+            isReadOnly: true,
+            sourceLabel: 'Google',
+          ),
+        ];
+        final googleSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: googleCalendars,
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.write(
+          GoogleTokens(
+            accessToken: 'access-1',
+            refreshToken: 'refresh-1',
+            expiresAt: DateTime(2026, 3, 1, 9, 30),
+          ),
+        );
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+          settingsNotifier: settings,
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Work'), findsOneWidget);
+
+        await tester.tap(find.text('Disconnect'));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.text('Disconnect'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Connect Google Calendar'), findsOneWidget);
+        expect(find.text('Work'), findsNothing);
+
+        // Rebuild the widget tree (a fresh "next build") over the SAME
+        // settings notifier — googleConnected is now false (clear() ran),
+        // so the ??= restore must not resurrect the connected view.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+          settingsNotifier: settings,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Connect Google Calendar'), findsOneWidget);
+        expect(find.text('Work'), findsNothing);
       }),
     );
   });
