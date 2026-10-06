@@ -27,20 +27,23 @@ void main() {
   // Schema constant tests (no Hive I/O needed)
   // ---------------------------------------------------------------------------
 
-  // Bumped to 12 when Phase 36 added AppSettings.googleAccessToken
-  // (HiveField 12), .googleRefreshToken (HiveField 13),
-  // .googleAccessTokenExpiresAt (HiveField 14) and .googleReconnectNeeded
-  // (HiveField 15) with migration 11→12. The WR-06 count invariant moves in
-  // lockstep. See migration_schema12_test.dart for the Hive round-trip half.
-  test('currentSchemaVersion equals 12', () {
-    expect(currentSchemaVersion, equals(12));
+  // Bumped to 13 by the Phase 36 gap closure (WINDOWS entries 7/8,
+  // D-36-05): a one-time DATA cleanup, not a field addition — the first of
+  // its kind in this file. migration 12→13 purges every previously
+  // calendar-imported CommitmentBlock (isFromCalendar == true) because
+  // sync() never prunes and the pre-fix imported set is untrustworthy on
+  // both the which-calendars and which-events axes this closure changed.
+  // The WR-06 count invariant moves in lockstep. See
+  // migration_schema13_test.dart for the Hive round-trip half.
+  test('currentSchemaVersion equals 13', () {
+    expect(currentSchemaVersion, equals(13));
   });
 
   // The WR-06 assert in migrations.dart enforces
   // _migrations.length == currentSchemaVersion at runtime in debug mode.
   // We confirm the constant value here; the assert is the count gate.
   test('currentSchemaVersion is consistent with WR-06 migration count', () {
-    expect(currentSchemaVersion, equals(12));
+    expect(currentSchemaVersion, equals(13));
   });
 
   // ---------------------------------------------------------------------------

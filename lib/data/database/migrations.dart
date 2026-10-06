@@ -1,6 +1,9 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-const int currentSchemaVersion = 12;
+import '../repositories/commitment_block_repository.dart';
+import '../repositories/hive_commitment_block_repository.dart';
+
+const int currentSchemaVersion = 13;
 
 typedef MigrationFn = Future<void> Function();
 
@@ -19,6 +22,7 @@ final List<MigrationFn> _migrations = [
   _migration9to10,
   _migration10to11,
   _migration11to12,
+  _migration12to13,
 ];
 
 Future<void> _migration0to1() async {
@@ -124,6 +128,66 @@ Future<void> _migration11to12() async {
   // for missing fields in existing records. Old records deserialize with
   // no Google connection, i.e. every pre-existing user must connect fresh.
   // No data transformation needed.
+}
+
+/// Deletes every [CommitmentBlock] in [repository] with `isFromCalendar ==
+/// true`, returning how many were deleted. Never touches a block with
+/// `isFromCalendar == false` — that is the one load-bearing safety property
+/// here, since a hand-entered commitment has no other source it could be
+/// re-derived from.
+///
+/// **Why this runs at all (WINDOWS entries 7 and 8, D-36-05):** phase 36's
+/// device UAT found two calendar-import defects at once — entry 7, ticks
+/// never reached the device source so events from calendars the owner never
+/// selected were imported anyway, and entry 8, an all-day event imported as
+/// a block spanning the whole working day, erasing six working days (incl.
+/// Payday, which is on a calendar nobody would untick, settling that this is
+/// not just entry 7's fault). `CalendarSyncService.sync()` was verified
+/// three independent ways to never prune — it only ever upserts — so the
+/// already-persisted fake blocks from both defects would otherwise survive
+/// every future sync. The pre-fix imported set is untrustworthy on BOTH axes
+/// these fixes changed (which calendars were read, which events were
+/// imported): a shape-matching sweep (e.g. `startMinutes == 480 &&
+/// endMinutes == 1320`) cannot work, because fixing entry 7 means the
+/// holidays/birthdays calendars that produced these exact blocks are no
+/// longer queried at all, so no pass driven by the CURRENT code could ever
+/// reach them again to delete them by shape. The data is derived and fully
+/// re-derivable from the calendar source on the next sync, so discarding all
+/// of it and letting the next sync rebuild the correct set is the only
+/// option that guarantees the next device judgment is made against post-fix
+/// data (D-36-05; CLAUDE.md trap #4 names the date a UAT judged pre-fix data
+/// and cost a round trip).
+///
+/// **Accepted cost (T-36-37, disposition accept):** for one check-in
+/// immediately after this migration, if the calendar source cannot be read
+/// at all (e.g. offline), there are no last-known imported blocks to
+/// degrade to — D-35-13's guarantee is weakened for exactly that one window.
+/// The remedy is one successful sync.
+Future<int> purgeImportedCalendarBlocks(
+  CommitmentBlockRepository repository,
+) async {
+  final blocks = await repository.getAll();
+  var deleted = 0;
+  for (final block in blocks) {
+    if (block.isFromCalendar) {
+      await repository.delete(block.id);
+      deleted++;
+    }
+  }
+  return deleted;
+}
+
+Future<void> _migration12to13() async {
+  // Phase 36 gap closure (WINDOWS entries 7/8, D-36-05): one-time cleanup of
+  // every previously-imported calendar block, since sync() never prunes and
+  // the pre-fix imported set is untrustworthy. See
+  // [purgeImportedCalendarBlocks]'s doc comment for the full reasoning.
+  //
+  // Deliberately NOT guarded against a closed box: HiveDatabase.init opens
+  // every box (including 'commitment_blocks') before runMigrations is ever
+  // called, so the box is always open here. A silent skip on a closed box
+  // would hide a real failure rather than fixing one.
+  await purgeImportedCalendarBlocks(HiveCommitmentBlockRepository());
 }
 
 Future<void> runMigrations(SharedPreferences prefs) async {
