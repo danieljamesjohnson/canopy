@@ -227,5 +227,28 @@ Key choices:
   `.google-client-id` is gitignored, so a fresh clone does **not** have it — recreate it before
   building. If a build fails with a Swift Package Manager / deployment-target complaint, try
   `flutter config --no-enable-swift-package-manager` to fall back to the CocoaPods path.
+  - **A DEVICE BUILD CANNOT BE DRIVEN OVER `ssh dans-macbook-air`. Codesigning fails and no amount of
+    keychain fiddling fixes it — do not spend attempts on this.** Measured 2026-10-07: three
+    escalating attempts all failed identically with
+    `codesign ... Flutter.framework/Flutter: errSecInternalComponent` → *"Failed to codesign"* →
+    `** BUILD FAILED **`. In order: (1) a plain SSH `tools/build-ios.sh build --debug`; (2) after
+    `security unlock-keychain` run interactively in Ghostty; (3) after
+    `security set-key-partition-list -S apple-tool:,apple:,codesign: -s` **plus** the owner clicking
+    **Always Allow** on the GUI dialog. A scratch-file probe
+    (`codesign --force --sign <identity> /tmp/probe`) still returned `errSecInternalComponent` after
+    all three, which isolates it to signing itself rather than anything in the Flutter build.
+    **The identity is fine and is not the problem** — `security find-identity -v -p codesigning`
+    lists it from the SSH session, and it is the same hash codesign tries to use. macOS simply will
+    not release the private key to a session with no window server; `security show-keychain-info`
+    from SSH returns *"User interaction is not allowed."*
+    **So: the owner launches the build himself, in a GUI terminal on the Mac** —
+    `cd ~/CodeProjects/canopy && export PATH="/opt/homebrew/bin:$HOME/Library/Python/3.9/bin:$PATH" && tools/build-ios.sh run -d <device-udid>`
+    (his iPhone's *flutter* device id is a UDID like `00008130-001014892891401C`, which is **not** the
+    same string as its `devicectl` CoreDevice identifier `66110258-0097-5E64-9C90-B9815966D67E` —
+    `flutter run -d` wants the former, `devicectl --device` the latter; mixing them wastes a cycle).
+    **Signing is the ONLY blocked operation, so this is not a dead end:** `xcrun devicectl` works
+    fine over SSH (listing devices, and pulling the app container to read Hive — see STATE.md's
+    device-data recipe), so an agent can still verify the owner's real data itself rather than asking
+    him what is on screen. Split the work that way: he builds, the agent verifies.
 
 Tests are in `test/` using `flutter_test`.
