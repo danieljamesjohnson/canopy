@@ -1406,4 +1406,85 @@ void main() {
       expect(await _repoIds(repo), contains('stale-mar2'));
     });
   });
+
+  group('WINDOWS entry 1 — a moved occurrence of an .ics series keeps its '
+      'block (no duplicate)', () {
+    // Weekly Tue 14:00Z from Mar 3 (Mar 3, Mar 10 inside the Mar 1-15
+    // window). The second version of the feed moves Mar 10 to Wed Mar 11
+    // 16:00Z via a RECURRENCE-ID override — exactly what Google/Apple publish
+    // when the user drags one occurrence.
+    const seriesV1 = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Google Inc//Google Calendar 70.9054//EN
+BEGIN:VEVENT
+DTSTART:20260303T140000Z
+DTEND:20260303T150000Z
+RRULE:FREQ=WEEKLY;COUNT=2
+DTSTAMP:20260301T000000Z
+UID:moved-occurrence-series@google.com
+SUMMARY:Design review
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR
+''';
+    const overrideV2 = '''
+BEGIN:VEVENT
+DTSTART:20260311T160000Z
+DTEND:20260311T170000Z
+DTSTAMP:20260302T000000Z
+UID:moved-occurrence-series@google.com
+RECURRENCE-ID:20260310T140000Z
+SEQUENCE:1
+SUMMARY:Design review
+STATUS:CONFIRMED
+END:VEVENT
+''';
+    final seriesV2 = seriesV1.replaceFirst(
+      'END:VCALENDAR',
+      '${overrideV2}END:VCALENDAR',
+    );
+
+    test(
+      're-syncing after the move updates the Mar 10 block in place: it '
+      'moves to Mar 11 16:00, keeps its id, and nothing is left at Mar 10',
+      () async {
+        tz.setLocalLocation(tz.UTC);
+        var feed = seriesV1;
+        final service = CalendarSyncService(
+          source: IcsCalendarSource(
+            urls: ['https://example.com/feed.ics'],
+            fetch: (_) async => feed,
+          ),
+          repository: repo,
+          now: () => DateTime(2026, 3, 1),
+        );
+
+        await service.sync();
+        final before = await repo.getAll();
+        expect(before.map((b) => b.date!.day).toList()..sort(), [3, 10]);
+        final mar10Id = before.singleWhere((b) => b.date!.day == 10).id;
+
+        feed = seriesV2;
+        await service.sync();
+        final after = await repo.getAll();
+
+        expect(
+          after.map((b) => b.date!.day).toList()..sort(),
+          [3, 11],
+          reason: 'the moved occurrence must not also remain at Mar 10',
+        );
+        final moved = after.singleWhere((b) => b.date!.day == 11);
+        expect(moved.startMinutes, 16 * 60);
+        expect(moved.endMinutes, 17 * 60);
+        expect(
+          moved.id,
+          mar10Id,
+          reason:
+              'the override must reuse the original occurrence\'s '
+              'externalEventId so the existing block is updated in place',
+        );
+      },
+    );
+  });
 }
