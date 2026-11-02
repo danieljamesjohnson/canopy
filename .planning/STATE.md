@@ -4,11 +4,11 @@ milestone: none
 current_phase: 36
 current_phase_name: Connect Google Calendar Without Hunting For a URL
 status: awaiting-human
-current_phase_next: "GAP CLOSURE IS DONE AND MERGED. The three device-UAT defects are fixed in code (plans 36-08/09/10) and the re-verification instrument is written (36-11). 934/934 green, flutter analyze clean, schedule_generator.dart byte-identical. WINDOWS.md: 5 open / 5 fixed / 1 waived / 11 total, all three views agreeing. THE OWNER'S NEXT ACTION IS 36-UAT-R2.md on his MacBook + iPhone — that is the ONLY thing that can close entry 7, whose app-side wiring is mutation-proven to the plugin boundary but whose real-hardware half (does device_calendar_plus honour a non-empty calendarIds?) is unobservable on danserver. TELL HIM TO BE ONLINE FOR THE FIRST SYNC: the schema 12->13 purge means previously-imported blocks are gone until one successful sync (T-36-37), and an empty-looking calendar section before then is EXPECTED, not a defect. Resume with /gsd-verify-work 36 once his R2 answers exist. 36-07 remains incomplete by design — it is the original device gate and is superseded in practice by 36-UAT-R2.md."
+current_phase_next: "ROUND 3 GAP CLOSURE MERGED 2026-11-02 (plans 36-12..36-17): Calendars screen restores granted device calendars without re-prompting (12), Sync now shows progress + result (13), skipped banner persists across re-open (10), sync prunes unticked-calendar and verifiably-deleted blocks (11), device calendars sorted and placed above Google (14). 1004/1004 green, analyze clean, schedule_generator byte-identical. Profile build INSTALLED on the owner's iPhone by the agent via tools/ios-build-agent.sh (agents can now drive device builds — see CLAUDE.md). Owner instrument: 36-UAT-R3.md. WINDOWS: entries 10-15 open until observed on device. Entry 7 CLOSED on hardware 2026-11-02 (R1). Remaining non-device work in flight: entries 1, 3, 4."
 stopped_at: "PHASE 36 EXECUTED 2026-09-25..28 under /gsd-autonomous. 44 commits (37 non-merge + 7 worktree merges). Waves 1-4 all landed and merged; wave 5 halted at its human gate by design. 908/908 green (821 at phase start), flutter analyze clean, schedule_generator.dart BYTE-IDENTICAL throughout (git-verified, not assumed). || WHAT IS DONE: the whole Google path exists — google_oauth_config/google_auth_client/google_calendar_source, AppSettings schema 11->12 (4 additive fields), CALAUTH-03's three-way failure classification, Google event mapping against Google-shaped fixtures, iOS CFBundleURLTypes via a build setting + tools/build-ios.sh, CompositeCalendarSource so both iOS sources coexist (D-36-03) with the double-tick overlap detector, and the settings screen with Connect/reconnect/overlap disclosure. || CODE REVIEW: 36-REVIEW.md, 0 critical / 5 warning. WR-01..WR-04 FIXED (commits e89c766, 956daea, ae94a93, 26727dc), each mutation-proven. WR-05 DELIBERATELY NOT FIXED — it needs a new user-visible state and its copy, which belongs to an owner-reviewed UI-SPEC, not an agent. See 'WR-05 is the owner's call' below. || VERIFICATION: 36-VERIFICATION.md, status human_needed, gaps: []. Nothing was quietly skipped to get here. || DO NOT RE-ASK: every owner ruling is taken (36-DECISIONS.md D-36-01..D-36-04). D-36-04 is NEW this run — it clears 36-01 Task 1's package gate with the pub.dev/GitHub readings recorded as observations, including the two things that gate did NOT establish. || TWO NEW OWNER QUESTIONS in QUESTIONS.md, neither blocking: Q-01 the real client ID is committed in 36-RESEARCH.md and already on public origin (NOT a CALAUTH-04 violation — no secret exists for a native client — but it contradicts the deliberate gitignore posture; rotate/scrub/accept is his call). Q-02 migrations.dart asserts in three comments that the Hive reader 'returns null/false/0 for missing fields'; that is FALSE for non-nullable fields, 36-01's plan believed it and only a pre-existing test caught the resulting crash. The stale comment is the defect that keeps reproducing. || WINDOWS.md now has 6 entries. 5 was FIXED this phase and was load-bearing (GoogleCalendarSource had calendarIds: const [], so the picker would look healthy and import zero events). 4 and 6 are open and deliberate; 6 was logged by the orchestrator, not by 36-06, because 36-07's UAT must warn the owner that the Connect CTA reappearing on screen re-open is expected. || STILL UNVERIFIED AND LOAD-BEARING: Phase 35 Assumption A1 (device_calendar_plus returns expanded occurrences with exceptions applied) has NEVER been checked on a device, and 36-DECISIONS.md's correction that sign-in adds no recurrence benefit on iOS rests entirely on it. 36-UAT.md runs the recurrence check on BOTH sources so this finally gets settled."
-last_updated: "2026-10-06T00:00:00.000Z"
-last_activity: 2026-10-06
-last_activity_desc: "D-36-05 ruled (all-day events skip, not block — supersedes D-35-06), then gap closure planned and executed: 4 waves, plans 36-08..36-11, all merged; entries 6/8/10 fixed and 11 logged; 908 -> 934 tests green; entry 7 deliberately left OPEN pending real-hardware confirmation via the new 36-UAT-R2.md"
+last_updated: "2026-11-02T00:00:00.000Z"
+last_activity: 2026-11-02
+last_activity_desc: "On-device R2 sitting (R1/R2 pass, R3 fail, 3 new defects) -> round-3 gap closure planned, checker-revised, executed in 4 waves, built and installed on the iPhone from danserver"
 state_head: 0232138
 progress:
   total_phases: 10
@@ -951,6 +951,34 @@ UAT's observations before judging item 4.
 **Why no push was sent.** The run finished and the next action is a physical one that is not
 time-sensitive; `notify-dan`'s own contract puts "a run that finished" and "phases completing" in the
 record-don't-notify column. This row, `36-UAT.md` and `QUESTIONS.md` are the record.
+
+### ▶ RESUME HERE — 2026-11-02: ROUND 3 MERGED AND ON THE PHONE. Owner is running 36-UAT-R3.md.
+
+**Agents can now build and install to the owner's iPhone from danserver** — `ssh dans-macbook-air
+'launchctl kickstart -p gui/501/com.canopy.iosbuild'`, log at `~/Library/Logs/canopy-ios-build.log`.
+The ssh codesign failure was the launchd domain (`Background` vs `Aqua`), not the keychain. Profile
+builds only: a debug build refuses to launch on iOS 14+ without a debugger. The phone updated to
+iOS 27.0.1; Xcode 26.2 still installs to it — the Mac's "software update" prompt was deferred.
+
+**R2 sitting results (36-UAT-R2.md answers):** R1 PASS on hardware — every block from a spunkl-only sync
+carries hash(spunkl); entry 7 CLOSED. R2 PASS — the six fake all-day blocks are gone and the
+hand-entered Work block survived the purge on real data. R3 FAIL — the banner was not shown at all on
+re-open. New: 12 (screen forgot granted permission, showed "Allow calendar access" every time), 13 (Sync
+now had no feedback), 14 (a tick landed on Family when spunkl was tapped — list re-fetched and re-ordered
+under the finger). Entry 11 observed: a Home-calendar 1:1 on 2026-11-12 survived the switch.
+
+**Round 3 (36-12..36-17), all merged:** prune (selection prune needs no fetch; event prune only for
+verifiably-succeeded sources, strictly after today), schema 13->14 persisted skipped list, prompt-free
+`hasPermissions()` restore with request-count==0 proof, Sync-now spinner + locked result sentence,
+one `runCalendarSync` for check-in and the screen, stable device order with device above Google.
+gsd-plan-checker caught two blockers that would have shipped green and failed on the phone (an untested
+isFromCalendar guard on the event prune; nothing proving the production device source implemented the
+permission reader); both fixed before execution. 934 -> 1004 tests.
+
+**Owner's own words worth keeping:** the work calendar is named `spunkl`; Home and Family are others.
+"Today shows today" — to check a non-today block, use Goals -> ⋮ -> Commitment blocks, or read Hive.
+
+---
 
 ### ▶ RESUME HERE — 2026-10-06 (LATER): GAP CLOSURE DONE AND MERGED. The owner's next action is 36-UAT-R2.md.
 
