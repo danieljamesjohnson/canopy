@@ -229,19 +229,25 @@ or read the Hive directly, which is what actually caught this the first time.
 
 ## Your answers
 
+> **New defects found during this sitting (2026-11-02), logged as WINDOWS 12-14:** the device section forgets granted permission on every re-open (shows 'Allow calendar access' — the device twin of entry 6); 'Sync now' gives no feedback at all; and one tick appeared to land on Family instead of spunkl, most likely a tap during the asynchronous list load caused by the first defect (unproven).
+
 *(Fill in below, in your own words. A failure should record what was on screen, not a diagnosis.
 Leave nothing pre-filled — the slots below are genuinely blank.)*
 
 **Step 0 — did you complete all five steps, in order, before judging anything? (yes/no):**
+PARTLY — recorded 2026-11-02 by the orchestrator from the owner's live session + two pulls of the device's own Hive (not owner-typed). He ticked a calendar, tapped what he believed was Sync, then Start my day. But see entry 12: the Calendars screen showed 'Allow calendar access' on every re-open, so the button he tapped first was a permission re-request, not a sync.
 
 
 **R1 — unticked calendar's events gone, ticked calendars' events still present, re-tick restores them:**
+**PASS on real hardware (iPhone 15 Pro Max, iOS 27.0.1).** After the owner ticked only `spunkl` (`E3B52CDB-…`), every one of 8 imported blocks from that sync carried `ics:9c7d030a` = FNV hash of `E3B52CDB-…` — including the owner's own 'Canopy r1 test' event created for this check. Nothing from Home or Family imported. The plugin's iOS source also confirms the mechanism: `EventsService.swift` builds an `EKEventStore` predicate from only the passed calendar ids. **Entry 7 closes.** ONE stale block remains — 2026-11-12 'Bi-Weekly One on One' with hash `9fb91958`, matching neither selection: left over from a sync while Home was still ticked, never removed because `sync()` never prunes (entry 11, now observed on real data). Re-tick-restores was not exercised.
 
 
 **R2 — are all six all-day entries confirmed gone, specifically on 2026-10-13:**
+**PASS.** Device Hive after the 12->13 purge holds zero all-day-shaped blocks; none of Vacation / 38th Birthday / Fall break / Payday / Indigenous Peoples' Day / Columbus Day survive. The hand-entered weekly 'Work' 09:00-17:00 block SURVIVED the purge — the `isFromCalendar == false` invariant held on real data. (2026-10-13 itself is now in the past; judged on the stored set instead.)
 
 
 **R3 — did you notice the disclosure cold, before being told where to look, and does it name the all-day entries:**
+**FAIL — the disclosure is not shown at all on screen re-open.** Owner's screenshot (2026-11-02 08:37) of Settings -> Calendars shows only the Google card and an 'Allow calendar access' card — no skipped-events banner. The banner lives only in the screen's in-memory last-sync result, so it vanishes whenever the screen is re-opened. Entry 10 is NOT fixed in practice; 36-09's geometric proof was true and irrelevant.
 
 
 **R4 — does the Google section stay connected on screen re-open, without re-launching consent:**

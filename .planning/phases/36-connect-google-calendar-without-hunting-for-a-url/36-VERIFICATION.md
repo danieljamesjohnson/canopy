@@ -13,6 +13,34 @@ overrides_applied: 0
 # status changed human_needed -> gaps_found: the human gate DID run and returned findings.
 # A device re-visit is still required afterwards (human_verification below still stands).
 gaps:
+  # ROUND 3 — added 2026-11-02 from the owner's on-device R2 sitting (36-UAT-R2.md "Your answers").
+  # windows-7 below is now CLOSED on real hardware; windows-10 REOPENED. These are the live gaps.
+  - id: windows-12
+    requirement: CAL-02 / CALAUTH-03 (device twin of entry 6)
+    gap: "The device calendar section forgets granted permission on every screen re-open and shows 'Allow calendar access' instead of the calendar list."
+    evidence: "Owner screenshot 2026-11-02 08:37 with permission granted and syncs working. 36-10 fixed only the Google half."
+    files: ["lib/screens/settings/calendar_settings_screen.dart"]
+  - id: windows-10-reopened
+    requirement: CAL-04 spirit / disclosure discoverability
+    gap: "The skipped-events banner is absent on screen re-open — it lives only in the in-memory last-sync result."
+    evidence: "Same screenshot: no banner anywhere. 36-09's position test was true and irrelevant."
+    files: ["lib/screens/settings/calendar_settings_screen.dart", "lib/providers/commitments_notifier.dart"]
+  - id: windows-13
+    requirement: CAL-04 spirit
+    gap: "'Sync now' gives no feedback — no progress indicator and no result line."
+    evidence: "Owner, 2026-11-02: 'there was no feedback like a spinner or anything that it synced. have no idea'."
+    files: ["lib/screens/settings/calendar_settings_screen.dart"]
+  - id: windows-14
+    requirement: CAL-02
+    gap: "A tick appeared to land on the wrong calendar (Family stored when spunkl was tapped). Suspected cause: tapping while the list loads in after the entry-12 CTA. Must be re-tested after 12 is fixed; if it reproduces, it is its own defect."
+    evidence: "Device Hive held 3935F311-... (Family) after the owner ticked spunkl; the screen later showed Family ticked."
+    files: ["lib/screens/settings/calendar_settings_screen.dart"]
+  - id: windows-11
+    requirement: CAL-02 (locked 'Remove this calendar?' copy promises removal)
+    gap: "sync() never prunes. Unticking a calendar, or deleting an event, leaves imported blocks forever."
+    evidence: "Observed on device 2026-11-02: a Home-calendar 'Bi-Weekly One on One' (hash 9fb91958) survived the switch to spunkl."
+    files: ["lib/services/calendar_sync_service.dart", "lib/data/calendar/composite_calendar_source.dart"]
+    constraint: "A window-scoped prune is unsafe while CompositeCalendarSource swallows per-child failures. But dropping blocks whose calendar-hash is no longer in the selected set needs no fetch at all and is safe. Prune missing-event blocks only for sources that verifiably succeeded."
   - id: windows-7
     requirement: CAL-02
     gap: "sync() always calls listEvents(calendarIds: const []) and iosCalendarSource() builds DeviceCalendarSource() with no ids, so device_calendar_plus resolves empty to EVERY calendar. The user's ticked selection is persisted and rendered but never reaches the device source."
