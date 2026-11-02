@@ -83,9 +83,12 @@ CalendarSource defaultCalendarSource({
 /// a client with no stored token already return empty rather than throwing
 /// (36-01), so composing it unconditionally on iOS is safe — there is no
 /// need for a separate connected-or-not flag here, one less piece of state
-/// that could disagree with Hive. Google is ordered first, device second,
-/// so the picker (plan 36-06) renders the signed-in account above the
-/// device's own list.
+/// that could disagree with Hive. Google is ordered first, device second
+/// among the composite's children. That order does NOT set the picker's
+/// layout: the picker never reads the composite's order (it resolves each
+/// section's source separately), and the section order on screen is the
+/// screen's own decision — device first, Google below it (WINDOWS entry 14,
+/// plan 36-16).
 ///
 /// **`googleCalendarIds`, closing WINDOWS.md entry 5 (plan 36-06).** Unlike
 /// `IcsCalendarSource` (whose feed list IS its configuration),

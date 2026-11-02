@@ -1206,9 +1206,17 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     return ListView(
       children: [
         _skippedBanner(context),
-        _buildGoogleSection(context, settings),
-        const Divider(indent: 16, endIndent: 16),
+        // WINDOWS entry 14 (36-16), mechanism B: content available locally
+        // renders ABOVE content that loads over the network, so nothing that
+        // finishes later can move rows the user can already see. The device
+        // list restores from the local store almost at once; the Google list
+        // arrives over the network at an arbitrary moment. Google used to be
+        // first (36-06, an implementation choice, not a ruling — D-36-03 only
+        // says both sources coexist), which pushed the device rows down by
+        // the whole Google list when it landed. Reversible: swap these two.
         _buildDeviceSection(context, settings),
+        const Divider(indent: 16, endIndent: 16),
+        _buildGoogleSection(context, settings),
         if (showFooter) _footer(context),
       ],
     );

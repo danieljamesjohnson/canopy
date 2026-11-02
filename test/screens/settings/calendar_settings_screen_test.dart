@@ -75,6 +75,10 @@ class _FakeCalendarSource implements CalendarSource {
   int listCalendarsCount = 0;
   int listEventsCount = 0;
 
+  /// WINDOWS entry 14 (36-16): when non-null, listCalendars() never resolves
+  /// until the test completes it — holds a network-shaped list open.
+  Completer<void>? listCalendarsGate;
+
   /// When non-null, listEvents() never resolves until the test completes it —
   /// lets a test observe the in-flight "Sync now" state deliberately.
   Completer<void>? listEventsGate;
@@ -95,6 +99,7 @@ class _FakeCalendarSource implements CalendarSource {
   @override
   Future<List<CalendarInfo>> listCalendars() async {
     listCalendarsCount++;
+    if (listCalendarsGate != null) await listCalendarsGate!.future;
     return calendars;
   }
 
@@ -1326,9 +1331,11 @@ void main() {
           containsAll(['device-1', 'google:work']),
         );
 
-        // The Google section renders first, so its CheckboxListTile is the
-        // first of the two on screen — untick it.
-        await tester.tap(find.byType(CheckboxListTile).first);
+        // The Google section renders BELOW the device section (36-16, WINDOWS
+        // entry 14), so its CheckboxListTile is the last of the two on
+        // screen — untick it. (Both calendars are named "Work", so the label
+        // cannot tell them apart.)
+        await tester.tap(find.byType(CheckboxListTile).last);
         await tester.pumpAndSettle();
 
         expect(settings.selectedCalendarIds, isNot(contains('google:work')));
@@ -2253,6 +2260,92 @@ void main() {
         expect(settings.selectedCalendarIds, isNot(contains('home-id')));
       }),
     );
+
+    group('section order: the device rows never move when Google loads', () {
+      final deviceCalendars = [
+        cal('home-id', 'Home'),
+        cal('family-id', 'Family'),
+        cal('spunkl-id', 'spunkl'),
+      ];
+
+      Future<SettingsNotifier> connectedSettings() async {
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.write(
+          GoogleTokens(
+            accessToken: 'access-1',
+            refreshToken: 'refresh-1',
+            expiresAt: DateTime(2026, 3, 1, 9, 30),
+          ),
+        );
+        return settings;
+      }
+
+      testWidgets(
+        'Google connected, its list held open: the device rows are visible '
+        'first; releasing Google moves none of them, and every Google row '
+        'sits below them',
+        (tester) => _withMobilePlatform(() async {
+          final device = _RestorableFakeCalendarSource(
+            calendars: deviceCalendars,
+          );
+          final googleSource = _FakeCalendarSource(
+            calendars: [
+              cal('google:primary', 'GWork', 'dan@gmail.com'),
+              cal('google:second', 'GHome', 'dan@gmail.com'),
+            ],
+          )..listCalendarsGate = Completer<void>();
+
+          await _pumpCalendarScreen(
+            tester,
+            source: device,
+            googleSource: googleSource,
+            settingsNotifier: await connectedSettings(),
+          );
+          // Several frames; the Google list is still held on its gate.
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.text('GWork'), findsNothing, reason: 'still loading');
+          expect(find.text('spunkl'), findsOneWidget);
+          final before = {
+            for (final n in ['Family', 'Home', 'spunkl']) n: rowY(tester, n),
+          };
+
+          googleSource.listCalendarsGate!.complete();
+          await tester.pumpAndSettle();
+
+          expect(find.text('GWork'), findsOneWidget);
+          expect(find.text('GHome'), findsOneWidget);
+          for (final n in ['Family', 'Home', 'spunkl']) {
+            expect(rowY(tester, n), before[n], reason: '$n moved');
+          }
+          final lowestDevice = before.values.reduce((a, b) => a > b ? a : b);
+          expect(rowY(tester, 'GWork'), greaterThan(lowestDevice));
+          expect(rowY(tester, 'GHome'), greaterThan(lowestDevice));
+        }),
+      );
+
+      testWidgets(
+        'Google not connected: the device rows render above the '
+        '"Connect Google Calendar" button',
+        (tester) => _withMobilePlatform(() async {
+          final device = _RestorableFakeCalendarSource(
+            calendars: deviceCalendars,
+          );
+          await _pumpCalendarScreen(tester, source: device);
+          await tester.pumpAndSettle();
+
+          expect(find.text('Connect Google Calendar'), findsOneWidget);
+          final button = tester.getTopLeft(find.text('Connect Google Calendar'));
+          for (final n in ['Family', 'Home', 'spunkl']) {
+            expect(rowY(tester, n), lessThan(button.dy), reason: n);
+          }
+        }),
+      );
+    });
 
     test('sortCalendarsForPicker: no-account group first, then accounts, '
         'then names, all case-insensitive, ids break ties, input untouched', () {
