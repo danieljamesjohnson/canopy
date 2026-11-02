@@ -112,6 +112,7 @@ class _RestorableFakeCalendarSource extends _FakeCalendarSource
   _RestorableFakeCalendarSource({
     this.status = CalendarPermissionState.granted,
     super.calendars,
+    super.events,
     super.permission,
     this.currentPermissionError,
   });
@@ -1596,6 +1597,193 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.text('Allow calendar access'), findsOneWidget);
         expect(source.requestPermissionCount, 0);
+      }),
+    );
+  });
+
+  group('Plan 36-14 — "Sync now" syncs in place and answers back '
+      '(WINDOWS entry 13)', () {
+    final calendars = [
+      CalendarInfo(
+        id: 'spunkl',
+        name: 'spunkl',
+        accountName: 'dan@gmail.com',
+        isReadOnly: true,
+      ),
+    ];
+
+    List<CalendarEvent> oneTimedEvent() {
+      final now = DateTime.now();
+      return [
+        CalendarEvent(
+          uid: 'evt-1',
+          title: 'Dentist',
+          start: now.add(const Duration(days: 1, hours: 1)),
+          end: now.add(const Duration(days: 1, hours: 2)),
+          isAllDay: false,
+          status: CalendarEventStatus.confirmed,
+          calendarId: 'spunkl',
+        ),
+      ];
+    }
+
+    // `TextButton.icon` builds a private SUBCLASS of TextButton, so an exact
+    // type lookup would miss the in-flight button (CLAUDE.md trap #1) —
+    // locate it as the ButtonStyleButton ancestor of its label.
+    Finder syncNowButton() => find.ancestor(
+      of: find.text('Sync now'),
+      matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+    );
+
+    VoidCallback? syncNowOnPressed(WidgetTester tester) =>
+        tester.widget<ButtonStyleButton>(syncNowButton()).onPressed;
+
+    Finder inSnackBar(String text) =>
+        find.descendant(of: find.byType(SnackBar), matching: find.text(text));
+
+    testWidgets(
+      'while the sync runs the button is disabled and carries a spinner, the '
+      'rows stay on screen, and nothing re-requests or re-lists',
+      (tester) => _withMobilePlatform(() async {
+        final source = _RestorableFakeCalendarSource(
+          calendars: calendars,
+          events: oneTimedEvent(),
+        )..listEventsGate = Completer<void>();
+        await _pumpCalendarScreen(tester, source: source);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Sync now'));
+        await tester.pump();
+
+        expect(syncNowOnPressed(tester), isNull);
+        expect(
+          find.descendant(
+            of: syncNowButton(),
+            matching: find.byType(CircularProgressIndicator),
+          ),
+          findsOneWidget,
+        );
+
+        source.listEventsGate!.complete();
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 7));
+      }),
+    );
+
+    testWidgets(
+      'while the sync runs the calendar rows stay on screen and nothing '
+      're-requests permission or re-lists calendars',
+      (tester) => _withMobilePlatform(() async {
+        final source = _RestorableFakeCalendarSource(
+          calendars: calendars,
+          events: oneTimedEvent(),
+        )..listEventsGate = Completer<void>();
+        await _pumpCalendarScreen(tester, source: source);
+        await tester.pumpAndSettle();
+        final listedBefore = source.listCalendarsCount;
+        expect(find.text('spunkl'), findsOneWidget);
+
+        await tester.tap(find.text('Sync now'));
+        await tester.pump();
+
+        expect(find.text('spunkl'), findsOneWidget);
+        expect(source.requestPermissionCount, 0);
+        expect(source.listCalendarsCount, listedBefore);
+
+        source.listEventsGate!.complete();
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 7));
+      }),
+    );
+
+    testWidgets(
+      'tapping "Sync now" again while a sync is in flight does not start a '
+      'second one',
+      (tester) => _withMobilePlatform(() async {
+        final source = _RestorableFakeCalendarSource(
+          calendars: calendars,
+          events: oneTimedEvent(),
+        )..listEventsGate = Completer<void>();
+        await _pumpCalendarScreen(tester, source: source);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Sync now'));
+        await tester.pump();
+        await tester.tap(find.text('Sync now'), warnIfMissed: false);
+        await tester.pump();
+
+        expect(source.listEventsCount, 1);
+
+        source.listEventsGate!.complete();
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 7));
+      }),
+    );
+
+    testWidgets(
+      'a finished sync shows the locked status sentence in a SnackBar, the '
+      'spinner is gone and the button is enabled again',
+      (tester) => _withMobilePlatform(() async {
+        final source = _RestorableFakeCalendarSource(
+          calendars: calendars,
+          events: oneTimedEvent(),
+        )..listEventsGate = Completer<void>();
+        await _pumpCalendarScreen(tester, source: source);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Sync now'));
+        await tester.pump();
+        source.listEventsGate!.complete();
+        await tester.pumpAndSettle();
+
+        // Scoped to the SnackBar — the footer renders the same sentence.
+        expect(
+          inSnackBar('Synced just now — 1 commitment imported'),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: syncNowButton(),
+            matching: find.byType(CircularProgressIndicator),
+          ),
+          findsNothing,
+        );
+        expect(syncNowOnPressed(tester), isNotNull);
+
+        await tester.pump(const Duration(seconds: 7));
+      }),
+    );
+
+    testWidgets(
+      'a sync whose listEvents throws shows the locked failure SnackBar, no '
+      'success SnackBar, and the footer still reads "Not synced yet"',
+      (tester) => _withMobilePlatform(() async {
+        final source = _RestorableFakeCalendarSource(
+          calendars: calendars,
+          events: oneTimedEvent(),
+        )..listEventsError = StateError('network down');
+        await _pumpCalendarScreen(tester, source: source);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Sync now'));
+        await tester.pumpAndSettle();
+
+        expect(
+          inSnackBar('Calendar sync failed — showing your last-known calendars.'),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(SnackBar),
+            matching: find.textContaining('Synced'),
+          ),
+          findsNothing,
+        );
+        // The failed attempt is not shown as a fresh sync.
+        expect(find.text('Not synced yet'), findsOneWidget);
+        expect(syncNowOnPressed(tester), isNotNull);
+
+        await tester.pump(const Duration(seconds: 7));
       }),
     );
   });

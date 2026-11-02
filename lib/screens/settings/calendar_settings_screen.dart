@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -116,6 +118,9 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   /// never prompt, which is what keeps "opening this screen never surprises
   /// the user with a native OS prompt" true (WINDOWS entry 12).
   Future<_MobileState>? _mobileFuture;
+
+  /// True while a mobile "Sync now" is running (WINDOWS entry 13).
+  bool _syncing = false;
 
   /// True once the device section has resolved to granted, by restore or by
   /// an explicit grant — so the shared footer (and its "Sync now") shows
@@ -277,7 +282,14 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     );
   }
 
-  Widget _footer(BuildContext context, CalendarSyncResult? syncResult) {
+  /// The ONE builder of the locked "Sync status (fresh)" sentence
+  /// (35-UI-SPEC.md Copywriting Contract) — used by both the footer and the
+  /// "Sync now" SnackBar so the two cannot drift.
+  String _statusText(DateTime syncedAt, int importedCount) =>
+      'Synced ${_relativeTime(syncedAt)} — $importedCount '
+      'commitment${importedCount == 1 ? '' : 's'} imported';
+
+  Widget _footer(BuildContext context) {
     final theme = Theme.of(context);
     final settings = context.watch<SettingsNotifier>();
     final importedCount = context
@@ -285,11 +297,13 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         .blocks
         .where((b) => b.isFromCalendar)
         .length;
-    final lastSync = syncResult?.syncedAt ?? settings.lastCalendarSyncAt;
+    // Reads ONLY the persisted success-only time. A failed attempt's
+    // `syncedAt` must never surface here, or a failed sync would render as
+    // a fresh just-now sync (WINDOWS entry 13).
+    final lastSync = settings.lastCalendarSyncAt;
     final statusText = lastSync == null
         ? 'Not synced yet'
-        : 'Synced ${_relativeTime(lastSync)} — $importedCount '
-              'commitment${importedCount == 1 ? '' : 's'} imported';
+        : _statusText(lastSync, importedCount);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
@@ -306,10 +320,23 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
           ),
           Align(
             alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: () => _syncNow(context),
-              child: const Text('Sync now'),
-            ),
+            // While a mobile sync runs, the button disables and carries a
+            // spinner beside the unchanged label — the UI-SPEC's own
+            // "Requesting (in flight)" idiom of a spinner with no copy.
+            child: _syncing
+                ?TextButton.icon(
+                    onPressed: null,
+                    icon: const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    label: const Text('Sync now'),
+                  )
+                : TextButton(
+                    onPressed: () => _syncNow(context),
+                    child: const Text('Sync now'),
+                  ),
           ),
         ],
       ),
@@ -388,21 +415,53 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   void _syncNow(BuildContext context) {
     final settings = context.read<SettingsNotifier>();
     if (_isMobile) {
-      final commitments = context.read<CommitmentsNotifier>();
-      final messenger = ScaffoldMessenger.of(context);
-      final source = _resolveDeviceSource(settings);
-      setState(() {
-        _mobileFuture = _requestMobilePermission(
-          source,
-          commitments,
-          settings,
-          messenger,
-        );
-      });
+      unawaited(_syncInPlace(context, settings));
     } else {
       setState(
         () => _desktopFuture = _loadDesktopState(context, settings.icsUrls),
       );
+    }
+  }
+
+  /// The mobile "Sync now" (WINDOWS entry 13): syncs IN PLACE. It never
+  /// touches [_mobileFuture], never calls `requestPermission()` and never
+  /// re-lists calendars — the rows the user is looking at stay put. The
+  /// button shows it is working ([_syncing]) and, on success, a SnackBar
+  /// carries the same locked sentence the footer shows; on failure
+  /// [_syncAndReport] has already shown the locked failure SnackBar.
+  ///
+  /// The desktop/web "Sync now" is deliberately NOT changed: it already
+  /// replaces the body with a spinner while it reloads, and no defect was
+  /// reported there.
+  Future<void> _syncInPlace(
+    BuildContext context,
+    SettingsNotifier settings,
+  ) async {
+    if (_syncing) return;
+    final commitments = context.read<CommitmentsNotifier>();
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _syncing = true);
+    try {
+      final result = await _syncAndReport(
+        _resolveSyncSource(settings),
+        commitments,
+        settings,
+        messenger,
+      );
+      if (!result.failed && mounted) {
+        final importedCount = commitments.blocks
+            .where((b) => b.isFromCalendar)
+            .length;
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(_statusText(result.syncedAt, importedCount)),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _syncing = false);
     }
   }
 
@@ -1089,7 +1148,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         _buildGoogleSection(context, settings),
         const Divider(indent: 16, endIndent: 16),
         _buildDeviceSection(context, settings),
-        if (showFooter) _footer(context, _lastSyncResult),
+        if (showFooter) _footer(context),
       ],
     );
   }
@@ -1239,7 +1298,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
                 ],
               ),
             ),
-            _footer(context, state.syncResult),
+            _footer(context),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: OutlinedButton.icon(
