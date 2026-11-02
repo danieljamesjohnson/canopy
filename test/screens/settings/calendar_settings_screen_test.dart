@@ -86,12 +86,21 @@ class _FakeCalendarSource implements CalendarSource {
   /// When non-null, listEvents() throws this (a failed sync).
   Object? listEventsError;
 
+  /// When non-null, requestPermission() throws this — a genuine sign-in
+  /// failure, the way GoogleCalendarSource.requestPermission() surfaces one
+  /// (WINDOWS entry 4).
+  Object? requestPermissionError;
+
+  /// When non-null, listCalendars() throws this.
+  Object? listCalendarsError;
+
   @override
   Future<bool> isAvailable() async => true;
 
   @override
   Future<CalendarPermissionState> requestPermission() async {
     requestPermissionCount++;
+    if (requestPermissionError != null) throw requestPermissionError!;
     if (_permissionGate != null) return _permissionGate.future;
     return permission;
   }
@@ -100,6 +109,7 @@ class _FakeCalendarSource implements CalendarSource {
   Future<List<CalendarInfo>> listCalendars() async {
     listCalendarsCount++;
     if (listCalendarsGate != null) await listCalendarsGate!.future;
+    if (listCalendarsError != null) throw listCalendarsError!;
     return calendars;
   }
 
@@ -895,6 +905,108 @@ void main() {
 
         expect(find.text('Connect Google Calendar'), findsOneWidget);
         expect(find.text('Work'), findsNothing);
+      }),
+    );
+  });
+
+  group('WINDOWS entry 4 — a failed Google sign-in is not a cancellation',
+      () {
+    // GoogleCalendarSource.requestPermission() already keeps the three
+    // outcomes apart: granted (connected), notDetermined (cancelled — a
+    // state, not an error), and a THROW (a genuine failure). These tests
+    // pin that the SCREEN keeps them apart too: before this fix its
+    // catch-all folded a failure into the same silent "back to the button"
+    // render as a cancellation. Copy proposed, not locked (no UI-SPEC
+    // string exists for a failed Google sign-in).
+    const failureCopy = "Couldn't connect to Google. Please try again.";
+
+    testWidgets(
+      'a sign-in that throws returns to the connect button AND says the '
+      'connection failed',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final googleSource = _FakeCalendarSource()
+          ..requestPermissionError = Exception('Google sign-in failed');
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+        );
+
+        await tester.tap(find.text('Connect Google Calendar'));
+        await tester.pumpAndSettle();
+
+        expect(googleSource.requestPermissionCount, 1);
+        expect(
+          find.descendant(
+            of: find.byType(SnackBar),
+            matching: find.text(failureCopy),
+          ),
+          findsOneWidget,
+        );
+        // Still the plain CTA: a failed sign-in leaves nothing connected.
+        expect(find.text('Connect Google Calendar'), findsOneWidget);
+        expect(find.text('Disconnect'), findsNothing);
+        // Never the sync-failure line — no sync ran.
+        expect(
+          find.text(
+            'Calendar sync failed — showing your last-known calendars.',
+          ),
+          findsNothing,
+        );
+        expect(googleSource.listEventsCount, 0);
+      }),
+    );
+
+    testWidgets(
+      'a cancelled sign-in shows NO failure copy — the same tap, the only '
+      "difference being the fake's answer",
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final googleSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.notDetermined,
+        );
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+        );
+
+        await tester.tap(find.text('Connect Google Calendar'));
+        await tester.pumpAndSettle();
+
+        expect(googleSource.requestPermissionCount, 1);
+        expect(find.text(failureCopy), findsNothing);
+        expect(find.byType(SnackBar), findsNothing);
+        expect(find.text('Connect Google Calendar'), findsOneWidget);
+      }),
+    );
+
+    testWidgets(
+      'a sign-in that SUCCEEDS but whose calendar list then fails is not '
+      'reported as a failed sign-in (WR-05 territory, unchanged)',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final googleSource = _FakeCalendarSource()
+          ..listCalendarsError = Exception('network');
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+        );
+
+        await tester.tap(find.text('Connect Google Calendar'));
+        await tester.pumpAndSettle();
+
+        expect(googleSource.requestPermissionCount, 1);
+        expect(googleSource.listCalendarsCount, 1);
+        expect(find.text(failureCopy), findsNothing);
       }),
     );
   });

@@ -140,7 +140,10 @@ class _DesktopState {
 /// `connected: false` covers BOTH "never connected" and "the user cancelled
 /// the consent sheet" — [GoogleCalendarSource.requestPermission] already
 /// maps a cancellation onto [CalendarPermissionState.notDetermined]
-/// precisely so this state needs no separate "cancelled" case.
+/// precisely so this state needs no separate "cancelled" case. A genuine
+/// sign-in FAILURE also lands on `connected: false`, but [_connectGoogle]
+/// announces it with a SnackBar first, so the user can tell it from a
+/// cancellation (WINDOWS entry 4).
 class _GoogleState {
   const _GoogleState({required this.connected, this.calendars = const []});
 
@@ -937,8 +940,30 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     ScaffoldMessengerState messenger,
   ) async {
     final source = _resolveGoogleSource(settings);
+    // WINDOWS entry 4: connect has THREE outcomes and this screen keeps all
+    // three apart. GoogleCalendarSource.requestPermission() answers granted
+    // (connected) or notDetermined (cancelled — a state, not an error) and
+    // THROWS for a genuine failure (GoogleAuthException: the consent flow
+    // itself failed, or returned no token). The throw is caught here, on its
+    // own, so a failed sign-in says so instead of looking exactly like the
+    // user backing out. No `enum GoogleConnectOutcome` is introduced: the
+    // CalendarSource interface fixes requestPermission()'s return type, so
+    // a failure has to cross that boundary as a throw whatever connect()
+    // returns, and the screen would see the same three signals it sees now.
+    final CalendarPermissionState permission;
     try {
-      final permission = await source.requestPermission();
+      permission = await source.requestPermission();
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text("Couldn't connect to Google. Please try again."),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 6),
+        ),
+      );
+      return const _GoogleState(connected: false);
+    }
+    try {
       if (permission != CalendarPermissionState.granted) {
         // Cancelled — GoogleCalendarSource.requestPermission() already maps
         // a cancellation onto notDetermined precisely so this reads
@@ -955,10 +980,10 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
       );
       return _GoogleState(connected: true, calendars: calendars);
     } catch (_) {
-      // A genuine launcher/API failure (GoogleAuthException/
-      // GoogleSourceException) has no locked failure copy in this plan —
-      // fold it into the same "back to the connect button" state as a
-      // cancellation rather than inventing new, unspecced copy.
+      // Sign-in SUCCEEDED; a failure here is listCalendars() (a
+      // GoogleSourceException) after a valid token was stored — WR-05,
+      // deliberately unchanged and NOT reported as a failed sign-in, which
+      // it is not. (_syncAndReport never throws.)
       return const _GoogleState(connected: false);
     }
   }
