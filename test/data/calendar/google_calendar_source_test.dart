@@ -672,4 +672,84 @@ void main() {
       );
     });
   });
+
+  group('GoogleCalendarSource.requestPermission() — WINDOWS entry 4: '
+      "connect()'s three outcomes reach the screen as three distinct "
+      'signals', () {
+    // The real GoogleAuthClient, with only the launcher faked — the one
+    // seam _defaultLauncher sits behind. Its three answers are the three
+    // outcomes: tokens (connected), null (cancelled), a throw (failed).
+    GoogleCalendarSource sourceWith(
+      _FakeGoogleTokenStore store,
+      GoogleAuthLauncher launcher,
+    ) => GoogleCalendarSource(
+      authClient: GoogleAuthClient(
+        store: store,
+        clientId: '000000000000-synthtestidvalue.apps.googleusercontent.com',
+        launcher: launcher,
+      ),
+      calendarIds: const [],
+    );
+
+    test('connected -> granted, and the token is stored', () async {
+      final store = _FakeGoogleTokenStore();
+      final source = sourceWith(
+        store,
+        ({
+          required String clientId,
+          required String redirectUri,
+          required List<String> scopes,
+        }) async => GoogleTokens(
+          accessToken: 'fake-access-token',
+          refreshToken: 'fake-refresh-token',
+          expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
+        ),
+      );
+
+      expect(await source.requestPermission(), CalendarPermissionState.granted);
+      expect(await store.read(), isNotNull);
+    });
+
+    test('cancelled -> notDetermined (a state, not an error), nothing '
+        'stored, reconnect flag untouched', () async {
+      final store = _FakeGoogleTokenStore();
+      await store.setReconnectNeeded(true);
+      final source = sourceWith(
+        store,
+        ({
+          required String clientId,
+          required String redirectUri,
+          required List<String> scopes,
+        }) async => null,
+      );
+
+      expect(
+        await source.requestPermission(),
+        CalendarPermissionState.notDetermined,
+      );
+      expect(await store.read(), isNull);
+      expect(store.reconnectNeeded, isTrue);
+    });
+
+    test('failed -> THROWS GoogleAuthException; it is never folded into '
+        'notDetermined, which would make it look like a cancellation', () async {
+      final store = _FakeGoogleTokenStore();
+      await store.setReconnectNeeded(true);
+      final source = sourceWith(
+        store,
+        ({
+          required String clientId,
+          required String redirectUri,
+          required List<String> scopes,
+        }) async => throw GoogleAuthException('Google sign-in failed'),
+      );
+
+      await expectLater(
+        source.requestPermission(),
+        throwsA(isA<GoogleAuthException>()),
+      );
+      expect(await store.read(), isNull);
+      expect(store.reconnectNeeded, isTrue);
+    });
+  });
 }
