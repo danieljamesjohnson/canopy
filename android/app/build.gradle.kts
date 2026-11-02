@@ -31,6 +31,13 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // flutter_appauth (Google sign-in, Phase 36) declares a redirect activity
+        // whose scheme comes from this placeholder, and the manifest merge FAILS
+        // without it -- this broke every Android CI build from 2026-09-28 to
+        // 2026-11-02. Android has no Google sign-in (D-36-01: Android and the
+        // browser keep the .ics path), so the value only has to be a valid,
+        // app-unique scheme; the reversed app id is the conventional choice.
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.danjjohnson.canopy"
     }
 
     buildTypes {
