@@ -1,6 +1,9 @@
 import 'package:canopy/data/calendar/calendar_event.dart';
 import 'package:canopy/data/calendar/calendar_source.dart';
 import 'package:canopy/data/calendar/composite_calendar_source.dart';
+import 'package:canopy/data/calendar/google_auth_client.dart';
+import 'package:canopy/data/calendar/google_calendar_source.dart';
+import 'package:canopy/data/calendar/ics_calendar_source.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Throwaway in-test double — a full [CalendarSource] implementation with
@@ -52,6 +55,21 @@ class _FakeCalendarSource implements CalendarSource {
     if (_throwOnListEvents != null) throw _throwOnListEvents;
     return events;
   }
+}
+
+/// Minimal token store — only ever handed to a [GoogleCalendarSource] whose
+/// getters are read; no method here is called.
+class _NoopTokenStore implements GoogleTokenStore {
+  @override
+  Future<GoogleTokens?> read() async => null;
+  @override
+  Future<void> write(GoogleTokens tokens) async {}
+  @override
+  Future<void> clear() async {}
+  @override
+  Future<void> setReconnectNeeded(bool value) async {}
+  @override
+  bool get reconnectNeeded => false;
 }
 
 void main() {
@@ -267,5 +285,123 @@ void main() {
         expect(device.capturedCalendarIds, const ['a', 'b']);
       },
     );
+  });
+
+  group('CompositeCalendarSource.listEventsByChild — which children actually '
+      'answered (WINDOWS entry 11)', () {
+    test(
+      'first child throws, second returns events: the events are the '
+      'second child\'s and `succeeded` is exactly that child instance',
+      () async {
+        final google = _FakeCalendarSource(
+          throwOnListEvents: Exception('dead Google token'),
+        );
+        final device = _FakeCalendarSource(events: [event('d1', 'device-b')]);
+        final composite = CompositeCalendarSource([google, device]);
+
+        final result = await composite.listEventsByChild(
+          start: start,
+          end: end,
+          calendarIds: const [],
+        );
+
+        expect(result.events.map((e) => e.uid).toList(), ['d1']);
+        expect(result.succeeded, hasLength(1));
+        expect(identical(result.succeeded.single, device), isTrue);
+        expect(result.succeeded.any((c) => identical(c, google)), isFalse);
+      },
+    );
+
+    test('every child throws: rethrows, as listEvents always has', () {
+      final composite = CompositeCalendarSource([
+        _FakeCalendarSource(throwOnListEvents: Exception('Google is down')),
+        _FakeCalendarSource(throwOnListEvents: Exception('device is down')),
+      ]);
+
+      expect(
+        () => composite.listEventsByChild(
+          start: start,
+          end: end,
+          calendarIds: const [],
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('every child succeeds: `succeeded` lists all of them in '
+        'constructor order', () async {
+      final a = _FakeCalendarSource(events: [event('a1', 'cal-a')]);
+      final b = _FakeCalendarSource(events: [event('b1', 'cal-b')]);
+      final c = _FakeCalendarSource();
+      final composite = CompositeCalendarSource([a, b, c]);
+
+      final result = await composite.listEventsByChild(
+        start: start,
+        end: end,
+        calendarIds: const [],
+      );
+
+      expect(result.succeeded, hasLength(3));
+      expect(identical(result.succeeded[0], a), isTrue);
+      expect(identical(result.succeeded[1], b), isTrue);
+      expect(identical(result.succeeded[2], c), isTrue);
+      expect(result.events.map((e) => e.uid).toList(), ['a1', 'b1']);
+    });
+
+    test('listEvents returns exactly listEventsByChild(...).events', () async {
+      final composite = CompositeCalendarSource([
+        _FakeCalendarSource(throwOnListEvents: Exception('down')),
+        _FakeCalendarSource(events: [event('d1', 'device-b')]),
+        _FakeCalendarSource(events: [event('d2', 'device-c')]),
+      ]);
+
+      final viaList = await composite.listEvents(
+        start: start,
+        end: end,
+        calendarIds: const [],
+      );
+      final viaChild = await composite.listEventsByChild(
+        start: start,
+        end: end,
+        calendarIds: const [],
+      );
+
+      expect(viaList.map((e) => e.uid).toList(), ['d1', 'd2']);
+      expect(
+        viaList.map((e) => e.uid).toList(),
+        equals(viaChild.events.map((e) => e.uid).toList()),
+      );
+    });
+  });
+
+  group('configuredCalendarIds on the Google and ICS sources (the getter '
+      'DeviceCalendarSource already has)', () {
+    test('GoogleCalendarSource.configuredCalendarIds equals the constructor '
+        'list and is unmodifiable', () {
+      final source = GoogleCalendarSource(
+        authClient: GoogleAuthClient(store: _NoopTokenStore()),
+        calendarIds: ['google:a'],
+      );
+
+      expect(source.configuredCalendarIds, equals(['google:a']));
+      expect(
+        () => source.configuredCalendarIds.add('google:b'),
+        throwsUnsupportedError,
+      );
+    });
+
+    test('IcsCalendarSource.configuredCalendarIds equals the feed URLs and '
+        'is unmodifiable', () {
+      final source = IcsCalendarSource(urls: ['https://example.com/a.ics']);
+
+      expect(
+        source.configuredCalendarIds,
+        equals(['https://example.com/a.ics']),
+      );
+      expect(
+        () => source.configuredCalendarIds.add('https://example.com/b.ics'),
+        throwsUnsupportedError,
+      );
+    });
   });
 }

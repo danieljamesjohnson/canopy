@@ -56,6 +56,14 @@ class IcsCalendarSource implements CalendarSource {
   final List<String> _urls;
   final IcsFetcher _fetch;
 
+  /// The feed URLs this source was constructed with — mirrors
+  /// `DeviceCalendarSource.configuredCalendarIds`, the precedent. For this
+  /// source a calendar id IS the feed URL (`calendarId: url` on every event).
+  /// It exists so `CalendarSyncService` can tell which calendars a SUCCESSFUL
+  /// answer actually covered (WINDOWS entry 11): `listEvents` throws on any
+  /// URL failure, so an answer that returns at all covered every URL here.
+  List<String> get configuredCalendarIds => List.unmodifiable(_urls);
+
   @override
   Future<bool> isAvailable() async => _urls.isNotEmpty;
 

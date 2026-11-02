@@ -23,6 +23,11 @@ import 'calendar_source.dart';
 /// plain network blip against Google, while the device source works, is
 /// genuinely silent — a known, deliberate limit, not an oversight.
 ///
+/// **That gap now exists only for [listEvents] callers.** [listEventsByChild]
+/// returns the same events plus which children actually answered, which is
+/// what makes a safe prune of deleted events possible (WINDOWS entry 11):
+/// absence from a child's answer only means anything if that child answered.
+///
 /// Every child is queried with the SAME `calendarIds` argument, unchanged —
 /// each child keeps its own "empty means all of mine" convention
 /// (T-36-20); this class adds no fetching or filtering of its own.
@@ -90,9 +95,30 @@ class CompositeCalendarSource implements CalendarSource {
     required DateTime start,
     required DateTime end,
     required List<String> calendarIds,
+  }) async => (await listEventsByChild(
+    start: start,
+    end: end,
+    calendarIds: calendarIds,
+  )).events;
+
+  /// [listEvents] plus WHICH children actually answered — the signal
+  /// `CalendarSyncService` needs to prune safely (WINDOWS entry 11).
+  ///
+  /// `succeeded` lists, in constructor order, exactly the children whose
+  /// `listEvents` returned without throwing (identity, not equality). A child
+  /// that threw contributes no events and is NOT listed, so the caller can
+  /// tell "this calendar has no such event" apart from "this calendar could
+  /// not be asked". The per-child failure policy is unchanged and has one
+  /// implementation, here: catch each child independently, rethrow only when
+  /// EVERY child failed.
+  Future<({List<CalendarEvent> events, List<CalendarSource> succeeded})>
+  listEventsByChild({
+    required DateTime start,
+    required DateTime end,
+    required List<String> calendarIds,
   }) async {
     final events = <CalendarEvent>[];
-    var anySucceeded = false;
+    final succeeded = <CalendarSource>[];
     Object? lastError;
     StackTrace? lastStackTrace;
     for (final child in _children) {
@@ -104,18 +130,18 @@ class CompositeCalendarSource implements CalendarSource {
             calendarIds: calendarIds,
           ),
         );
-        anySucceeded = true;
+        succeeded.add(child);
       } catch (e, st) {
         lastError = e;
         lastStackTrace = st;
       }
     }
-    if (!anySucceeded && _children.isNotEmpty) {
+    if (succeeded.isEmpty && _children.isNotEmpty) {
       Error.throwWithStackTrace(
         lastError ?? StateError('all calendar sources failed'),
         lastStackTrace ?? StackTrace.current,
       );
     }
-    return events;
+    return (events: events, succeeded: succeeded);
   }
 }

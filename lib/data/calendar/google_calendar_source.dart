@@ -217,6 +217,14 @@ class GoogleCalendarSource implements CalendarSource {
   final List<String> _calendarIds;
   final GoogleApiClientFactory _apiClientFactory;
 
+  /// The calendar ids this source was constructed with — mirrors
+  /// `DeviceCalendarSource.configuredCalendarIds`, the precedent. It exists
+  /// so `CalendarSyncService` can tell which calendars a SUCCESSFUL answer
+  /// from this source actually covered (WINDOWS entry 11). A plain getter,
+  /// not a `Future` verb: it does not touch the read-only structural guard
+  /// in `google_calendar_source_test.dart`.
+  List<String> get configuredCalendarIds => List.unmodifiable(_calendarIds);
+
   @override
   Future<bool> isAvailable() async => _authClient.hasCredentials();
 
