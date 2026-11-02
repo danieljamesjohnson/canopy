@@ -61,7 +61,9 @@ REPO="$HOME/CodeProjects/canopy"
 # `flutter run -d` wants this one; `devicectl --device` wants the other.
 DEVICE_UDID="${CANOPY_IOS_DEVICE:-00008130-001014892891401C}"
 
-BREW_PATH="/opt/homebrew/bin:$HOME/Library/Python/3.9/bin"
+# Flutter on the Mac lives at ~/flutter/bin (found 2026-11-02; a launchd agent gets
+# no login-shell PATH, so the first agent build failed with "flutter: command not found").
+BREW_PATH="$HOME/flutter/bin:/opt/homebrew/bin:$HOME/Library/Python/3.9/bin"
 
 say() { printf '%s\n' "$*"; }
 
