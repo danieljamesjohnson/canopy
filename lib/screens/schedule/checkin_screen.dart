@@ -8,6 +8,7 @@ import '../../data/calendar/google_calendar_source.dart';
 import '../../data/models/daily_schedule.dart';
 import '../../data/models/goal.dart';
 import '../../data/models/scheduled_chunk.dart';
+import '../../providers/calendar_sync_runner.dart';
 import '../../providers/commitments_notifier.dart';
 import '../../providers/goals_notifier.dart';
 import '../../providers/schedule_notifier.dart';
@@ -155,7 +156,14 @@ class _CheckinScreenState extends State<CheckinScreen> {
       // CAL-02): without the device half of the user's own ticked
       // selection, `DeviceCalendarSource` had no configured ids to
       // substitute and silently imported every calendar on the phone.
-      final syncResult = await commitmentsNotifier.syncFromCalendar(
+      //
+      // Goes through `runCalendarSync` (WINDOWS entries 10 and 11): the one
+      // function that passes the user's configured calendars to the prune and
+      // records the last-sync time AND the skipped list (success only), so
+      // this and the Calendars screen cannot drift apart.
+      await runCalendarSync(
+        commitments: commitmentsNotifier,
+        settings: settingsNotifier,
         source: defaultCalendarSource(
           icsUrls: settingsNotifier.icsUrls,
           googleAuth: GoogleAuthClient(store: settingsNotifier),
@@ -167,13 +175,6 @@ class _CheckinScreenState extends State<CheckinScreen> {
           ),
         ),
       );
-      // lastCalendarSyncAt is written on success only — a failing sync
-      // leaves the prior timestamp in place, so the Settings row and the
-      // Calendars screen's own status line can never disagree with what a
-      // check-in-triggered sync actually did.
-      if (!syncResult.failed) {
-        await settingsNotifier.setLastCalendarSyncAt(syncResult.syncedAt);
-      }
       final blocks = commitmentsNotifier.blocks;
       await scheduleNotifier.generateToday(
         moodIndex: _selectedMood!,

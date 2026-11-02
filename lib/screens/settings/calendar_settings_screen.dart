@@ -13,6 +13,7 @@ import '../../data/calendar/device_calendar_source.dart';
 import '../../data/calendar/google_auth_client.dart';
 import '../../data/calendar/google_calendar_source.dart';
 import '../../dev/dev_clock.dart';
+import '../../providers/calendar_sync_runner.dart';
 import '../../providers/commitments_notifier.dart';
 import '../../providers/settings_notifier.dart';
 import '../../services/calendar_sync_service.dart';
@@ -143,11 +144,6 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   /// consulted.
   Future<_GoogleState>? _googleFuture;
 
-  /// The most recent sync result from EITHER section's connect/grant flow
-  /// or a manual "Sync now" — Task 1 renders ONE shared footer for both
-  /// sources rather than two competing status lines.
-  CalendarSyncResult? _lastSyncResult;
-
   /// Every calendar the Google section has most recently listed, kept
   /// alongside [_deviceCalendars] purely so Task 3's overlap detector can
   /// see BOTH sources' full calendar lists together regardless of which
@@ -213,17 +209,27 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
 
   // ── Shared: sync + status ────────────────────────────────────────────
 
-  /// Runs a real sync through [CommitmentsNotifier.syncFromCalendar],
-  /// persists [SettingsNotifier.lastCalendarSyncAt] on success only, and
-  /// surfaces the locked failure SnackBar on failure. Never throws — mirrors
-  /// [CommitmentsNotifier.syncFromCalendar]'s own guarantee.
+  /// Runs a real sync through [runCalendarSync] — the same function check-in
+  /// uses — which passes the user's configured calendars to the prune and, on
+  /// success only, records the sync time AND the skipped list on
+  /// [SettingsNotifier] (WINDOWS entries 10 and 11). Surfaces the locked
+  /// failure SnackBar on failure. Never throws — [runCalendarSync] guarantees
+  /// it.
+  ///
+  /// Nothing about the result is kept on this State: the footer and the
+  /// skipped-events banner read [SettingsNotifier], which is what survives the
+  /// screen being left and re-entered, and the app being relaunched.
   Future<CalendarSyncResult> _syncAndReport(
     CalendarSource source,
     CommitmentsNotifier commitments,
     SettingsNotifier settings,
     ScaffoldMessengerState messenger,
   ) async {
-    final result = await commitments.syncFromCalendar(source: source);
+    final result = await runCalendarSync(
+      commitments: commitments,
+      settings: settings,
+      source: source,
+    );
     if (result.failed) {
       messenger.showSnackBar(
         const SnackBar(
@@ -234,12 +240,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
           duration: Duration(seconds: 6),
         ),
       );
-    } else {
-      await settings.setLastCalendarSyncAt(result.syncedAt);
     }
-    // Task 1: one shared footer for both sections reads this, whichever
-    // flow (device grant, Google connect, or manual "Sync now") last ran.
-    if (mounted) setState(() => _lastSyncResult = result);
     return result;
   }
 
@@ -345,10 +346,17 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
 
   /// The skipped-events disclosure, promoted to the TOP of the screen
   /// (WINDOWS entry 10) rather than buried under both calendar sections.
-  /// Reads the one shared [_lastSyncResult] both branches already write via
-  /// [_syncAndReport] — not a parameter, since this is now called
-  /// unconditionally as the first child of both bodies, before either
-  /// section's own state exists.
+  /// Reads [SettingsNotifier.lastCalendarSyncSkipped] — the persisted list
+  /// the last SUCCESSFUL sync recorded through [runCalendarSync] — not a
+  /// parameter, since this is called unconditionally as the first child of
+  /// both bodies, before either section's own state exists.
+  ///
+  /// WINDOWS entry 10 was reopened on 2026-11-02: this used to read this
+  /// screen's in-memory sync result, which is born empty every time the
+  /// screen opens, so the disclosure vanished the moment the owner left
+  /// Settings -> Calendars and came back (and after every relaunch) until a
+  /// sync happened to run again. A failed sync leaves the persisted list, and
+  /// so the banner, as the last successful sync left it.
   ///
   /// This is load-bearing, not cosmetic (D-36-05): once an all-day event is
   /// always skipped rather than imported (Task 1), this disclosure is the
@@ -360,7 +368,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   /// The string itself is unchanged, locked copy (35-UI-SPEC.md) — this
   /// method changes placement and weight only.
   Widget _skippedBanner(BuildContext context) {
-    final skipped = _lastSyncResult?.skipped ?? const <SkippedEvent>[];
+    final skipped = context.watch<SettingsNotifier>().lastCalendarSyncSkipped;
     if (skipped.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
     return Padding(
@@ -980,10 +988,21 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   }
 
   /// `_removeFeed`'s existing `AlertDialog` shape (see that method below),
-  /// but with copy that says what `CalendarSyncService.sync()` actually
-  /// does — see 36-06-PLAN.md's objective for why this does NOT copy the
-  /// existing ICS dialog's "will disappear the next time you sync" sentence
-  /// (that sentence is not true today; `sync()` only ever upserts).
+  /// but with copy that says what Disconnect actually does — see
+  /// 36-06-PLAN.md's objective for why this does NOT copy the ICS dialog's
+  /// "will disappear the next time you sync" sentence.
+  ///
+  /// That sentence was untrue when this was written (`sync()` only ever
+  /// upserted) and is TRUE for the ICS dialog now that the selection prune
+  /// runs (WINDOWS entry 11, wired by [runCalendarSync]). It is still
+  /// deliberately absent here, because it would still be untrue for Google:
+  /// Disconnect clears the token but leaves the `google:` ids in
+  /// [SettingsNotifier.selectedCalendarIds], so they stay configured (the
+  /// selection prune keeps them) and the Google child fails without a token
+  /// (the event prune never touches a calendar whose source did not answer).
+  /// Imported Google commitments therefore stay on the schedule, exactly as
+  /// the dialog below promises. There is no in-app way to remove them until
+  /// the user reconnects and unticks the calendars (36-17 logs this).
   Future<void> _disconnectGoogle(
     BuildContext context,
     SettingsNotifier settings,
@@ -1137,11 +1156,14 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
 
   Widget _buildMobileBody(BuildContext context) {
     final settings = context.watch<SettingsNotifier>();
+    // Reads nothing in-memory about the last ATTEMPT: a failed first sync
+    // must still leave the user a "Sync now" to retry with. The device
+    // section having resolved to granted (restore or an explicit grant) is
+    // set BEFORE any sync runs, so a failed first sync still shows the footer.
     final showFooter =
-        _lastSyncResult != null ||
-        settings.lastCalendarSyncAt != null ||
         _deviceGranted ||
-        settings.googleConnected;
+        settings.googleConnected ||
+        settings.lastCalendarSyncAt != null;
     return ListView(
       children: [
         _skippedBanner(context),
