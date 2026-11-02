@@ -39,13 +39,24 @@ class CommitmentsNotifier extends ChangeNotifier {
   /// Syncs [source]'s events into commitment blocks (CAL-01), then reloads
   /// [blocks] so listeners see the imported/updated commitments. Reuses
   /// [loadBlocks] rather than inventing a parallel refresh path. A failed
-  /// sync (see [CalendarSyncResult.failed]) leaves [blocks] as last-known —
-  /// this method never throws (D-35-13: check-in must still generate a day
-  /// from last-known blocks).
+  /// sync (see [CalendarSyncResult.failed]) imports nothing and leaves
+  /// [blocks] as last-known, apart from the selection prune below, which
+  /// needs no fetch — this method never throws (D-35-13: check-in must
+  /// still generate a day from last-known blocks).
+  ///
+  /// [configuredCalendarIds] is the user's currently ticked calendar ids,
+  /// forwarded unchanged to [CalendarSyncService]; when non-null, imported
+  /// blocks from any other calendar are removed (WINDOWS entry 11). Null
+  /// (the default) leaves that prune off.
   Future<CalendarSyncResult> syncFromCalendar({
     required CalendarSource source,
+    Iterable<String>? configuredCalendarIds,
   }) async {
-    final service = CalendarSyncService(source: source, repository: _repository);
+    final service = CalendarSyncService(
+      source: source,
+      repository: _repository,
+      configuredCalendarIds: configuredCalendarIds,
+    );
     final result = await service.sync();
     await loadBlocks();
     return result;
