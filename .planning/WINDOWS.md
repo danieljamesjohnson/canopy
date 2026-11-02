@@ -1,8 +1,8 @@
 ---
 schema_version: 1
-open_count: 9
+open_count: 7
 waived_count: 1
-fixed_count: 5
+fixed_count: 7
 total_count: 15
 last_updated: 2026-11-02T15:55:10.000Z
 ---
@@ -15,10 +15,10 @@ last_updated: 2026-11-02T15:55:10.000Z
 
 | id | phase | kind | file | line | description | status | reason | recorded_at | resolved_at |
 |----|-------|------|------|------|-------------|--------|--------|-------------|-------------|
-| 1 | 35 | stub | lib/data/calendar/ics_calendar_source.dart |  | EXDATE/RDATE/RECURRENCE-ID overrides not implemented — a moved/cancelled single occurrence of a recurring event still appears at its original time | open |  | 2026-09-14T13:15:25.420Z |  |
+| 1 | 35 | stub | lib/data/calendar/ics_calendar_source.dart |  | EXDATE/RDATE/RECURRENCE-ID overrides not implemented — a moved/cancelled single occurrence of a recurring event still appears at its original time FIXED IN CODE 2026-11-02 (merge 7740c35): EXDATE, RDATE and RECURRENCE-ID overrides (incl. cancelled overrides) implemented; a moved occurrence keeps its original key so its block moves in place. Also fixed: Google WKST=SU dropped whole weekly series; zoned series drifted an hour across DST; Apple comma-list EXDATE;VALUE=DATE failed the whole feed. Mutation-proven on host only. STAYS OPEN until observed on a real https feed in the browser or on Android (Re-check-in first). Not implemented: RANGE=THISANDFUTURE (treated as single), RDATE;VALUE=PERIOD (start only). | open |  | 2026-09-14T13:15:25.420Z |  |
 | 2 | 35 | stub | lib/data/calendar/ics_calendar_source.dart |  | DTSTART without a Z suffix (floating time, or bare TZID with no VTIMEZONE block) is parsed via Dart's system-local DateTime constructor, not the app's tz.local override — only Z-suffixed UTC timestamps are proven correct by this plan's test | fixed |  | 2026-09-14T13:15:28.640Z | 2026-09-15T13:33:05.131Z |
-| 3 | 35 | deviation | lib/data/models/app_settings.dart |  | Pre-existing non-nullable bool/int HiveFields (eveningReminderEnabled/eveningReminderMinutes, fields 7/8) have no defaultValue and generate a straight cast with no null-coalescing -- a genuinely old record missing those fields would throw on read, same defect class fixed in 35-03 for the new List<String> fields. Out of scope for 35-03 (pre-existing, not caused by this task); not fixed. | open |  | 2026-09-15T13:05:57.449Z |  |
-| 4 | 36 | deviation | lib/data/calendar/google_calendar_source.dart |  | 36-02 deferred connect()'s three-valued outcome enum (cancelled/connected/failed) to avoid touching 36-03's exclusive file in this wave; bool contract fully covers Task 2 behaviors. 36-06 should introduce the enum when it wires the settings screen. | open |  | 2026-09-25T15:03:20.080Z |  |
+| 3 | 35 | deviation | lib/data/models/app_settings.dart |  | Pre-existing non-nullable bool/int HiveFields (eveningReminderEnabled/eveningReminderMinutes, fields 7/8) have no defaultValue and generate a straight cast with no null-coalescing -- a genuinely old record missing those fields would throw on read, same defect class fixed in 35-03 for the new List<String> fields. Out of scope for 35-03 (pre-existing, not caused by this task); not fixed. FIXED 2026-11-02 (merge 4fb2731): defaultValue false/1200 on fields 7/8; a genuinely old record without them reads defaults instead of throwing. Mutation: removing either default -> runtime Null-cast error on old bytes. Pure data logic, fully host-provable; no schema bump (read-side only). The 4->5 migration comment repeating Q-02's false claim was corrected. | fixed |  | 2026-09-15T13:05:57.449Z | 2026-11-02T00:00:00.000Z |
+| 4 | 36 | deviation | lib/data/calendar/google_calendar_source.dart |  | 36-02 deferred connect()'s three-valued outcome enum (cancelled/connected/failed) to avoid touching 36-03's exclusive file in this wave; bool contract fully covers Task 2 behaviors. 36-06 should introduce the enum when it wires the settings screen. CLOSED 2026-11-02 (merge after 4fb2731): the bool loses no information -- connect() already yields connected/cancelled and THROWS on failure, and requestPermission() must return CalendarPermissionState, which has no failed value, so an enum would carry the same three signals. The real defect was the screen folding a failed sign-in into the silent cancel path; it now shows a SnackBar (PROPOSED, NOT LOCKED copy: "Couldn't connect to Google. Please try again."). Cancel stays silent; WR-05 unchanged. Mutations in both directions runtime red. | fixed |  | 2026-09-25T15:03:20.080Z | 2026-11-02T00:00:00.000Z |
 | 5 | 36 | stub | lib/data/calendar/calendar_source_factory.dart |  | GoogleCalendarSource is constructed in iosCalendarSource() with calendarIds: const [] -- listCalendars() works (full Google account visible to the picker) but listEvents() returns zero Google events until 36-06 wires AppSettings.selectedCalendarIds (filtered to the google: prefix) into this constructor. | fixed |  | 2026-09-25T15:23:21.055Z | 2026-09-25T16:05:44.417Z |
 | 6 | 36 | deviation | lib/screens/settings/calendar_settings_screen.dart |  | Re-opening the Calendars screen always shows the "Connect Google Calendar" CTA even when a valid token is stored -- only reconnectNeeded (a dead token) is read from persisted state, never a valid-but-unconfirmed connection. Tapping re-launches real consent and re-issues a token rather than failing, so this is UX friction, not wrong data. Mirrors the device flow's identical pre-existing limitation (_mobileFuture also resets on re-open). Fixing it needs a new SettingsNotifier.googleConnected getter, outside 36-06's declared scope. LOGGED BY THE ORCHESTRATOR, not 36-06, which reasoned it was carried-by-design and left it in its SUMMARY's Known Stubs only: it is recorded here because 36-07's UAT script must tell the owner this is expected, or a reasonable person will report it as a bug at the device gate. FIXED by plan 36-10: SettingsNotifier.googleConnected getter added; _loadGoogleCalendars restores the connected view from a valid stored token without ever calling requestPermission() (call-count-proven, not just inspected). CALAUTH-03's dead-token-wins ordering is unchanged. Device confirmation is 36-UAT-R2.md item R4. | fixed |  | 2026-09-25T16:20:00.000Z | 2026-10-06T00:00:00.000Z |
 | 7 | 36 | bug | lib/services/calendar_sync_service.dart |  | CAL-02 VIOLATED on the device path: sync() always calls listEvents(calendarIds: const []), and iosCalendarSource() builds DeviceCalendarSource() with no ids, so device_calendar_plus resolves empty to "every calendar". The user's ticks are persisted and rendered but NEVER reach the device source. Google's half WAS wired (entry 5); the device half never was. PROVEN on the owner's iPhone 2026-10-06: selectedCalendarIds held exactly one id (CF8A6881-...) while imported commitments carried at least four different calendar ids incl. a holidays and a birthdays calendar. Undetectable before now because the device path is iOS-only and 35-05's gate was open. STAYS OPEN DESPITE A CODE FIX (plan 36-08): the app-side wiring is now mutation-proven correct up to the plugin boundary -- the exact ticked id list reaches the exact point device_calendar_plus is called, through the real sync() path. What remains unproven, and cannot be proven on danserver (no Xcode, no device), is whether device_calendar_plus itself honours a non-empty calendarIds argument on real iOS hardware rather than ignoring it. Marking this fixed on a host test alone would be exactly the overclaim this project's CLAUDE.md exists to prevent. Closes only when 36-UAT-R2.md item R1 is observed on the owner's real iPhone. CLOSED 2026-11-02 ON REAL HARDWARE: owner ticked only spunkl (E3B52CDB-...); all 8 blocks from that sync carry ics:9c7d030a = hash(E3B52CDB-...), incl. his own 'Canopy r1 test' event; nothing from Home/Family. Plugin iOS source confirms it builds the EKEventStore predicate from only the passed ids. | fixed |  | 2026-10-06T00:00:00.000Z | 2026-11-02T00:00:00.000Z |
@@ -39,7 +39,7 @@ last_updated: 2026-11-02T15:55:10.000Z
     "phase": "35",
     "file": "lib/data/calendar/ics_calendar_source.dart",
     "line": null,
-    "description": "EXDATE/RDATE/RECURRENCE-ID overrides not implemented — a moved/cancelled single occurrence of a recurring event still appears at its original time",
+    "description": "EXDATE/RDATE/RECURRENCE-ID overrides not implemented — a moved/cancelled single occurrence of a recurring event still appears at its original time FIXED IN CODE 2026-11-02 (merge 7740c35): EXDATE, RDATE and RECURRENCE-ID overrides (incl. cancelled overrides) implemented; a moved occurrence keeps its original key so its block moves in place. Also fixed: Google WKST=SU dropped whole weekly series; zoned series drifted an hour across DST; Apple comma-list EXDATE;VALUE=DATE failed the whole feed. Mutation-proven on host only. STAYS OPEN until observed on a real https feed in the browser or on Android (Re-check-in first). Not implemented: RANGE=THISANDFUTURE (treated as single), RDATE;VALUE=PERIOD (start only).",
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-14T13:15:25.420Z",
@@ -63,11 +63,11 @@ last_updated: 2026-11-02T15:55:10.000Z
     "phase": "35",
     "file": "lib/data/models/app_settings.dart",
     "line": null,
-    "description": "Pre-existing non-nullable bool/int HiveFields (eveningReminderEnabled/eveningReminderMinutes, fields 7/8) have no defaultValue and generate a straight cast with no null-coalescing -- a genuinely old record missing those fields would throw on read, same defect class fixed in 35-03 for the new List<String> fields. Out of scope for 35-03 (pre-existing, not caused by this task); not fixed.",
-    "status": "open",
+    "description": "Pre-existing non-nullable bool/int HiveFields (eveningReminderEnabled/eveningReminderMinutes, fields 7/8) have no defaultValue and generate a straight cast with no null-coalescing -- a genuinely old record missing those fields would throw on read, same defect class fixed in 35-03 for the new List<String> fields. Out of scope for 35-03 (pre-existing, not caused by this task); not fixed. FIXED 2026-11-02 (merge 4fb2731): defaultValue false/1200 on fields 7/8; a genuinely old record without them reads defaults instead of throwing. Mutation: removing either default -> runtime Null-cast error on old bytes. Pure data logic, fully host-provable; no schema bump (read-side only). The 4->5 migration comment repeating Q-02's false claim was corrected.",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-09-15T13:05:57.449Z",
-    "resolved_at": null
+    "resolved_at": "2026-11-02T00:00:00.000Z"
   },
   {
     "id": 4,
@@ -75,11 +75,11 @@ last_updated: 2026-11-02T15:55:10.000Z
     "phase": "36",
     "file": "lib/data/calendar/google_calendar_source.dart",
     "line": null,
-    "description": "36-02 deferred connect()'s three-valued outcome enum (cancelled/connected/failed) to avoid touching 36-03's exclusive file in this wave; bool contract fully covers Task 2 behaviors. 36-06 should introduce the enum when it wires the settings screen.",
-    "status": "open",
+    "description": "36-02 deferred connect()'s three-valued outcome enum (cancelled/connected/failed) to avoid touching 36-03's exclusive file in this wave; bool contract fully covers Task 2 behaviors. 36-06 should introduce the enum when it wires the settings screen. CLOSED 2026-11-02 (merge after 4fb2731): the bool loses no information -- connect() already yields connected/cancelled and THROWS on failure, and requestPermission() must return CalendarPermissionState, which has no failed value, so an enum would carry the same three signals. The real defect was the screen folding a failed sign-in into the silent cancel path; it now shows a SnackBar (PROPOSED, NOT LOCKED copy: \"Couldn't connect to Google. Please try again.\"). Cancel stays silent; WR-05 unchanged. Mutations in both directions runtime red.",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-09-25T15:03:20.080Z",
-    "resolved_at": null
+    "resolved_at": "2026-11-02T00:00:00.000Z"
   },
   {
     "id": 5,
