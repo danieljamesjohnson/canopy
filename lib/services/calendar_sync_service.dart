@@ -60,9 +60,14 @@ class CalendarSyncResult {
   final List<SkippedEvent> skipped;
 
   /// True when the source could not be read at all (fetch or parse
-  /// failure) — [imported] and [skipped] are both empty and no blocks were
-  /// touched. A failed sync is not an error the UI needs to render; the day
-  /// still generates from last-known blocks (D-35-13).
+  /// failure) — [imported] and [skipped] are both empty and nothing was
+  /// imported or updated. A failed sync prunes nothing BY EVENT (absence from
+  /// a failed answer proves nothing), but it DOES still apply the selection
+  /// prune (WINDOWS entry 11) when the caller supplied
+  /// `configuredCalendarIds`: that prune is decided by the user's own
+  /// persisted selection and needs no fetch, so it is true whether or not
+  /// the network is. A failed sync is not an error the UI needs to render;
+  /// the day still generates from last-known blocks (D-35-13).
   final bool failed;
 
   final DateTime syncedAt;
@@ -85,6 +90,22 @@ String _stableHash(String input) {
   }
   return hash.toRadixString(16).padLeft(8, '0');
 }
+
+/// The calendar token inside every imported [CommitmentBlock.externalEventId]
+/// (`ics:<calendarIdHash>:<uid>:<recurrenceId><daySuffix>`).
+///
+/// One definition, used both to BUILD the id (`_buildBlock`) and to TEST
+/// membership in the selection prune (WINDOWS entry 11) — so the two cannot
+/// drift apart. [calendarId] must be the exact string the user's
+/// configuration stores and the source stamps on [CalendarEvent.calendarId]:
+/// the raw EventKit id for device events, the `google:`-prefixed id for
+/// Google events, the feed URL for ICS events.
+String calendarIdHash(String calendarId) => _stableHash(calendarId);
+
+/// Matches the `ics:<8 hex>:` head of an imported block's externalEventId and
+/// captures the calendar hash. A block whose id does not match is never
+/// pruned — unrecognised shapes are left alone, not guessed at.
+final RegExp _importedIdPattern = RegExp(r'^ics:([0-9a-f]{8}):');
 
 /// Syncs a [CalendarSource]'s events into [CommitmentBlock]s (CAL-01).
 ///
@@ -115,18 +136,46 @@ String _stableHash(String input) {
 /// Every surviving slice is upserted by [CommitmentBlock.externalEventId]
 /// so a repeat sync never duplicates; a multi-day event's per-day slices
 /// each get their own id suffix so they don't collide with each other.
+///
+/// Prune rules (WINDOWS entry 11 — before this, `sync()` only ever upserted,
+/// so an unticked calendar's blocks and a deleted event's block stayed on the
+/// schedule forever). A block is only ever a prune candidate when
+/// `isFromCalendar == true` AND its externalEventId has the
+/// `ics:<8 hex>:` shape; a hand-entered block can never be deleted, because
+/// it has no source to be re-derived from. A block written by the current
+/// sync is never deleted by it.
+/// - **Selection prune** (needs no fetch; runs even when the fetch fails):
+///   when `configuredCalendarIds` is supplied, every candidate whose
+///   [calendarIdHash] is not the hash of a configured id is deleted. Null
+///   (the default) disables it.
+/// - **Event prune** (only for sources that verifiably answered, only on days
+///   the fetch fully covered): a candidate on a calendar owned by a source
+///   that succeeded this sync, dated strictly after today and strictly before
+///   the window's last local day, and not re-produced by this sync, is
+///   deleted. Today is excluded because EventKit's partial-overlap semantics
+///   for an event that already ended this morning are not verified on
+///   hardware; the window's last day is only partially fetched. **Accepted
+///   cost:** an event deleted today keeps its block for the rest of today.
 class CalendarSyncService {
   CalendarSyncService({
     CalendarSource? source,
     CommitmentBlockRepository? repository,
     DateTime Function()? now,
+    Iterable<String>? configuredCalendarIds,
   }) : _source = source ?? NullCalendarSource(),
        _repository = repository ?? HiveCommitmentBlockRepository(),
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now,
+       _configuredCalendarHashes = configuredCalendarIds
+           ?.map(calendarIdHash)
+           .toSet();
 
   final CalendarSource _source;
   final CommitmentBlockRepository _repository;
   final DateTime Function() _now;
+
+  /// The [calendarIdHash]es of the calendars the user currently has ticked,
+  /// or null when the caller supplied no selection (selection prune off).
+  final Set<String>? _configuredCalendarHashes;
 
   Future<CalendarSyncResult> sync() async {
     final syncedAt = _now();
@@ -143,9 +192,18 @@ class CalendarSyncService {
       );
     } catch (_) {
       // T-35-01/Security V5: any fetch/parse failure degrades to a failed
-      // result. Already-persisted blocks are left untouched below (we
-      // return before reading or writing the repository at all), and
-      // nothing is rethrown into the UI.
+      // result and nothing is rethrown into the UI. A failed fetch imports
+      // nothing and prunes nothing BY EVENT — absence from a failed answer
+      // proves nothing. The SELECTION prune still runs (WINDOWS entry 11):
+      // it is decided by the user's own configuration, needs no fetch, and
+      // is true whether or not the network is. It is best-effort here — a
+      // repository error must not turn a failed sync into a thrown one
+      // (D-35-13: this path has never thrown).
+      try {
+        await _applyPrune(await _repository.getAll(), writtenIds: const {});
+      } catch (_) {
+        // Stale blocks stay until the next sync; never rethrown.
+      }
       return CalendarSyncResult(
         imported: const [],
         skipped: const [],
@@ -175,12 +233,56 @@ class CalendarSyncService {
       }
     }
 
+    await _applyPrune(
+      existing,
+      writtenIds: {
+        for (final b in imported)
+          if (b.externalEventId != null) b.externalEventId!,
+      },
+    );
+
     return CalendarSyncResult(
       imported: imported,
       skipped: skipped,
       failed: false,
       syncedAt: syncedAt,
     );
+  }
+
+  /// Deletes the stale imported blocks in [existing] (a snapshot read BEFORE
+  /// this sync's upserts). [writtenIds] are the externalEventIds this sync
+  /// wrote — those are never deleted. Each block id is deleted at most once.
+  Future<void> _applyPrune(
+    List<CommitmentBlock> existing, {
+    required Set<String> writtenIds,
+  }) async {
+    final doomed = <String>{};
+    final configured = _configuredCalendarHashes;
+    if (configured != null) {
+      for (final block in existing) {
+        // Each prune carries its OWN isFromCalendar guard (T-36-44) rather
+        // than sharing one: a hand-entered block is unrecoverable if
+        // deleted, and each guard is independently mutation-proven.
+        if (!block.isFromCalendar) continue;
+        final hash = _importedCalendarHash(block);
+        if (hash == null) continue;
+        if (writtenIds.contains(block.externalEventId)) continue;
+        if (!configured.contains(hash)) doomed.add(block.id);
+      }
+    }
+    for (final id in doomed) {
+      await _repository.delete(id);
+    }
+  }
+
+  /// The calendar hash from [block]'s well-formed `ics:<hash>:` id, or null
+  /// when the id is absent or has any other shape — an unrecognised id is
+  /// never a prune candidate. This checks the id SHAPE only; the caller is
+  /// responsible for the `isFromCalendar` guard (see [_applyPrune]).
+  String? _importedCalendarHash(CommitmentBlock block) {
+    final id = block.externalEventId;
+    if (id == null) return null;
+    return _importedIdPattern.firstMatch(id)?.group(1);
   }
 
   /// Maps one [CalendarEvent] occurrence to zero or more [CommitmentBlock]s.
@@ -318,7 +420,7 @@ class CalendarSyncService {
               '${daySuffix.month.toString().padLeft(2, '0')}'
               '${daySuffix.day.toString().padLeft(2, '0')}';
     final externalEventId =
-        'ics:${_stableHash(event.calendarId)}:${event.uid}:'
+        'ics:${calendarIdHash(event.calendarId)}:${event.uid}:'
         '${event.recurrenceId ?? ''}$suffix';
     final existingBlock = existing
         .where((b) => b.externalEventId == externalEventId)
