@@ -165,16 +165,21 @@ echo "  launchctl managername: \$(launchctl managername 2>&1)"
 echo "=============================================================="
 cd "$REPO" || { echo "FATAL: no repo at $REPO"; exit 1; }
 echo "--- HEAD: \$(git log --oneline -1) ---"
-./tools/build-ios.sh build --debug
+# PROFILE, not debug: on iOS 14+ a debug Flutter app refuses to start unless a debugger
+# (flutter tooling / Xcode) launched it -- measured 2026-11-02, the phone showed exactly that
+# message. Profile runs standalone and still gives readable errors. Override with
+# CANOPY_BUILD_MODE=release if needed.
+./tools/build-ios.sh build --\${CANOPY_BUILD_MODE:-profile}
 RC=\$?
 echo "--- build-ios.sh exit=\$RC ---"
 if [[ \$RC -eq 0 ]]; then
-  APP="\$(ls -d "$REPO"/build/ios/Debug-iphoneos/*.app 2>/dev/null | head -1)"
+  APP="\$(ls -d "$REPO"/build/ios/iphoneos/*.app 2>/dev/null | head -1)"
   echo "--- app: \${APP:-<none found>} ---"
   if [[ -n "\$APP" ]]; then
     echo "--- installing to $DEVICE_UDID ---"
     xcrun devicectl device install app --device "\${CANOPY_DEVICECTL_ID:-66110258-0097-5E64-9C90-B9815966D67E}" "\$APP" 2>&1 | tail -20
     echo "--- install exit=\$? ---"
+    xcrun devicectl device process launch --device "\${CANOPY_DEVICECTL_ID:-66110258-0097-5E64-9C90-B9815966D67E}" com.danjjohnson.canopy 2>&1 | tail -3
   fi
 fi
 echo "BUILD END \$(date) rc=\$RC"
