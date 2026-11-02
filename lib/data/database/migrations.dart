@@ -58,8 +58,13 @@ Future<void> _migration4to5() async {
   // Phase 10: ScheduledChunk gains commitmentId (HiveField 9, String?, default null)
   // and AppSettings gains eveningReminderEnabled (HiveField 7, bool, default false)
   // and eveningReminderMinutes (HiveField 8, int, default 1200).
-  // All additive nullable/defaulted fields — Hive CE binary reader returns
-  // null/false/0 for missing fields in existing records.
+  // All additive fields. CORRECTION (WINDOWS entry 3, QUESTIONS.md Q-02): this
+  // comment used to claim the Hive CE reader "returns null/false/0 for missing
+  // fields". That is false for NON-nullable fields — the generated adapter
+  // casts `fields[N]` directly and throws on null. The two AppSettings fields
+  // are safe for a pre-schema-5 record only because they declare
+  // `defaultValue: false` / `defaultValue: 1200` (added after the fact; see
+  // test/data/migration_evening_reminder_defaults_test.dart).
   // No data transformation needed.
 }
 

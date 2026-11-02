@@ -24,8 +24,10 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..morningNotificationEnabled = fields[4] as bool
       ..moodSeedArgb = (fields[5] as num?)?.toInt()
       ..lastMoodSetYmdInt = (fields[6] as num?)?.toInt()
-      ..eveningReminderEnabled = fields[7] as bool
-      ..eveningReminderMinutes = (fields[8] as num).toInt()
+      ..eveningReminderEnabled = fields[7] == null ? false : fields[7] as bool
+      ..eveningReminderMinutes = fields[8] == null
+          ? 1200
+          : (fields[8] as num).toInt()
       ..selectedCalendarIds = fields[9] == null
           ? []
           : (fields[9] as List).cast<String>()

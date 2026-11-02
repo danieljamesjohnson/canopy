@@ -38,11 +38,20 @@ class AppSettings extends HiveObject {
   int? lastMoodSetYmdInt;
 
   /// Evening reminder opt-in (default false — opt-in per CLOSE-01).
-  @HiveField(7)
+  ///
+  /// Added in schema 4→5, so a record written before then has no field 7.
+  /// `defaultValue: false` is REQUIRED, not decoration: without it the
+  /// generator emits an unguarded `fields[7] as bool` that throws
+  /// `type 'Null' is not a subtype of type 'bool'` on such a record
+  /// (WINDOWS entry 3, QUESTIONS.md Q-02). Must match the Dart initializer.
+  @HiveField(7, defaultValue: false)
   bool eveningReminderEnabled = false;
 
   /// Evening reminder time in minutes from midnight (default 1200 = 8:00pm).
-  @HiveField(8)
+  ///
+  /// `defaultValue: 1200` is REQUIRED for the same reason as field 7 —
+  /// without it `(fields[8] as num).toInt()` throws on a pre-schema-5 record.
+  @HiveField(8, defaultValue: 1200)
   int eveningReminderMinutes = 1200;
 
   /// The calendar ids the user has chosen to import from, out of the full
