@@ -75,6 +75,43 @@ class CalendarSettingsScreen extends StatefulWidget {
   State<CalendarSettingsScreen> createState() => _CalendarSettingsScreenState();
 }
 
+/// Puts a device calendar list into one deterministic order: by account name
+/// (case-insensitive, calendars with no account first), then calendar name
+/// (case-insensitive), then id. Returns a NEW list; [calendars] is never
+/// mutated.
+///
+/// WINDOWS entry 14 (36-16), mechanism A: a tick landed on the wrong calendar
+/// on the owner's iPhone. `device_calendar_plus_ios-0.7.0`'s
+/// `CalendarService.swift` (lines 12-55) iterates `eventStore.calendars(for:
+/// .event)` and appends in that order with no sort, Apple documents no order
+/// for that call, and nothing between the plugin and `_calendarRows` sorted —
+/// so a re-fetch could put every row somewhere else under a finger aimed at
+/// the previous layout.
+///
+/// Applied to the DEVICE section only: Google's API returns a stable order the
+/// user already recognises (primary calendar first), and EventKit documents
+/// none.
+List<CalendarInfo> sortCalendarsForPicker(List<CalendarInfo> calendars) {
+  int byText(String a, String b) {
+    final c = a.toLowerCase().compareTo(b.toLowerCase());
+    return c != 0 ? c : a.compareTo(b);
+  }
+
+  final sorted = List<CalendarInfo>.of(calendars);
+  sorted.sort((a, b) {
+    final aAccount = a.accountName ?? '';
+    final bAccount = b.accountName ?? '';
+    // No account sorts first (empty string), ahead of any named account.
+    if (aAccount.isEmpty != bAccount.isEmpty) return aAccount.isEmpty ? -1 : 1;
+    final account = byText(aAccount, bAccount);
+    if (account != 0) return account;
+    final name = byText(a.name, b.name);
+    if (name != 0) return name;
+    return a.id.compareTo(b.id);
+  });
+  return sorted;
+}
+
 /// The outcome of the mobile permission flow, once the user has tapped
 /// "Allow calendar access" (or a prior grant resolves instantly).
 class _MobileState {
@@ -1123,7 +1160,9 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: _calendarRows(
                 context,
-                state.calendars,
+                // WINDOWS entry 14: one call here covers the restore path
+                // and the first-grant path — both end in this builder.
+                sortCalendarsForPicker(state.calendars),
                 settings,
                 allCalendars: [..._googleCalendars, ..._deviceCalendars],
               ),
@@ -1167,9 +1206,17 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     return ListView(
       children: [
         _skippedBanner(context),
-        _buildGoogleSection(context, settings),
-        const Divider(indent: 16, endIndent: 16),
+        // WINDOWS entry 14 (36-16), mechanism B: content available locally
+        // renders ABOVE content that loads over the network, so nothing that
+        // finishes later can move rows the user can already see. The device
+        // list restores from the local store almost at once; the Google list
+        // arrives over the network at an arbitrary moment. Google used to be
+        // first (36-06, an implementation choice, not a ruling — D-36-03 only
+        // says both sources coexist), which pushed the device rows down by
+        // the whole Google list when it landed. Reversible: swap these two.
         _buildDeviceSection(context, settings),
+        const Divider(indent: 16, endIndent: 16),
+        _buildGoogleSection(context, settings),
         if (showFooter) _footer(context),
       ],
     );
