@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -29,8 +31,14 @@ import '../../widgets/adaptive_form_modal.dart';
 /// CTA state on both branches (35-UI-SPEC.md §5).
 ///
 /// Permission is read live every time this screen is opened; no permission
-/// result is ever persisted anywhere (D-35-10) — see [_isMobile]'s CTA-gated
-/// flow below.
+/// result is ever persisted anywhere (D-35-10). On open, a device source that
+/// can read its status without prompting ([CalendarPermissionReader]) is
+/// asked for it, and an already-granted permission restores the calendar list
+/// directly (WINDOWS entry 12) — that read can never show an OS prompt, so
+/// opening the screen still never surprises the user with one. The OS prompt
+/// is only ever raised by the user tapping "Allow calendar access" (see
+/// [_startMobileFlow]), which is also what a source that cannot read its
+/// status keeps doing.
 ///
 /// **CORS on the web build.** A Flutter **web** build fetching a third-party
 /// `.ics` URL is subject to the browser's cross-origin rules, and most
@@ -103,10 +111,22 @@ class _GoogleState {
 }
 
 class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
-  /// Null = "not yet requested" (the CTA state). Set only when the user taps
-  /// "Allow calendar access" — never fired automatically, so opening this
-  /// screen never surprises the user with a native OS prompt.
+  /// Null = "nothing resolved yet" (the CTA state). Set either when the user
+  /// taps "Allow calendar access" ([_startMobileFlow], the only path that can
+  /// raise the OS prompt) or, on first build, by [_restoreDeviceSection] when
+  /// the device source is a [CalendarPermissionReader] — a read that can
+  /// never prompt, which is what keeps "opening this screen never surprises
+  /// the user with a native OS prompt" true (WINDOWS entry 12).
   Future<_MobileState>? _mobileFuture;
+
+  /// True while a mobile "Sync now" is running (WINDOWS entry 13).
+  bool _syncing = false;
+
+  /// True once the device section has resolved to granted, by restore or by
+  /// an explicit grant — so the shared footer (and its "Sync now") shows
+  /// even before any sync has ever run (35-UI-SPEC §2: footer whenever at
+  /// least one source is configured).
+  bool _deviceGranted = false;
 
   /// Loaded once per set of configured feed URLs; reset to null after any
   /// add/remove so the next build re-fetches from the fresh configuration.
@@ -262,7 +282,14 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     );
   }
 
-  Widget _footer(BuildContext context, CalendarSyncResult? syncResult) {
+  /// The ONE builder of the locked "Sync status (fresh)" sentence
+  /// (35-UI-SPEC.md Copywriting Contract) — used by both the footer and the
+  /// "Sync now" SnackBar so the two cannot drift.
+  String _statusText(DateTime syncedAt, int importedCount) =>
+      'Synced ${_relativeTime(syncedAt)} — $importedCount '
+      'commitment${importedCount == 1 ? '' : 's'} imported';
+
+  Widget _footer(BuildContext context) {
     final theme = Theme.of(context);
     final settings = context.watch<SettingsNotifier>();
     final importedCount = context
@@ -270,11 +297,13 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         .blocks
         .where((b) => b.isFromCalendar)
         .length;
-    final lastSync = syncResult?.syncedAt ?? settings.lastCalendarSyncAt;
+    // Reads ONLY the persisted success-only time. A failed attempt's
+    // `syncedAt` must never surface here, or a failed sync would render as
+    // a fresh just-now sync (WINDOWS entry 13).
+    final lastSync = settings.lastCalendarSyncAt;
     final statusText = lastSync == null
         ? 'Not synced yet'
-        : 'Synced ${_relativeTime(lastSync)} — $importedCount '
-              'commitment${importedCount == 1 ? '' : 's'} imported';
+        : _statusText(lastSync, importedCount);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
@@ -291,10 +320,23 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
           ),
           Align(
             alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: () => _syncNow(context),
-              child: const Text('Sync now'),
-            ),
+            // While a mobile sync runs, the button disables and carries a
+            // spinner beside the unchanged label — the UI-SPEC's own
+            // "Requesting (in flight)" idiom of a spinner with no copy.
+            child: _syncing
+                ?TextButton.icon(
+                    onPressed: null,
+                    icon: const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    label: const Text('Sync now'),
+                  )
+                : TextButton(
+                    onPressed: () => _syncNow(context),
+                    child: const Text('Sync now'),
+                  ),
           ),
         ],
       ),
@@ -373,21 +415,53 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   void _syncNow(BuildContext context) {
     final settings = context.read<SettingsNotifier>();
     if (_isMobile) {
-      final commitments = context.read<CommitmentsNotifier>();
-      final messenger = ScaffoldMessenger.of(context);
-      final source = _resolveDeviceSource(settings);
-      setState(() {
-        _mobileFuture = _requestMobilePermission(
-          source,
-          commitments,
-          settings,
-          messenger,
-        );
-      });
+      unawaited(_syncInPlace(context, settings));
     } else {
       setState(
         () => _desktopFuture = _loadDesktopState(context, settings.icsUrls),
       );
+    }
+  }
+
+  /// The mobile "Sync now" (WINDOWS entry 13): syncs IN PLACE. It never
+  /// touches [_mobileFuture], never calls `requestPermission()` and never
+  /// re-lists calendars — the rows the user is looking at stay put. The
+  /// button shows it is working ([_syncing]) and, on success, a SnackBar
+  /// carries the same locked sentence the footer shows; on failure
+  /// [_syncAndReport] has already shown the locked failure SnackBar.
+  ///
+  /// The desktop/web "Sync now" is deliberately NOT changed: it already
+  /// replaces the body with a spinner while it reloads, and no defect was
+  /// reported there.
+  Future<void> _syncInPlace(
+    BuildContext context,
+    SettingsNotifier settings,
+  ) async {
+    if (_syncing) return;
+    final commitments = context.read<CommitmentsNotifier>();
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _syncing = true);
+    try {
+      final result = await _syncAndReport(
+        _resolveSyncSource(settings),
+        commitments,
+        settings,
+        messenger,
+      );
+      if (!result.failed && mounted) {
+        final importedCount = commitments.blocks
+            .where((b) => b.isFromCalendar)
+            .length;
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(_statusText(result.syncedAt, importedCount)),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _syncing = false);
     }
   }
 
@@ -463,7 +537,12 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
       return _MobileState(permission: permission, calendars: const []);
     }
     final calendars = await source.listCalendars();
-    if (mounted) setState(() => _deviceCalendars = calendars);
+    if (mounted) {
+      setState(() {
+        _deviceCalendars = calendars;
+        _deviceGranted = true;
+      });
+    }
     // Sync via the FULL composite (Task 1: "the sync... sees the
     // composite"), not the device-only [source] above — on iOS this also
     // imports a signed-in Google account's events, if one exists.
@@ -478,6 +557,40 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
       calendars: calendars,
       syncResult: syncResult,
     );
+  }
+
+  /// Restores the device section on screen re-open WITHOUT ever prompting —
+  /// the fix for WINDOWS entry 12 and the device twin of
+  /// [_loadGoogleCalendars]. Reads the current status through
+  /// [CalendarPermissionReader.currentPermission]; when granted, lists
+  /// calendars and nothing else. Never calls `requestPermission()` and never
+  /// syncs (opening a settings screen must not rewrite the schedule).
+  ///
+  /// Any throw folds to `notDetermined` — the CTA, i.e. the behaviour before
+  /// this fix — rather than a new state with new copy.
+  Future<_MobileState> _restoreDeviceSection(
+    CalendarSource source,
+    CalendarPermissionReader reader,
+  ) async {
+    try {
+      final permission = await reader.currentPermission();
+      if (permission != CalendarPermissionState.granted) {
+        return _MobileState(permission: permission, calendars: const []);
+      }
+      final calendars = await source.listCalendars();
+      if (mounted) {
+        setState(() {
+          _deviceCalendars = calendars;
+          _deviceGranted = true;
+        });
+      }
+      return _MobileState(permission: permission, calendars: calendars);
+    } catch (_) {
+      return const _MobileState(
+        permission: CalendarPermissionState.notDetermined,
+        calendars: [],
+      );
+    }
   }
 
   void _toggleCalendar(SettingsNotifier settings, String id, bool value) {
@@ -946,6 +1059,22 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   // ── Device branch ────────────────────────────────────────────────────
 
   Widget _buildDeviceSection(BuildContext context, SettingsNotifier settings) {
+    // WINDOWS entry 12: a source that can read its permission status without
+    // prompting is asked for it on first build, so an already-granted
+    // permission shows the list instead of the CTA. A runtime `is` check, not
+    // a static type — a source without the capability keeps the CTA flow.
+    if (_mobileFuture == null) {
+      final source = _resolveDeviceSource(settings);
+      if (source is CalendarPermissionReader) {
+        // `CalendarPermissionReader` is unrelated to `CalendarSource`, so the
+        // `is` check does not promote `source` — the cast is the capability
+        // hand-off, safe because the check just passed.
+        _mobileFuture = _restoreDeviceSection(
+          source,
+          source as CalendarPermissionReader,
+        );
+      }
+    }
     if (_mobileFuture == null) {
       return _ctaCard(
         context: context,
@@ -1009,14 +1138,17 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   Widget _buildMobileBody(BuildContext context) {
     final settings = context.watch<SettingsNotifier>();
     final showFooter =
-        _lastSyncResult != null || settings.lastCalendarSyncAt != null;
+        _lastSyncResult != null ||
+        settings.lastCalendarSyncAt != null ||
+        _deviceGranted ||
+        settings.googleConnected;
     return ListView(
       children: [
         _skippedBanner(context),
         _buildGoogleSection(context, settings),
         const Divider(indent: 16, endIndent: 16),
         _buildDeviceSection(context, settings),
-        if (showFooter) _footer(context, _lastSyncResult),
+        if (showFooter) _footer(context),
       ],
     );
   }
@@ -1166,7 +1298,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
                 ],
               ),
             ),
-            _footer(context, state.syncResult),
+            _footer(context),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: OutlinedButton.icon(

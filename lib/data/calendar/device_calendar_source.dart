@@ -135,6 +135,24 @@ Future<List<plugin.Event>> _defaultFetchEvents({
   calendarIds: calendarIds,
 );
 
+/// Reads the OS permission status. The production default is the plugin's
+/// `hasPermissions`, which never shows a prompt; tests inject a counter.
+typedef DevicePermissionStatusReader =
+    Future<plugin.CalendarPermissionStatus> Function();
+
+/// Requests OS permission (may show the system dialog). The production
+/// default is the plugin's `requestPermissions` at its default `full` tier.
+typedef DevicePermissionStatusRequester =
+    Future<plugin.CalendarPermissionStatus> Function();
+
+// Top-level (not closures over the singleton) so constructing a bare
+// `DeviceCalendarSource()` touches no plugin API and is safe in a host test.
+Future<plugin.CalendarPermissionStatus> _defaultReadPermissionStatus() =>
+    plugin.DeviceCalendar.instance.hasPermissions();
+
+Future<plugin.CalendarPermissionStatus> _defaultRequestPermissionStatus() =>
+    plugin.DeviceCalendar.instance.requestPermissions();
+
 /// The iOS device-calendar source (D-35-15): reads every calendar the user
 /// has added at the OS level — iCloud, Google, Exchange, subscribed feeds —
 /// via `device_calendar_plus`'s EventKit binding. No OAuth, no API key, no
@@ -174,15 +192,23 @@ Future<List<plugin.Event>> _defaultFetchEvents({
 /// calls only the plugin's read APIs — `requestPermissions`, `listCalendars`,
 /// `listEvents` — and never `createEvent`, `updateEvent`, `deleteEvent`,
 /// `createCalendar`, `updateCalendar`, or `deleteCalendar` (CAL-03).
-class DeviceCalendarSource implements CalendarSource {
+class DeviceCalendarSource implements CalendarSource, CalendarPermissionReader {
   DeviceCalendarSource({
     List<String> calendarIds = const [],
     DeviceEventsFetcher? fetchEvents,
+    DevicePermissionStatusReader? readPermissionStatus,
+    DevicePermissionStatusRequester? requestPermissionStatus,
   }) : _calendarIds = calendarIds,
-       _fetchEvents = fetchEvents ?? _defaultFetchEvents;
+       _fetchEvents = fetchEvents ?? _defaultFetchEvents,
+       _readPermissionStatus =
+           readPermissionStatus ?? _defaultReadPermissionStatus,
+       _requestPermissionStatus =
+           requestPermissionStatus ?? _defaultRequestPermissionStatus;
 
   final List<String> _calendarIds;
   final DeviceEventsFetcher _fetchEvents;
+  final DevicePermissionStatusReader _readPermissionStatus;
+  final DevicePermissionStatusRequester _requestPermissionStatus;
 
   /// The calendar ids this source was constructed with — for tests and
   /// introspection only. Mirrors `CompositeCalendarSource.children`'s own
@@ -210,7 +236,23 @@ class DeviceCalendarSource implements CalendarSource {
     // tier. This app never passes `CalendarAccessLevel.writeOnly` (the
     // add-only, write-oriented tier) — it has no use for it and must never
     // request it (CAL-03, Security V4).
-    final status = await plugin.DeviceCalendar.instance.requestPermissions();
+    final status = await _requestPermissionStatus();
+    return mapDeviceCalendarPermissionStatus(status);
+  }
+
+  /// The current OS permission status, read WITHOUT prompting (WINDOWS entry
+  /// 12). `device_calendar_plus` 0.8.0 documents `hasPermissions()` as
+  /// "Returns the current [CalendarPermissionStatus] without prompting …
+  /// never shows the system dialog" (`device_calendar_plus.dart` lines
+  /// 104-112), and on iOS `PermissionService.hasPermissions()` returns
+  /// `getCurrentPermissionStatus()` with the comment "A status check
+  /// triggers no prompt" (`device_calendar_plus_ios-0.7.0`
+  /// `PermissionService.swift` line 143). May throw (the plugin converts a
+  /// `PlatformException`, e.g. a missing usage description) — callers must
+  /// catch.
+  @override
+  Future<CalendarPermissionState> currentPermission() async {
+    final status = await _readPermissionStatus();
     return mapDeviceCalendarPermissionStatus(status);
   }
 
