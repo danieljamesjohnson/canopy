@@ -212,7 +212,7 @@ void main() {
           );
           expect(
             prefs.getInt('schemaVersion'),
-            equals(13),
+            equals(currentSchemaVersion),
             reason: 'the migration must persist the new schema version',
           );
         },
@@ -240,7 +240,7 @@ void main() {
 
           final survivingIds = box.values.map((b) => b.id).toSet();
           expect(survivingIds, equals({handEnteredBlock.id}));
-          expect(prefs.getInt('schemaVersion'), equals(13));
+          expect(prefs.getInt('schemaVersion'), equals(currentSchemaVersion));
         },
       );
 
@@ -255,7 +255,7 @@ void main() {
 
           await runMigrations(prefs);
 
-          expect(prefs.getInt('schemaVersion'), equals(13));
+          expect(prefs.getInt('schemaVersion'), equals(currentSchemaVersion));
         },
       );
 
@@ -287,7 +287,7 @@ void main() {
 
           final survivingIds = box.values.map((block) => block.id).toSet();
           expect(survivingIds, equals({a.id, b.id}));
-          expect(prefs.getInt('schemaVersion'), equals(13));
+          expect(prefs.getInt('schemaVersion'), equals(currentSchemaVersion));
         },
       );
     },

@@ -27,7 +27,13 @@ void main() {
   // Schema constant tests (no Hive I/O needed)
   // ---------------------------------------------------------------------------
 
-  // Bumped to 13 by the Phase 36 gap closure (WINDOWS entries 7/8,
+  // Bumped to 14 by Phase 36 plan 36-13 (WINDOWS entry 10): two additive
+  // List<String> fields on AppSettings (HiveFields 16/17, the last
+  // successful sync's skipped events), each with `defaultValue:` so an old
+  // record cannot crash the generated reader (Q-02). See
+  // migration_schema14_test.dart for the Hive round-trip half.
+  //
+  // Earlier, bumped to 13 by the Phase 36 gap closure (WINDOWS entries 7/8,
   // D-36-05): a one-time DATA cleanup, not a field addition — the first of
   // its kind in this file. migration 12→13 purges every previously
   // calendar-imported CommitmentBlock (isFromCalendar == true) because
@@ -35,15 +41,15 @@ void main() {
   // both the which-calendars and which-events axes this closure changed.
   // The WR-06 count invariant moves in lockstep. See
   // migration_schema13_test.dart for the Hive round-trip half.
-  test('currentSchemaVersion equals 13', () {
-    expect(currentSchemaVersion, equals(13));
+  test('currentSchemaVersion equals 14', () {
+    expect(currentSchemaVersion, equals(14));
   });
 
   // The WR-06 assert in migrations.dart enforces
   // _migrations.length == currentSchemaVersion at runtime in debug mode.
   // We confirm the constant value here; the assert is the count gate.
   test('currentSchemaVersion is consistent with WR-06 migration count', () {
-    expect(currentSchemaVersion, equals(13));
+    expect(currentSchemaVersion, equals(14));
   });
 
   // ---------------------------------------------------------------------------
