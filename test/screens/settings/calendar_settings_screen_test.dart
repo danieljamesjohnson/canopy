@@ -31,6 +31,8 @@ import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/settings_notifier.dart';
 import 'package:canopy/screens/commitments/commitments_screen.dart';
 import 'package:canopy/screens/settings/calendar_settings_screen.dart';
+import 'package:canopy/services/calendar_sync_service.dart'
+    show calendarIdHash;
 import 'package:flutter/foundation.dart'
     show debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
@@ -51,8 +53,12 @@ class _FakeCalendarSource implements CalendarSource {
   }) : _permissionGate = permissionGate;
 
   final CalendarPermissionState permission;
-  final List<CalendarInfo> calendars;
-  final List<CalendarEvent> events;
+
+  /// Mutable (36-15): a test can change what the fake serves between syncs —
+  /// e.g. point it at one remaining feed after another is removed, as the
+  /// real source rebuilt from the remaining URLs would be.
+  List<CalendarInfo> calendars;
+  List<CalendarEvent> events;
 
   /// When non-null, requestPermission() never resolves until the test
   /// completes it — lets a test observe the in-flight spinner deliberately.
@@ -1785,6 +1791,349 @@ void main() {
 
         await tester.pump(const Duration(seconds: 7));
       }),
+    );
+  });
+
+  group('Plan 36-15 — the skipped-events banner is persisted state, and '
+      'removing a feed really removes its commitments '
+      '(WINDOWS entries 10 and 11)', () {
+    final calendars = [
+      CalendarInfo(
+        id: 'spunkl',
+        name: 'spunkl',
+        accountName: 'dan@gmail.com',
+        isReadOnly: true,
+      ),
+    ];
+
+    // `tz.local` is a `late` field nothing initialises in a widget test; the
+    // sync maps events through it.
+    setUp(() => tz.setLocalLocation(tz.UTC));
+
+    DateTime inThreeDays(int hour) {
+      final n = DateTime.now();
+      return DateTime(n.year, n.month, n.day + 3, hour);
+    }
+
+    // One timed event (imports) and one all-day event (skipped, disclosed).
+    List<CalendarEvent> timedAndAllDay() => [
+      CalendarEvent(
+        uid: 'evt-dentist',
+        title: 'Dentist',
+        start: inThreeDays(10),
+        end: inThreeDays(11),
+        isAllDay: false,
+        status: CalendarEventStatus.confirmed,
+        calendarId: 'spunkl',
+      ),
+      CalendarEvent(
+        uid: 'evt-vacation',
+        title: 'Vacation',
+        start: inThreeDays(0),
+        end: inThreeDays(0).add(const Duration(days: 1)),
+        isAllDay: true,
+        status: CalendarEventStatus.confirmed,
+        calendarId: 'spunkl',
+      ),
+    ];
+
+    Finder syncNowText() => find.text('Sync now');
+    Finder banner(int n) =>
+        find.text('$n events not imported — tap for details');
+    Finder inSnackBar(String text) =>
+        find.descendant(of: find.byType(SnackBar), matching: find.text(text));
+    const failureCopy =
+        'Calendar sync failed — showing your last-known calendars.';
+
+    Future<void> openAndSync(
+      WidgetTester tester, {
+      required _FakeCalendarSource source,
+      required SettingsNotifier settings,
+      required CommitmentsNotifier commitments,
+    }) async {
+      await _pumpCalendarScreen(
+        tester,
+        source: source,
+        settingsNotifier: settings,
+        commitmentsNotifier: commitments,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(syncNowText());
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 7));
+    }
+
+    testWidgets(
+      'leave and re-enter Settings -> Calendars: the banner is still there '
+      'and still lists the all-day event (the unmount between the two '
+      'assertions is what makes this the owner\'s R3 case)',
+      (tester) => _withMobilePlatform(() async {
+        final source = _RestorableFakeCalendarSource(
+          calendars: calendars,
+          events: timedAndAllDay(),
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        final commitments = CommitmentsNotifier(
+          repository: _InMemoryCommitmentBlockRepository(),
+        );
+        await openAndSync(
+          tester,
+          source: source,
+          settings: settings,
+          commitments: commitments,
+        );
+        expect(banner(1), findsOneWidget);
+
+        // Leave the screen entirely, then come back with the same notifiers.
+        await tester.pumpWidget(const SizedBox());
+        expect(banner(1), findsNothing);
+        await _pumpCalendarScreen(
+          tester,
+          source: source,
+          settingsNotifier: settings,
+          commitmentsNotifier: commitments,
+        );
+        await tester.pumpAndSettle();
+
+        expect(banner(1), findsOneWidget);
+        await tester.tap(banner(1));
+        await tester.pumpAndSettle();
+        expect(find.text('Vacation'), findsOneWidget);
+        expect(
+          find.text('All-day — not imported automatically'),
+          findsOneWidget,
+        );
+      }),
+    );
+
+    testWidgets(
+      'relaunch: a NEW SettingsNotifier over the same repository, after '
+      'init(), shows the banner before any sync has run',
+      (tester) => _withMobilePlatform(() async {
+        final source = _RestorableFakeCalendarSource(
+          calendars: calendars,
+          events: timedAndAllDay(),
+        );
+        final settingsRepo = InMemoryAppSettingsRepository();
+        final settings = SettingsNotifier(repository: settingsRepo);
+        final commitments = CommitmentsNotifier(
+          repository: _InMemoryCommitmentBlockRepository(),
+        );
+        await openAndSync(
+          tester,
+          source: source,
+          settings: settings,
+          commitments: commitments,
+        );
+        expect(banner(1), findsOneWidget);
+        final listedAfterFirstSync = source.listEventsCount;
+
+        await tester.pumpWidget(const SizedBox());
+        final relaunched = SettingsNotifier(repository: settingsRepo);
+        await relaunched.init();
+        await _pumpCalendarScreen(
+          tester,
+          source: source,
+          settingsNotifier: relaunched,
+          commitmentsNotifier: CommitmentsNotifier(
+            repository: _InMemoryCommitmentBlockRepository(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(banner(1), findsOneWidget);
+        // Nothing was synced to get it there.
+        expect(source.listEventsCount, listedAfterFirstSync);
+      }),
+    );
+
+    testWidgets(
+      'a later sync whose source throws leaves the banner showing the last '
+      'successful sync\'s count',
+      (tester) => _withMobilePlatform(() async {
+        final source = _RestorableFakeCalendarSource(
+          calendars: calendars,
+          events: timedAndAllDay(),
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        final commitments = CommitmentsNotifier(
+          repository: _InMemoryCommitmentBlockRepository(),
+        );
+        await openAndSync(
+          tester,
+          source: source,
+          settings: settings,
+          commitments: commitments,
+        );
+        expect(banner(1), findsOneWidget);
+
+        source.listEventsError = StateError('network down');
+        await tester.tap(syncNowText());
+        await tester.pumpAndSettle();
+
+        expect(inSnackBar(failureCopy), findsOneWidget);
+        expect(banner(1), findsOneWidget);
+        await tester.pump(const Duration(seconds: 7));
+      }),
+    );
+
+    testWidgets(
+      'a later successful sync with nothing skipped removes the banner',
+      (tester) => _withMobilePlatform(() async {
+        final source = _RestorableFakeCalendarSource(
+          calendars: calendars,
+          events: timedAndAllDay(),
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        final commitments = CommitmentsNotifier(
+          repository: _InMemoryCommitmentBlockRepository(),
+        );
+        await openAndSync(
+          tester,
+          source: source,
+          settings: settings,
+          commitments: commitments,
+        );
+        expect(banner(1), findsOneWidget);
+
+        source.events = [source.events.first];
+        await tester.tap(syncNowText());
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 7));
+
+        expect(find.textContaining('events not imported'), findsNothing);
+      }),
+    );
+
+    testWidgets(
+      'desktop branch, the very first load fails (nothing ever synced): the '
+      'locked failure SnackBar appears AND the footer still reads "Not '
+      'synced yet" with a "Sync now" button',
+      (tester) async {
+        const feed = 'https://example.com/work.ics';
+        final source = _FakeCalendarSource(
+          calendars: [
+            CalendarInfo(id: feed, name: 'Work feed', isReadOnly: true),
+          ],
+        )..listEventsError = StateError('network down');
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.addIcsUrl(feed);
+
+        await _pumpCalendarScreen(
+          tester,
+          source: source,
+          settingsNotifier: settings,
+        );
+        await tester.pumpAndSettle();
+
+        expect(inSnackBar(failureCopy), findsOneWidget);
+        expect(find.text('Not synced yet'), findsOneWidget);
+        expect(syncNowText(), findsOneWidget);
+        await tester.pump(const Duration(seconds: 7));
+      },
+    );
+
+    testWidgets(
+      'mobile branch, granted on tap, the first sync throws: after "Allow '
+      'calendar access" the footer still reads "Not synced yet" with '
+      '"Sync now"',
+      (tester) => _withMobilePlatform(() async {
+        final source = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: calendars,
+        )..listEventsError = StateError('network down');
+        await _pumpCalendarScreen(tester, source: source);
+
+        await tester.tap(find.text('Allow calendar access'));
+        await tester.pumpAndSettle();
+
+        expect(inSnackBar(failureCopy), findsOneWidget);
+        expect(find.text('Not synced yet'), findsOneWidget);
+        expect(syncNowText(), findsOneWidget);
+        await tester.pump(const Duration(seconds: 7));
+      }),
+    );
+
+    testWidgets(
+      'desktop branch, two feeds: removing feed a through the "Remove this '
+      'calendar?" dialog deletes a\'s commitments at the next sync and '
+      'keeps b\'s — the locked dialog\'s promise, kept',
+      (tester) async {
+        const feedA = 'https://example.com/a.ics';
+        const feedB = 'https://example.com/b.ics';
+        CalendarEvent eventOn(String feed, String uid, int hour) =>
+            CalendarEvent(
+              uid: uid,
+              title: 'Event $uid',
+              start: inThreeDays(hour),
+              end: inThreeDays(hour + 1),
+              isAllDay: false,
+              status: CalendarEventStatus.confirmed,
+              calendarId: feed,
+            );
+        final infoA = CalendarInfo(id: feedA, name: 'Feed A', isReadOnly: true);
+        final infoB = CalendarInfo(id: feedB, name: 'Feed B', isReadOnly: true);
+        final source = _FakeCalendarSource(
+          calendars: [infoA, infoB],
+          events: [eventOn(feedA, 'evt-a', 9), eventOn(feedB, 'evt-b', 13)],
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.addIcsUrl(feedA);
+        await settings.addIcsUrl(feedB);
+        final commitments = CommitmentsNotifier(
+          repository: _InMemoryCommitmentBlockRepository(),
+        );
+
+        await _pumpCalendarScreen(
+          tester,
+          source: source,
+          settingsNotifier: settings,
+          commitmentsNotifier: commitments,
+        );
+        await tester.pumpAndSettle();
+
+        String idOf(String feed, String uid) => commitments.blocks
+            .singleWhere(
+              (b) =>
+                  b.externalEventId?.startsWith(
+                    'ics:${calendarIdHash(feed)}:$uid:',
+                  ) ??
+                  false,
+            )
+            .id;
+        final aId = idOf(feedA, 'evt-a');
+        final bId = idOf(feedB, 'evt-b');
+        expect(commitments.blocks.map((b) => b.id), containsAll([aId, bId]));
+
+        // As the real source rebuilt from the one remaining URL would be.
+        source.calendars = [infoB];
+        source.events = [eventOn(feedB, 'evt-b', 13)];
+
+        await tester.tap(find.byTooltip('Remove calendar').first);
+        await tester.pumpAndSettle();
+        expect(find.text('Remove this calendar?'), findsOneWidget);
+        expect(
+          find.textContaining('will disappear the next time you sync'),
+          findsOneWidget,
+        );
+        await tester.tap(find.text('Remove'));
+        await tester.pumpAndSettle();
+
+        final survivors = commitments.blocks.map((b) => b.id).toSet();
+        expect(survivors, isNot(contains(aId)));
+        expect(survivors, contains(bId));
+        await tester.pump(const Duration(seconds: 7));
+      },
     );
   });
 }
