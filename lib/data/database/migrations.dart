@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../repositories/commitment_block_repository.dart';
 import '../repositories/hive_commitment_block_repository.dart';
 
-const int currentSchemaVersion = 13;
+const int currentSchemaVersion = 14;
 
 typedef MigrationFn = Future<void> Function();
 
@@ -23,6 +23,7 @@ final List<MigrationFn> _migrations = [
   _migration10to11,
   _migration11to12,
   _migration12to13,
+  _migration13to14,
 ];
 
 Future<void> _migration0to1() async {
@@ -188,6 +189,23 @@ Future<void> _migration12to13() async {
   // called, so the box is always open here. A silent skip on a closed box
   // would hide a real failure rather than fixing one.
   await purgeImportedCalendarBlocks(HiveCommitmentBlockRepository());
+}
+
+Future<void> _migration13to14() async {
+  // Phase 36 plan 36-13 (WINDOWS entry 10): AppSettings gains
+  // lastCalendarSyncSkippedTitles (HiveField 16, List<String>) and
+  // lastCalendarSyncSkippedReasons (HiveField 17, List<String>) — the last
+  // successful sync's skipped events, persisted so the disclosure survives a
+  // screen re-open and an app relaunch.
+  //
+  // Safe for an old record BECAUSE both fields declare
+  // `defaultValue: <String>[]`, which makes the generated adapter null-guard
+  // the read (`fields[N] == null ? [] : ...`). The Hive reader itself does
+  // NOT supply a default for a non-nullable field: without `defaultValue:`
+  // the generator emits an unguarded cast that throws on a record written
+  // before the field existed (QUESTIONS.md Q-02; migration_schema14_test.dart
+  // reproduces the crash by mutation). Old records therefore read back with
+  // an empty skipped list. No data transformation needed.
 }
 
 Future<void> runMigrations(SharedPreferences prefs) async {

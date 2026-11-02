@@ -104,4 +104,26 @@ class AppSettings extends HiveObject {
   /// bool fields.
   @HiveField(15, defaultValue: false)
   bool googleReconnectNeeded = false;
+
+  /// Titles of the events the LAST SUCCESSFUL calendar sync fetched but did
+  /// not import (WINDOWS entry 10, D-36-05), parallel to
+  /// [lastCalendarSyncSkippedReasons] — index i of each describes one event.
+  /// Two plain lists rather than a new Hive type adapter so the pair stays
+  /// readable in a raw device Hive dump. Additive field — old records
+  /// deserialize with an empty list, i.e. an upgrading user has nothing to
+  /// disclose until the next sync.
+  ///
+  /// `defaultValue: <String>[]` is REQUIRED, not decoration: a non-nullable
+  /// field without it compiles to an unguarded `fields[16] as List` cast
+  /// that throws on a record written before this field existed
+  /// (QUESTIONS.md Q-02; field 15's comment records the measured crash).
+  @HiveField(16, defaultValue: <String>[])
+  List<String> lastCalendarSyncSkippedTitles = [];
+
+  /// The `SkipReason.name` of each event in [lastCalendarSyncSkippedTitles],
+  /// same order. Stored as names (not enum indices) so reordering
+  /// `SkipReason` can never silently relabel a stored skip. Same
+  /// `defaultValue:` requirement and reason as field 16.
+  @HiveField(17, defaultValue: <String>[])
+  List<String> lastCalendarSyncSkippedReasons = [];
 }

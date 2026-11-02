@@ -7,6 +7,7 @@ import 'package:canopy/data/calendar/google_auth_client.dart';
 import 'package:canopy/data/models/app_settings.dart';
 import 'package:canopy/data/repositories/in_memory_app_settings_repository.dart';
 import 'package:canopy/providers/settings_notifier.dart';
+import 'package:canopy/services/calendar_sync_service.dart';
 
 /// Mirrors the pre-Phase-35 `AppSettingsAdapter` (schema 10, 9 fields)
 /// exactly as it existed before HiveField 9/10/11 were added. Used ONLY to
@@ -341,6 +342,153 @@ void main() {
           expect(readBack.icsUrls, isEmpty);
           expect(readBack.lastCalendarSyncAt, isNull);
           await reopened.close();
+        },
+      );
+    },
+  );
+
+  group(
+    'SettingsNotifier — the last successful sync\'s skipped events persist '
+    '(WINDOWS entry 10)',
+    () {
+      late InMemoryAppSettingsRepository repo;
+
+      setUp(() {
+        repo = InMemoryAppSettingsRepository();
+      });
+
+      Future<SettingsNotifier> fresh() async {
+        final n = SettingsNotifier(repository: repo);
+        await n.init();
+        return n;
+      }
+
+      test('a fresh notifier over an empty repository reports none', () async {
+        final n = await fresh();
+        expect(n.lastCalendarSyncSkipped, isEmpty);
+      });
+
+      test('record then read back on the same notifier', () async {
+        final n = await fresh();
+        final t = DateTime(2026, 11, 2, 9, 30);
+        await n.recordCalendarSyncSuccess(
+          syncedAt: t,
+          skipped: [
+            SkippedEvent(title: 'Vacation', reason: SkipReason.allDay),
+            SkippedEvent(title: 'Standup', reason: SkipReason.tooShort),
+          ],
+        );
+        expect(n.lastCalendarSyncSkipped.map((e) => e.title), [
+          'Vacation',
+          'Standup',
+        ]);
+        expect(n.lastCalendarSyncSkipped.map((e) => e.reason), [
+          SkipReason.allDay,
+          SkipReason.tooShort,
+        ]);
+        expect(n.lastCalendarSyncAt, t);
+      });
+
+      test(
+        'a NEW notifier over the same repository sees the same skipped list '
+        'and time (app killed and relaunched)',
+        () async {
+          final first = await fresh();
+          final t = DateTime(2026, 11, 2, 9, 30);
+          await first.recordCalendarSyncSuccess(
+            syncedAt: t,
+            skipped: [
+              SkippedEvent(title: 'Vacation', reason: SkipReason.allDay),
+              SkippedEvent(title: 'Standup', reason: SkipReason.tooShort),
+            ],
+          );
+
+          final second = await fresh();
+          expect(second.lastCalendarSyncSkipped.map((e) => e.title), [
+            'Vacation',
+            'Standup',
+          ]);
+          expect(second.lastCalendarSyncSkipped.map((e) => e.reason), [
+            SkipReason.allDay,
+            SkipReason.tooShort,
+          ]);
+          expect(second.lastCalendarSyncAt, t);
+        },
+      );
+
+      test('recording an empty list afterwards clears it', () async {
+        final n = await fresh();
+        await n.recordCalendarSyncSuccess(
+          syncedAt: DateTime(2026, 11, 2),
+          skipped: [SkippedEvent(title: 'Vacation', reason: SkipReason.allDay)],
+        );
+        await n.recordCalendarSyncSuccess(
+          syncedAt: DateTime(2026, 11, 3),
+          skipped: [],
+        );
+        expect(n.lastCalendarSyncSkipped, isEmpty);
+        expect((await fresh()).lastCalendarSyncSkipped, isEmpty);
+      });
+
+      test('the getter is unmodifiable', () async {
+        final n = await fresh();
+        await n.recordCalendarSyncSuccess(
+          syncedAt: DateTime(2026, 11, 2),
+          skipped: [SkippedEvent(title: 'A', reason: SkipReason.allDay)],
+        );
+        expect(
+          () => n.lastCalendarSyncSkipped.add(
+            SkippedEvent(title: 'B', reason: SkipReason.cancelled),
+          ),
+          throwsUnsupportedError,
+        );
+      });
+
+      test('notifies exactly once per record', () async {
+        final n = await fresh();
+        var calls = 0;
+        n.addListener(() => calls++);
+        await n.recordCalendarSyncSuccess(
+          syncedAt: DateTime(2026, 11, 2),
+          skipped: [SkippedEvent(title: 'A', reason: SkipReason.allDay)],
+        );
+        expect(calls, 1);
+      });
+
+      test(
+        'an unknown reason name is dropped, never thrown on '
+        '(forward compatibility)',
+        () async {
+          await repo.saveSettings(
+            AppSettings()
+              ..lastCalendarSyncSkippedTitles = ['A', 'B']
+              ..lastCalendarSyncSkippedReasons = ['allDay', 'notAReason'],
+          );
+          final n = await fresh();
+          expect(n.lastCalendarSyncSkipped.map((e) => e.title), ['A']);
+          expect(n.lastCalendarSyncSkipped.single.reason, SkipReason.allDay);
+        },
+      );
+
+      test(
+        'mismatched list lengths decode to the shorter length without '
+        'throwing',
+        () async {
+          await repo.saveSettings(
+            AppSettings()
+              ..lastCalendarSyncSkippedTitles = ['A', 'B', 'C']
+              ..lastCalendarSyncSkippedReasons = ['allDay', 'cancelled'],
+          );
+          final n = await fresh();
+          expect(n.lastCalendarSyncSkipped.map((e) => e.title), ['A', 'B']);
+
+          await repo.saveSettings(
+            AppSettings()
+              ..lastCalendarSyncSkippedTitles = ['A']
+              ..lastCalendarSyncSkippedReasons = ['allDay', 'cancelled'],
+          );
+          final m = await fresh();
+          expect(m.lastCalendarSyncSkipped.map((e) => e.title), ['A']);
         },
       );
     },
