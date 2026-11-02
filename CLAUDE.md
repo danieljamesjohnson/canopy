@@ -236,7 +236,7 @@ Key choices:
     `gui/501` and started from ssh with `launchctl kickstart` runs as `Aqua` and signs — no root, no
     stored password. The script is installed on the Mac, so the loop is:
     `ssh dans-macbook-air 'launchctl kickstart -p gui/501/com.canopy.iosbuild'`, then read
-    `~/Library/Logs/canopy-ios-build.log` (it builds `--debug`, then `devicectl` installs). After
+    `~/Library/Logs/canopy-ios-build.log` (it builds **profile** — a debug build refuses to launch on iOS 14+ without a debugger attached — then `devicectl` installs and launches). After
     changing the script, re-run `tools/ios-build-agent.sh install` on the Mac. The runner needs
     Flutter at `~/flutter/bin` — a launchd agent gets no login-shell PATH.
     **The phone must be unlocked and connected for the install step.** If `devicectl list devices`
