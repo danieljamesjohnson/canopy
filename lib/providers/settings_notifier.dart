@@ -3,6 +3,7 @@ import '../data/calendar/google_auth_client.dart';
 import '../data/models/app_settings.dart';
 import '../data/repositories/app_settings_repository.dart';
 import '../data/repositories/hive_app_settings_repository.dart';
+import '../services/calendar_sync_service.dart' show SkipReason, SkippedEvent;
 
 /// One writer for the four Google token fields means the UI cache can never
 /// drift from Hive — this matters because [GoogleTokenStore.reconnectNeeded]
@@ -43,6 +44,14 @@ class SettingsNotifier extends ChangeNotifier implements GoogleTokenStore {
   DateTime? _lastCalendarSyncAt;
   DateTime? get lastCalendarSyncAt => _lastCalendarSyncAt;
 
+  List<SkippedEvent> _lastCalendarSyncSkipped = [];
+
+  /// The events the last SUCCESSFUL calendar sync fetched but did not import
+  /// (WINDOWS entry 10). Survives a screen re-open and an app relaunch;
+  /// unchanged by a failed sync.
+  List<SkippedEvent> get lastCalendarSyncSkipped =>
+      List.unmodifiable(_lastCalendarSyncSkipped);
+
   String? _googleAccessToken;
   String? _googleRefreshToken;
   DateTime? _googleAccessTokenExpiresAt;
@@ -81,6 +90,12 @@ class SettingsNotifier extends ChangeNotifier implements GoogleTokenStore {
     _selectedCalendarIds = settings?.selectedCalendarIds ?? [];
     _icsUrls = settings?.icsUrls ?? [];
     _lastCalendarSyncAt = settings?.lastCalendarSyncAt;
+    _lastCalendarSyncSkipped = settings == null
+        ? []
+        : _decodeSkipped(
+            settings.lastCalendarSyncSkippedTitles,
+            settings.lastCalendarSyncSkippedReasons,
+          );
     _googleAccessToken = settings?.googleAccessToken;
     _googleRefreshToken = settings?.googleRefreshToken;
     _googleAccessTokenExpiresAt = settings?.googleAccessTokenExpiresAt;
@@ -182,6 +197,46 @@ class SettingsNotifier extends ChangeNotifier implements GoogleTokenStore {
     settings.lastCalendarSyncAt = value;
     await _repository.saveSettings(settings);
     notifyListeners();
+  }
+
+  /// Records a SUCCESSFUL calendar sync: its completion time and the events
+  /// it skipped, written onto ONE record in ONE save, then one notify.
+  ///
+  /// For successful syncs only. A failed sync must NOT call this, so the
+  /// last-known disclosure (and last-sync time) survives a failure
+  /// (WINDOWS entry 10, D-36-05). Passing an empty [skipped] clears the list.
+  Future<void> recordCalendarSyncSuccess({
+    required DateTime syncedAt,
+    required List<SkippedEvent> skipped,
+  }) async {
+    _lastCalendarSyncAt = syncedAt;
+    _lastCalendarSyncSkipped = List.of(skipped);
+    final settings = await _repository.getSettings() ?? AppSettings();
+    settings.lastCalendarSyncAt = syncedAt;
+    settings.lastCalendarSyncSkippedTitles = [for (final e in skipped) e.title];
+    settings.lastCalendarSyncSkippedReasons = [
+      for (final e in skipped) e.reason.name,
+    ];
+    await _repository.saveSettings(settings);
+    notifyListeners();
+  }
+
+  /// Zips the two persisted lists to the shorter length and drops any entry
+  /// whose reason name is unknown (forward compatibility: a newer build may
+  /// have stored a reason this build has never heard of). Never throws.
+  static List<SkippedEvent> _decodeSkipped(
+    List<String> titles,
+    List<String> reasons,
+  ) {
+    final byName = SkipReason.values.asNameMap();
+    final n = titles.length < reasons.length ? titles.length : reasons.length;
+    final out = <SkippedEvent>[];
+    for (var i = 0; i < n; i++) {
+      final reason = byName[reasons[i]];
+      if (reason == null) continue;
+      out.add(SkippedEvent(title: titles[i], reason: reason));
+    }
+    return out;
   }
 
   // --- GoogleTokenStore (CALAUTH-01/02/03) ---------------------------------
