@@ -121,7 +121,21 @@ class _RestorableFakeCalendarSource extends _FakeCalendarSource
     super.events,
     super.permission,
     this.currentPermissionError,
+    this.calendarOrders,
   });
+
+  /// WINDOWS entry 14 (36-16): successive `listCalendars()` calls return
+  /// successive entries (the last repeats), standing in for EventKit giving
+  /// back the same calendars in a different order on each fetch.
+  final List<List<CalendarInfo>>? calendarOrders;
+
+  @override
+  Future<List<CalendarInfo>> listCalendars() async {
+    final orders = calendarOrders;
+    if (orders == null) return super.listCalendars();
+    final call = listCalendarsCount++;
+    return orders[call < orders.length ? call : orders.length - 1];
+  }
 
   CalendarPermissionState status;
   Object? currentPermissionError;
@@ -2135,5 +2149,140 @@ void main() {
         await tester.pump(const Duration(seconds: 7));
       },
     );
+  });
+
+  group('Plan 36-16 — a tick lands on the row the user aimed at '
+      '(WINDOWS entry 14)', () {
+    CalendarInfo cal(String id, String name, [String? account = 'iCloud']) =>
+        CalendarInfo(
+          id: id,
+          name: name,
+          accountName: account,
+          isReadOnly: true,
+        );
+
+    double rowY(WidgetTester tester, String name) =>
+        tester.getTopLeft(find.text(name)).dy;
+
+    testWidgets(
+      'the device rows come out Family, Home, spunkl on the first open AND '
+      'on a re-open where the source returned a different order',
+      (tester) => _withMobilePlatform(() async {
+        final family = cal('3935F311-family', 'Family');
+        final home = cal('home-id', 'Home');
+        final spunkl = cal('spunkl-id', 'spunkl');
+        final source = _RestorableFakeCalendarSource(
+          calendarOrders: [
+            [spunkl, home, family],
+            [family, spunkl, home],
+          ],
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        final commitments = CommitmentsNotifier(
+          repository: _InMemoryCommitmentBlockRepository(),
+        );
+
+        Future<void> open() async {
+          await _pumpCalendarScreen(
+            tester,
+            source: source,
+            settingsNotifier: settings,
+            commitmentsNotifier: commitments,
+          );
+          await tester.pumpAndSettle();
+        }
+
+        await open();
+        expect(source.listCalendarsCount, 1);
+        final f1 = rowY(tester, 'Family');
+        final h1 = rowY(tester, 'Home');
+        final s1 = rowY(tester, 'spunkl');
+        expect(f1, lessThan(h1), reason: 'first open: Family above Home');
+        expect(h1, lessThan(s1), reason: 'first open: Home above spunkl');
+
+        await tester.pumpWidget(const SizedBox());
+        await open();
+        expect(source.listCalendarsCount, 2);
+        expect(rowY(tester, 'Family'), f1);
+        expect(rowY(tester, 'Home'), h1);
+        expect(rowY(tester, 'spunkl'), s1);
+      }),
+    );
+
+    testWidgets(
+      'on the re-open where the source reordered, tapping the row labelled '
+      "spunkl stores spunkl's id and neither Family's nor Home's",
+      (tester) => _withMobilePlatform(() async {
+        final family = cal('3935F311-family', 'Family');
+        final home = cal('home-id', 'Home');
+        final spunkl = cal('spunkl-id', 'spunkl');
+        final source = _RestorableFakeCalendarSource(
+          calendarOrders: [
+            [spunkl, home, family],
+            [family, spunkl, home],
+          ],
+        );
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        final commitments = CommitmentsNotifier(
+          repository: _InMemoryCommitmentBlockRepository(),
+        );
+        Future<void> open() async {
+          await _pumpCalendarScreen(
+            tester,
+            source: source,
+            settingsNotifier: settings,
+            commitmentsNotifier: commitments,
+          );
+          await tester.pumpAndSettle();
+        }
+
+        await open();
+        await tester.pumpWidget(const SizedBox());
+        await open();
+        expect(source.listCalendarsCount, 2);
+
+        await tester.tap(find.text('spunkl'));
+        await tester.pumpAndSettle();
+
+        expect(settings.selectedCalendarIds, ['spunkl-id']);
+        expect(settings.selectedCalendarIds, isNot(contains('3935F311-family')));
+        expect(settings.selectedCalendarIds, isNot(contains('home-id')));
+      }),
+    );
+
+    test('sortCalendarsForPicker: no-account group first, then accounts, '
+        'then names, all case-insensitive, ids break ties, input untouched', () {
+      final input = [
+        cal('1', 'banana', 'iCloud'),
+        cal('9', 'x', 'Zed'),
+        cal('2', 'Alpha', 'dan@gmail.com'),
+        cal('3', 'beta', null),
+        cal('4', 'Cherry', 'iCloud'),
+        cal('8', 'Dup', 'iCloud'),
+        cal('5', 'apple', 'iCloud'),
+        cal('6', 'Dup', 'iCloud'),
+        cal('7', 'Local', null),
+      ];
+      final before = [for (final c in input) c.id];
+
+      final sorted = sortCalendarsForPicker(input);
+
+      expect([for (final c in sorted) c.id], [
+        '3', // no account: beta
+        '7', // no account: Local
+        '2', // dan@gmail.com
+        '5', // iCloud: apple
+        '1', //         banana
+        '4', //         Cherry (a case-sensitive sort would put it before apple)
+        '6', //         Dup, lower id first
+        '8', //         Dup
+        '9', // Zed (a case-sensitive sort would put it before dan@gmail.com)
+      ]);
+      expect([for (final c in input) c.id], before);
+    });
   });
 }
