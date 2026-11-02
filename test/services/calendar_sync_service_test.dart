@@ -1,11 +1,18 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_calendar_plus/device_calendar_plus.dart' as plugin;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:canopy/data/calendar/calendar_event.dart';
+import 'package:canopy/data/calendar/calendar_source.dart';
+import 'package:canopy/data/calendar/composite_calendar_source.dart';
 import 'package:canopy/data/calendar/device_calendar_source.dart';
+import 'package:canopy/data/calendar/google_auth_client.dart';
+import 'package:canopy/data/calendar/google_calendar_source.dart';
 import 'package:canopy/data/calendar/ics_calendar_source.dart';
 import 'package:canopy/data/models/commitment_block.dart';
 import 'package:canopy/data/repositories/commitment_block_repository.dart';
@@ -209,6 +216,88 @@ CommitmentBlock _handEntered(String id) => CommitmentBlock(
   daysOfWeek: const [1],
   startMinutes: 540,
   endMinutes: 600,
+);
+
+/// A [CalendarSource] that is NOT one of the three known concrete types —
+/// the event prune must treat it as default-deny even when it succeeds.
+class _UnknownSource implements CalendarSource {
+  _UnknownSource(this.events);
+  final List<CalendarEvent> events;
+
+  @override
+  Future<bool> isAvailable() async => true;
+  @override
+  Future<CalendarPermissionState> requestPermission() async =>
+      CalendarPermissionState.notApplicable;
+  @override
+  Future<List<CalendarInfo>> listCalendars() async => const [];
+  @override
+  Future<List<CalendarEvent>> listEvents({
+    required DateTime start,
+    required DateTime end,
+    required List<String> calendarIds,
+  }) async => events;
+}
+
+/// Token store that is never actually used — a [GoogleCalendarSource] built
+/// with an `apiClientFactory` seam never reaches it.
+class _NoopTokenStore implements GoogleTokenStore {
+  @override
+  Future<GoogleTokens?> read() async => null;
+  @override
+  Future<void> write(GoogleTokens tokens) async {}
+  @override
+  Future<void> clear() async {}
+  @override
+  Future<void> setReconnectNeeded(bool value) async {}
+  @override
+  bool get reconnectNeeded => false;
+}
+
+/// An http.Client answering every request with an empty Google `events.list`
+/// page — a Google source that genuinely SUCCEEDS with no events.
+class _EmptyEventsHttpClient extends http.BaseClient {
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    return http.StreamedResponse(
+      Stream.value(utf8.encode('{"items": []}')),
+      200,
+      headers: {'content-type': 'application/json; charset=utf-8'},
+    );
+  }
+}
+
+GoogleCalendarSource _googleSource(
+  List<String> ids, {
+  required GoogleApiClientFactory factory,
+}) => GoogleCalendarSource(
+  authClient: GoogleAuthClient(store: _NoopTokenStore()),
+  calendarIds: ids,
+  apiClientFactory: factory,
+);
+
+/// A Google source whose client factory throws — what a missing or dead
+/// token does (the factory is called before `listEvents`'s own try).
+GoogleCalendarSource _failingGoogle(List<String> ids) =>
+    _googleSource(ids, factory: () async => throw StateError('no token'));
+
+/// A previously-imported block, seeded directly with the exact id shape
+/// `_buildBlock` writes.
+CommitmentBlock _importedBlock(
+  String id,
+  String calendarId,
+  String uid,
+  DateTime date, {
+  bool fromCalendar = true,
+}) => CommitmentBlock(
+  id: id,
+  name: id,
+  daysOfWeek: const [],
+  startMinutes: 540,
+  endMinutes: 600,
+  date: date,
+  externalEventId: 'ics:${calendarIdHash(calendarId)}:$uid:',
+  isFromCalendar: fromCalendar,
 );
 
 void main() {
@@ -1057,6 +1146,264 @@ void main() {
         block.externalEventId,
         equals('ics:${calendarIdHash('home')}:evt-home:'),
       );
+    });
+  });
+
+  group('WINDOWS entry 11 — event prune: a deleted event disappears, but only '
+      'from sources that answered, and only on days the fetch fully '
+      'covered', () {
+    // Noon UTC, tz.local pinned to UTC: today = 1 Mar, window end = 15 Mar
+    // 12:00, so the fully covered days are 2..14 Mar inclusive.
+    final now = DateTime.utc(2026, 3, 1, 12);
+    DateTime mar(int d) => DateTime(2026, 3, d);
+
+    setUp(() => tz.setLocalLocation(tz.UTC));
+
+    DeviceCalendarSource deviceFor(_DeviceSeam seam, List<String> ids) =>
+        DeviceCalendarSource(calendarIds: ids, fetchEvents: seam.call);
+
+    Future<CalendarSyncResult> syncAt(CalendarSource source) =>
+        CalendarSyncService(
+          source: source,
+          repository: repo,
+          now: () => now,
+        ).sync();
+
+    // The mixed-source fixture: a composite of [a Google child that FAILS,
+    // a device child for spunkl that succeeds], one live spunkl event, and a
+    // spread of seeded blocks whose events the fetch no longer returns.
+    Future<void> runMixed() async {
+      final seam = _DeviceSeam()
+        ..events.add(
+          _devEvent(
+            calendarId: 'spunkl',
+            uid: 'still-there',
+            start: DateTime.utc(2026, 3, 2, 14),
+          ),
+        );
+      await repo.save(_handEntered('hand-1'));
+      // Stale, spunkl, on fully covered days -> pruned.
+      await repo.save(_importedBlock('stale-mar2', 'spunkl', 'gone-a', mar(2)));
+      await repo.save(
+        _importedBlock('stale-mar14', 'spunkl', 'gone-b', mar(14)),
+      );
+      // Stale, spunkl, but NOT on a fully covered day -> kept.
+      await repo.save(_importedBlock('today-mar1', 'spunkl', 'gone-c', mar(1)));
+      await repo.save(
+        _importedBlock('past-feb28', 'spunkl', 'gone-d', DateTime(2026, 2, 28)),
+      );
+      await repo.save(
+        _importedBlock('lastday-mar15', 'spunkl', 'gone-e', mar(15)),
+      );
+      // Re-produced by this very sync (same externalEventId) -> kept.
+      await repo.save(
+        _importedBlock('seed-kept', 'spunkl', 'still-there', mar(2)),
+      );
+      // Google child failed -> its absence proves nothing -> kept.
+      await repo.save(_importedBlock('google-mar2', 'google:x', 'g-1', mar(2)));
+      // Not from a calendar, id copied from a verified-calendar import -> kept.
+      await repo.save(
+        _importedBlock(
+          'impostor-mar2',
+          'spunkl',
+          'impostor-uid',
+          mar(2),
+          fromCalendar: false,
+        ),
+      );
+
+      final result = await syncAt(
+        CompositeCalendarSource([
+          _failingGoogle(['google:x']),
+          deviceFor(seam, ['spunkl']),
+        ]),
+      );
+      expect(result.failed, isFalse);
+    }
+
+    test('a spunkl block on a fully covered day whose event the answering '
+        'source no longer returns is removed; the re-produced one and the '
+        'hand-entered one stay', () async {
+      await runMixed();
+      final ids = await _repoIds(repo);
+
+      expect(ids, isNot(contains('stale-mar2')));
+      expect(ids, isNot(contains('stale-mar14')));
+      expect(ids, contains('seed-kept'));
+      expect(ids, contains('hand-1'));
+    });
+
+    test('a block dated TODAY (or earlier) whose event is not returned '
+        'survives — today is never event-pruned', () async {
+      await runMixed();
+      final ids = await _repoIds(repo);
+
+      expect(ids, contains('today-mar1'));
+      expect(ids, contains('past-feb28'));
+    });
+
+    test('a block on the local date of windowEnd survives — the last day is '
+        'only partially covered', () async {
+      await runMixed();
+
+      expect(await _repoIds(repo), contains('lastday-mar15'));
+    });
+
+    test('a google:x block on a covered day survives — the Google child '
+        'failed, so absence proves nothing', () async {
+      await runMixed();
+
+      expect(await _repoIds(repo), contains('google-mar2'));
+    });
+
+    test('a block with isFromCalendar == false carrying a well-formed '
+        'ics:<hash-of-spunkl>: id, dated tomorrow, on the verified calendar '
+        'and absent from the fetch, survives — the isFromCalendar guard is '
+        'the ONLY thing protecting it', () async {
+      await runMixed();
+
+      expect(await _repoIds(repo), contains('impostor-mar2'));
+    });
+
+    test('a source type outside the three known classes is default-deny: its '
+        'calendar\'s stale block survives even though that source '
+        'succeeded', () async {
+      final seam = _DeviceSeam();
+      await repo.save(_importedBlock('stale-spunkl', 'spunkl', 'gone', mar(2)));
+      await repo.save(_importedBlock('stale-fake', 'fake-cal', 'gone', mar(2)));
+
+      final result = await syncAt(
+        CompositeCalendarSource([
+          deviceFor(seam, ['spunkl']),
+          _UnknownSource([
+            CalendarEvent(
+              uid: 'fake-live',
+              title: 'Fake live',
+              start: DateTime.utc(2026, 3, 3, 14),
+              end: DateTime.utc(2026, 3, 3, 15),
+              isAllDay: false,
+              status: CalendarEventStatus.confirmed,
+              calendarId: 'fake-cal',
+            ),
+          ]),
+        ]),
+      );
+
+      // The unknown source really did answer and really did import.
+      expect(result.failed, isFalse);
+      expect(result.imported.map((b) => b.name), equals(['Fake live']));
+      final ids = await _repoIds(repo);
+      expect(ids, contains('stale-fake'));
+      // ...while the known, succeeded device child's stale block is pruned,
+      // so the survival above is default-deny and not "nothing pruned".
+      expect(ids, isNot(contains('stale-spunkl')));
+    });
+
+    test('a spunkl event that comes back cancelled has its previously '
+        'imported block removed', () async {
+      final seam = _DeviceSeam()
+        ..events.add(
+          _devEvent(
+            calendarId: 'spunkl',
+            uid: 'cancel-me',
+            start: DateTime.utc(2026, 3, 5, 14),
+          ),
+        );
+      final source = deviceFor(seam, ['spunkl']);
+      await syncAt(source);
+      final blockId = (await _blockFor(repo, 'spunkl', 'cancel-me')).id;
+
+      seam.events
+        ..clear()
+        ..add(
+          _devEvent(
+            calendarId: 'spunkl',
+            uid: 'cancel-me',
+            start: DateTime.utc(2026, 3, 5, 14),
+            status: plugin.EventStatus.canceled,
+          ),
+        );
+      final result = await syncAt(source);
+
+      expect(result.skipped.map((e) => e.reason), [SkipReason.cancelled]);
+      expect(await _repoIds(repo), isNot(contains(blockId)));
+    });
+
+    test('a bare (non-composite) DeviceCalendarSource that succeeds counts '
+        'as one succeeded child: a deleted event\'s block goes', () async {
+      final seam = _DeviceSeam()
+        ..events.add(
+          _devEvent(
+            calendarId: 'spunkl',
+            uid: 'will-delete',
+            start: DateTime.utc(2026, 3, 5, 14),
+          ),
+        );
+      final source = deviceFor(seam, ['spunkl']);
+      await syncAt(source);
+      final blockId = (await _blockFor(repo, 'spunkl', 'will-delete')).id;
+      expect(await _repoIds(repo), contains(blockId));
+
+      seam.events.clear();
+      await syncAt(source);
+
+      expect(await _repoIds(repo), isNot(contains(blockId)));
+    });
+
+    test('a bare IcsCalendarSource that succeeds is verified for its feed '
+        'URL: a stale block on that feed goes, another feed\'s stays', () async {
+      const url = 'https://example.com/feed.ics';
+      await repo.save(_importedBlock('stale-ics', url, 'gone', mar(2)));
+      await repo.save(
+        _importedBlock('other-feed', 'https://other.test/x.ics', 'g', mar(2)),
+      );
+
+      await syncAt(
+        IcsCalendarSource(
+          urls: [url],
+          fetch: (_) async =>
+              'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//t//EN\r\n'
+              'END:VCALENDAR\r\n',
+        ),
+      );
+
+      final ids = await _repoIds(repo);
+      expect(ids, isNot(contains('stale-ics')));
+      expect(ids, contains('other-feed'));
+    });
+
+    test('a Google child that genuinely succeeds is verified for its '
+        'calendars: a stale google: block goes, another account\'s stays',
+        () async {
+      await repo.save(_importedBlock('stale-g', 'google:x', 'gone', mar(2)));
+      await repo.save(_importedBlock('other-g', 'google:y', 'gone', mar(2)));
+
+      await syncAt(
+        _googleSource(
+          ['google:x'],
+          factory: () async => _EmptyEventsHttpClient(),
+        ),
+      );
+
+      final ids = await _repoIds(repo);
+      expect(ids, isNot(contains('stale-g')));
+      expect(ids, contains('other-g'));
+    });
+
+    test('when EVERY child fails the sync is failed and no event prune runs: '
+        'a stale block on a covered day survives', () async {
+      final seam = _DeviceSeam()..throwOnFetch = true;
+      await repo.save(_importedBlock('stale-mar2', 'spunkl', 'gone', mar(2)));
+
+      final result = await syncAt(
+        CompositeCalendarSource([
+          _failingGoogle(['google:x']),
+          deviceFor(seam, ['spunkl']),
+        ]),
+      );
+
+      expect(result.failed, isTrue);
+      expect(await _repoIds(repo), contains('stale-mar2'));
     });
   });
 }
