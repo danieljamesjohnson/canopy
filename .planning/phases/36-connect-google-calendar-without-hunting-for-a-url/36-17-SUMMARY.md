@@ -79,7 +79,7 @@ None. T-36-59 (Step 0 first, mandatory, grep-gated), T-36-60 (all round-3 entrie
 
 ## Self-Check: PASSED
 
-- 36-UAT-R3.md exists; "Re-check-in" appears 7 times; zero matches for a URL scheme; all required strings present.
+- 36-UAT-R3.md exists; "Re-check-in" appears 2 times (Step 0 step 5 and S4(b); the binding sentence refers to "step 5"; the gate needs at least 2); zero matches for a URL scheme; all required strings present.
 - ec588cb and dc8e68b are ancestors of HEAD; `git rev-list --count 6b67034..HEAD` was 2 before this summary commit.
 - `git diff --name-only 6b67034..HEAD` listed only the two plan files before this summary.
 - STATE.md and ROADMAP.md untouched.
