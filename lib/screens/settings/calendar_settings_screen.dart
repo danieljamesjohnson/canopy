@@ -29,8 +29,14 @@ import '../../widgets/adaptive_form_modal.dart';
 /// CTA state on both branches (35-UI-SPEC.md §5).
 ///
 /// Permission is read live every time this screen is opened; no permission
-/// result is ever persisted anywhere (D-35-10) — see [_isMobile]'s CTA-gated
-/// flow below.
+/// result is ever persisted anywhere (D-35-10). On open, a device source that
+/// can read its status without prompting ([CalendarPermissionReader]) is
+/// asked for it, and an already-granted permission restores the calendar list
+/// directly (WINDOWS entry 12) — that read can never show an OS prompt, so
+/// opening the screen still never surprises the user with one. The OS prompt
+/// is only ever raised by the user tapping "Allow calendar access" (see
+/// [_startMobileFlow]), which is also what a source that cannot read its
+/// status keeps doing.
 ///
 /// **CORS on the web build.** A Flutter **web** build fetching a third-party
 /// `.ics` URL is subject to the browser's cross-origin rules, and most
@@ -103,10 +109,19 @@ class _GoogleState {
 }
 
 class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
-  /// Null = "not yet requested" (the CTA state). Set only when the user taps
-  /// "Allow calendar access" — never fired automatically, so opening this
-  /// screen never surprises the user with a native OS prompt.
+  /// Null = "nothing resolved yet" (the CTA state). Set either when the user
+  /// taps "Allow calendar access" ([_startMobileFlow], the only path that can
+  /// raise the OS prompt) or, on first build, by [_restoreDeviceSection] when
+  /// the device source is a [CalendarPermissionReader] — a read that can
+  /// never prompt, which is what keeps "opening this screen never surprises
+  /// the user with a native OS prompt" true (WINDOWS entry 12).
   Future<_MobileState>? _mobileFuture;
+
+  /// True once the device section has resolved to granted, by restore or by
+  /// an explicit grant — so the shared footer (and its "Sync now") shows
+  /// even before any sync has ever run (35-UI-SPEC §2: footer whenever at
+  /// least one source is configured).
+  bool _deviceGranted = false;
 
   /// Loaded once per set of configured feed URLs; reset to null after any
   /// add/remove so the next build re-fetches from the fresh configuration.
@@ -463,7 +478,12 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
       return _MobileState(permission: permission, calendars: const []);
     }
     final calendars = await source.listCalendars();
-    if (mounted) setState(() => _deviceCalendars = calendars);
+    if (mounted) {
+      setState(() {
+        _deviceCalendars = calendars;
+        _deviceGranted = true;
+      });
+    }
     // Sync via the FULL composite (Task 1: "the sync... sees the
     // composite"), not the device-only [source] above — on iOS this also
     // imports a signed-in Google account's events, if one exists.
@@ -478,6 +498,40 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
       calendars: calendars,
       syncResult: syncResult,
     );
+  }
+
+  /// Restores the device section on screen re-open WITHOUT ever prompting —
+  /// the fix for WINDOWS entry 12 and the device twin of
+  /// [_loadGoogleCalendars]. Reads the current status through
+  /// [CalendarPermissionReader.currentPermission]; when granted, lists
+  /// calendars and nothing else. Never calls `requestPermission()` and never
+  /// syncs (opening a settings screen must not rewrite the schedule).
+  ///
+  /// Any throw folds to `notDetermined` — the CTA, i.e. the behaviour before
+  /// this fix — rather than a new state with new copy.
+  Future<_MobileState> _restoreDeviceSection(
+    CalendarSource source,
+    CalendarPermissionReader reader,
+  ) async {
+    try {
+      final permission = await reader.currentPermission();
+      if (permission != CalendarPermissionState.granted) {
+        return _MobileState(permission: permission, calendars: const []);
+      }
+      final calendars = await source.listCalendars();
+      if (mounted) {
+        setState(() {
+          _deviceCalendars = calendars;
+          _deviceGranted = true;
+        });
+      }
+      return _MobileState(permission: permission, calendars: calendars);
+    } catch (_) {
+      return const _MobileState(
+        permission: CalendarPermissionState.notDetermined,
+        calendars: [],
+      );
+    }
   }
 
   void _toggleCalendar(SettingsNotifier settings, String id, bool value) {
@@ -946,6 +1000,22 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   // ── Device branch ────────────────────────────────────────────────────
 
   Widget _buildDeviceSection(BuildContext context, SettingsNotifier settings) {
+    // WINDOWS entry 12: a source that can read its permission status without
+    // prompting is asked for it on first build, so an already-granted
+    // permission shows the list instead of the CTA. A runtime `is` check, not
+    // a static type — a source without the capability keeps the CTA flow.
+    if (_mobileFuture == null) {
+      final source = _resolveDeviceSource(settings);
+      if (source is CalendarPermissionReader) {
+        // `CalendarPermissionReader` is unrelated to `CalendarSource`, so the
+        // `is` check does not promote `source` — the cast is the capability
+        // hand-off, safe because the check just passed.
+        _mobileFuture = _restoreDeviceSection(
+          source,
+          source as CalendarPermissionReader,
+        );
+      }
+    }
     if (_mobileFuture == null) {
       return _ctaCard(
         context: context,
@@ -1009,7 +1079,10 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   Widget _buildMobileBody(BuildContext context) {
     final settings = context.watch<SettingsNotifier>();
     final showFooter =
-        _lastSyncResult != null || settings.lastCalendarSyncAt != null;
+        _lastSyncResult != null ||
+        settings.lastCalendarSyncAt != null ||
+        _deviceGranted ||
+        settings.googleConnected;
     return ListView(
       children: [
         _skippedBanner(context),

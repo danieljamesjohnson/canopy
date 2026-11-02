@@ -11,6 +11,7 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'package:canopy/data/calendar/calendar_event.dart';
+import 'package:canopy/data/calendar/calendar_source.dart';
 import 'package:canopy/data/calendar/device_calendar_source.dart';
 import 'package:canopy/data/models/commitment_block.dart';
 import 'package:canopy/data/repositories/commitment_block_repository.dart';
@@ -375,6 +376,40 @@ void main() {
       final block = result.imported.single;
       expect(block.name, 'Standup');
       expect(block.isFromCalendar, isTrue);
+    });
+  });
+
+  group('DeviceCalendarSource permission reading (WINDOWS entry 12) — status '
+      'is read without prompting; only requestPermission() may prompt', () {
+    test('currentPermission() maps the READ seam and never touches the '
+        'REQUEST seam; requestPermission() does the reverse', () async {
+      var reads = 0;
+      var requests = 0;
+      final source = DeviceCalendarSource(
+        readPermissionStatus: () async {
+          reads++;
+          return plugin.CalendarPermissionStatus.granted;
+        },
+        requestPermissionStatus: () async {
+          requests++;
+          return plugin.CalendarPermissionStatus.denied;
+        },
+      );
+
+      expect(await source.currentPermission(), CalendarPermissionState.granted);
+      expect(reads, 1);
+      expect(requests, 0);
+
+      expect(await source.requestPermission(), CalendarPermissionState.denied);
+      expect(reads, 1);
+      expect(requests, 1);
+    });
+
+    test('production wiring: a bare DeviceCalendarSource() — exactly what the '
+        'screen builds when no source is injected — IS a '
+        'CalendarPermissionReader (a runtime check, so the test compiles '
+        'even if the implements clause is removed)', () {
+      expect(DeviceCalendarSource(), isA<CalendarPermissionReader>());
     });
   });
 }

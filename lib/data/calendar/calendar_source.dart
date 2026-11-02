@@ -37,3 +37,19 @@ abstract class CalendarSource {
     required List<String> calendarIds,
   });
 }
+
+/// A capability a [CalendarSource] MAY have: reading the OS calendar
+/// permission status WITHOUT ever showing a prompt.
+///
+/// Deliberately NOT a fifth [CalendarSource] verb. ROADMAP Phase 36
+/// decision 3 says "if this phase finds itself changing the interface, that
+/// is a signal something is wrong", and `google_calendar_source_test.dart`
+/// pins `GoogleCalendarSource` to exactly four `Future` verbs. Only a source
+/// with a genuinely prompt-free status read implements this; callers reach
+/// it with an `is CalendarPermissionReader` check, so a source that cannot
+/// read status simply keeps the "ask first" flow (WINDOWS entry 12).
+abstract class CalendarPermissionReader {
+  /// The current permission status, read live. MUST NEVER show an OS prompt
+  /// and MUST NOT be persisted by the caller (D-35-10).
+  Future<CalendarPermissionState> currentPermission();
+}
