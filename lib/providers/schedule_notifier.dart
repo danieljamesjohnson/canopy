@@ -384,7 +384,10 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
       final existing = _todaySchedule!.chunks
           .where((c) => c.commitmentId == block.id)
           .toList();
-      if (existing.isNotEmpty) {
+      // Already placed as ONE chunk at its current times: leave it. Anything
+      // else (moved, or still in the pre-D-36-06 25+5 lattice built before
+      // that ruling) is rebuilt through addEventToday.
+      if (existing.length == 1) {
         final start = existing
             .map((c) => c.anchoredStartMinutes ?? 0)
             .reduce((a, b) => a < b ? a : b);

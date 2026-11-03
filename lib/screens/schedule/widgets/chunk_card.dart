@@ -482,8 +482,13 @@ class _WorkChunkContent extends StatelessWidget {
     // two colour systems. This adds no colour meaning at all: work is the
     // solid, bright card; non-work is the greyer hatched one (see
     // [HatchFill]). Commitments keep `tertiaryContainer`, untouched.
+    // D-36-06 (owner, 2026-11-03: "should also be color coded
+    // differently"): a meeting imported from a calendar gets its own fill,
+    // apart from hand-entered commitments' tertiaryContainer.
     final cardColor = isCommitment
-        ? theme.colorScheme.tertiaryContainer
+        ? (isImportedCommitment
+              ? calendarMeetingFill(theme.brightness)
+              : theme.colorScheme.tertiaryContainer)
         : theme.colorScheme.surfaceContainerLowest;
     final cardShape = isCommitment
         ? const RoundedRectangleBorder(
@@ -896,6 +901,25 @@ class _WorkChunkContent extends StatelessWidget {
     );
   }
 }
+
+/// The fill for a meeting imported from a calendar (D-36-06). A FIXED violet
+/// tone rather than a role from the app's scheme, because that scheme is
+/// re-seeded by mood (blue-grey, teal, green, yellow — theme_notifier.dart):
+/// every scheme role moves with it, so none could be guaranteed to stay
+/// distinct from hand-entered commitments and breaks. Violet is the hue no
+/// mood seed uses. Tonal like the rest: the scheme's primaryContainer for a
+/// violet seed, at the current brightness, so it reads as part of the theme.
+Color calendarMeetingFill(Brightness brightness) =>
+    (brightness == Brightness.dark ? _calendarFillDark : _calendarFillLight)
+        .primaryContainer;
+
+final _calendarFillLight = ColorScheme.fromSeed(
+  seedColor: const Color(0xFF7E57C2),
+);
+final _calendarFillDark = ColorScheme.fromSeed(
+  seedColor: const Color(0xFF7E57C2),
+  brightness: Brightness.dark,
+);
 
 /// File-private imported-commitment glyph (D-35-11, UI-SPEC §4). Identical
 /// icon/size/color/semantics to `_CommitmentRow`'s treatment on the

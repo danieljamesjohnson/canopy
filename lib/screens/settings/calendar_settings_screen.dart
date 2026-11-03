@@ -178,14 +178,6 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   /// True while a mobile "Sync now" is running (WINDOWS entry 13).
   bool _syncing = false;
 
-  /// True for [_syncedConfirmation] after a SUCCESSFUL mobile sync: the
-  /// button itself reads "✓ Synced" (WINDOWS entry 17, second round). A
-  /// device sync finishes in well under a second, so the spinner alone was
-  /// invisible and the owner saw "nothing happens" (2026-11-03, 08:45 —
-  /// the sync had in fact run, per the device's Hive).
-  bool _justSynced = false;
-  static const _syncedConfirmation = Duration(seconds: 2);
-
   /// True once the device section has resolved to granted, by restore or by
   /// an explicit grant — so the shared footer (and its "Sync now") shows
   /// even before any sync has ever run (35-UI-SPEC §2: footer whenever at
@@ -323,10 +315,12 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     }
   }
 
-  /// A clock time, not "just now" (owner request 2026-11-03, WINDOWS entry
-  /// 17): "at 8:37 AM" today, "Nov 2 at 8:37 AM" on an earlier day.
+  /// "just now" inside the first minute ("that was clearer" — owner,
+  /// 2026-11-03), then a clock time: "at 8:37 AM" today, "Nov 2 at 8:37 AM"
+  /// on an earlier day (WINDOWS entry 17).
   String _syncTimeLabel(DateTime time) {
     final now = DevClock.now();
+    if (now.difference(time).inMinutes < 1) return 'just now';
     final local = time.toLocal();
     final clock = DateFormat.jm().format(local);
     final sameDay = local.year == now.year &&
@@ -395,26 +389,39 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            statusText,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          // Animates whenever a sync SUCCEEDS (keyed on the persisted
+          // success time): the new line slides up and fades in, so even a
+          // sync that changes nothing visibly answers (WINDOWS entry 17).
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 450),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.6),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                ),
+                child: child,
+              ),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            child: Text(
+              statusText,
+              key: ValueKey(lastSync),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           Align(
             alignment: Alignment.centerLeft,
             // While a mobile sync runs, the button disables and carries a
             // spinner beside the unchanged label — the UI-SPEC's own
             // "Requesting (in flight)" idiom of a spinner with no copy.
-            child: _justSynced
-                ? TextButton.icon(
-                    onPressed: null,
-                    icon: const Icon(Icons.check_circle, size: 16),
-                    label: const Text('Synced'),
-                  )
-                : _syncing
+            child: _syncing
                 ? TextButton.icon(
                     onPressed: null,
                     icon: const SizedBox(
@@ -546,17 +553,21 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         settings,
         messenger,
       );
+      // WINDOWS entry 17, third round (owner 2026-11-03: "the popup was
+      // better — clearer"): the success SnackBar is back. It no longer
+      // covers "Sync now" because, on mobile, the footer is the Scaffold's
+      // bottomNavigationBar and a SnackBar always slides up ABOVE that.
       if (!result.failed && mounted) {
-        setState(() => _justSynced = true);
-        Future<void>.delayed(_syncedConfirmation, () {
-          if (mounted) setState(() => _justSynced = false);
-        });
+        final importedCount = commitments.blocks
+            .where((b) => b.isFromCalendar)
+            .length;
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(_statusText(result.syncedAt, importedCount)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
-      // No success SnackBar (WINDOWS entry 17, owner 2026-11-03): it sat on
-      // top of the "Sync now" button for six seconds, so the button could
-      // not be pressed again. Success shows ON the button instead: the
-      // spinner while it runs, then "✓ Synced" for two seconds, and the
-      // footer line above it changes to the new clock time. A failure still gets its SnackBar, from _syncAndReport.
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
@@ -1314,14 +1325,8 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
 
   Widget _buildMobileBody(BuildContext context) {
     final settings = context.watch<SettingsNotifier>();
-    // Reads nothing in-memory about the last ATTEMPT: a failed first sync
-    // must still leave the user a "Sync now" to retry with. The device
-    // section having resolved to granted (restore or an explicit grant) is
-    // set BEFORE any sync runs, so a failed first sync still shows the footer.
-    final showFooter =
-        _deviceGranted ||
-        settings.googleConnected ||
-        settings.lastCalendarSyncAt != null;
+    // The footer is NOT in this list: it is the Scaffold's
+    // bottomNavigationBar (see build) — WINDOWS entry 17.
     return ListView(
       children: [
         _skippedBanner(context),
@@ -1336,7 +1341,6 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         _buildDeviceSection(context, settings),
         const Divider(indent: 16, endIndent: 16),
         _buildGoogleSection(context, settings),
-        if (showFooter) _footer(context),
       ],
     );
   }
@@ -1503,9 +1507,25 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsNotifier>();
+    // Reads nothing in-memory about the last ATTEMPT: a failed first sync
+    // must still leave the user a "Sync now" to retry with. The device
+    // section having resolved to granted (restore or an explicit grant) is
+    // set BEFORE any sync runs, so a failed first sync still shows the footer.
+    final showMobileFooter =
+        _isMobile &&
+        (_deviceGranted ||
+            settings.googleConnected ||
+            settings.lastCalendarSyncAt != null);
     return Scaffold(
       appBar: AppBar(title: const Text('Calendars')),
       body: _isMobile ? _buildMobileBody(context) : _buildDesktopBody(context),
+      // Pinned, not the last list item (WINDOWS entry 17): a SnackBar slides
+      // up ABOVE a bottomNavigationBar, so the "Synced …" popup can never
+      // cover "Sync now" again.
+      bottomNavigationBar: showMobileFooter
+          ? SafeArea(top: false, child: _footer(context))
+          : null,
     );
   }
 }

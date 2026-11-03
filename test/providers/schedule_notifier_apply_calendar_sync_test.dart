@@ -126,7 +126,11 @@ void main() {
     await notifier.applyCalendarSync([calendarBlock('cal', 14 * 60, 15 * 60)]);
 
     final chunks = notifier.todaySchedule!.chunks;
-    expect(chunks.where((c) => c.commitmentId == 'cal'), isNotEmpty);
+    // D-36-06: exactly as the calendar says — one block, no break inside.
+    final cal = chunks.where((c) => c.commitmentId == 'cal').toList();
+    expect(cal, hasLength(1));
+    expect(cal.single.anchoredStartMinutes, 14 * 60);
+    expect(cal.single.durationMinutes, 60);
     final w1 = chunks.singleWhere((c) => c.id == 'w1');
     expect(overlaps(w1, 14 * 60, 15 * 60), isFalse);
   });
@@ -174,6 +178,36 @@ void main() {
         .map((c) => c.anchoredStartMinutes!)
         .toList();
     expect(starts.reduce((a, b) => a < b ? a : b), 16 * 60);
+  });
+
+  test('a meeting already on today in the OLD 25+5 lattice (before D-36-06) '
+      'is rebuilt as one block', () async {
+    ScheduledChunk part(String id, ChunkType type, int start, int len) =>
+        ScheduledChunk(
+          id: id,
+          chunkTypeIndex: type.index,
+          commitmentId: 'cal',
+          durationMinutes: len,
+          anchoredStartMinutes: start,
+          rationale: '',
+        );
+    final (notifier, _) = await make(
+      chunks: [
+        work('w1', 9 * 60),
+        part('a', ChunkType.work, 14 * 60, 25),
+        part('b', ChunkType.shortBreak, 14 * 60 + 25, 5),
+        part('c', ChunkType.work, 14 * 60 + 30, 25),
+        part('d', ChunkType.shortBreak, 14 * 60 + 55, 5),
+      ],
+    );
+
+    await notifier.applyCalendarSync([calendarBlock('cal', 14 * 60, 15 * 60)]);
+
+    final cal = notifier.todaySchedule!.chunks
+        .where((c) => c.commitmentId == 'cal')
+        .toList();
+    expect(cal, hasLength(1));
+    expect(cal.single.durationMinutes, 60);
   });
 
   test('an event the sync removed leaves today, a manual one stays', () async {

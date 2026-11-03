@@ -264,3 +264,25 @@ deleted. Had that report been correct it would have *reversed* this Correction a
 path worth materially more. It did the opposite: Google sign-in still adds **no recurrence advantage
 on the device path**. What it adds remains narrower and should keep being described as such — it works
 without the Google account added at OS level, and it is the login experience the owner asked for.
+
+## D-36-06 — A calendar meeting is placed exactly as the calendar says, and coloured apart
+
+**Ruled by the owner on 2026-11-03, on his iPhone,** after his own test event first reached the Today
+timeline: *"it shouldnt have a break though. meetings are whatever they are at the timing they say.
+should also be color coded differnetly"* (he clarified he meant the test meeting from his calendar).
+
+- **One block, no breaks.** `ScheduleGeneratorService.buildCommitmentChunks` returns a single work
+  chunk covering exactly `[startMinutes, endMinutes)` for a block with `isFromCalendar == true`. No
+  25+5(+30) lattice and no long break. A meeting shorter than one 25-minute cell is still placed (the
+  lattice used to drop it). **Hand-entered commitments keep the lattice (COMMITBREAK-01):** he ruled
+  on calendar meetings only, and a hand-entered "Work" block is a different thing.
+- **This supersedes D-36-05's "`schedule_generator.dart` must not be touched".** That was a
+  scope note for the all-day fix, and its own text says *"nothing here requires it to change"*.
+  This ruling does require it. The change is the one guarded branch above. Everything else in the
+  file is unchanged, and hand-entered commitments are mutation-proven unchanged.
+- **Colour:** an imported meeting's card is a fixed violet tone (`calendarMeetingFill`, the
+  primaryContainer of a violet-seeded scheme at the current brightness). It is not a role from the
+  app's own scheme, which is re-seeded by mood (blue-grey, teal, green, yellow), so no role there
+  could be guaranteed to stay distinct. Hand-entered commitments keep `tertiaryContainer`.
+- A meeting already on today in the old lattice form is rebuilt as one block by the next sync from
+  the Calendars screen (`applyCalendarSync`), or by Re-check-in.

@@ -1958,15 +1958,17 @@ void main() {
     );
 
     testWidgets(
-      'a finished sync shows NO SnackBar (it covered the button — WINDOWS '
-      'entry 17); the footer shows the clock time, the spinner is gone and '
-      'the button is enabled again',
+      'a finished sync shows the "Synced just now" popup sliding up from the '
+      'bottom WITHOUT covering Sync now, which is pinned below it; the '
+      'spinner is gone and the button is enabled again (WINDOWS entry 17)',
       (tester) => _withMobilePlatform(() async {
         final source = _RestorableFakeCalendarSource(
           calendars: calendars,
           events: oneTimedEvent(),
         )..listEventsGate = Completer<void>();
         await _pumpCalendarScreen(tester, source: source);
+        // A phone-sized screen, where the 2026-11-03 overlap was seen.
+        tester.view.physicalSize = const Size(390, 844);
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Sync now'));
@@ -1974,25 +1976,50 @@ void main() {
         source.listEventsGate!.complete();
         await tester.pumpAndSettle();
 
+        expect(
+          inSnackBar('Synced just now — 1 commitment imported'),
+          findsOneWidget,
+        );
+        final snack = tester.getRect(find.byType(SnackBar));
+        final button = tester.getRect(syncNowButton());
+        // Load-bearing: the popup sits entirely ABOVE the button.
+        expect(snack.bottom, lessThanOrEqualTo(button.top));
+        // And the button is pinned to the bottom of the screen, not wherever
+        // the list happens to end.
+        expect(button.bottom, greaterThan(844 - 80));
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(syncNowOnPressed(tester), isNotNull);
+
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pumpAndSettle();
         expect(find.byType(SnackBar), findsNothing);
+      }),
+    );
+
+    testWidgets(
+      'an older sync shows a clock time, not "just now" (WINDOWS entry 17)',
+      (tester) => _withMobilePlatform(() async {
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.recordCalendarSyncSuccess(
+          syncedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+          skipped: const [],
+        );
+        await _pumpCalendarScreen(
+          tester,
+          source: _RestorableFakeCalendarSource(calendars: calendars),
+          settingsNotifier: settings,
+        );
+        await tester.pumpAndSettle();
+
         expect(
           find.textContaining(
-            RegExp(r'^Synced at \d{1,2}:\d{2}\s?[AP]M — 1 commitment imported$'),
+            RegExp(r'^Synced at \d{1,2}:\d{2}\s?[AP]M — 0 commitments imported$'),
           ),
           findsOneWidget,
         );
         expect(find.textContaining('just now'), findsNothing);
-        // The button itself confirms (a device sync is too fast for the
-        // spinner to be seen — owner, 2026-11-03: "nothing happens").
-        expect(find.text('Synced'), findsOneWidget);
-        expect(find.byIcon(Icons.check_circle), findsOneWidget);
-        expect(find.byType(CircularProgressIndicator), findsNothing);
-
-        await tester.pump(const Duration(seconds: 2));
-        expect(find.text('Synced'), findsNothing);
-        expect(syncNowOnPressed(tester), isNotNull);
-
-        await tester.pump(const Duration(seconds: 7));
       }),
     );
 
@@ -2051,7 +2078,6 @@ void main() {
         );
         // The failed attempt is not shown as a fresh sync.
         expect(find.text('Not synced yet'), findsOneWidget);
-        expect(find.text('Synced'), findsNothing);
         expect(syncNowOnPressed(tester), isNotNull);
 
         await tester.pump(const Duration(seconds: 7));

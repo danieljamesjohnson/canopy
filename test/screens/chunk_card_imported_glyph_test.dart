@@ -283,4 +283,32 @@ void main() {
       },
     );
   });
+
+  group('D-36-06 — a calendar meeting is colour-coded apart', () {
+    Color cardFill(WidgetTester tester) =>
+        tester.widget<Card>(find.byType(Card)).color!;
+
+    testWidgets('an imported meeting does not share the hand-entered '
+        'commitment fill, and uses the calendar-meeting fill', (tester) async {
+      await _pumpCard(
+        tester,
+        _commitmentChunk(),
+        density: ChunkCardDensity.detailed,
+        isImportedCommitment: false,
+      );
+      final manual = cardFill(tester);
+      final brightness = Theme.of(tester.element(find.byType(Card))).brightness;
+
+      await _pumpCard(
+        tester,
+        _commitmentChunk(),
+        density: ChunkCardDensity.detailed,
+        isImportedCommitment: true,
+      );
+      final imported = cardFill(tester);
+
+      expect(imported, isNot(manual));
+      expect(imported, calendarMeetingFill(brightness));
+    });
+  });
 }

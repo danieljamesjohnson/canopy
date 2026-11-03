@@ -213,6 +213,24 @@ class ScheduleGeneratorService {
     CommitmentBlock block, {
     required int longBreakEvery,
   }) {
+    // D-36-06 (owner, 2026-11-03): "it shouldn't have a break though.
+    // meetings are whatever they are at the timing they say." A block
+    // imported from a calendar is ONE chunk covering exactly its own window,
+    // with no 25+5(+30) lattice. Hand-entered commitments keep the lattice
+    // (COMMITBREAK-01) — the owner ruled only on calendar meetings.
+    if (block.isFromCalendar) {
+      if (block.endMinutes <= block.startMinutes) return [];
+      return [
+        ScheduledChunk(
+          chunkTypeIndex: ChunkType.work.index,
+          goalId: null,
+          commitmentId: block.id,
+          durationMinutes: block.endMinutes - block.startMinutes,
+          anchoredStartMinutes: block.startMinutes,
+          rationale: block.name,
+        ),
+      ];
+    }
     final List<ScheduledChunk> chunks = [];
     int cursor = block.startMinutes;
     // Last chunk actually added for THIS block — work or break — tracked as
