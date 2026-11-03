@@ -198,6 +198,18 @@ class _InMemoryCommitmentBlockRepository implements CommitmentBlockRepository {
 class _FakeScheduleNotifier extends ScheduleNotifier {
   @override
   Future<void> init() async {}
+
+  /// WINDOWS entry 16: what each Calendars-screen sync handed to today's
+  /// schedule — the blocks, and the ids the sync removed.
+  final applied = <(List<CommitmentBlock>, Set<String>)>[];
+
+  @override
+  Future<void> applyCalendarSync(
+    List<CommitmentBlock> blocks, {
+    Set<String> removedCalendarBlockIds = const {},
+  }) async {
+    applied.add((List.of(blocks), removedCalendarBlockIds));
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -209,6 +221,7 @@ Future<void> _pumpCalendarScreen(
   CalendarSource? googleSource,
   SettingsNotifier? settingsNotifier,
   CommitmentsNotifier? commitmentsNotifier,
+  ScheduleNotifier? scheduleNotifier,
 }) async {
   final settings =
       settingsNotifier ?? SettingsNotifier(repository: InMemoryAppSettingsRepository());
@@ -232,6 +245,10 @@ Future<void> _pumpCalendarScreen(
       providers: [
         ChangeNotifierProvider<SettingsNotifier>.value(value: settings),
         ChangeNotifierProvider<CommitmentsNotifier>.value(value: commitments),
+        if (scheduleNotifier != null)
+          ChangeNotifierProvider<ScheduleNotifier>.value(
+            value: scheduleNotifier,
+          ),
       ],
       child: MaterialApp(
         home: CalendarSettingsScreen(source: source, googleSource: googleSource),
@@ -1941,8 +1958,9 @@ void main() {
     );
 
     testWidgets(
-      'a finished sync shows the locked status sentence in a SnackBar, the '
-      'spinner is gone and the button is enabled again',
+      'a finished sync shows NO SnackBar (it covered the button — WINDOWS '
+      'entry 17); the footer shows the clock time, the spinner is gone and '
+      'the button is enabled again',
       (tester) => _withMobilePlatform(() async {
         final source = _RestorableFakeCalendarSource(
           calendars: calendars,
@@ -1956,11 +1974,14 @@ void main() {
         source.listEventsGate!.complete();
         await tester.pumpAndSettle();
 
-        // Scoped to the SnackBar — the footer renders the same sentence.
+        expect(find.byType(SnackBar), findsNothing);
         expect(
-          inSnackBar('Synced just now — 1 commitment imported'),
+          find.textContaining(
+            RegExp(r'^Synced at \d{1,2}:\d{2}\s?[AP]M — 1 commitment imported$'),
+          ),
           findsOneWidget,
         );
+        expect(find.textContaining('just now'), findsNothing);
         expect(
           find.descendant(
             of: syncNowButton(),
@@ -1971,6 +1992,33 @@ void main() {
         expect(syncNowOnPressed(tester), isNotNull);
 
         await tester.pump(const Duration(seconds: 7));
+      }),
+    );
+
+    testWidgets(
+      'Sync now hands the synced blocks to TODAY\'s schedule, so a new event '
+      'reaches the timeline without a Re-check-in (WINDOWS entry 16)',
+      (tester) => _withMobilePlatform(() async {
+        final source = _RestorableFakeCalendarSource(
+          calendars: calendars,
+          events: oneTimedEvent(),
+        );
+        final schedule = _FakeScheduleNotifier();
+        await _pumpCalendarScreen(
+          tester,
+          source: source,
+          scheduleNotifier: schedule,
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Sync now'));
+        await tester.pumpAndSettle();
+
+        expect(schedule.applied, hasLength(1));
+        expect(
+          schedule.applied.single.$1.where((b) => b.isFromCalendar),
+          hasLength(1),
+        );
       }),
     );
 

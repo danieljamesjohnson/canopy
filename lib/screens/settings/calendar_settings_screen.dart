@@ -3,6 +3,7 @@ import 'dart:async' show unawaited;
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/calendar/calendar_event.dart';
@@ -15,6 +16,7 @@ import '../../data/calendar/google_calendar_source.dart';
 import '../../dev/dev_clock.dart';
 import '../../providers/calendar_sync_runner.dart';
 import '../../providers/commitments_notifier.dart';
+import '../../providers/schedule_notifier.dart';
 import '../../providers/settings_notifier.dart';
 import '../../services/calendar_sync_service.dart';
 import '../../widgets/adaptive_form_modal.dart';
@@ -282,6 +284,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
       commitments: commitments,
       settings: settings,
       source: source,
+      schedule: _schedule,
     );
     if (result.failed) {
       messenger.showSnackBar(
@@ -290,20 +293,40 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
             'Calendar sync failed — showing your last-known calendars.',
           ),
           behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 6),
+          duration: Duration(seconds: 4),
         ),
       );
     }
     return result;
   }
 
-  String _relativeTime(DateTime time) {
+  /// Today's schedule, so a sync from this screen also updates today's
+  /// timeline (WINDOWS entry 16). Null when no [ScheduleNotifier] is provided
+  /// above this screen (several widget tests pump it without one).
+  ScheduleNotifier? _schedule;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    try {
+      _schedule = Provider.of<ScheduleNotifier>(context, listen: false);
+    } on ProviderNotFoundException {
+      _schedule = null;
+    }
+  }
+
+  /// A clock time, not "just now" (owner request 2026-11-03, WINDOWS entry
+  /// 17): "at 8:37 AM" today, "Nov 2 at 8:37 AM" on an earlier day.
+  String _syncTimeLabel(DateTime time) {
     final now = DevClock.now();
-    final diff = now.difference(time);
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return '${diff.inDays}d ago';
+    final local = time.toLocal();
+    final clock = DateFormat.jm().format(local);
+    final sameDay = local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day;
+    return sameDay
+        ? 'at $clock'
+        : '${DateFormat.MMMd().format(local)} at $clock';
   }
 
   Color _parseColor(String? hex) {
@@ -336,11 +359,11 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     );
   }
 
-  /// The ONE builder of the locked "Sync status (fresh)" sentence
-  /// (35-UI-SPEC.md Copywriting Contract) — used by both the footer and the
-  /// "Sync now" SnackBar so the two cannot drift.
+  /// The ONE builder of the "Sync status (fresh)" sentence. Changed by the
+  /// owner on 2026-11-03 from 35-UI-SPEC's relative "Synced just now" to a
+  /// clock time ("Synced at 8:37 AM — …"), WINDOWS entry 17.
   String _statusText(DateTime syncedAt, int importedCount) =>
-      'Synced ${_relativeTime(syncedAt)} — $importedCount '
+      'Synced ${_syncTimeLabel(syncedAt)} — $importedCount '
       'commitment${importedCount == 1 ? '' : 's'} imported';
 
   Widget _footer(BuildContext context) {
@@ -503,24 +526,17 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _syncing = true);
     try {
-      final result = await _syncAndReport(
+      await _syncAndReport(
         _resolveSyncSource(settings),
         commitments,
         settings,
         messenger,
       );
-      if (!result.failed && mounted) {
-        final importedCount = commitments.blocks
-            .where((b) => b.isFromCalendar)
-            .length;
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(_statusText(result.syncedAt, importedCount)),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 6),
-          ),
-        );
-      }
+      // No success SnackBar (WINDOWS entry 17, owner 2026-11-03): it sat on
+      // top of the "Sync now" button for six seconds, so the button could
+      // not be pressed again. Success shows where the button is: the spinner
+      // while it runs, then the footer line above it changes to the new
+      // clock time. A failure still gets its SnackBar, from _syncAndReport.
     } finally {
       if (mounted) setState(() => _syncing = false);
     }

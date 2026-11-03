@@ -31,6 +31,7 @@ library;
 import '../data/calendar/calendar_source.dart';
 import '../services/calendar_sync_service.dart';
 import 'commitments_notifier.dart';
+import 'schedule_notifier.dart';
 import 'settings_notifier.dart';
 
 /// Everything the user has configured, as the strings sources stamp on events
@@ -49,12 +50,22 @@ Set<String> configuredCalendarIdsFor(SettingsNotifier settings) => {
 /// reloading blocks, or while saving the disclosure) degrades to a
 /// `failed: true` result, so check-in can always go on to generate a day from
 /// last-known blocks (D-35-13).
+///
+/// When [schedule] is given (the Calendars screen passes it; check-in does not,
+/// because it builds the day itself straight afterwards), a successful sync
+/// is also applied to TODAY's already-built schedule via
+/// [ScheduleNotifier.applyCalendarSync] (WINDOWS entry 16).
 Future<CalendarSyncResult> runCalendarSync({
   required CommitmentsNotifier commitments,
   required SettingsNotifier settings,
   required CalendarSource source,
+  ScheduleNotifier? schedule,
 }) async {
   try {
+    final calendarIdsBefore = {
+      for (final b in commitments.blocks)
+        if (b.isFromCalendar) b.id,
+    };
     final result = await commitments.syncFromCalendar(
       source: source,
       configuredCalendarIds: configuredCalendarIdsFor(settings),
@@ -64,6 +75,18 @@ Future<CalendarSyncResult> runCalendarSync({
         syncedAt: result.syncedAt,
         skipped: result.skipped,
       );
+      if (schedule != null) {
+        // Its own catch: the sync itself succeeded and is recorded, so a
+        // fault updating today's timeline must not report "sync failed".
+        // The next check-in builds the day from the synced blocks anyway.
+        try {
+          final idsAfter = {for (final b in commitments.blocks) b.id};
+          await schedule.applyCalendarSync(
+            commitments.blocks,
+            removedCalendarBlockIds: calendarIdsBefore.difference(idsAfter),
+          );
+        } catch (_) {}
+      }
     }
     return result;
   } catch (_) {

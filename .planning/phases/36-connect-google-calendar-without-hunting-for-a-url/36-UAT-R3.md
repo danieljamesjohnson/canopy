@@ -204,18 +204,23 @@ genuinely blank.)*
 
 
 **S1 — entry 12: list present on every re-open and after force-quit, no "Allow calendar access", no iOS prompt:**
+PASS (owner, 2026-11-03, build installed 08:31): the list shows on open, with no Allow calendar access button.
 
 
 **S2 — entry 13: what you saw when you tapped "Sync now", in your own words:**
+PASS (owner): spinner, then the result. But the success SnackBar covered Sync now and lingered, and he wants a clock time rather than 'just now'. Logged as WINDOWS 17 and fixed.
 
 
 **S3 — entry 10: what you noticed first on opening the screen; still there after leaving and after force-quit; what tapping it said:**
+PASS (owner): the notice is at the top and survives leaving and re-entering.
 
 
 **S4(a) — entry 11: "Bi-Weekly One on One" on Nov 12 gone from the Commitments list:**
+PASS AT DATA LEVEL (agent, device Hive 2026-11-03 08:31 and 08:37): the Home block 9fb91958 on 11-12 is gone; only spunkl-hash blocks remain, incl. the 11-05 Biweekly One on One.
 
 
 **S4(b) — entry 11: unticking removed that calendar's rows; re-ticking brought them back:**
+Final state clean: after Family was ticked and then unticked, no Family-hash block remained. Owner: 'doesn't appear to be working' -- he meant the synced events never appeared on Today's check-in timeline (WINDOWS 16, fixed), not the prune.
 
 
 **S4(c) — entry 11: a deleted throwaway event's row gone after Sync now:**

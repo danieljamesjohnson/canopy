@@ -346,6 +346,57 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     return true;
   }
 
+  /// Brings TODAY's already-built schedule in line with a calendar sync
+  /// (WINDOWS entry 16, owner request 2026-11-03: "calendar sync should
+  /// override the checkin and replace the work sessions").
+  ///
+  /// Before this, a sync from Settings -> Calendars only changed the stored
+  /// commitments; today's timeline is built at check-in and never regenerated
+  /// on load, so a newly synced event stayed invisible until Re-check-in.
+  ///
+  /// [blocks] is the FULL current commitment list after the sync. Two steps:
+  ///  1. Chunks pointing at a calendar commitment that no longer exists (the
+  ///     sync pruned it) are dropped. Only calendar-sourced ids are considered
+  ///     ([removedCalendarBlockIds]) so a manual block is never touched here.
+  ///  2. Every calendar block that anchors today and is not already on the
+  ///     timeline at its current times goes through [addEventToday] — the same
+  ///     path a hand-added event takes, which reflows overlapping work.
+  ///
+  /// Does nothing when today has no schedule yet: a sync must not create a
+  /// day and so skip the mood check-in; check-in will anchor these anyway.
+  Future<void> applyCalendarSync(
+    List<CommitmentBlock> blocks, {
+    Set<String> removedCalendarBlockIds = const {},
+  }) async {
+    if (!hasScheduleToday || _todaySchedule == null) return;
+    if (removedCalendarBlockIds.isNotEmpty) {
+      final before = _todaySchedule!.chunks.length;
+      _todaySchedule!.chunks = _todaySchedule!.chunks
+          .where((c) => !removedCalendarBlockIds.contains(c.commitmentId))
+          .toList();
+      if (_todaySchedule!.chunks.length != before) {
+        _trimTrailingNonWork();
+        await _repo.save(_todaySchedule!);
+        notifyListeners();
+      }
+    }
+    for (final block in blocks.where((b) => b.isFromCalendar)) {
+      final existing = _todaySchedule!.chunks
+          .where((c) => c.commitmentId == block.id)
+          .toList();
+      if (existing.isNotEmpty) {
+        final start = existing
+            .map((c) => c.anchoredStartMinutes ?? 0)
+            .reduce((a, b) => a < b ? a : b);
+        final end = existing
+            .map((c) => (c.anchoredStartMinutes ?? 0) + c.durationMinutes)
+            .reduce((a, b) => a > b ? a : b);
+        if (start == block.startMinutes && end == block.endMinutes) continue;
+      }
+      await addEventToday(block);
+    }
+  }
+
   /// Removes trailing DISCRETIONARY non-work chunks from
   /// `_todaySchedule!.chunks`, mirroring `ScheduleGeneratorService.generate()`'s
   /// STEP E trim (`schedule_generator.dart`). `addEventToday`'s stale-chunk-
