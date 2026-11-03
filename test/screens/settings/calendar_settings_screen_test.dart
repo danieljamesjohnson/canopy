@@ -41,6 +41,9 @@ import 'package:provider/provider.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+/// WR-05 copy, approved by the owner 2026-11-03.
+const _wr05Copy = "Connected, but couldn't load your calendars. Try again.";
+
 // ---------------------------------------------------------------------------
 // Fake CalendarSource — a throwaway double, not a production stub reused.
 // ---------------------------------------------------------------------------
@@ -1007,6 +1010,84 @@ void main() {
         expect(googleSource.requestPermissionCount, 1);
         expect(googleSource.listCalendarsCount, 1);
         expect(find.text(failureCopy), findsNothing);
+        // WR-05: connected-but-unloaded, not the Connect CTA.
+        expect(find.text(_wr05Copy), findsOneWidget);
+        expect(find.text('Connect Google Calendar'), findsNothing);
+      }),
+    );
+
+    testWidgets(
+      'WR-05: Try again lists the calendars again WITHOUT re-running '
+      'consent, and shows them once the list succeeds',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final googleSource = _FakeCalendarSource(
+          calendars: [
+            CalendarInfo(
+              id: 'google:primary',
+              name: 'Work',
+              accountName: 'dan@gmail.com',
+              isReadOnly: true,
+              sourceLabel: 'Google',
+            ),
+          ],
+        )..listCalendarsError = Exception('network');
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+        );
+
+        await tester.tap(find.text('Connect Google Calendar'));
+        await tester.pumpAndSettle();
+        expect(find.text(_wr05Copy), findsOneWidget);
+
+        googleSource.listCalendarsError = null;
+        await tester.tap(find.text('Try again'));
+        await tester.pumpAndSettle();
+
+        // Load-bearing: the retry never re-launches Google's consent sheet.
+        expect(googleSource.requestPermissionCount, 1);
+        expect(googleSource.listCalendarsCount, 2);
+        expect(find.text(_wr05Copy), findsNothing);
+        expect(find.text('Work'), findsOneWidget);
+      }),
+    );
+
+    testWidgets(
+      'WR-05: re-opening with a stored token whose calendar list fails shows '
+      'the load-failed card, not the Connect CTA',
+      (tester) => _withMobilePlatform(() async {
+        final deviceSource = _FakeCalendarSource(
+          permission: CalendarPermissionState.denied,
+        );
+        final googleSource = _FakeCalendarSource()
+          ..listCalendarsError = Exception('network');
+        final settings = SettingsNotifier(
+          repository: InMemoryAppSettingsRepository(),
+        );
+        await settings.write(
+          GoogleTokens(
+            accessToken: 'access-1',
+            refreshToken: 'refresh-1',
+            expiresAt: DateTime(2026, 3, 1, 9, 30),
+          ),
+        );
+        await _pumpCalendarScreen(
+          tester,
+          source: deviceSource,
+          googleSource: googleSource,
+          settingsNotifier: settings,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(_wr05Copy), findsOneWidget);
+        expect(find.text('Try again'), findsOneWidget);
+        expect(find.text('Disconnect'), findsOneWidget);
+        expect(find.text('Connect Google Calendar'), findsNothing);
+        expect(googleSource.requestPermissionCount, 0);
       }),
     );
   });

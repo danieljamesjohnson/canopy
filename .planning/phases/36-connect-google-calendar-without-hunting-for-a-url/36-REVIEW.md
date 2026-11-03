@@ -237,3 +237,15 @@ that reflects "connected, but couldn't load your calendars right now" (with a re
 _Reviewed: 2026-09-28_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
+
+---
+
+### WR-05 resolution — 2026-11-03
+
+Fixed. The owner approved the copy "Connected, but couldn't load your calendars. Try again." on
+2026-11-03. A `listCalendars()` failure after sign-in, both right after connecting and when the
+screen is reopened with a stored token, now renders that card with **Try again** (lists the
+calendars again and never calls `requestPermission()`, so no second consent) and **Disconnect**.
+Tests in `calendar_settings_screen_test.dart` cover it. Two deliberate breaks were each caught:
+folding the failure back to `connected: false` failed 3 tests, and wiring the retry to the
+consent flow failed the retry test (`requestPermissionCount` became 2).

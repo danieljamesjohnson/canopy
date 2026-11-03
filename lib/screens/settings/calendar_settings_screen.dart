@@ -144,11 +144,24 @@ class _DesktopState {
 /// sign-in FAILURE also lands on `connected: false`, but [_connectGoogle]
 /// announces it with a SnackBar first, so the user can tell it from a
 /// cancellation (WINDOWS entry 4).
+///
+/// [loadFailed] (WR-05) is the fourth case: sign-in is valid and stored,
+/// but listing the calendars failed. It renders "Connected, but couldn't
+/// load your calendars." with a retry that lists again — never the Connect
+/// CTA, which would force a needless second consent.
 class _GoogleState {
-  const _GoogleState({required this.connected, this.calendars = const []});
+  const _GoogleState({required this.connected, this.calendars = const []})
+      : loadFailed = false;
+
+  /// Connected, token stored, but `listCalendars()` threw (WR-05).
+  const _GoogleState.loadFailed()
+      : connected = true,
+        calendars = const [],
+        loadFailed = true;
 
   final bool connected;
   final List<CalendarInfo> calendars;
+  final bool loadFailed;
 }
 
 class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
@@ -981,10 +994,11 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
       return _GoogleState(connected: true, calendars: calendars);
     } catch (_) {
       // Sign-in SUCCEEDED; a failure here is listCalendars() (a
-      // GoogleSourceException) after a valid token was stored — WR-05,
-      // deliberately unchanged and NOT reported as a failed sign-in, which
-      // it is not. (_syncAndReport never throws.)
-      return const _GoogleState(connected: false);
+      // GoogleSourceException) after a valid token was stored. WR-05: NOT a
+      // failed sign-in, and NOT "not connected" either — show the
+      // load-failed card, whose retry lists again without re-consent.
+      // (_syncAndReport never throws.)
+      return const _GoogleState.loadFailed();
     }
   }
 
@@ -993,13 +1007,10 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   /// Google's consent sheet — the fix for WINDOWS entry 6. Lists calendars
   /// only; never calls `requestPermission()`.
   ///
-  /// On any throw, folds into the same `connected: false` state
-  /// [_connectGoogle] returns on its own failure path — this deliberately
-  /// inherits WR-05's behaviour (a transient `listCalendars()` failure
-  /// right after a successful sign-in still shows the plain CTA, forcing an
-  /// unnecessary full re-consent next time) rather than inventing a fourth
-  /// Google state with copy nobody has reviewed. WR-05 itself is NOT fixed
-  /// by this method; see 36-10-SUMMARY.md.
+  /// On any throw, returns [_GoogleState.loadFailed] (WR-05, copy approved
+  /// by the owner 2026-11-03): the token is still valid, so the screen
+  /// offers "Try again" — which calls this method again — rather than the
+  /// Connect CTA and a needless full re-consent. Also the retry target.
   Future<_GoogleState> _loadGoogleCalendars(SettingsNotifier settings) async {
     final source = _resolveGoogleSource(settings);
     try {
@@ -1007,8 +1018,52 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
       if (mounted) setState(() => _googleCalendars = calendars);
       return _GoogleState(connected: true, calendars: calendars);
     } catch (_) {
-      return const _GoogleState(connected: false);
+      return const _GoogleState.loadFailed();
     }
+  }
+
+  /// WR-05: signed in, but the calendar list could not be fetched. The retry
+  /// lists again ([_loadGoogleCalendars]) — it never calls
+  /// `requestPermission()`, so it never re-launches Google's consent sheet.
+  /// Disconnect stays reachable so this card is never a dead end.
+  Widget _googleLoadFailedCard(BuildContext context, SettingsNotifier settings) {
+    final theme = Theme.of(context);
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.calendar_month,
+                size: 48,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "Connected, but couldn't load your calendars. Try again.",
+                style: theme.textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => setState(() {
+                  _googleFuture = _loadGoogleCalendars(settings);
+                }),
+                child: const Text('Try again'),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => _disconnectGoogle(context, settings),
+                child: const Text('Disconnect'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _googleConnectedSection(
@@ -1131,6 +1186,9 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         final state = snapshot.data!;
         if (!state.connected) {
           return _googleCtaCard(context, settings);
+        }
+        if (state.loadFailed) {
+          return _googleLoadFailedCard(context, settings);
         }
         return _googleConnectedSection(context, settings, state.calendars);
       },
