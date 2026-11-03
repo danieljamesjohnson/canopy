@@ -64,30 +64,61 @@ A("X-WR-CALNAME:Canopy UAT Sample Feed")
 A("")
 
 # --- The recurring series, with one occurrence MOVED and one DELETED -----------
-# This is UAT step 7b's evidence. RECURRENCE-ID and EXDATE are PROVEN unsupported
-# on the ICS path (35-02, WINDOWS.md entry 1), so the expected, deliberate result
-# is that today shows this meeting TWICE: once at its original 14:00 and once at
-# the 16:00 it was moved to. Seeing the duplicate IS the finding.
+# WINDOWS.md entry 1 (fixed in code 2026-11-02). Expected now: today shows this
+# meeting ONCE, at 16:00 (moved), never at 14:00; next week's occurrence is
+# absent (EXDATE); and an extra occurrence appears TOMORROW at 10:00 (RDATE).
+# (Until 2026-11-02 the expected result was a 14:00 + 16:00 duplicate.)
+# Written in TZID=America/Chicago, NOT UTC: the series is anchored six weeks
+# back, so a UTC anchor taken in daylight time lands an hour off after the
+# clocks change, and the RECURRENCE-ID/EXDATE then match no occurrence at all —
+# a false failure made by the fixture (measured 2026-11-03).
 A("BEGIN:VEVENT")
 A("UID:uat-weekly-standup@canopy.test")
 A(f"DTSTAMP:{z(today, 8)}")
-A(f"DTSTART:{z(series_anchor, 14)}")
-A(f"DTEND:{z(series_anchor, 15)}")
+A(f"DTSTART;TZID=America/Chicago:{floating(series_anchor, 14)}")
+A(f"DTEND;TZID=America/Chicago:{floating(series_anchor, 15)}")
 A("SUMMARY:Weekly Sync: Product + Eng")
 A("STATUS:CONFIRMED")
 A("RRULE:FREQ=WEEKLY")
-A(f"EXDATE:{z(exdate_day, 14)}")
+A(f"EXDATE;TZID=America/Chicago:{floating(exdate_day, 14)}")
+A(f"RDATE;TZID=America/Chicago:{floating(tomorrow, 10)}")
 A("END:VEVENT")
 A("")
 
 A("BEGIN:VEVENT")
 A("UID:uat-weekly-standup@canopy.test")
-A(f"RECURRENCE-ID:{z(today, 14)}")
+A(f"RECURRENCE-ID;TZID=America/Chicago:{floating(today, 14)}")
 A(f"DTSTAMP:{z(today, 8)}")
-A(f"DTSTART:{z(today, 16)}")
-A(f"DTEND:{z(today, 17)}")
+A(f"DTSTART;TZID=America/Chicago:{floating(today, 16)}")
+A(f"DTEND;TZID=America/Chicago:{floating(today, 17)}")
 A("SUMMARY:Weekly Sync: Product + Eng (moved)")
 A("STATUS:CONFIRMED")
+A("END:VEVENT")
+A("")
+
+# --- A daily series whose TODAY occurrence is cancelled by an override --------
+# WINDOWS.md entry 1: a RECURRENCE-ID override with STATUS:CANCELLED removes that
+# one occurrence. Expected: no "Daily Standup" today; it is there tomorrow.
+yesterday = today - dt.timedelta(days=1)
+A("BEGIN:VEVENT")
+A("UID:uat-daily-standup@canopy.test")
+A(f"DTSTAMP:{z(today, 8)}")
+A(f"DTSTART:{z(yesterday, 9, 30)}")
+A(f"DTEND:{z(yesterday, 10)}")
+A("SUMMARY:Daily Standup")
+A("STATUS:CONFIRMED")
+A("RRULE:FREQ=DAILY;COUNT=10")
+A("END:VEVENT")
+A("")
+
+A("BEGIN:VEVENT")
+A("UID:uat-daily-standup@canopy.test")
+A(f"RECURRENCE-ID:{z(today, 9, 30)}")
+A(f"DTSTAMP:{z(today, 8)}")
+A(f"DTSTART:{z(today, 9, 30)}")
+A(f"DTEND:{z(today, 10)}")
+A("SUMMARY:Daily Standup")
+A("STATUS:CANCELLED")
 A("END:VEVENT")
 A("")
 
