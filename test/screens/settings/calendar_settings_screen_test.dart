@@ -1982,13 +1982,14 @@ void main() {
           findsOneWidget,
         );
         expect(find.textContaining('just now'), findsNothing);
-        expect(
-          find.descendant(
-            of: syncNowButton(),
-            matching: find.byType(CircularProgressIndicator),
-          ),
-          findsNothing,
-        );
+        // The button itself confirms (a device sync is too fast for the
+        // spinner to be seen — owner, 2026-11-03: "nothing happens").
+        expect(find.text('Synced'), findsOneWidget);
+        expect(find.byIcon(Icons.check_circle), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+
+        await tester.pump(const Duration(seconds: 2));
+        expect(find.text('Synced'), findsNothing);
         expect(syncNowOnPressed(tester), isNotNull);
 
         await tester.pump(const Duration(seconds: 7));
@@ -2019,6 +2020,7 @@ void main() {
           schedule.applied.single.$1.where((b) => b.isFromCalendar),
           hasLength(1),
         );
+        await tester.pump(const Duration(seconds: 2));
       }),
     );
 
@@ -2049,6 +2051,7 @@ void main() {
         );
         // The failed attempt is not shown as a fresh sync.
         expect(find.text('Not synced yet'), findsOneWidget);
+        expect(find.text('Synced'), findsNothing);
         expect(syncNowOnPressed(tester), isNotNull);
 
         await tester.pump(const Duration(seconds: 7));

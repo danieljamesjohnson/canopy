@@ -178,6 +178,14 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   /// True while a mobile "Sync now" is running (WINDOWS entry 13).
   bool _syncing = false;
 
+  /// True for [_syncedConfirmation] after a SUCCESSFUL mobile sync: the
+  /// button itself reads "✓ Synced" (WINDOWS entry 17, second round). A
+  /// device sync finishes in well under a second, so the spinner alone was
+  /// invisible and the owner saw "nothing happens" (2026-11-03, 08:45 —
+  /// the sync had in fact run, per the device's Hive).
+  bool _justSynced = false;
+  static const _syncedConfirmation = Duration(seconds: 2);
+
   /// True once the device section has resolved to granted, by restore or by
   /// an explicit grant — so the shared footer (and its "Sync now") shows
   /// even before any sync has ever run (35-UI-SPEC §2: footer whenever at
@@ -400,8 +408,14 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
             // While a mobile sync runs, the button disables and carries a
             // spinner beside the unchanged label — the UI-SPEC's own
             // "Requesting (in flight)" idiom of a spinner with no copy.
-            child: _syncing
-                ?TextButton.icon(
+            child: _justSynced
+                ? TextButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Icons.check_circle, size: 16),
+                    label: const Text('Synced'),
+                  )
+                : _syncing
+                ? TextButton.icon(
                     onPressed: null,
                     icon: const SizedBox(
                       width: 16,
@@ -526,17 +540,23 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _syncing = true);
     try {
-      await _syncAndReport(
+      final result = await _syncAndReport(
         _resolveSyncSource(settings),
         commitments,
         settings,
         messenger,
       );
+      if (!result.failed && mounted) {
+        setState(() => _justSynced = true);
+        Future<void>.delayed(_syncedConfirmation, () {
+          if (mounted) setState(() => _justSynced = false);
+        });
+      }
       // No success SnackBar (WINDOWS entry 17, owner 2026-11-03): it sat on
       // top of the "Sync now" button for six seconds, so the button could
-      // not be pressed again. Success shows where the button is: the spinner
-      // while it runs, then the footer line above it changes to the new
-      // clock time. A failure still gets its SnackBar, from _syncAndReport.
+      // not be pressed again. Success shows ON the button instead: the
+      // spinner while it runs, then "✓ Synced" for two seconds, and the
+      // footer line above it changes to the new clock time. A failure still gets its SnackBar, from _syncAndReport.
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
