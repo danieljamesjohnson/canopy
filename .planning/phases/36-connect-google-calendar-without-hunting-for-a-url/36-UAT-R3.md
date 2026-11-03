@@ -229,3 +229,31 @@ genuinely blank.)*
 
 **Overall verdict:**
 
+
+---
+
+## Addendum (2026-11-03): WINDOWS entry 1 browser check
+
+Run in a **browser**, not on the phone. Problem 1 is about `.ics` feed URLs, and the iPhone build
+reads the device calendar instead.
+
+**Pre-flight (verified by the agent 2026-11-03):** debug web build served by
+`tools/serve-uat.py 8161`, fronted by `tailscale serve --https=8447`. Fixture regenerated today:
+`https://danserver.tailc2efd2.ts.net:8447/sample.ics`. That exact URL was then driven through
+`IcsCalendarSource`'s **real default fetcher** (no seam). Result: today the weekly sync appears
+once, at 16:00 (moved); an RDATE copy appears 11-04 at 10:00; 11-10 is EXDATE'd and absent; today's
+Daily Standup is absent (cancelled override), and it is present from 11-04. A first run also caught
+a fixture bug: a UTC series anchored before DST ended no longer lined up with its own overrides. The
+series was moved to TZID America/Chicago (commit 8911902). The fixture's dates are relative to the
+day it is generated, so regenerate it on a later day before testing.
+
+1. Open `https://danserver.tailc2efd2.ts.net:8447/`, complete onboarding if shown, then go to
+   Settings → Calendars → **Add calendar URL** and enter `https://danserver.tailc2efd2.ts.net:8447/sample.ics`.
+2. **⟳ Re-check-in (mandatory, trap #4)** so today's schedule is built from the synced blocks.
+3. On **Today**: "Weekly Sync: Product + Eng (moved)" appears at **16:00**. There is **no**
+   Weekly Sync at 14:00, and **no** "Daily Standup".
+4. Goals → ⋮ → **Commitment blocks**: Weekly Sync appears on **Wed 10:00** (RDATE). There is
+   **no** Weekly Sync on next Tue (EXDATE). Daily Standup appears from Wed onward.
+
+**E1 — what you saw:**
+
