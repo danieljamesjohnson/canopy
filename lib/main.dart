@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
@@ -30,6 +31,16 @@ void main() async {
     await setupDesktopWindow();
   } catch (e, st) {
     debugPrint('setupDesktopWindow failed (continuing): $e\n$st');
+  }
+  // Agent preview hook (2026-11-04): `--dart-define=PREVIEW_AS_IOS=true` on
+  // a DEBUG build makes an Android emulator take the iOS code paths — the
+  // Calendars screen's device-permission branch above all, which is
+  // iOS-only (D-35-15) — so an agent on danserver can record and screenshot
+  // iPhone-only UI without the owner's phone. Debug-only by construction:
+  // the flag defaults to false and `debugDefaultTargetPlatformOverride` is
+  // honoured only in debug mode. Never set it for a build a person uses.
+  if (kDebugMode && const bool.fromEnvironment('PREVIEW_AS_IOS')) {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
   }
   final prefs = await SharedPreferences.getInstance();
   await HiveDatabase.init(prefs);

@@ -1,4 +1,4 @@
-import 'dart:async' show unawaited;
+import 'dart:async' show Timer, unawaited;
 
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
@@ -192,12 +192,31 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   ScaffoldMessengerState get _messenger =>
       _messengerKey.currentState ?? ScaffoldMessenger.of(context);
 
-  /// True from the moment "Sync now" is pressed until the success popup has
-  /// gone (owner 2026-11-04: the footer line "says the exact same thing as
-  /// the popup so maybe it should disappear and reappear after you press
-  /// the button"). The footer status line is hidden meanwhile, then plays
-  /// its entrance once the popup closes.
-  bool _statusHidden = false;
+  /// True for [_confirmHold] after a SUCCESSFUL mobile "Sync now": the
+  /// footer's status line grows into a tinted card with a check and holds,
+  /// then shrinks back into the plain line (WINDOWS entry 17, fifth round —
+  /// see [_footer]).
+  bool _confirming = false;
+
+  /// The status sentence frozen while a mobile sync runs; see [_footer].
+  String? _statusDuringSync;
+  Timer? _confirmTimer;
+
+  /// How long the confirmation card holds before it settles back.
+  static const _confirmHold = Duration(milliseconds: 2500);
+
+  /// The shortest time "Syncing…" stays on the button. A device sync
+  /// finishes in well under a frame budget's worth of perceptible time, so
+  /// without a floor the spinner flashes for one or two frames and reads as
+  /// a glitch — or, as the owner reported on 2026-11-03, as "nothing
+  /// happens". Mozilla's loading-indicator guidance uses a 400ms floor.
+  static const _minSyncing = Duration(milliseconds: 500);
+
+  @override
+  void dispose() {
+    _confirmTimer?.cancel();
+    super.dispose();
+  }
 
   /// True once the device section has resolved to granted, by restore or by
   /// an explicit grant — so the shared footer (and its "Sync now") shows
@@ -402,100 +421,165 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     // `syncedAt` must never surface here, or a failed sync would render as
     // a fresh just-now sync (WINDOWS entry 13).
     final lastSync = settings.lastCalendarSyncAt;
-    final statusText = lastSync == null
+    final liveStatus = lastSync == null
         ? 'Not synced yet'
         : _statusText(lastSync, importedCount);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // WINDOWS entry 17, fourth round (owner 2026-11-04: "the
-          // animation is too subtle" and the line repeats the popup). The
-          // line is hidden from "Sync now" until the popup closes (see
-          // [_statusHidden]); then the fresh line rises in from below and
-          // lands highlighted in the primary colour, which fades back to
-          // the normal muted text over ~1.6s. The hidden state keeps the
-          // line's height so the button below never jumps.
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 600),
-            switchInCurve: Curves.easeOutBack,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 1.2),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
+    // While "Syncing…" shows, the line keeps saying what it said when the
+    // button was tapped: the sync records its new time as soon as it
+    // finishes, which on the emulator recording flipped the line to "just
+    // now" while the button still read "Syncing…" — the news arrived
+    // before the reveal. It lands together with the confirmation instead.
+    final statusText = (_syncing ? _statusDuringSync : null) ?? liveStatus;
+    // WINDOWS entry 17, fifth round (owner 2026-11-04, from a screen
+    // recording: "2 visible hitches, and the white space handling is kinda
+    // strange"). The separate success SnackBar is gone: it slid out from
+    // behind the footer's top edge, duplicated this line while both were on
+    // screen, drained back into the edge with a blank frame, and left an
+    // empty row where the hidden line had been. Instead the status line
+    // ITSELF is the confirmation — Apple HIG "Feedback": integrate routine
+    // status into the interface rather than interrupting with it.
+    //
+    //   tap        -> the button reads "Syncing…" with a spinner, for at
+    //                 least [_minSyncing] so it can actually be seen;
+    //   success    -> the line grows into a tinted card with a check
+    //                 ("Synced just now — N commitments imported");
+    //   +2.5s      -> the card settles back into the plain line.
+    //
+    // Only colour, padding and the icon's width animate — never the font
+    // size or weight, so the text never re-flows mid-animation (the
+    // bold-to-regular snap in the 2026-11-04 recording). The card's fill
+    // fades within its own hue (alpha only), never toward transparent black.
+    final scheme = theme.colorScheme;
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    Duration motion(int ms) =>
+        reduceMotion ? Duration.zero : Duration(milliseconds: ms);
+    final confirming = _confirming && lastSync != null;
+    final morph = motion(confirming ? 420 : 360);
+    final curve = confirming ? Curves.easeOutCubic : Curves.easeInOutCubic;
+    final textStyle = theme.textTheme.bodyMedium!.copyWith(
+      color: confirming ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
+    );
+    return DecoratedBox(
+      // The footer reads as a bar of its own, not as loose text floating at
+      // the bottom of the list.
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        border: Border(top: BorderSide(color: scheme.outlineVariant)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              key: const ValueKey('sync-status-line'),
+              duration: morph,
+              curve: curve,
+              // Horizontal padding is constant, so the text lines up with
+              // the "Sync now" label below in both states; only the
+              // vertical padding opens up to make the card.
+              padding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: confirming ? 12 : 4,
+              ),
+              decoration: BoxDecoration(
+                color: scheme.primaryContainer.withValues(
+                  alpha: confirming ? 1 : 0,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  // A FIXED leading slot (the width of the button's icon
+                  // plus its gap), present in both states: the sentence
+                  // lines up with the "Sync now" label below and never
+                  // moves sideways. The check only fades and scales inside
+                  // the slot — on the 2026-11-04 emulator recording, a
+                  // slot that grew and shrank clipped the check into a
+                  // half-circle on the way in and left a one-frame gap on
+                  // the way out.
+                  SizedBox(
+                    width: 26,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: AnimatedOpacity(
+                        opacity: confirming ? 1 : 0,
+                        duration: morph,
+                        curve: curve,
+                        child: AnimatedScale(
+                          scale: confirming ? 1 : 0.6,
+                          duration: morph,
+                          curve: confirming ? Curves.easeOutBack : curve,
+                          child: Icon(
+                            Icons.check_circle_rounded,
+                            key: confirming
+                                ? const ValueKey('sync-confirm-check')
+                                : null,
+                            size: 18,
+                            color: scheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: AnimatedDefaultTextStyle(
+                      duration: morph,
+                      curve: curve,
+                      style: textStyle,
+                      child: AnimatedSwitcher(
+                        duration: motion(320),
+                        // Fade only, both children pinned to the left: no
+                        // slide, so no second copy drifting. And SEQUENTIAL,
+                        // not a cross-fade: the old sentence is gone before
+                        // the new one appears (each uses half the duration).
+                        // A true cross-fade overlaid "Synced at 7:28 AM" on
+                        // "Synced just now" for ~100ms on the emulator and
+                        // read as garbled text.
+                        switchInCurve: const Interval(0.5, 1),
+                        switchOutCurve: const Interval(0.5, 1),
+                        layoutBuilder: (current, previous) => Stack(
+                          alignment: Alignment.centerLeft,
+                          children: [...previous, ?current],
+                        ),
+                        child: Text(
+                          statusText,
+                          key: ValueKey(statusText),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: _statusHidden
-                ? Text(
-                    ' ',
-                    key: const ValueKey('status-hidden'),
-                    style: theme.textTheme.bodySmall,
-                  )
-                : TweenAnimationBuilder<double>(
-                    key: ValueKey(lastSync),
-                    tween: Tween(begin: lastSync == null ? 0.0 : 1.0, end: 0.0),
-                    duration: const Duration(milliseconds: 1600),
-                    curve: Curves.easeIn,
-                    builder: (context, highlight, _) => Container(
-                      key: const ValueKey('sync-status-line'),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Color.lerp(
-                          Colors.transparent,
-                          theme.colorScheme.primaryContainer,
-                          highlight,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const ValueKey('sync-now-button'),
+                onPressed: _syncing ? null : () => _syncNow(context),
+                icon: AnimatedSwitcher(
+                  duration: motion(150),
+                  child: _syncing
+                      ? const SizedBox(
+                          key: ValueKey('syncing'),
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(
+                          Icons.sync_rounded,
+                          key: ValueKey('idle'),
+                          size: 18,
                         ),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        statusText,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Color.lerp(
-                            theme.colorScheme.onSurfaceVariant,
-                            theme.colorScheme.onPrimaryContainer,
-                            highlight,
-                          ),
-                          fontWeight: highlight > 0.5
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-          ),
-          Align(
-            alignment: Alignment.centerLeft,
-            // While a mobile sync runs, the button disables and carries a
-            // spinner beside the unchanged label — the UI-SPEC's own
-            // "Requesting (in flight)" idiom of a spinner with no copy.
-            child: _syncing
-                ? TextButton.icon(
-                    onPressed: null,
-                    icon: const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    label: const Text('Sync now'),
-                  )
-                : TextButton(
-                    onPressed: () => _syncNow(context),
-                    child: const Text('Sync now'),
-                  ),
-          ),
-        ],
+                ),
+                label: Text(_syncing ? 'Syncing…' : 'Sync now'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -604,11 +688,22 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     if (_syncing) return;
     final commitments = context.read<CommitmentsNotifier>();
     final messenger = _messenger;
+    _confirmTimer?.cancel();
+    // Captured HERE, at the tap, not in build: a fast sync records its new
+    // time before the next frame is ever built.
+    final lastSync = settings.lastCalendarSyncAt;
+    final importedBefore = commitments.blocks
+        .where((b) => b.isFromCalendar)
+        .length;
     setState(() {
       _syncing = true;
-      _statusHidden = true;
+      _confirming = false;
+      _statusDuringSync = lastSync == null
+          ? 'Not synced yet'
+          : _statusText(lastSync, importedBefore);
     });
-    var popupShown = false;
+    final stopwatch = Stopwatch()..start();
+    var succeeded = false;
     try {
       final result = await _syncAndReport(
         _resolveSyncSource(settings),
@@ -616,36 +711,22 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         settings,
         messenger,
       );
-      // WINDOWS entry 17, third round (owner 2026-11-03: "the popup was
-      // better — clearer"): the success SnackBar is back. It no longer
-      // covers "Sync now" because, on mobile, the footer is the Scaffold's
-      // bottomNavigationBar and a SnackBar always slides up ABOVE that.
-      if (!result.failed && mounted) {
-        final importedCount = commitments.blocks
-            .where((b) => b.isFromCalendar)
-            .length;
-        popupShown = true;
-        messenger
-            .showSnackBar(
-              SnackBar(
-                content: Text(_statusText(result.syncedAt, importedCount)),
-                duration: const Duration(seconds: 3),
-              ),
-            )
-            .closed
-            .then((_) {
-              if (mounted) setState(() => _statusHidden = false);
-            });
-      }
+      succeeded = !result.failed;
+      final remaining = _minSyncing - stopwatch.elapsed;
+      if (remaining > Duration.zero) await Future<void>.delayed(remaining);
     } finally {
       if (mounted) {
+        // One setState for both, so no frame shows the button idle before
+        // the confirmation starts.
         setState(() {
           _syncing = false;
-          // No success popup (the sync failed): nothing will close, so
-          // bring the line straight back — it still reads the last
-          // SUCCESSFUL sync, never the failed attempt (WINDOWS entry 13).
-          if (!popupShown) _statusHidden = false;
+          _confirming = succeeded;
         });
+        if (succeeded) {
+          _confirmTimer = Timer(_confirmHold, () {
+            if (mounted) setState(() => _confirming = false);
+          });
+        }
       }
     }
   }

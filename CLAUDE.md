@@ -245,4 +245,28 @@ Key choices:
     The phone's *flutter* id (`00008130-001014892891401C`) is a different string from its
     `devicectl` id (`66110258-0097-5E64-9C90-B9815966D67E`); `devicectl --device` wants the latter.
 
+### Seeing the app yourself — the Android emulator on danserver
+
+Agents can screenshot and screen-record the real app without the owner's phone. Set up 2026-11-04:
+
+- AVD **`canopy_api35`** (Android 15, x86_64, KVM, 1080x2340 @ 440dpi ≈ a 393dp-wide phone), SDK at
+  `~/Android/Sdk`. Boot headless (start it with `dangerouslyDisableSandbox`):
+  `~/Android/Sdk/emulator/emulator -avd canopy_api35 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save &`
+  then wait for `adb shell getprop sys.boot_completed` = `1`.
+- **iPhone-only UI needs `--dart-define=PREVIEW_AS_IOS=true`** on a **debug** build:
+  `flutter build apk --debug --target-platform android-x64 --dart-define=PREVIEW_AS_IOS=true`.
+  The Calendars device-permission screen and its Sync now footer are iOS-only (D-35-15); without the
+  flag Android shows the ICS-URL screen instead. The flag is ignored outside debug mode. Calendar
+  *data* still goes through Android's ICS path, so a sync imports 0 events there; it's for looking at
+  the UI, not for testing the iOS data path.
+- Skip onboarding by pushing a Hive snapshot pulled from the owner's phone (see the devicectl
+  pull above) into `/data/data/com.danjjohnson.canopy/app_flutter/` after `adb root`, then `chown`
+  it to the app's uid.
+- See it: `adb exec-out screencap -p > x.png` and Read the PNG; record with
+  `adb shell screenrecord --time-limit 8 /sdcard/r.mp4`, pull it, and tile frames with ffmpeg
+  (`fps=20,crop=...,tile=3x7`) to inspect an animation frame by frame. Drive it with
+  `adb shell input tap X Y` (screenshot pixels × 1080/displayed width).
+- Swiftshader is software rendering: judge **sequence and layout**, not frame rate. Smoothness is
+  still the owner's iPhone to confirm.
+
 Tests are in `test/` using `flutter_test`.

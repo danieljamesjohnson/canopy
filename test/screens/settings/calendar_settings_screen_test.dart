@@ -1886,10 +1886,7 @@ void main() {
     // `TextButton.icon` builds a private SUBCLASS of TextButton, so an exact
     // type lookup would miss the in-flight button (CLAUDE.md trap #1) —
     // locate it as the ButtonStyleButton ancestor of its label.
-    Finder syncNowButton() => find.ancestor(
-      of: find.text('Sync now'),
-      matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
-    );
+    Finder syncNowButton() => find.byKey(const ValueKey('sync-now-button'));
 
     VoidCallback? syncNowOnPressed(WidgetTester tester) =>
         tester.widget<ButtonStyleButton>(syncNowButton()).onPressed;
@@ -1965,7 +1962,7 @@ void main() {
 
         await tester.tap(find.text('Sync now'));
         await tester.pump();
-        await tester.tap(find.text('Sync now'), warnIfMissed: false);
+        await tester.tap(syncNowButton(), warnIfMissed: false);
         await tester.pump();
 
         expect(source.listEventsCount, 1);
@@ -1976,103 +1973,209 @@ void main() {
       }),
     );
 
+    Finder statusLine() => find.byKey(const ValueKey('sync-status-line'));
+    Finder confirmCheck() => find.byKey(const ValueKey('sync-confirm-check'));
+    Color statusFill(WidgetTester tester) =>
+        (tester.widget<AnimatedContainer>(statusLine()).decoration!
+                as BoxDecoration)
+            .color!;
+
     testWidgets(
-      'a finished sync shows the "Synced just now" popup sliding up from the '
-      'bottom WITHOUT covering Sync now, which is pinned below it; the '
-      'spinner is gone and the button is enabled again (WINDOWS entry 17)',
+      'a finished sync confirms IN PLACE: the status line becomes a tinted '
+      'card with a check, no SnackBar appears, nothing covers Sync now, and '
+      'after the hold it settles back to the plain line (WINDOWS entry 17, '
+      'fifth round)',
       (tester) => _withMobilePlatform(() async {
         final source = _RestorableFakeCalendarSource(
           calendars: calendars,
           events: oneTimedEvent(),
-        )..listEventsGate = Completer<void>();
+        );
         await _pumpCalendarScreen(tester, source: source, insideAppShell: true);
-        // A phone-sized screen, where the 2026-11-03 overlap was seen.
         tester.view.physicalSize = const Size(390, 844);
         await tester.pumpAndSettle();
+        expect(confirmCheck(), findsNothing);
+        expect(statusFill(tester).a, 0);
 
-        await tester.tap(find.text('Sync now'));
+        await tester.tap(syncNowButton());
         await tester.pump();
-        source.listEventsGate!.complete();
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 600)); // min Syncing…
+        await tester.pump(const Duration(milliseconds: 500)); // morph in
 
+        expect(find.byType(SnackBar), findsNothing);
+        expect(confirmCheck(), findsOneWidget);
+        expect(statusFill(tester).a, 1);
+        // One copy of the sentence on screen, inside the card.
         expect(
-          inSnackBar('Synced just now — 1 commitment imported'),
+          find.text('Synced just now — 1 commitment imported'),
           findsOneWidget,
         );
-        final snack = tester.getRect(find.byType(SnackBar));
-        final button = tester.getRect(syncNowButton());
-        // Load-bearing: the popup sits entirely ABOVE the button.
-        expect(snack.bottom, lessThanOrEqualTo(button.top));
-        // And the button is pinned to the bottom of the screen, not wherever
-        // the list happens to end.
-        expect(button.bottom, greaterThan(844 - 80 - 80));
-        expect(find.byType(CircularProgressIndicator), findsNothing);
-        expect(syncNowOnPressed(tester), isNotNull);
-
-        await tester.pump(const Duration(seconds: 4));
-        await tester.pumpAndSettle();
-        expect(find.byType(SnackBar), findsNothing);
-      }),
-    );
-
-    testWidgets(
-      'the footer line disappears when Sync now is pressed and comes back, '
-      'highlighted, only once the popup has gone (owner 2026-11-04: it '
-      '"says the exact same thing as the popup")',
-      (tester) => _withMobilePlatform(() async {
-        final source = _RestorableFakeCalendarSource(
-          calendars: calendars,
-          events: oneTimedEvent(),
-        )..listEventsGate = Completer<void>();
-        await _pumpCalendarScreen(tester, source: source, insideAppShell: true);
-        await tester.pumpAndSettle();
-        Finder footerLine() => find.byKey(const ValueKey('sync-status-line'));
-        expect(footerLine(), findsOneWidget);
-
-        await tester.tap(find.text('Sync now'));
-        await tester.pump();
-        // The spinner never settles, so step the fade-out by hand.
-        await tester.pump(const Duration(milliseconds: 700));
-        await tester.pump();
-        // Gone while the sync runs...
-        expect(footerLine(), findsNothing);
-
-        source.listEventsGate!.complete();
-        await tester.pumpAndSettle();
-        // ...and while the popup says it.
-        expect(
-          inSnackBar('Synced just now — 1 commitment imported'),
-          findsOneWidget,
-        );
-        expect(footerLine(), findsNothing);
-
-        await tester.pump(const Duration(seconds: 3)); // popup's duration
-        await tester.pump(const Duration(milliseconds: 400)); // its exit
-        await tester.pump(); // `closed` fires -> line rebuilt
-        await tester.pump(const Duration(milliseconds: 300));
-        // Popup gone: the line is back, mid-entrance, still highlighted.
-        expect(find.byType(SnackBar), findsNothing);
-        expect(footerLine(), findsOneWidget);
-        final highlight =
-            (tester.widget<Container>(footerLine()).decoration!
-                    as BoxDecoration)
-                .color!;
-        expect(highlight.a, greaterThan(0.3));
         expect(
           find.descendant(
-            of: footerLine(),
+            of: statusLine(),
             matching: find.text('Synced just now — 1 commitment imported'),
           ),
           findsOneWidget,
         );
+        // The card sits above the button and never overlaps it.
+        final card = tester.getRect(statusLine());
+        final button = tester.getRect(syncNowButton());
+        expect(card.bottom, lessThanOrEqualTo(button.top));
+        expect(syncNowOnPressed(tester), isNotNull);
 
-        // The highlight fades back to plain text.
+        await tester.pump(const Duration(milliseconds: 2500)); // the hold
         await tester.pumpAndSettle();
-        final settled =
-            (tester.widget<Container>(footerLine()).decoration!
-                    as BoxDecoration)
-                .color!;
-        expect(settled.a, lessThan(0.05));
+        expect(confirmCheck(), findsNothing);
+        expect(statusFill(tester).a, 0);
+        expect(
+          find.text('Synced just now — 1 commitment imported'),
+          findsOneWidget,
+        );
+      }),
+    );
+
+    testWidgets(
+      'an instant sync still shows "Syncing…" for the minimum time, so the '
+      'tap visibly lands',
+      (tester) => _withMobilePlatform(() async {
+        await _pumpCalendarScreen(
+          tester,
+          source: _RestorableFakeCalendarSource(
+            calendars: calendars,
+            events: oneTimedEvent(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(syncNowButton());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text('Syncing…'), findsOneWidget);
+        expect(syncNowOnPressed(tester), isNull);
+
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.text('Syncing…'), findsNothing);
+        expect(syncNowOnPressed(tester), isNotNull);
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pumpAndSettle();
+      }),
+    );
+
+    testWidgets(
+      'the confirmation never changes the text size or weight, so the '
+      'sentence cannot re-flow mid-animation (the 2026-11-04 snap)',
+      (tester) => _withMobilePlatform(() async {
+        await _pumpCalendarScreen(
+          tester,
+          source: _RestorableFakeCalendarSource(
+            calendars: calendars,
+            events: oneTimedEvent(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(syncNowButton());
+        await tester.pump();
+        // Sample every frame of the sync, confirm and settle cycle.
+        final sizes = <double>{};
+        final weights = <FontWeight?>{};
+        var sawCheck = false;
+        for (var i = 0; i < 260; i++) {
+          final text = find
+              .descendant(of: statusLine(), matching: find.byType(Text))
+              .last;
+          final style = DefaultTextStyle.of(
+            tester.element(text),
+          ).style.merge(tester.widget<Text>(text).style);
+          sizes.add(style.fontSize!);
+          weights.add(style.fontWeight);
+          sawCheck |= confirmCheck().evaluate().isNotEmpty;
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        await tester.pumpAndSettle();
+        expect(sawCheck, isTrue);
+        expect(sizes, hasLength(1));
+        expect(weights, hasLength(1));
+      }),
+    );
+
+    testWidgets(
+      'while "Syncing…" shows, the line keeps its old text; the new time '
+      'lands together with the confirmation, not before it',
+      (tester) => _withMobilePlatform(() async {
+        await _pumpCalendarScreen(
+          tester,
+          source: _RestorableFakeCalendarSource(
+            calendars: calendars,
+            events: oneTimedEvent(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Not synced yet'), findsOneWidget);
+
+        await tester.tap(syncNowButton());
+        await tester.pump();
+        // The sync itself has finished (instant fake) and recorded its
+        // time, but "Syncing…" is still within its minimum.
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Syncing…'), findsOneWidget);
+        expect(find.text('Not synced yet'), findsOneWidget);
+        expect(find.textContaining('just now'), findsNothing);
+
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(
+          find.text('Synced just now — 1 commitment imported'),
+          findsOneWidget,
+        );
+        expect(confirmCheck(), findsOneWidget);
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpAndSettle();
+      }),
+    );
+
+    testWidgets(
+      'the sentence never moves sideways and never overlaps its old self: '
+      'same x in every frame of the confirm-and-settle cycle, level with the '
+      '"Sync now" label, and one copy visible at a time',
+      (tester) => _withMobilePlatform(() async {
+        await _pumpCalendarScreen(
+          tester,
+          source: _RestorableFakeCalendarSource(
+            calendars: calendars,
+            events: oneTimedEvent(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(syncNowButton());
+        await tester.pump();
+        final lefts = <double>{};
+        var maxVisibleAtOnce = 0;
+        for (var i = 0; i < 260; i++) {
+          var visible = 0;
+          final texts = find
+              .descendant(of: statusLine(), matching: find.byType(Text))
+              .evaluate();
+          for (final e in texts) {
+            lefts.add(tester.getTopLeft(find.byWidget(e.widget)).dx);
+            // Effective opacity through the switcher's FadeTransitions.
+            var opacity = 1.0;
+            e.visitAncestorElements((a) {
+              final w = a.widget;
+              if (w is FadeTransition) opacity *= w.opacity.value;
+              return w is! AnimatedContainer;
+            });
+            if (opacity > 0.05) visible++;
+          }
+          if (visible > maxVisibleAtOnce) maxVisibleAtOnce = visible;
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        await tester.pumpAndSettle();
+        expect(lefts, hasLength(1));
+        // Old and new sentences are never both visible (no garbled overlap).
+        expect(maxVisibleAtOnce, 1);
+        final label = tester.getTopLeft(
+          find.descendant(of: syncNowButton(), matching: find.text('Sync now')),
+        );
+        expect(lefts.single, closeTo(label.dx, 1));
       }),
     );
 
