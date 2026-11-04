@@ -31,8 +31,7 @@ import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/providers/settings_notifier.dart';
 import 'package:canopy/screens/commitments/commitments_screen.dart';
 import 'package:canopy/screens/settings/calendar_settings_screen.dart';
-import 'package:canopy/services/calendar_sync_service.dart'
-    show calendarIdHash;
+import 'package:canopy/services/calendar_sync_service.dart' show calendarIdHash;
 import 'package:flutter/foundation.dart'
     show debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
@@ -222,10 +221,13 @@ Future<void> _pumpCalendarScreen(
   SettingsNotifier? settingsNotifier,
   CommitmentsNotifier? commitmentsNotifier,
   ScheduleNotifier? scheduleNotifier,
+  bool insideAppShell = false,
 }) async {
   final settings =
-      settingsNotifier ?? SettingsNotifier(repository: InMemoryAppSettingsRepository());
-  final commitments = commitmentsNotifier ??
+      settingsNotifier ??
+      SettingsNotifier(repository: InMemoryAppSettingsRepository());
+  final commitments =
+      commitmentsNotifier ??
       CommitmentsNotifier(repository: _InMemoryCommitmentBlockRepository());
 
   // Plan 36-06: the Calendars screen now renders TWO always-present
@@ -251,7 +253,41 @@ Future<void> _pumpCalendarScreen(
           ),
       ],
       child: MaterialApp(
-        home: CalendarSettingsScreen(source: source, googleSource: googleSource),
+        home: insideAppShell
+            // The production frame (lib/widgets/responsive_shell.dart, below
+            // 720dp): an OUTER Scaffold with the Today/Goals/Settings
+            // NavigationBar, the Calendars screen inside its body. A popup
+            // test pumped without this frame passed while the owner watched
+            // the popup cover "Sync now" on hardware (2026-11-04): the app's
+            // one ScaffoldMessenger shows SnackBars on the OUTERMOST
+            // Scaffold, so the inner pinned footer was never in play.
+            ? Scaffold(
+                body: CalendarSettingsScreen(
+                  source: source,
+                  googleSource: googleSource,
+                ),
+                bottomNavigationBar: NavigationBar(
+                  selectedIndex: 2,
+                  destinations: const [
+                    NavigationDestination(
+                      icon: Icon(Icons.today),
+                      label: 'Today',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.flag),
+                      label: 'Goals',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.settings),
+                      label: 'Settings',
+                    ),
+                  ],
+                ),
+              )
+            : CalendarSettingsScreen(
+                source: source,
+                googleSource: googleSource,
+              ),
       ),
     ),
   );
@@ -345,10 +381,7 @@ void main() {
         await tester.tap(find.text('Allow calendar access'));
         await tester.pumpAndSettle();
 
-        expect(
-          find.text('No calendars found on this device.'),
-          findsOneWidget,
-        );
+        expect(find.text('No calendars found on this device.'), findsOneWidget);
         expect(find.byType(CheckboxListTile), findsNothing);
       }),
     );
@@ -578,9 +611,7 @@ void main() {
           findsOneWidget,
         );
 
-        await tester.tap(
-          find.text('2 events not imported — tap for details'),
-        );
+        await tester.tap(find.text('2 events not imported — tap for details'));
         await tester.pumpAndSettle();
 
         expect(find.text('Cancelled Meeting'), findsOneWidget);
@@ -591,130 +622,125 @@ void main() {
     );
   });
 
-  group(
-    'Plan 36-09 — the skipped-events disclosure moves to the top '
-    '(WINDOWS entry 10)',
-    () {
-      testWidgets(
-        'the disclosure renders ABOVE the Google section\'s "Connect '
-        'Google Calendar" button on the mobile branch, proven by '
-        'comparing rendered y-offsets, not widget order in source',
-        (tester) => _withMobilePlatform(() async {
-          tz.setLocalLocation(tz.UTC);
-          final now = DateTime.now();
-          final calendars = [
-            CalendarInfo(
-              id: 'cal-1',
-              name: 'Work',
-              accountName: 'dan@gmail.com',
-              isReadOnly: true,
-            ),
-          ];
-          final events = [
-            CalendarEvent(
-              uid: 'evt-cancelled',
-              title: 'Cancelled Meeting',
-              start: now.add(const Duration(days: 1, hours: 1)),
-              end: now.add(const Duration(days: 1, hours: 2)),
-              isAllDay: false,
-              status: CalendarEventStatus.cancelled,
-              calendarId: 'cal-1',
-            ),
-            CalendarEvent(
-              uid: 'evt-short',
-              title: 'Quick Sync',
-              start: now.add(const Duration(days: 1, hours: 3)),
-              end: now.add(const Duration(days: 1, hours: 3, minutes: 10)),
-              isAllDay: false,
-              status: CalendarEventStatus.confirmed,
-              calendarId: 'cal-1',
-            ),
-          ];
-          final source = _FakeCalendarSource(
-            permission: CalendarPermissionState.granted,
-            calendars: calendars,
-            events: events,
-          );
-          // Google is deliberately left unconnected (no tap on "Connect
-          // Google Calendar") — its CTA card, with the button this test
-          // anchors on, stays on screen throughout.
-          await _pumpCalendarScreen(tester, source: source);
+  group('Plan 36-09 — the skipped-events disclosure moves to the top '
+      '(WINDOWS entry 10)', () {
+    testWidgets(
+      'the disclosure renders ABOVE the Google section\'s "Connect '
+      'Google Calendar" button on the mobile branch, proven by '
+      'comparing rendered y-offsets, not widget order in source',
+      (tester) => _withMobilePlatform(() async {
+        tz.setLocalLocation(tz.UTC);
+        final now = DateTime.now();
+        final calendars = [
+          CalendarInfo(
+            id: 'cal-1',
+            name: 'Work',
+            accountName: 'dan@gmail.com',
+            isReadOnly: true,
+          ),
+        ];
+        final events = [
+          CalendarEvent(
+            uid: 'evt-cancelled',
+            title: 'Cancelled Meeting',
+            start: now.add(const Duration(days: 1, hours: 1)),
+            end: now.add(const Duration(days: 1, hours: 2)),
+            isAllDay: false,
+            status: CalendarEventStatus.cancelled,
+            calendarId: 'cal-1',
+          ),
+          CalendarEvent(
+            uid: 'evt-short',
+            title: 'Quick Sync',
+            start: now.add(const Duration(days: 1, hours: 3)),
+            end: now.add(const Duration(days: 1, hours: 3, minutes: 10)),
+            isAllDay: false,
+            status: CalendarEventStatus.confirmed,
+            calendarId: 'cal-1',
+          ),
+        ];
+        final source = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: calendars,
+          events: events,
+        );
+        // Google is deliberately left unconnected (no tap on "Connect
+        // Google Calendar") — its CTA card, with the button this test
+        // anchors on, stays on screen throughout.
+        await _pumpCalendarScreen(tester, source: source);
 
-          await tester.tap(find.text('Allow calendar access'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Allow calendar access'));
+        await tester.pumpAndSettle();
 
-          expect(
-            find.text('2 events not imported — tap for details'),
-            findsOneWidget,
-          );
-          expect(find.text('Connect Google Calendar'), findsOneWidget);
+        expect(
+          find.text('2 events not imported — tap for details'),
+          findsOneWidget,
+        );
+        expect(find.text('Connect Google Calendar'), findsOneWidget);
 
-          final bannerY = tester
-              .getTopLeft(
-                find.text('2 events not imported — tap for details'),
-              )
-              .dy;
-          // Anchor on the Connect button's own LABEL, never the bare word
-          // "Google" — that word also appears in the CTA headline above
-          // the button (CLAUDE.md "assertions that cannot fail": an
-          // ambiguous anchor could pass for the wrong reason).
-          final googleButtonY = tester
-              .getTopLeft(find.text('Connect Google Calendar'))
-              .dy;
+        final bannerY = tester
+            .getTopLeft(find.text('2 events not imported — tap for details'))
+            .dy;
+        // Anchor on the Connect button's own LABEL, never the bare word
+        // "Google" — that word also appears in the CTA headline above
+        // the button (CLAUDE.md "assertions that cannot fail": an
+        // ambiguous anchor could pass for the wrong reason).
+        final googleButtonY = tester
+            .getTopLeft(find.text('Connect Google Calendar'))
+            .dy;
 
-          expect(
-            bannerY,
-            lessThan(googleButtonY),
-            reason:
-                'the disclosure must render above the Google section — '
-                'banner dy=$bannerY, Google CTA dy=$googleButtonY',
-          );
-        }),
-      );
+        expect(
+          bannerY,
+          lessThan(googleButtonY),
+          reason:
+              'the disclosure must render above the Google section — '
+              'banner dy=$bannerY, Google CTA dy=$googleButtonY',
+        );
+      }),
+    );
 
-      testWidgets(
-        'the disclosure appears exactly once on screen — moved, not '
-        'duplicated',
-        (tester) => _withMobilePlatform(() async {
-          tz.setLocalLocation(tz.UTC);
-          final now = DateTime.now();
-          final calendars = [
-            CalendarInfo(
-              id: 'cal-1',
-              name: 'Work',
-              accountName: 'dan@gmail.com',
-              isReadOnly: true,
-            ),
-          ];
-          final events = [
-            CalendarEvent(
-              uid: 'evt-cancelled',
-              title: 'Cancelled Meeting',
-              start: now.add(const Duration(days: 1, hours: 1)),
-              end: now.add(const Duration(days: 1, hours: 2)),
-              isAllDay: false,
-              status: CalendarEventStatus.cancelled,
-              calendarId: 'cal-1',
-            ),
-          ];
-          final source = _FakeCalendarSource(
-            permission: CalendarPermissionState.granted,
-            calendars: calendars,
-            events: events,
-          );
-          await _pumpCalendarScreen(tester, source: source);
+    testWidgets(
+      'the disclosure appears exactly once on screen — moved, not '
+      'duplicated',
+      (tester) => _withMobilePlatform(() async {
+        tz.setLocalLocation(tz.UTC);
+        final now = DateTime.now();
+        final calendars = [
+          CalendarInfo(
+            id: 'cal-1',
+            name: 'Work',
+            accountName: 'dan@gmail.com',
+            isReadOnly: true,
+          ),
+        ];
+        final events = [
+          CalendarEvent(
+            uid: 'evt-cancelled',
+            title: 'Cancelled Meeting',
+            start: now.add(const Duration(days: 1, hours: 1)),
+            end: now.add(const Duration(days: 1, hours: 2)),
+            isAllDay: false,
+            status: CalendarEventStatus.cancelled,
+            calendarId: 'cal-1',
+          ),
+        ];
+        final source = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: calendars,
+          events: events,
+        );
+        await _pumpCalendarScreen(tester, source: source);
 
-          await tester.tap(find.text('Allow calendar access'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Allow calendar access'));
+        await tester.pumpAndSettle();
 
-          expect(
-            find.text('1 events not imported — tap for details'),
-            findsOneWidget,
-          );
-        }),
-      );
-    },
-  );
+        expect(
+          find.text('1 events not imported — tap for details'),
+          findsOneWidget,
+        );
+      }),
+    );
+  });
 
   group('CAL-04 — a denied calendar permission leaves hand-entered '
       'commitments fully usable', () {
@@ -929,8 +955,7 @@ void main() {
     );
   });
 
-  group('WINDOWS entry 4 — a failed Google sign-in is not a cancellation',
-      () {
+  group('WINDOWS entry 4 — a failed Google sign-in is not a cancellation', () {
     // GoogleCalendarSource.requestPermission() already keeps the three
     // outcomes apart: granted (connected), notDetermined (cancelled — a
     // state, not an error), and a THROW (a genuine failure). These tests
@@ -1630,40 +1655,34 @@ void main() {
     );
   });
 
-  group(
-    'D-35-15 — Android takes the desktop/ICS branch, not the device '
-    'permission branch (35-DECISIONS.md)',
-    () {
-      testWidgets(
-        'on Android, the screen shows the feed-URL CTA and never the '
+  group('D-35-15 — Android takes the desktop/ICS branch, not the device '
+      'permission branch (35-DECISIONS.md)', () {
+    testWidgets('on Android, the screen shows the feed-URL CTA and never the '
         'device permission CTA, even though a device-capable source is '
-        'passed in',
-        (tester) async {
-          debugDefaultTargetPlatformOverride = TargetPlatform.android;
-          try {
-            // A source that WOULD grant device permission if asked — if the
-            // screen still routed Android through the mobile branch, this
-            // fake would drive it there. It must not be reached at all: on
-            // Android the desktop branch renders before source.
-            // requestPermission() is ever called.
-            final source = _FakeCalendarSource(
-              permission: CalendarPermissionState.granted,
-              calendars: [
-                CalendarInfo(id: 'cal-1', name: 'Work', isReadOnly: true),
-              ],
-            );
-            await _pumpCalendarScreen(tester, source: source);
+        'passed in', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      try {
+        // A source that WOULD grant device permission if asked — if the
+        // screen still routed Android through the mobile branch, this
+        // fake would drive it there. It must not be reached at all: on
+        // Android the desktop branch renders before source.
+        // requestPermission() is ever called.
+        final source = _FakeCalendarSource(
+          permission: CalendarPermissionState.granted,
+          calendars: [
+            CalendarInfo(id: 'cal-1', name: 'Work', isReadOnly: true),
+          ],
+        );
+        await _pumpCalendarScreen(tester, source: source);
 
-            expect(find.text('Subscribe to a calendar'), findsOneWidget);
-            expect(find.text('Add calendar URL'), findsOneWidget);
-            expect(find.text('Allow calendar access'), findsNothing);
-          } finally {
-            debugDefaultTargetPlatformOverride = null;
-          }
-        },
-      );
-    },
-  );
+        expect(find.text('Subscribe to a calendar'), findsOneWidget);
+        expect(find.text('Add calendar URL'), findsOneWidget);
+        expect(find.text('Allow calendar access'), findsNothing);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+  });
 
   group('Plan 36-14 — device section restores itself (WINDOWS entry 12)', () {
     final threeCalendars = [
@@ -1966,7 +1985,7 @@ void main() {
           calendars: calendars,
           events: oneTimedEvent(),
         )..listEventsGate = Completer<void>();
-        await _pumpCalendarScreen(tester, source: source);
+        await _pumpCalendarScreen(tester, source: source, insideAppShell: true);
         // A phone-sized screen, where the 2026-11-03 overlap was seen.
         tester.view.physicalSize = const Size(390, 844);
         await tester.pumpAndSettle();
@@ -1986,13 +2005,74 @@ void main() {
         expect(snack.bottom, lessThanOrEqualTo(button.top));
         // And the button is pinned to the bottom of the screen, not wherever
         // the list happens to end.
-        expect(button.bottom, greaterThan(844 - 80));
+        expect(button.bottom, greaterThan(844 - 80 - 80));
         expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(syncNowOnPressed(tester), isNotNull);
 
         await tester.pump(const Duration(seconds: 4));
         await tester.pumpAndSettle();
         expect(find.byType(SnackBar), findsNothing);
+      }),
+    );
+
+    testWidgets(
+      'the footer line disappears when Sync now is pressed and comes back, '
+      'highlighted, only once the popup has gone (owner 2026-11-04: it '
+      '"says the exact same thing as the popup")',
+      (tester) => _withMobilePlatform(() async {
+        final source = _RestorableFakeCalendarSource(
+          calendars: calendars,
+          events: oneTimedEvent(),
+        )..listEventsGate = Completer<void>();
+        await _pumpCalendarScreen(tester, source: source, insideAppShell: true);
+        await tester.pumpAndSettle();
+        Finder footerLine() => find.byKey(const ValueKey('sync-status-line'));
+        expect(footerLine(), findsOneWidget);
+
+        await tester.tap(find.text('Sync now'));
+        await tester.pump();
+        // The spinner never settles, so step the fade-out by hand.
+        await tester.pump(const Duration(milliseconds: 700));
+        await tester.pump();
+        // Gone while the sync runs...
+        expect(footerLine(), findsNothing);
+
+        source.listEventsGate!.complete();
+        await tester.pumpAndSettle();
+        // ...and while the popup says it.
+        expect(
+          inSnackBar('Synced just now — 1 commitment imported'),
+          findsOneWidget,
+        );
+        expect(footerLine(), findsNothing);
+
+        await tester.pump(const Duration(seconds: 3)); // popup's duration
+        await tester.pump(const Duration(milliseconds: 400)); // its exit
+        await tester.pump(); // `closed` fires -> line rebuilt
+        await tester.pump(const Duration(milliseconds: 300));
+        // Popup gone: the line is back, mid-entrance, still highlighted.
+        expect(find.byType(SnackBar), findsNothing);
+        expect(footerLine(), findsOneWidget);
+        final highlight =
+            (tester.widget<Container>(footerLine()).decoration!
+                    as BoxDecoration)
+                .color!;
+        expect(highlight.a, greaterThan(0.3));
+        expect(
+          find.descendant(
+            of: footerLine(),
+            matching: find.text('Synced just now — 1 commitment imported'),
+          ),
+          findsOneWidget,
+        );
+
+        // The highlight fades back to plain text.
+        await tester.pumpAndSettle();
+        final settled =
+            (tester.widget<Container>(footerLine()).decoration!
+                    as BoxDecoration)
+                .color!;
+        expect(settled.a, lessThan(0.05));
       }),
     );
 
@@ -2015,7 +2095,9 @@ void main() {
 
         expect(
           find.textContaining(
-            RegExp(r'^Synced at \d{1,2}:\d{2}\s?[AP]M — 0 commitments imported$'),
+            RegExp(
+              r'^Synced at \d{1,2}:\d{2}\s?[AP]M — 0 commitments imported$',
+            ),
           ),
           findsOneWidget,
         );
@@ -2066,7 +2148,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          inSnackBar('Calendar sync failed — showing your last-known calendars.'),
+          inSnackBar(
+            'Calendar sync failed — showing your last-known calendars.',
+          ),
           findsOneWidget,
         );
         expect(
@@ -2526,7 +2610,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(settings.selectedCalendarIds, ['spunkl-id']);
-        expect(settings.selectedCalendarIds, isNot(contains('3935F311-family')));
+        expect(
+          settings.selectedCalendarIds,
+          isNot(contains('3935F311-family')),
+        );
         expect(settings.selectedCalendarIds, isNot(contains('home-id')));
       }),
     );
@@ -2609,7 +2696,9 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(find.text('Connect Google Calendar'), findsOneWidget);
-          final button = tester.getTopLeft(find.text('Connect Google Calendar'));
+          final button = tester.getTopLeft(
+            find.text('Connect Google Calendar'),
+          );
           for (final n in ['Family', 'Home', 'spunkl']) {
             expect(rowY(tester, n), lessThan(button.dy), reason: n);
           }
@@ -2634,17 +2723,20 @@ void main() {
 
       final sorted = sortCalendarsForPicker(input);
 
-      expect([for (final c in sorted) c.id], [
-        '3', // no account: beta
-        '7', // no account: Local
-        '2', // dan@gmail.com
-        '5', // iCloud: apple
-        '1', //         banana
-        '4', //         Cherry (a case-sensitive sort would put it before apple)
-        '6', //         Dup, lower id first
-        '8', //         Dup
-        '9', // Zed (a case-sensitive sort would put it before dan@gmail.com)
-      ]);
+      expect(
+        [for (final c in sorted) c.id],
+        [
+          '3', // no account: beta
+          '7', // no account: Local
+          '2', // dan@gmail.com
+          '5', // iCloud: apple
+          '1', //         banana
+          '4', //         Cherry (a case-sensitive sort would put it before apple)
+          '6', //         Dup, lower id first
+          '8', //         Dup
+          '9', // Zed (a case-sensitive sort would put it before dan@gmail.com)
+        ],
+      );
       expect([for (final c in input) c.id], before);
     });
   });

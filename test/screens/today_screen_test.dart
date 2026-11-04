@@ -23,6 +23,7 @@ import 'package:canopy/screens/schedule/widgets/chunk_card.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_detail_sheet.dart';
 import 'package:canopy/screens/schedule/widgets/swipeable_chunk_card.dart';
 import 'package:canopy/screens/today/timeline_geometry.dart';
+import 'package:canopy/screens/today/schedule_palette.dart';
 import 'package:canopy/screens/today/today_screen.dart';
 import 'package:canopy/screens/today/widgets/breathing_pulse_cta.dart';
 import 'package:canopy/screens/today/widgets/end_of_day_card.dart';
@@ -179,10 +180,13 @@ Future<void> _pumpTodayScreen(
   DateTime Function()? now,
   RestorativesNotifier? restorativesNotifier,
   CommitmentsNotifier? commitmentsNotifier,
+  Color? appSeed,
 }) async {
   final theme = ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(seedColor: ThemeNotifier.moodSeeds[3]!),
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: appSeed ?? ThemeNotifier.moodSeeds[3]!,
+    ),
   );
   await tester.pumpWidget(
     MultiProvider(
@@ -446,6 +450,54 @@ void main() {
       await pumpDay(tester);
 
       expect(find.text('See full schedule'), findsNothing);
+    });
+
+    // Owner 2026-11-04: the mood "shouldn't affect the way the schedule
+    // looks, just the way the app looks". The same day pumped under two very
+    // different app themes (Low day blue-grey vs Great day yellow) must
+    // paint every timeline card identically, while the app bar still
+    // follows the mood.
+    testWidgets('the mood re-themes the app bar but not the timeline cards', (
+      tester,
+    ) async {
+      Future<(List<Color?>, Color?)> paint(Color seed) async {
+        // Unmount first: MaterialApp animates between themes, so a second
+        // pump into the same tree would read a half-lerped theme.
+        await tester.pumpWidget(const SizedBox());
+        final schedule = DailySchedule(
+          dateYmd: _todayYmd(),
+          moodIndex: 3,
+          chunks: buildDayFixture(),
+        );
+        await _pumpTodayScreen(
+          tester,
+          scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+          now: () => DateTime(2026, 8, 7, 10, 47),
+          appSeed: seed,
+        );
+        await tester.pump();
+        final cards = tester
+            .widgetList<Card>(find.byType(Card))
+            .map((c) => c.color)
+            .toList();
+        final appBar = Theme.of(
+          tester.element(find.byType(AppBar)),
+        ).colorScheme.surface;
+        return (cards, appBar);
+      }
+
+      final (low, lowBar) = await paint(ThemeNotifier.moodSeeds[1]!);
+      final (great, greatBar) = await paint(ThemeNotifier.moodSeeds[5]!);
+      expect(low, isNotEmpty);
+      expect(low.whereType<Color>(), isNotEmpty);
+      expect(great, low);
+      // The commitment card is themed from the fixed schedule scheme.
+      expect(
+        low,
+        contains(scheduleColorScheme(Brightness.light).tertiaryContainer),
+      );
+      // ...and the frame still follows the mood.
+      expect(greatBar, isNot(lowBar));
     });
 
     testWidgets('a mood-2 schedule renders the restoratives card', (

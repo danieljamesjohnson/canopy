@@ -153,13 +153,13 @@ class _DesktopState {
 /// CTA, which would force a needless second consent.
 class _GoogleState {
   const _GoogleState({required this.connected, this.calendars = const []})
-      : loadFailed = false;
+    : loadFailed = false;
 
   /// Connected, token stored, but `listCalendars()` threw (WR-05).
   const _GoogleState.loadFailed()
-      : connected = true,
-        calendars = const [],
-        loadFailed = true;
+    : connected = true,
+      calendars = const [],
+      loadFailed = true;
 
   final bool connected;
   final List<CalendarInfo> calendars;
@@ -177,6 +177,27 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
 
   /// True while a mobile "Sync now" is running (WINDOWS entry 13).
   bool _syncing = false;
+
+  /// This screen's OWN SnackBar host (WINDOWS entry 17, fourth round —
+  /// owner on hardware 2026-11-04: the popup "covers the sync" button).
+  /// The app has one ScaffoldMessenger at MaterialApp, and a messenger shows
+  /// SnackBars on the OUTERMOST Scaffold it serves — here the app shell's
+  /// (lib/widgets/responsive_shell.dart), whose bottom edge is the
+  /// Today/Goals/Settings bar, BELOW this screen's pinned footer. So the
+  /// popup rose over "Sync now" no matter where the footer was pinned. A
+  /// messenger of our own makes THIS Scaffold the outermost one it serves,
+  /// so the popup slides up above the pinned footer instead.
+  final _messengerKey = GlobalKey<ScaffoldMessengerState>();
+
+  ScaffoldMessengerState get _messenger =>
+      _messengerKey.currentState ?? ScaffoldMessenger.of(context);
+
+  /// True from the moment "Sync now" is pressed until the success popup has
+  /// gone (owner 2026-11-04: the footer line "says the exact same thing as
+  /// the popup so maybe it should disappear and reappear after you press
+  /// the button"). The footer status line is hidden meanwhile, then plays
+  /// its entrance once the popup closes.
+  bool _statusHidden = false;
 
   /// True once the device section has resolved to granted, by restore or by
   /// an explicit grant — so the shared footer (and its "Sync now") shows
@@ -323,7 +344,8 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     if (now.difference(time).inMinutes < 1) return 'just now';
     final local = time.toLocal();
     final clock = DateFormat.jm().format(local);
-    final sameDay = local.year == now.year &&
+    final sameDay =
+        local.year == now.year &&
         local.month == now.month &&
         local.day == now.day;
     return sameDay
@@ -389,32 +411,69 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Animates whenever a sync SUCCEEDS (keyed on the persisted
-          // success time): the new line slides up and fades in, so even a
-          // sync that changes nothing visibly answers (WINDOWS entry 17).
+          // WINDOWS entry 17, fourth round (owner 2026-11-04: "the
+          // animation is too subtle" and the line repeats the popup). The
+          // line is hidden from "Sync now" until the popup closes (see
+          // [_statusHidden]); then the fresh line rises in from below and
+          // lands highlighted in the primary colour, which fades back to
+          // the normal muted text over ~1.6s. The hidden state keeps the
+          // line's height so the button below never jumps.
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 450),
+            duration: const Duration(milliseconds: 600),
+            switchInCurve: Curves.easeOutBack,
+            switchOutCurve: Curves.easeIn,
             transitionBuilder: (child, animation) => FadeTransition(
               opacity: animation,
               child: SlideTransition(
                 position: Tween<Offset>(
-                  begin: const Offset(0, 0.6),
+                  begin: const Offset(0, 1.2),
                   end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(parent: animation, curve: Curves.easeOut),
-                ),
+                ).animate(animation),
                 child: child,
               ),
             ),
-            child: Text(
-              statusText,
-              key: ValueKey(lastSync),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: _statusHidden
+                ? Text(
+                    ' ',
+                    key: const ValueKey('status-hidden'),
+                    style: theme.textTheme.bodySmall,
+                  )
+                : TweenAnimationBuilder<double>(
+                    key: ValueKey(lastSync),
+                    tween: Tween(begin: lastSync == null ? 0.0 : 1.0, end: 0.0),
+                    duration: const Duration(milliseconds: 1600),
+                    curve: Curves.easeIn,
+                    builder: (context, highlight, _) => Container(
+                      key: const ValueKey('sync-status-line'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Color.lerp(
+                          Colors.transparent,
+                          theme.colorScheme.primaryContainer,
+                          highlight,
+                        ),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        statusText,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Color.lerp(
+                            theme.colorScheme.onSurfaceVariant,
+                            theme.colorScheme.onPrimaryContainer,
+                            highlight,
+                          ),
+                          fontWeight: highlight > 0.5
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
           ),
           Align(
             alignment: Alignment.centerLeft,
@@ -544,8 +603,12 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   ) async {
     if (_syncing) return;
     final commitments = context.read<CommitmentsNotifier>();
-    final messenger = ScaffoldMessenger.of(context);
-    setState(() => _syncing = true);
+    final messenger = _messenger;
+    setState(() {
+      _syncing = true;
+      _statusHidden = true;
+    });
+    var popupShown = false;
     try {
       final result = await _syncAndReport(
         _resolveSyncSource(settings),
@@ -561,15 +624,29 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         final importedCount = commitments.blocks
             .where((b) => b.isFromCalendar)
             .length;
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(_statusText(result.syncedAt, importedCount)),
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        popupShown = true;
+        messenger
+            .showSnackBar(
+              SnackBar(
+                content: Text(_statusText(result.syncedAt, importedCount)),
+                duration: const Duration(seconds: 3),
+              ),
+            )
+            .closed
+            .then((_) {
+              if (mounted) setState(() => _statusHidden = false);
+            });
       }
     } finally {
-      if (mounted) setState(() => _syncing = false);
+      if (mounted) {
+        setState(() {
+          _syncing = false;
+          // No success popup (the sync failed): nothing will close, so
+          // bring the line straight back — it still reads the last
+          // SUCCESSFUL sync, never the failed attempt (WINDOWS entry 13).
+          if (!popupShown) _statusHidden = false;
+        });
+      }
     }
   }
 
@@ -622,7 +699,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   void _startMobileFlow(BuildContext context) {
     final settings = context.read<SettingsNotifier>();
     final commitments = context.read<CommitmentsNotifier>();
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = _messenger;
     final source = _resolveDeviceSource(settings);
     setState(() {
       _mobileFuture = _requestMobilePermission(
@@ -988,7 +1065,7 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
 
   void _startGoogleConnect(BuildContext context, SettingsNotifier settings) {
     final commitments = context.read<CommitmentsNotifier>();
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = _messenger;
     setState(() {
       _googleFuture = _connectGoogle(settings, commitments, messenger);
     });
@@ -1073,7 +1150,10 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   /// lists again ([_loadGoogleCalendars]) — it never calls
   /// `requestPermission()`, so it never re-launches Google's consent sheet.
   /// Disconnect stays reachable so this card is never a dead end.
-  Widget _googleLoadFailedCard(BuildContext context, SettingsNotifier settings) {
+  Widget _googleLoadFailedCard(
+    BuildContext context,
+    SettingsNotifier settings,
+  ) {
     final theme = Theme.of(context);
     return Center(
       child: ConstrainedBox(
@@ -1369,9 +1449,13 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   ) async {
     final commitments = context.read<CommitmentsNotifier>();
     final settings = context.read<SettingsNotifier>();
-    final messenger = ScaffoldMessenger.of(context);
     final source = widget.source ?? defaultCalendarSource(icsUrls: urls);
     final calendars = await _tryListCalendars(source, urls);
+    // Resolved AFTER the first await, not before: this load starts during
+    // the very first build, before this screen's own ScaffoldMessenger has
+    // mounted, so `_messenger` would fall back to the app's messenger and
+    // the failure SnackBar would land on a Scaffold that never shows it.
+    final messenger = _messenger;
     final syncResult = await _syncAndReport(
       source,
       commitments,
@@ -1517,6 +1601,13 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
         (_deviceGranted ||
             settings.googleConnected ||
             settings.lastCalendarSyncAt != null);
+    return ScaffoldMessenger(
+      key: _messengerKey,
+      child: _scaffold(context, showMobileFooter),
+    );
+  }
+
+  Widget _scaffold(BuildContext context, bool showMobileFooter) {
     return Scaffold(
       appBar: AppBar(title: const Text('Calendars')),
       body: _isMobile ? _buildMobileBody(context) : _buildDesktopBody(context),

@@ -36,6 +36,7 @@ import 'widgets/end_of_day_card.dart';
 import 'widgets/free_time_row.dart';
 import 'widgets/hour_axis.dart';
 import 'widgets/live_row_card.dart';
+import 'schedule_palette.dart';
 import 'widgets/now_line.dart';
 import 'widgets/review_banner.dart';
 import 'widgets/timeline_row_tile.dart';
@@ -1402,188 +1403,197 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
               // offset across the whole scrollable content, which plan 04's
               // hour axis and now-line both require — eager layout is what
               // makes a single fixed-height Stack region possible at all.
+              //
+              // The timeline is themed from a FIXED scheme, not the mood
+              // (owner 2026-11-04 — see schedule_palette.dart): the header
+              // above keeps the mood's colours, the cards below do not.
               Expanded(
-                child: SingleChildScrollView(
-                  controller: _dayScrollController,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (mood <= 2) _buildRestorativeSuggestions(context),
-                      // Layer 1 — every non-live row first, then the live
-                      // row's Positioned last (PD-10): it is appended last
-                      // within this Stack so a future content addition that
-                      // overruns its reservation paints over its neighbour
-                      // rather than being clipped by one painted after it.
-                      SizedBox(
-                        key: _timelineStackKey,
-                        height: geometry.totalHeight,
-                        child: Stack(
-                          children: [
-                            // Layer 2 — hour axis, painted behind every row's
-                            // content. The hairline is `outlineVariant`, not
-                            // `primary` (26-UI-SPEC.md "The time gutter
-                            // becomes an hour axis") — deliberately, so the
-                            // axis reads as quiet infrastructure and
-                            // `colorScheme.primary` stays reserved for
-                            // "where now is" (D-03). Purely decorative:
-                            // wrapped below so it never eats a tap, and
-                            // `ExcludeSemantics` so it doesn't add a dozen
-                            // unlabelled nodes to a screen that already
-                            // announces every row.
-                            for (final hourMinutes in geometry.hourBoundaries)
+                child: Theme(
+                  data: scheduleTheme(Theme.of(context)),
+                  child: SingleChildScrollView(
+                    controller: _dayScrollController,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (mood <= 2) _buildRestorativeSuggestions(context),
+                        // Layer 1 — every non-live row first, then the live
+                        // row's Positioned last (PD-10): it is appended last
+                        // within this Stack so a future content addition that
+                        // overruns its reservation paints over its neighbour
+                        // rather than being clipped by one painted after it.
+                        SizedBox(
+                          key: _timelineStackKey,
+                          height: geometry.totalHeight,
+                          child: Stack(
+                            children: [
+                              // Layer 2 — hour axis, painted behind every row's
+                              // content. The hairline is `outlineVariant`, not
+                              // `primary` (26-UI-SPEC.md "The time gutter
+                              // becomes an hour axis") — deliberately, so the
+                              // axis reads as quiet infrastructure and
+                              // `colorScheme.primary` stays reserved for
+                              // "where now is" (D-03). Purely decorative:
+                              // wrapped below so it never eats a tap, and
+                              // `ExcludeSemantics` so it doesn't add a dozen
+                              // unlabelled nodes to a screen that already
+                              // announces every row.
+                              for (final hourMinutes in geometry.hourBoundaries)
+                                Positioned(
+                                  top:
+                                      geometry.yFor(hourMinutes) -
+                                      kHourAxisHeight / 2,
+                                  left: 0,
+                                  right: 0,
+                                  height: kHourAxisHeight,
+                                  child: IgnorePointer(
+                                    child: ExcludeSemantics(
+                                      child: HourAxisLine(
+                                        hourMinutes: hourMinutes,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              // Layer 1a — the rows (26-03-PLAN.md), minus the
+                              // live row, in their normal chronological order.
+                              //
+                              // Phase 32 (D-32-02, TAPBREAK-01): this loop used
+                              // to carry a third exclusion clause for any
+                              // slop-bearing break, and a whole second "Layer
+                              // 1b" pass immediately below existed solely to
+                              // re-emit those rows later so their grown
+                              // hit-test envelope would win Z-order against
+                              // both chronological neighbours (31-RESEARCH.md
+                              // Pitfall 1). Breaks have no grown envelope any
+                              // more — no swipe target to widen (button-only,
+                              // D-32-02) — so every non-live, clock-positioned
+                              // row is emitted exactly once, from this single
+                              // pass, and no two sibling boxes overlap: hit-test
+                              // order is irrelevant again, exactly as it was
+                              // before Phase 31.
+                              for (final row in timelineRows)
+                                if (!(row is ChunkRow && row.isLive) &&
+                                    !(row is ChunkRow &&
+                                        row.chunk.displayStartMinutes == null))
+                                  _buildPositionedRow(
+                                    context,
+                                    row,
+                                    geometry,
+                                    nowState,
+                                    liveSecondsLeft,
+                                  ),
+                              // The live row is NOT emitted here any more — it
+                              // moved below the now-line overlay (UAT,
+                              // 2026-08-19). See the comment at its new
+                              // position for why the order is load-bearing.
+                              // Layer 3 — the now-line (CAL-02), topmost in the
+                              // Stack, above every card's elevation/shadow.
+                              // This overlay replaces Phase 24's
+                              // `NowMarkerRow`; the state-check suppression
+                              // that used to hide it whenever the current
+                              // moment fell outside an active chunk's window
+                              // is DELETED, not relocated (PD-12) — a
+                              // proportional layout can place the line
+                              // truthfully mid-chunk, which is the exact
+                              // condition that suppression existed to avoid,
+                              // and the exact reason this phase exists.
+                              // Unconditional: no `if`, no ternary, no state
+                              // check. `Semantics` sits OUTSIDE the
+                              // pointer-ignoring wrapper below (PD-13) —
+                              // modern pointer-ignoring widgets also strip
+                              // their subtree from the semantics tree, so
+                              // putting the label inside it would silently
+                              // delete the "Now — <time>" announcement
+                              // (24-REVIEW.md WR-01).
                               Positioned(
                                 top:
-                                    geometry.yFor(hourMinutes) -
-                                    kHourAxisHeight / 2,
+                                    geometry.yFor(nowMinutes) -
+                                    kNowLineHeight / 2,
                                 left: 0,
                                 right: 0,
-                                height: kHourAxisHeight,
-                                child: IgnorePointer(
-                                  child: ExcludeSemantics(
-                                    child: HourAxisLine(
-                                      hourMinutes: hourMinutes,
+                                height: kNowLineHeight,
+                                child: Semantics(
+                                  label: 'Now — ${formatMinutes(nowMinutes)}',
+                                  excludeSemantics: true,
+                                  child: IgnorePointer(
+                                    // The overlay takes no suppression flag any
+                                    // more: the `showChip` argument that used to
+                                    // sit here existed only to keep the time
+                                    // chip off the live row (G-03,
+                                    // 26-09-PLAN.md), and the chip is gone. The
+                                    // rule and dot are safe over the live row —
+                                    // they carry no text to occlude. If a chip
+                                    // is ever restored, the live-span predicate
+                                    // it needs is in this file's git history;
+                                    // read it off `TimelineGeometry`
+                                    // (`liveStartMinutes`/`liveEndMinutes`,
+                                    // half-open), never from `resolveNowState`
+                                    // or the chunk list.
+                                    child: NowLineOverlay(
+                                      nowMinutes: nowMinutes,
                                     ),
                                   ),
                                 ),
                               ),
-                            // Layer 1a — the rows (26-03-PLAN.md), minus the
-                            // live row, in their normal chronological order.
-                            //
-                            // Phase 32 (D-32-02, TAPBREAK-01): this loop used
-                            // to carry a third exclusion clause for any
-                            // slop-bearing break, and a whole second "Layer
-                            // 1b" pass immediately below existed solely to
-                            // re-emit those rows later so their grown
-                            // hit-test envelope would win Z-order against
-                            // both chronological neighbours (31-RESEARCH.md
-                            // Pitfall 1). Breaks have no grown envelope any
-                            // more — no swipe target to widen (button-only,
-                            // D-32-02) — so every non-live, clock-positioned
-                            // row is emitted exactly once, from this single
-                            // pass, and no two sibling boxes overlap: hit-test
-                            // order is irrelevant again, exactly as it was
-                            // before Phase 31.
-                            for (final row in timelineRows)
-                              if (!(row is ChunkRow && row.isLive) &&
-                                  !(row is ChunkRow &&
-                                      row.chunk.displayStartMinutes == null))
-                                _buildPositionedRow(
-                                  context,
-                                  row,
-                                  geometry,
-                                  nowState,
-                                  liveSecondsLeft,
-                                ),
-                            // The live row is NOT emitted here any more — it
-                            // moved below the now-line overlay (UAT,
-                            // 2026-08-19). See the comment at its new
-                            // position for why the order is load-bearing.
-                            // Layer 3 — the now-line (CAL-02), topmost in the
-                            // Stack, above every card's elevation/shadow.
-                            // This overlay replaces Phase 24's
-                            // `NowMarkerRow`; the state-check suppression
-                            // that used to hide it whenever the current
-                            // moment fell outside an active chunk's window
-                            // is DELETED, not relocated (PD-12) — a
-                            // proportional layout can place the line
-                            // truthfully mid-chunk, which is the exact
-                            // condition that suppression existed to avoid,
-                            // and the exact reason this phase exists.
-                            // Unconditional: no `if`, no ternary, no state
-                            // check. `Semantics` sits OUTSIDE the
-                            // pointer-ignoring wrapper below (PD-13) —
-                            // modern pointer-ignoring widgets also strip
-                            // their subtree from the semantics tree, so
-                            // putting the label inside it would silently
-                            // delete the "Now — <time>" announcement
-                            // (24-REVIEW.md WR-01).
-                            Positioned(
-                              top:
-                                  geometry.yFor(nowMinutes) -
-                                  kNowLineHeight / 2,
-                              left: 0,
-                              right: 0,
-                              height: kNowLineHeight,
-                              child: Semantics(
-                                label: 'Now — ${formatMinutes(nowMinutes)}',
-                                excludeSemantics: true,
-                                child: IgnorePointer(
-                                  // The overlay takes no suppression flag any
-                                  // more: the `showChip` argument that used to
-                                  // sit here existed only to keep the time
-                                  // chip off the live row (G-03,
-                                  // 26-09-PLAN.md), and the chip is gone. The
-                                  // rule and dot are safe over the live row —
-                                  // they carry no text to occlude. If a chip
-                                  // is ever restored, the live-span predicate
-                                  // it needs is in this file's git history;
-                                  // read it off `TimelineGeometry`
-                                  // (`liveStartMinutes`/`liveEndMinutes`,
-                                  // half-open), never from `resolveNowState`
-                                  // or the chunk list.
-                                  child: NowLineOverlay(nowMinutes: nowMinutes),
-                                ),
+                              // The live row, painted LAST — above the now-line
+                              // rule (UAT, 2026-08-19). Order is the whole fix.
+                              //
+                              // Phase 27 shortened this card from ~200dp to
+                              // ~90dp, and a card that short has no whitespace
+                              // for the rule to land in: it struck clean through
+                              // "Exercise" on the compact tier and through the
+                              // single line of the break tier, which reads as
+                              // strikethrough — "done"/"cancelled" — on the one
+                              // row that is emphatically neither
+                              // (`27-UI-REVIEW.md` addendum, with screenshots).
+                              // `27-UI-SPEC.md` had reasoned the crossing would
+                              // be harmless; it is not, and it only looked
+                              // harmless because the evidence screenshots
+                              // happened to catch the rule at a card edge.
+                              //
+                              // Painting the card over the rule stops the line
+                              // at the card's edges, which is what Google
+                              // Calendar does with its current event. The rule
+                              // is NOT suppressed and the overlay takes no new
+                              // flag — nothing is conditional, so this cannot
+                              // rot the way the old `showChip` predicate did.
+                              //
+                              // The now-marker stays discoverable because the
+                              // dot is centred on `kNowContentEdge`, which is
+                              // exactly `kCardLeftInset` — so its left half sits
+                              // outside the card and remains visible, along with
+                              // the gutter time. Do not inset this card further
+                              // left to "fix" that; three prior attempts to move
+                              // this row horizontally each broke something
+                              // (see `LiveRowCard`'s own doc comment).
+                              for (final row in timelineRows)
+                                if (row is ChunkRow && row.isLive)
+                                  _buildPositionedRow(
+                                    context,
+                                    row,
+                                    geometry,
+                                    nowState,
+                                    liveSecondsLeft,
+                                  ),
+                            ],
+                          ),
+                        ),
+                        // Trailing block (PD-11): a chunk with no clock
+                        // position has no truthful y, so it renders here at
+                        // natural height instead of inside the Stack above.
+                        // The schedule generator does not currently produce
+                        // one — this is a preservation branch, not a feature.
+                        for (final row in timelineRows)
+                          if (row is ChunkRow &&
+                              row.chunk.displayStartMinutes == null)
+                            TimelineRowTile(
+                              child: _buildChunkCard(
+                                context,
+                                row.chunk,
+                                ChunkCardDensity.detailed,
                               ),
                             ),
-                            // The live row, painted LAST — above the now-line
-                            // rule (UAT, 2026-08-19). Order is the whole fix.
-                            //
-                            // Phase 27 shortened this card from ~200dp to
-                            // ~90dp, and a card that short has no whitespace
-                            // for the rule to land in: it struck clean through
-                            // "Exercise" on the compact tier and through the
-                            // single line of the break tier, which reads as
-                            // strikethrough — "done"/"cancelled" — on the one
-                            // row that is emphatically neither
-                            // (`27-UI-REVIEW.md` addendum, with screenshots).
-                            // `27-UI-SPEC.md` had reasoned the crossing would
-                            // be harmless; it is not, and it only looked
-                            // harmless because the evidence screenshots
-                            // happened to catch the rule at a card edge.
-                            //
-                            // Painting the card over the rule stops the line
-                            // at the card's edges, which is what Google
-                            // Calendar does with its current event. The rule
-                            // is NOT suppressed and the overlay takes no new
-                            // flag — nothing is conditional, so this cannot
-                            // rot the way the old `showChip` predicate did.
-                            //
-                            // The now-marker stays discoverable because the
-                            // dot is centred on `kNowContentEdge`, which is
-                            // exactly `kCardLeftInset` — so its left half sits
-                            // outside the card and remains visible, along with
-                            // the gutter time. Do not inset this card further
-                            // left to "fix" that; three prior attempts to move
-                            // this row horizontally each broke something
-                            // (see `LiveRowCard`'s own doc comment).
-                            for (final row in timelineRows)
-                              if (row is ChunkRow && row.isLive)
-                                _buildPositionedRow(
-                                  context,
-                                  row,
-                                  geometry,
-                                  nowState,
-                                  liveSecondsLeft,
-                                ),
-                          ],
-                        ),
-                      ),
-                      // Trailing block (PD-11): a chunk with no clock
-                      // position has no truthful y, so it renders here at
-                      // natural height instead of inside the Stack above.
-                      // The schedule generator does not currently produce
-                      // one — this is a preservation branch, not a feature.
-                      for (final row in timelineRows)
-                        if (row is ChunkRow &&
-                            row.chunk.displayStartMinutes == null)
-                          TimelineRowTile(
-                            child: _buildChunkCard(
-                              context,
-                              row.chunk,
-                              ChunkCardDensity.detailed,
-                            ),
-                          ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

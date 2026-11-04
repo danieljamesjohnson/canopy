@@ -902,24 +902,25 @@ class _WorkChunkContent extends StatelessWidget {
   }
 }
 
-/// The fill for a meeting imported from a calendar (D-36-06). A FIXED violet
-/// tone rather than a role from the app's scheme, because that scheme is
-/// re-seeded by mood (blue-grey, teal, green, yellow — theme_notifier.dart):
-/// every scheme role moves with it, so none could be guaranteed to stay
-/// distinct from hand-entered commitments and breaks. Violet is the hue no
-/// mood seed uses. Tonal like the rest: the scheme's primaryContainer for a
-/// violet seed, at the current brightness, so it reads as part of the theme.
+/// The fill for a meeting imported from a calendar (D-36-06). A FIXED tone
+/// rather than a role from the app's scheme, because that scheme is re-seeded
+/// by mood (theme_notifier.dart) and every scheme role moves with it.
+///
+/// **Orange, not violet — corrected 2026-11-04 on hardware.** The first cut
+/// used a violet-seeded primaryContainer on the theory that "violet is the hue
+/// no mood seed uses". True of the seeds, false of what they generate: M3
+/// rotates tertiary ~60 degrees from the seed, so the blue-grey "Low day" seed's
+/// tertiaryContainer (the hand-entered commitment fill) IS violet — ebdcff vs
+/// ecdcff, one unit of red apart. The owner saw a meeting and a hand-entered
+/// commitment in the same lavender. The timeline now has its own fixed
+/// palette (schedule_palette.dart) rather than the mood's, and this is a
+/// deliberately stronger, warmer tone than its pale containers; the test
+/// `calendar meeting fill is visibly apart from every other card` pins a
+/// minimum RGB distance from every fill a card can carry.
 Color calendarMeetingFill(Brightness brightness) =>
-    (brightness == Brightness.dark ? _calendarFillDark : _calendarFillLight)
-        .primaryContainer;
-
-final _calendarFillLight = ColorScheme.fromSeed(
-  seedColor: const Color(0xFF7E57C2),
-);
-final _calendarFillDark = ColorScheme.fromSeed(
-  seedColor: const Color(0xFF7E57C2),
-  brightness: Brightness.dark,
-);
+    brightness == Brightness.dark
+        ? const Color(0xFF8D5A1A)
+        : const Color(0xFFFFB74D);
 
 /// File-private imported-commitment glyph (D-35-11, UI-SPEC §4). Identical
 /// icon/size/color/semantics to `_CommitmentRow`'s treatment on the

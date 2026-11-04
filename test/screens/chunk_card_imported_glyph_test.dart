@@ -13,10 +13,13 @@
 //      established "the card fills its allocated slot" harness, not a bare
 //      SizedBox wrapping ChunkCard directly.
 
+import 'dart:math' as math;
+
 import 'package:canopy/data/models/scheduled_chunk.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_card.dart';
 import 'package:canopy/screens/schedule/widgets/chunk_detail_sheet.dart';
+import 'package:canopy/screens/today/schedule_palette.dart';
 import 'package:canopy/screens/today/timeline_geometry.dart';
 import 'package:canopy/screens/today/widgets/timeline_row_tile.dart';
 import 'package:flutter/material.dart';
@@ -141,19 +144,18 @@ void main() {
       },
     );
 
-    testWidgets(
-      'the same chunk at full density: the glyph renders',
-      (tester) async {
-        await _pumpCard(
-          tester,
-          _commitmentChunk(),
-          density: ChunkCardDensity.full,
-          isImportedCommitment: true,
-        );
-        expect(_hasImportedGlyph(), isTrue);
-        expect(tester.takeException(), isNull);
-      },
-    );
+    testWidgets('the same chunk at full density: the glyph renders', (
+      tester,
+    ) async {
+      await _pumpCard(
+        tester,
+        _commitmentChunk(),
+        density: ChunkCardDensity.full,
+        isImportedCommitment: true,
+      );
+      expect(_hasImportedGlyph(), isTrue);
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets(
       'a commitment chunk whose block is hand-entered: no glyph at detailed '
@@ -177,26 +179,23 @@ void main() {
       },
     );
 
-    testWidgets(
-      'a work chunk with no commitmentId: no glyph, no crash, at any '
-      'density',
-      (tester) async {
-        for (final density in ChunkCardDensity.values) {
-          await _pumpCard(
-            tester,
-            _goalChunk(),
-            density: density,
-            // The caller (today_screen) would resolve this to false via
-            // _lookupIsImportedCommitment without ever reaching the
-            // notifier for a null commitmentId — this test asserts the
-            // card itself is equally inert when handed false directly.
-            isImportedCommitment: false,
-          );
-          expect(_hasImportedGlyph(), isFalse);
-          expect(tester.takeException(), isNull);
-        }
-      },
-    );
+    testWidgets('a work chunk with no commitmentId: no glyph, no crash, at any '
+        'density', (tester) async {
+      for (final density in ChunkCardDensity.values) {
+        await _pumpCard(
+          tester,
+          _goalChunk(),
+          density: density,
+          // The caller (today_screen) would resolve this to false via
+          // _lookupIsImportedCommitment without ever reaching the
+          // notifier for a null commitmentId — this test asserts the
+          // card itself is equally inert when handed false directly.
+          isImportedCommitment: false,
+        );
+        expect(_hasImportedGlyph(), isFalse);
+        expect(tester.takeException(), isNull);
+      }
+    });
   });
 
   group('Imported commitment glyph — compact density omission (D-35-11)', () {
@@ -241,47 +240,45 @@ void main() {
   });
 
   group('ChunkDetailSheet header (D-35-11, UI-SPEC §4)', () {
-    testWidgets(
-      'for an imported commitment: glyph plus the visible label',
-      (tester) async {
-        final notifier = _FakeScheduleNotifier();
-        await pumpWithMood(
-          tester,
-          ChunkDetailSheet(
-            chunk: _commitmentChunk(),
-            notifier: notifier,
-            displayRationale: 'Team standup',
-            isImportedCommitment: true,
-          ),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
-          ],
-        );
-        expect(_hasImportedGlyph(), isTrue);
-        expect(find.text('Imported from your calendar'), findsOneWidget);
-      },
-    );
+    testWidgets('for an imported commitment: glyph plus the visible label', (
+      tester,
+    ) async {
+      final notifier = _FakeScheduleNotifier();
+      await pumpWithMood(
+        tester,
+        ChunkDetailSheet(
+          chunk: _commitmentChunk(),
+          notifier: notifier,
+          displayRationale: 'Team standup',
+          isImportedCommitment: true,
+        ),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
+        ],
+      );
+      expect(_hasImportedGlyph(), isTrue);
+      expect(find.text('Imported from your calendar'), findsOneWidget);
+    });
 
-    testWidgets(
-      'for a hand-entered commitment: no glyph, no label',
-      (tester) async {
-        final notifier = _FakeScheduleNotifier();
-        await pumpWithMood(
-          tester,
-          ChunkDetailSheet(
-            chunk: _commitmentChunk(),
-            notifier: notifier,
-            displayRationale: 'Team standup',
-            isImportedCommitment: false,
-          ),
-          extraProviders: [
-            ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
-          ],
-        );
-        expect(_hasImportedGlyph(), isFalse);
-        expect(find.text('Imported from your calendar'), findsNothing);
-      },
-    );
+    testWidgets('for a hand-entered commitment: no glyph, no label', (
+      tester,
+    ) async {
+      final notifier = _FakeScheduleNotifier();
+      await pumpWithMood(
+        tester,
+        ChunkDetailSheet(
+          chunk: _commitmentChunk(),
+          notifier: notifier,
+          displayRationale: 'Team standup',
+          isImportedCommitment: false,
+        ),
+        extraProviders: [
+          ChangeNotifierProvider<ScheduleNotifier>.value(value: notifier),
+        ],
+      );
+      expect(_hasImportedGlyph(), isFalse);
+      expect(find.text('Imported from your calendar'), findsNothing);
+    });
   });
 
   group('D-36-06 — a calendar meeting is colour-coded apart', () {
@@ -309,6 +306,38 @@ void main() {
 
       expect(imported, isNot(manual));
       expect(imported, calendarMeetingFill(brightness));
+    });
+
+    // The test above passed while the owner saw both cards in the same
+    // lavender on hardware (2026-11-04): `isNot` is satisfied by ONE unit of
+    // red (ebdcff vs ecdcff). This one asks the question he asked — can you
+    // tell them apart — against every fill a timeline card can carry, in the
+    // schedule's own fixed palette (schedule_palette.dart), both brightnesses.
+    test('calendar meeting fill is visibly apart from every other card', () {
+      double rgbDistance(Color a, Color b) => math.sqrt(
+        math.pow((a.r - b.r) * 255, 2) +
+            math.pow((a.g - b.g) * 255, 2) +
+            math.pow((a.b - b.b) * 255, 2),
+      );
+      const minDistance = 40.0;
+      for (final brightness in Brightness.values) {
+        final meeting = calendarMeetingFill(brightness);
+        final scheme = scheduleColorScheme(brightness);
+        final fills = {
+          'commitment (tertiaryContainer)': scheme.tertiaryContainer,
+          'work (surfaceContainerLowest)': scheme.surfaceContainerLowest,
+          'break (secondaryContainer)': scheme.secondaryContainer,
+          'primaryContainer': scheme.primaryContainer,
+          'errorContainer': scheme.errorContainer,
+        };
+        for (final f in fills.entries) {
+          expect(
+            rgbDistance(meeting, f.value),
+            greaterThanOrEqualTo(minDistance),
+            reason: '$brightness: meeting vs ${f.key}',
+          );
+        }
+      }
     });
   });
 }

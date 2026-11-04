@@ -286,3 +286,20 @@ should also be color coded differnetly"* (he clarified he meant the test meeting
   could be guaranteed to stay distinct. Hand-entered commitments keep `tertiaryContainer`.
 - A meeting already on today in the old lattice form is rebuilt as one block by the next sync from
   the Calendars screen (`applyCalendarSync`), or by Re-check-in.
+
+## D-36-07 — The mood colours the app, never the schedule
+
+**Ruled by the owner on 2026-11-04**, after seeing a calendar meeting and a hand-entered commitment in
+the same lavender on his iPhone: *"lets change the mood thing - it shouldnt affect the way the
+schedule looks just the way the app looks. also - i was thinking we would do that later, and it would
+be mostly 3d / visual and beautiful anyways"*.
+
+- The Today timeline is wrapped in a `Theme` built from a FIXED scheme
+  (`lib/screens/today/schedule_palette.dart`: the pre-check-in curious seed, unmodulated by time of
+  day; only brightness follows the app). The header, mood chip and app frame keep the mood's scheme.
+- Supersedes D-36-06's violet: under the blue-grey Low day seed, M3's generated tertiaryContainer
+  (the hand-entered commitment fill) was violet, one unit of red from the meeting fill. Meetings are
+  now a fixed orange (`FFB74D` light, `8D5A1A` dark), tested at >= 40 RGB from every card fill in
+  the schedule palette.
+- The mood's own look (owner: "mostly 3d / visual and beautiful") is later, separate work; it must
+  not re-enter the timeline's colours.
