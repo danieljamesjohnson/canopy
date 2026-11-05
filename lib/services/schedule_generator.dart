@@ -209,10 +209,40 @@ class ScheduleGeneratorService {
   ///
   /// [block.startMinutes]/[block.endMinutes] are read-only throughout (Phase
   /// 28 D-01) — only the chunk *composition* inside the window changes.
+  ///
+  /// [yieldTo] (WINDOWS entry 19, owner 2026-11-05): the windows of today's
+  /// calendar meetings. A hand-entered commitment's lattice is built only in
+  /// the parts of its window that no meeting covers — each remaining segment
+  /// gets its own 25+5(+30) lattice — so a meeting is never drawn on top of
+  /// that commitment's work and break chunks. Calendar blocks ignore it.
   static List<ScheduledChunk> buildCommitmentChunks(
     CommitmentBlock block, {
     required int longBreakEvery,
+    List<({int start, int end})> yieldTo = const [],
   }) {
+    if (!block.isFromCalendar &&
+        yieldTo.any(
+          (w) => w.start < block.endMinutes && block.startMinutes < w.end,
+        )) {
+      return [
+        for (final seg in subtractWindows(
+          block.startMinutes,
+          block.endMinutes,
+          yieldTo,
+        ))
+          ...buildCommitmentChunks(
+            CommitmentBlock(
+              id: block.id,
+              name: block.name,
+              daysOfWeek: block.daysOfWeek,
+              startMinutes: seg.start,
+              endMinutes: seg.end,
+              date: block.date,
+            ),
+            longBreakEvery: longBreakEvery,
+          ),
+      ];
+    }
     // D-36-06 (owner, 2026-11-03): "it shouldn't have a break though.
     // meetings are whatever they are at the timing they say." A block
     // imported from a calendar is ONE chunk covering exactly its own window,
@@ -323,6 +353,46 @@ class ScheduleGeneratorService {
     }
     return chunks;
   }
+
+  /// The parts of [start, end) that none of [windows] covers, in order.
+  static List<({int start, int end})> subtractWindows(
+    int start,
+    int end,
+    List<({int start, int end})> windows,
+  ) {
+    final sorted = [...windows]..sort((a, b) => a.start.compareTo(b.start));
+    final out = <({int start, int end})>[];
+    var cursor = start;
+    for (final w in sorted) {
+      if (w.end <= cursor || w.start >= end) continue;
+      if (w.start > cursor) out.add((start: cursor, end: w.start));
+      if (w.end > cursor) cursor = w.end;
+    }
+    if (cursor < end) out.add((start: cursor, end: end));
+    return out;
+  }
+
+  /// Whether [block] lands on [date]: a dated (one-off) block on that day
+  /// only, a recurring one on its weekdays.
+  static bool anchorsOn(CommitmentBlock block, DateTime date) {
+    final d = block.date;
+    if (d != null) {
+      return d.year == date.year && d.month == date.month && d.day == date.day;
+    }
+    return block.daysOfWeek.contains(date.weekday);
+  }
+
+  /// The windows of the calendar meetings that land on [date] (entry 19).
+  static List<({int start, int end})> meetingWindowsOn(
+    Iterable<CommitmentBlock> blocks,
+    DateTime date,
+  ) => [
+    for (final b in blocks)
+      if (b.isFromCalendar &&
+          b.endMinutes > b.startMinutes &&
+          anchorsOn(b, date))
+        (start: b.startMinutes, end: b.endMinutes),
+  ];
 
   // ---------------------------------------------------------------------------
   // Private budget helpers.
@@ -473,6 +543,7 @@ class ScheduleGeneratorService {
     // -------------------------------------------------------------------------
     // Step 1: Commitment block chunks (anchored; not counted against cap).
     // -------------------------------------------------------------------------
+    final meetingWindows = meetingWindowsOn(blocks, date);
     for (final block in blocks) {
       // A one-off (dated) commitment anchors only on its specific calendar day;
       // a recurring commitment anchors on its weekly [daysOfWeek]. This is what
@@ -491,7 +562,11 @@ class ScheduleGeneratorService {
       // 25+5(+30) lattice as discretionary time, via buildCommitmentChunks —
       // CLOSE-03's real block-id attribution now flows through that helper.
       workChunks.addAll(
-        buildCommitmentChunks(block, longBreakEvery: longBreakEvery),
+        buildCommitmentChunks(
+          block,
+          longBreakEvery: longBreakEvery,
+          yieldTo: meetingWindows,
+        ),
       );
     }
 

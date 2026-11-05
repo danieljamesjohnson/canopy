@@ -369,7 +369,22 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     Set<String> removedCalendarBlockIds = const {},
   }) async {
     if (!hasScheduleToday || _todaySchedule == null) return;
+    // Windows a meeting used to occupy today (pruned or moved): a hand-entered
+    // commitment that yielded to it gets that time back (entry 19).
+    final freed = <({int start, int end})>[];
+    ({int start, int end})? windowOf(ScheduledChunk c) =>
+        c.anchoredStartMinutes == null
+        ? null
+        : (
+            start: c.anchoredStartMinutes!,
+            end: c.anchoredStartMinutes! + c.durationMinutes,
+          );
     if (removedCalendarBlockIds.isNotEmpty) {
+      for (final c in _todaySchedule!.chunks) {
+        if (!removedCalendarBlockIds.contains(c.commitmentId)) continue;
+        final w = windowOf(c);
+        if (w != null) freed.add(w);
+      }
       final before = _todaySchedule!.chunks.length;
       _todaySchedule!.chunks = _todaySchedule!.chunks
           .where((c) => !removedCalendarBlockIds.contains(c.commitmentId))
@@ -396,8 +411,97 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
             .reduce((a, b) => a > b ? a : b);
         if (start == block.startMinutes && end == block.endMinutes) continue;
       }
+      for (final c in existing) {
+        final w = windowOf(c);
+        if (w != null) freed.add(w);
+      }
       await addEventToday(block);
     }
+    await _yieldCommitmentsToMeetings(blocks, freed: freed);
+  }
+
+  /// WINDOWS entry 19 (owner, 2026-11-05: a synced meeting was drawn on top of
+  /// his hand-entered Work block's short and long breaks). A hand-entered
+  /// commitment's lattice is rebuilt around today's calendar meetings — the
+  /// same carving check-in does via `buildCommitmentChunks(yieldTo:)` — when
+  /// any of its unresolved chunks sits under a meeting, or when a meeting it
+  /// had yielded to has gone ([freed]). Completed and skipped chunks are kept
+  /// where they are, and no new chunk is placed over one.
+  Future<void> _yieldCommitmentsToMeetings(
+    List<CommitmentBlock> blocks, {
+    required List<({int start, int end})> freed,
+  }) async {
+    final schedule = _todaySchedule;
+    if (schedule == null) return;
+    final now = _now();
+    final date = DateTime(now.year, now.month, now.day);
+    final meetings = ScheduleGeneratorService.meetingWindowsOn(blocks, date);
+    bool overlaps(int s, int e, List<({int start, int end})> ws) =>
+        ws.any((w) => s < w.end && w.start < e);
+    final longBreakEvery = ScheduleGeneratorService.breakCadenceForMood(
+      schedule.moodIndex,
+    );
+
+    var changed = false;
+    for (final block in blocks) {
+      if (block.isFromCalendar) continue;
+      if (!ScheduleGeneratorService.anchorsOn(block, date)) continue;
+      final own = schedule.chunks
+          .where((c) => c.commitmentId == block.id)
+          .toList();
+      if (own.isEmpty) continue;
+      bool resolved(ScheduledChunk c) => c.isCompleted || c.isSkipped;
+      final underMeeting = own.any(
+        (c) =>
+            !resolved(c) &&
+            c.anchoredStartMinutes != null &&
+            overlaps(
+              c.anchoredStartMinutes!,
+              c.anchoredStartMinutes! + c.durationMinutes,
+              meetings,
+            ),
+      );
+      final regainsTime = overlaps(block.startMinutes, block.endMinutes, freed);
+      if (!underMeeting && !regainsTime) continue;
+
+      final kept = own.where(resolved).toList();
+      final keptWindows = [
+        for (final c in kept)
+          if (c.anchoredStartMinutes != null)
+            (
+              start: c.anchoredStartMinutes!,
+              end: c.anchoredStartMinutes! + c.durationMinutes,
+            ),
+      ];
+      final rebuilt =
+          ScheduleGeneratorService.buildCommitmentChunks(
+            block,
+            longBreakEvery: longBreakEvery,
+            yieldTo: meetings,
+          ).where(
+            (c) => !overlaps(
+              c.anchoredStartMinutes!,
+              c.anchoredStartMinutes! + c.durationMinutes,
+              keptWindows,
+            ),
+          );
+      schedule.chunks = [
+        for (final c in schedule.chunks)
+          if (c.commitmentId != block.id) c,
+        ...kept,
+        ...rebuilt,
+      ];
+      changed = true;
+    }
+    if (!changed) return;
+    schedule.chunks.sort((a, b) {
+      final aStart = a.displayStartMinutes ?? 9999;
+      final bStart = b.displayStartMinutes ?? 9999;
+      return aStart.compareTo(bStart);
+    });
+    _trimTrailingNonWork();
+    await _repo.save(schedule);
+    notifyListeners();
   }
 
   /// Removes trailing DISCRETIONARY non-work chunks from

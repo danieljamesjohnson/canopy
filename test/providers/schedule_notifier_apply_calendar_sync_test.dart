@@ -9,8 +9,8 @@ import 'package:canopy/data/repositories/completion_log_repository.dart';
 import 'package:canopy/data/repositories/daily_schedule_repository.dart';
 import 'package:canopy/data/repositories/goal_repository.dart';
 import 'package:canopy/providers/schedule_notifier.dart';
+import 'package:canopy/services/schedule_generator.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 
 class _InMemoryScheduleRepository implements DailyScheduleRepository {
   DailySchedule? _stored;
@@ -166,19 +166,25 @@ void main() {
     expect(notifier.todaySchedule!.chunks.map((c) => c.id).toList(), first);
   });
 
-  test('a synced event whose time changed is re-anchored at the new time',
-      () async {
-    final (notifier, _) = await make(chunks: [work('w1', 9 * 60)]);
-    await notifier.applyCalendarSync([calendarBlock('cal', 14 * 60, 15 * 60)]);
+  test(
+    'a synced event whose time changed is re-anchored at the new time',
+    () async {
+      final (notifier, _) = await make(chunks: [work('w1', 9 * 60)]);
+      await notifier.applyCalendarSync([
+        calendarBlock('cal', 14 * 60, 15 * 60),
+      ]);
 
-    await notifier.applyCalendarSync([calendarBlock('cal', 16 * 60, 17 * 60)]);
+      await notifier.applyCalendarSync([
+        calendarBlock('cal', 16 * 60, 17 * 60),
+      ]);
 
-    final starts = notifier.todaySchedule!.chunks
-        .where((c) => c.commitmentId == 'cal')
-        .map((c) => c.anchoredStartMinutes!)
-        .toList();
-    expect(starts.reduce((a, b) => a < b ? a : b), 16 * 60);
-  });
+      final starts = notifier.todaySchedule!.chunks
+          .where((c) => c.commitmentId == 'cal')
+          .map((c) => c.anchoredStartMinutes!)
+          .toList();
+      expect(starts.reduce((a, b) => a < b ? a : b), 16 * 60);
+    },
+  );
 
   test('a meeting already on today in the OLD 25+5 lattice (before D-36-06) '
       'is rebuilt as one block', () async {
@@ -227,20 +233,139 @@ void main() {
       isNotEmpty,
     );
 
-    await notifier.applyCalendarSync([manual], removedCalendarBlockIds: {'cal'});
+    await notifier.applyCalendarSync(
+      [manual],
+      removedCalendarBlockIds: {'cal'},
+    );
 
     final chunks = notifier.todaySchedule!.chunks;
     expect(chunks.where((c) => c.commitmentId == 'cal'), isEmpty);
     expect(chunks.where((c) => c.commitmentId == 'manual'), isNotEmpty);
   });
 
-  test('no schedule today yet: the sync does not create one (check-in will)',
-      () async {
-    final (notifier, repo) = await make();
+  test(
+    'no schedule today yet: the sync does not create one (check-in will)',
+    () async {
+      final (notifier, repo) = await make();
 
-    await notifier.applyCalendarSync([calendarBlock('cal', 14 * 60, 15 * 60)]);
+      await notifier.applyCalendarSync([
+        calendarBlock('cal', 14 * 60, 15 * 60),
+      ]);
 
-    expect(notifier.hasScheduleToday, isFalse);
-    expect(await repo.getAll(), isEmpty);
+      expect(notifier.hasScheduleToday, isFalse);
+      expect(await repo.getAll(), isEmpty);
+    },
+  );
+
+  // WINDOWS entry 19 (owner on the iPhone, 2026-11-05): a synced 11:00-12:00
+  // meeting was drawn on top of his hand-entered Work block's short and long
+  // breaks. The meeting takes that time; Work keeps the rest.
+  group('a hand-entered commitment yields to a meeting (entry 19)', () {
+    CommitmentBlock workBlock() => CommitmentBlock(
+      id: 'workblock',
+      name: 'Work',
+      daysOfWeek: const [1, 2, 3, 4, 5],
+      startMinutes: 9 * 60,
+      endMinutes: 17 * 60,
+    );
+
+    List<ScheduledChunk> intruders(List<ScheduledChunk> chunks, int s, int e) =>
+        [
+          for (final c in chunks)
+            if (c.commitmentId != 'cal' &&
+                c.displayStartMinutes != null &&
+                overlaps(c, s, e))
+              c,
+        ];
+
+    test('sync onto a day already built with Work: nothing of Work is left '
+        'under the meeting, and Work still runs before and after it', () async {
+      final (notifier, _) = await make(chunks: [work('w1', 18 * 60)]);
+      final w = workBlock();
+      await notifier.addEventToday(w);
+      expect(
+        intruders(notifier.todaySchedule!.chunks, 11 * 60, 12 * 60),
+        isNotEmpty,
+        reason: 'precondition: Work fills 11-12 before the meeting arrives',
+      );
+
+      await notifier.applyCalendarSync([
+        w,
+        calendarBlock('cal', 11 * 60, 12 * 60),
+      ]);
+
+      final chunks = notifier.todaySchedule!.chunks;
+      expect(intruders(chunks, 11 * 60, 12 * 60), isEmpty);
+      final workStarts = chunks
+          .where((c) => c.commitmentId == 'workblock')
+          .map((c) => c.anchoredStartMinutes!)
+          .toList();
+      expect(workStarts.any((s) => s < 11 * 60), isTrue);
+      expect(workStarts.any((s) => s >= 12 * 60), isTrue);
+      expect(chunks.where((c) => c.commitmentId == 'cal'), hasLength(1));
+    });
+
+    test('the meeting going away gives Work its time back', () async {
+      final (notifier, _) = await make(chunks: [work('w1', 18 * 60)]);
+      final w = workBlock();
+      await notifier.addEventToday(w);
+      await notifier.applyCalendarSync([
+        w,
+        calendarBlock('cal', 11 * 60, 12 * 60),
+      ]);
+
+      await notifier.applyCalendarSync([w], removedCalendarBlockIds: {'cal'});
+
+      final back = notifier.todaySchedule!.chunks.where(
+        (c) => c.commitmentId == 'workblock' && overlaps(c, 11 * 60, 12 * 60),
+      );
+      expect(back, isNotEmpty);
+    });
+
+    test('a completed Work chunk survives the rebuild untouched', () async {
+      final (notifier, _) = await make(chunks: [work('w1', 18 * 60)]);
+      final w = workBlock();
+      await notifier.addEventToday(w);
+      final first = notifier.todaySchedule!.chunks.firstWhere(
+        (c) => c.commitmentId == 'workblock' && c.anchoredStartMinutes == 540,
+      );
+      await notifier.markComplete(first.id);
+
+      await notifier.applyCalendarSync([
+        w,
+        calendarBlock('cal', 11 * 60, 12 * 60),
+      ]);
+
+      final chunks = notifier.todaySchedule!.chunks;
+      final kept = chunks.where((c) => c.id == first.id).toList();
+      expect(kept, hasLength(1));
+      expect(kept.single.isCompleted, isTrue);
+      final atNine = chunks.where(
+        (c) => c.commitmentId == 'workblock' && overlaps(c, 540, 565),
+      );
+      expect(atNine, hasLength(1), reason: 'no second chunk stacked on it');
+    });
+
+    test('check-in builds Work around the meeting too', () {
+      final chunks = ScheduleGeneratorService().generate(
+        goals: const [],
+        blocks: [workBlock(), calendarBlock('cal', 11 * 60, 12 * 60)],
+        moodIndex: 3,
+        date: todayDate,
+      );
+      expect(intruders(chunks, 11 * 60, 12 * 60), isEmpty);
+      expect(
+        chunks.where(
+          (c) => c.commitmentId == 'workblock' && overlaps(c, 540, 660),
+        ),
+        isNotEmpty,
+      );
+      expect(
+        chunks.where(
+          (c) => c.commitmentId == 'workblock' && overlaps(c, 720, 1020),
+        ),
+        isNotEmpty,
+      );
+    });
   });
 }
