@@ -225,9 +225,11 @@ Final state clean: after Family was ticked and then unticked, no Family-hash blo
 
 
 **S4(c) — entry 11: a deleted throwaway event's row gone after Sync now:**
+PASS (owner, 2026-11-05, build afe8d36): a throwaway event for today appeared after Sync now and disappeared after he deleted it and synced again.
 
 
 **S5 — entry 14: ticks landed exactly where you tapped (and, if Google was connected, nothing moved):**
+PASS (owner, 2026-11-05): untick one, tick another, leave and return -- every tick where he tapped. Google not connected: sign-in was refused with Google's 'has not completed the Google verification process ... only developer-approved testers' page, i.e. his address is not in the consent screen's Test users (36-GOOGLE-CLOUD-SETUP.md step 3.5). Google flow still untested on device.
 
 
 **Anything that read like a sixth trap (the screen implied one thing, the data said another):**
