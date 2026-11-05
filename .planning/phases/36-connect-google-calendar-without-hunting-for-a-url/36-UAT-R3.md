@@ -209,6 +209,7 @@ PASS (owner, 2026-11-03, build installed 08:31): the list shows on open, with no
 
 **S2 — entry 13: what you saw when you tapped "Sync now", in your own words:**
 PASS (owner): spinner, then the result. But the success SnackBar covered Sync now and lingered, and he wants a clock time rather than 'just now'. Logged as WINDOWS 17 and fixed.
+CLOSED ON HARDWARE 2026-11-05 (build 5573786): the SnackBar is gone; Sync now confirms in place (Syncing… on the button, then the status line becomes a tinted ✓ card for 2.5s). Owner: 'beautiful!!'. Same build: calendar meetings are orange, distinct from Work, and solid (WINDOWS 18); synced events reach Today without Re-check-in (WINDOWS 16). Entries 16-18 closed.
 
 
 **S3 — entry 10: what you noticed first on opening the screen; still there after leaving and after force-quit; what tapping it said:**
