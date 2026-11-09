@@ -303,3 +303,27 @@ be mostly 3d / visual and beautiful anyways"*.
   the schedule palette.
 - The mood's own look (owner: "mostly 3d / visual and beautiful") is later, separate work; it must
   not re-enter the timeline's colours.
+
+## D-36-08 — The Google sign-in app is published (In production), not verified
+
+**Ruled by the owner on 2026-11-05..09.** It reverses the setup guide's "Publishing status stays
+Testing". *"how do we get it to where any google calender will work? take it out of testing i mean?"*
+The trigger was his own work account. dan@danjjohnson.com is a Google Workspace domain he
+administers, and Google would not keep it on the Test users list. His work calendar is the
+day-to-day use case.
+
+- The OAuth app on project `canopy-calendar` (849693216860) is **In production** and was **not
+  submitted for verification**.
+  - Any Google account can connect, and there is no tester list.
+  - Refresh tokens no longer lapse after 7 days. Testing mode's weekly reconnect is gone.
+- The cost, accepted:
+  - each account sees Google's "Google hasn't verified this app" warning once, and goes through
+    Advanced → Go to Canopy;
+  - at most 100 accounts can ever grant access (a lifetime cap on the project).
+- Publishing required a homepage and a privacy policy. These are the GitHub repo and
+  `PRIVACY.md`, and every claim in it was checked against the code.
+- Verification stays open as an option for when other people use Canopy. It needs:
+  - those pages moved onto danjjohnson.com;
+  - domain ownership proved in Search Console;
+  - a demo video and a scope justification.
+  `calendar.readonly` is a *sensitive* scope, not a restricted one, so there is no CASA audit.

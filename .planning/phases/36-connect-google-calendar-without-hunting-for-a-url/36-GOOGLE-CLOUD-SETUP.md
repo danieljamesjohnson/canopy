@@ -51,7 +51,10 @@ Skip this and auth will succeed while every calendar call fails with a confusing
    promising it.
 
 5. **Test users** → add your own Google address. Required, or sign-in returns `access_blocked`.
-6. Publishing status stays **Testing**. Do not submit for verification.
+6. ~~Publishing status stays **Testing**. Do not submit for verification.~~ **Superseded by D-36-08
+   (2026-11-09):** the app is published **In production**, unverified. That needs Branding's homepage
+   (the GitHub repo) and privacy policy (`PRIVACY.md`). The 7-day expiry below no longer applies; each
+   account sees a one-time "unverified app" warning instead, and the project has a lifetime cap of 100 accounts.
 
 > ### ⚠ The 7-day thing — still applies, and it is about publishing status, not client type
 > In **Testing**, Google expires refresh tokens after **7 days**. You'll press reconnect roughly
