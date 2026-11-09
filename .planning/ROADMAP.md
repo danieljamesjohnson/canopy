@@ -11,6 +11,8 @@
 - ✅ **v1.3 — An Honest Day** — Phases 15-17 (shipped 2026-06-14)
 - ✅ **v1.4 — Energy-Aware** — Phases 18-20 (shipped 2026-06-15)
 - ✅ **v1.5 — Right Now** — Phases 21-26 (shipped 2026-08-14)
+- 📋 **v1.6 — Three Meals** — Phase 37 (planned 2026-11-09, awaiting owner discussion and kickoff)
+- 📋 **v1.7 — On Your Wrist** — Phases 38+ (planned 2026-11-09, awaiting owner discussion and kickoff)
 
 Full per-milestone detail (phase goals, success criteria, coverage maps) is archived in
 `.planning/milestones/`: `v1.2-ROADMAP.md` carries the complete cumulative roadmap through v1.2;
@@ -1084,8 +1086,9 @@ Plans:
 | 32. Breaks You Can Tap | — (standalone) | 3/3 + gap closure | Complete | 2026-08-31 |
 | 33. Make The Obvious Thing Obvious | — (standalone) | 4/5 + 4 owner rounds | Complete — closed by owner review; 33-05's scripted UAT never run | 2026-09-08 |
 | 34. Adding a Goal Feels Like Onboarding | — (standalone) | 3/3 | Complete | 2026-09-09 |
-| 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 6/6 built | **Built, awaiting owner verdict.** All four waves merged, 821/821 green. Two gates open: browser UAT (`35-UAT.md`) and the iOS device check (`35-05` Task 3). WINDOWS.md entry 2 closed; 1 and 3 open | |
-| 36. Connect Google Calendar Without Hunting For a URL | — (standalone) | 6/7 built | **Built, awaiting owner verdict.** Waves 1-4 merged, 908/908 green, `flutter analyze` clean, code review 0 critical (4 of 5 warnings fixed, WR-05 is the owner's call). `36-VERIFICATION.md` = `human_needed`, `gaps: []`. Parked at `36-07` Task 2, the MacBook gate — which also closes Phase 35's device gate, since `36-UAT.md` carries `35-05` Task 3 as Section A. WINDOWS.md entry 5 fixed; 4 and 6 open by design | |
+| 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 6/6 built | **All WINDOWS entries closed (2026-11-09).** Entry 1, the ICS overrides, was verified through the real fetcher on the danserver Android emulator, by the agent at the owner's request (`36-UAT-R3.md` E1); not run in a browser. iOS device path verified on the owner's iPhone across Phase 36 R1-R3 | |
+| 36. Connect Google Calendar Without Hunting For a URL | — (standalone) | 7/7 + 3 gap-closure rounds | **One gate left: WINDOWS 15** (Disconnect removes Google's meetings, owner ruling 2026-11-09; built and installed, awaiting the owner's tap). Google Connect passed end to end on the owner's iPhone 2026-11-09 after D-36-08 published the OAuth app. 1055 green | |
+| 37. Three Meals, One Tap | v1.6 | 0/? | Draft context (`37-CONTEXT.md`); 6 open questions for the owner | |
 
 ### Phase 35: Your Real Commitments, Read From Your Calendar
 
@@ -1343,3 +1346,30 @@ Plans:
 **Two blocking human gates:** `36-01` Task 1 (pub package legitimacy, before the install) and `36-07` Task 2 (the device UAT, the only place any of this phase can run). The gap-closure plans add **no** new gate — every owner ruling they need is already taken (D-36-05), so they run unattended and hand the owner `36-UAT-R2.md` at the end.
 
 ---
+
+---
+
+## Milestone v1.6 — Three Meals (PLANNED 2026-11-09, not started)
+
+Asked for by the owner on 2026-11-09: *"add breakfast / lunch / dinner to onboarding. assume some times,
+some lengths, etc. allow the person to edit but have the default be one button press and they go."*
+One small phase. It reuses the meeting-block placement (D-36-06) and the yield rule (WINDOWS 19).
+
+### Phase 37: Three Meals, One Tap
+
+**Goal:** a new user's day has room to eat, with one tap. Three pre-filled meals (breakfast 7–7:30,
+lunch 12–1, dinner 6–7), each editable or switched off, and a single button to accept them.
+
+**Requirements (draft):**
+- MEAL-01: onboarding gains a meals beat. One tap on the primary button saves the three default meals.
+- MEAL-02: each meal's start and end time can be edited, and each meal can be switched off, before
+  saving.
+- MEAL-03: a meal is one solid block every day, with no breaks inside, in its own fixed colour.
+- MEAL-04: a hand-entered commitment (e.g. Work 9–5) yields to a meal, as it does to a meeting.
+- MEAL-05: existing users can set up the same three meals from Settings → Meals.
+
+**Riskiest assumption:** a 7:00 breakfast renders and survives generation even though discretionary
+packing starts at 08:00. Prove it first.
+
+**Context and open questions:** `phases/37-three-meals-one-tap/37-CONTEXT.md` (OPEN-1..6: meeting vs
+meal precedence, weekends, tracking, minimum length, existing-user prompt, snacks).
