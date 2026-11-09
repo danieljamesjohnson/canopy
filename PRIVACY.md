@@ -39,8 +39,8 @@ only, stored on your device, shared with no one.
 ## Removing your data
 
 - Use **Disconnect** in Settings → Calendars to stop Canopy reading your Google Calendar. This deletes
-  the stored Google sign-in tokens from your device. Events already placed on your schedule stay there,
-  on your device, until you remove them or delete the app.
+  the stored Google sign-in tokens and every meeting Canopy imported from Google from your device.
+  Nothing in your Google Calendar itself is changed.
 - Revoke Canopy's access at any time at <https://myaccount.google.com/permissions>.
 - Deleting the app deletes everything it stored.
 

@@ -111,6 +111,16 @@ String calendarIdHash(String calendarId) => _stableHash(calendarId);
 /// pruned — unrecognised shapes are left alone, not guessed at.
 final RegExp _importedIdPattern = RegExp(r'^ics:([0-9a-f]{8}):');
 
+/// The calendar hash inside an imported [block]'s `ics:<hash>:` id, or null
+/// for a hand-entered block or any id of another shape. Callers that delete
+/// by it (the prune, Google Disconnect) never guess at unrecognised ids.
+String? importedCalendarHashOf(CommitmentBlock block) {
+  if (!block.isFromCalendar) return null;
+  final id = block.externalEventId;
+  if (id == null) return null;
+  return _importedIdPattern.firstMatch(id)?.group(1);
+}
+
 /// Syncs a [CalendarSource]'s events into [CommitmentBlock]s (CAL-01).
 ///
 /// Follows `CommitmentsNotifier`'s constructor-injected-repository-with-

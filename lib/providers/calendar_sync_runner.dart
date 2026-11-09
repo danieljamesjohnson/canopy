@@ -29,6 +29,7 @@
 library;
 
 import '../data/calendar/calendar_source.dart';
+import '../data/calendar/google_calendar_source.dart';
 import '../services/calendar_sync_service.dart';
 import 'commitments_notifier.dart';
 import 'schedule_notifier.dart';
@@ -97,4 +98,48 @@ Future<CalendarSyncResult> runCalendarSync({
       syncedAt: DateTime.now(),
     );
   }
+}
+
+/// Google Disconnect (WINDOWS entry 15, owner 2026-11-09: "disconnect should
+/// remove the meetings it brought in").
+///
+/// Removes every imported block from a ticked Google calendar, drops the
+/// `google:` ids from the selection so a later sync cannot bring them back
+/// without a reconnect and a re-tick, and takes them off TODAY's timeline.
+/// It needs no network and no token, so it runs even when Google is
+/// unreachable or the token is already gone. Device and feed calendars are
+/// untouched: their ids hash differently, even for the same calendar seen
+/// through the iPhone (D-36-03). Returns how many blocks were removed.
+Future<int> removeGoogleImports({
+  required CommitmentsNotifier commitments,
+  required SettingsNotifier settings,
+  ScheduleNotifier? schedule,
+}) async {
+  final googleIds = [
+    for (final id in settings.selectedCalendarIds)
+      if (id.startsWith(googleCalendarIdPrefix)) id,
+  ];
+  final hashes = googleIds.map(calendarIdHash).toSet();
+  final doomed = {
+    for (final b in commitments.blocks)
+      if (hashes.contains(importedCalendarHashOf(b))) b.id,
+  };
+  for (final id in doomed) {
+    await commitments.deleteBlock(id);
+  }
+  if (googleIds.isNotEmpty) {
+    await settings.setSelectedCalendarIds([
+      for (final id in settings.selectedCalendarIds)
+        if (!id.startsWith(googleCalendarIdPrefix)) id,
+    ]);
+  }
+  if (schedule != null && doomed.isNotEmpty) {
+    try {
+      await schedule.applyCalendarSync(
+        commitments.blocks,
+        removedCalendarBlockIds: doomed,
+      );
+    } catch (_) {}
+  }
+  return doomed.length;
 }

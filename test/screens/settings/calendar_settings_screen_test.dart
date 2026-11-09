@@ -927,6 +927,9 @@ void main() {
         await tester.tap(find.text('Connect Google Calendar'));
         await tester.pumpAndSettle();
         expect(find.text('Work'), findsOneWidget);
+        await tester.tap(find.text('Work'));
+        await tester.pumpAndSettle();
+        expect(settings.selectedCalendarIds, contains('google:primary'));
 
         await tester.tap(find.text('Disconnect'));
         await tester.pumpAndSettle();
@@ -934,9 +937,9 @@ void main() {
         expect(find.text('Disconnect Google Calendar?'), findsOneWidget);
         expect(
           find.text(
-            'Canopy will stop reading your Google calendars. Commitments '
-            'already imported stay on your schedule until you remove '
-            'them.',
+            'Canopy will stop reading your Google calendars and remove the '
+            'meetings it brought in from them. Nothing in your Google '
+            'Calendar is changed.',
           ),
           findsOneWidget,
         );
@@ -951,6 +954,8 @@ void main() {
 
         expect(find.text('Connect Google Calendar'), findsOneWidget);
         expect(find.text('Work'), findsNothing);
+        // WINDOWS entry 15: the screen's Disconnect runs removeGoogleImports.
+        expect(settings.selectedCalendarIds, isNot(contains('google:primary')));
       }),
     );
   });

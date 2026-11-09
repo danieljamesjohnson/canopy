@@ -1317,29 +1317,26 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
   /// 36-06-PLAN.md's objective for why this does NOT copy the ICS dialog's
   /// "will disappear the next time you sync" sentence.
   ///
-  /// That sentence was untrue when this was written (`sync()` only ever
-  /// upserted) and is TRUE for the ICS dialog now that the selection prune
-  /// runs (WINDOWS entry 11, wired by [runCalendarSync]). It is still
-  /// deliberately absent here, because it would still be untrue for Google:
-  /// Disconnect clears the token but leaves the `google:` ids in
-  /// [SettingsNotifier.selectedCalendarIds], so they stay configured (the
-  /// selection prune keeps them) and the Google child fails without a token
-  /// (the event prune never touches a calendar whose source did not answer).
-  /// Imported Google commitments therefore stay on the schedule, exactly as
-  /// the dialog below promises. There is no in-app way to remove them until
-  /// the user reconnects and unticks the calendars (36-17 logs this).
+  /// Disconnect clears the token AND, since WINDOWS entry 15 (owner,
+  /// 2026-11-09: "disconnect should remove the meetings it brought in"),
+  /// removes every block imported from a ticked Google calendar, drops the
+  /// `google:` ids from the selection, and takes those meetings off today's
+  /// timeline ([removeGoogleImports]). That needs no network, so it does not
+  /// wait for a sync that the now token-less Google source could never answer.
   Future<void> _disconnectGoogle(
     BuildContext context,
     SettingsNotifier settings,
   ) async {
     final theme = Theme.of(context);
+    final commitments = context.read<CommitmentsNotifier>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Disconnect Google Calendar?'),
         content: const Text(
-          'Canopy will stop reading your Google calendars. Commitments '
-          'already imported stay on your schedule until you remove them.',
+          'Canopy will stop reading your Google calendars and remove the '
+          'meetings it brought in from them. Nothing in your Google '
+          'Calendar is changed.',
         ),
         actions: [
           TextButton(
@@ -1358,6 +1355,13 @@ class _CalendarSettingsScreenState extends State<CalendarSettingsScreen> {
     );
     if (confirmed != true || !mounted) return;
     await GoogleAuthClient(store: settings).disconnect();
+    if (!mounted) return;
+    // WINDOWS entry 15: the meetings Google brought in leave with it.
+    await removeGoogleImports(
+      commitments: commitments,
+      settings: settings,
+      schedule: _schedule,
+    );
     if (!mounted) return;
     setState(() {
       _googleFuture = null;

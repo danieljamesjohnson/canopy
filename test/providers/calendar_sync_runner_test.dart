@@ -370,4 +370,90 @@ void main() {
       expect(ids(), equals({pastId, futureId}));
     });
   });
+
+  // WINDOWS entry 15 (owner, 2026-11-09): "disconnect should remove the
+  // meetings it brought in". Survivors asserted by id.
+  group('removeGoogleImports — Google Disconnect', () {
+    CommitmentBlock imported(String id, String calendarId) => CommitmentBlock(
+      id: id,
+      name: id,
+      daysOfWeek: const [],
+      startMinutes: 600,
+      endMinutes: 660,
+      date: DateTime(2026, 11, 9),
+      externalEventId: 'ics:${calendarIdHash(calendarId)}:$id:',
+      isFromCalendar: true,
+    );
+
+    test('removes every Google meeting and nothing else, with no network, '
+        'and unticks the Google calendars', () async {
+      final blocks = _InMemoryBlocks();
+      for (final b in [
+        imported('g1', 'google:work@x.com'),
+        imported('g2', 'google:primary'),
+        imported('dev', 'EVENTKIT-WORK'),
+        imported('feed', 'https://example.com/a.ics'),
+        CommitmentBlock(
+          id: 'manual',
+          name: 'Work',
+          daysOfWeek: const [1, 2, 3, 4, 5],
+          startMinutes: 540,
+          endMinutes: 1020,
+        ),
+      ]) {
+        await blocks.save(b);
+      }
+      final commitments = CommitmentsNotifier(repository: blocks);
+      await commitments.loadBlocks();
+      final settings = SettingsNotifier(
+        repository: InMemoryAppSettingsRepository(),
+      );
+      await settings.init();
+      await settings.setSelectedCalendarIds([
+        'google:work@x.com',
+        'google:primary',
+        'EVENTKIT-WORK',
+      ]);
+
+      final removed = await removeGoogleImports(
+        commitments: commitments,
+        settings: settings,
+      );
+
+      expect(removed, 2);
+      expect(blocks.store.keys.toSet(), {'dev', 'feed', 'manual'});
+      expect(commitments.blocks.map((b) => b.id).toSet(), {
+        'dev',
+        'feed',
+        'manual',
+      });
+      expect(settings.selectedCalendarIds, ['EVENTKIT-WORK']);
+    });
+
+    test('a hand-entered block that happens to carry a Google-shaped id is '
+        'never removed', () async {
+      final blocks = _InMemoryBlocks();
+      await blocks.save(
+        CommitmentBlock(
+          id: 'manual',
+          name: 'Gym',
+          daysOfWeek: const [],
+          startMinutes: 600,
+          endMinutes: 660,
+          externalEventId: 'ics:${calendarIdHash('google:primary')}:x:',
+        ),
+      );
+      final commitments = CommitmentsNotifier(repository: blocks);
+      await commitments.loadBlocks();
+      final settings = SettingsNotifier(
+        repository: InMemoryAppSettingsRepository(),
+      );
+      await settings.init();
+      await settings.setSelectedCalendarIds(['google:primary']);
+
+      await removeGoogleImports(commitments: commitments, settings: settings);
+
+      expect(blocks.store.keys, ['manual']);
+    });
+  });
 }
