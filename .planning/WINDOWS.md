@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 2
+open_count: 1
 waived_count: 1
-fixed_count: 16
+fixed_count: 17
 total_count: 19
-last_updated: 2026-11-05T00:00:00.000Z
+last_updated: 2026-11-09T00:00:00.000Z
 ---
 
 # Broken Windows Ledger
@@ -15,7 +15,7 @@ last_updated: 2026-11-05T00:00:00.000Z
 
 | id | phase | kind | file | line | description | status | reason | recorded_at | resolved_at |
 |----|-------|------|------|------|-------------|--------|--------|-------------|-------------|
-| 1 | 35 | stub | lib/data/calendar/ics_calendar_source.dart |  | EXDATE/RDATE/RECURRENCE-ID overrides not implemented — a moved/cancelled single occurrence of a recurring event still appears at its original time FIXED IN CODE 2026-11-02 (merge 7740c35): EXDATE, RDATE and RECURRENCE-ID overrides (incl. cancelled overrides) implemented; a moved occurrence keeps its original key so its block moves in place. Also fixed: Google WKST=SU dropped whole weekly series; zoned series drifted an hour across DST; Apple comma-list EXDATE;VALUE=DATE failed the whole feed. Mutation-proven on host only. STAYS OPEN until observed on a real https feed in the browser or on Android (Re-check-in first). Not implemented: RANGE=THISANDFUTURE (treated as single), RDATE;VALUE=PERIOD (start only). | open |  | 2026-09-14T13:15:25.420Z |  |
+| 1 | 35 | stub | lib/data/calendar/ics_calendar_source.dart |  | EXDATE/RDATE/RECURRENCE-ID overrides not implemented — a moved/cancelled single occurrence of a recurring event still appears at its original time FIXED IN CODE 2026-11-02 (merge 7740c35): EXDATE, RDATE and RECURRENCE-ID overrides (incl. cancelled overrides) implemented; a moved occurrence keeps its original key so its block moves in place. Also fixed: Google WKST=SU dropped whole weekly series; zoned series drifted an hour across DST; Apple comma-list EXDATE;VALUE=DATE failed the whole feed. Mutation-proven on host only. STAYS OPEN until observed on a real https feed in the browser or on Android (Re-check-in first). Not implemented: RANGE=THISANDFUTURE (treated as single), RDATE;VALUE=PERIOD (start only). CLOSED 2026-11-09 by the agent at the owner's request ('go ahead and do 2'): the exact fixture URL was driven through the real fetcher in the Android app on the danserver emulator. Moved override at 4 PM, none at 2 PM; RDATE on Nov 10; EXDATE Nov 16 absent; cancelled standup override absent. See 36-UAT-R3.md E1. Not run in a browser; same Dart parser. | fixed |  | 2026-09-14T13:15:25.420Z | 2026-11-09T00:00:00.000Z |
 | 2 | 35 | stub | lib/data/calendar/ics_calendar_source.dart |  | DTSTART without a Z suffix (floating time, or bare TZID with no VTIMEZONE block) is parsed via Dart's system-local DateTime constructor, not the app's tz.local override — only Z-suffixed UTC timestamps are proven correct by this plan's test | fixed |  | 2026-09-14T13:15:28.640Z | 2026-09-15T13:33:05.131Z |
 | 3 | 35 | deviation | lib/data/models/app_settings.dart |  | Pre-existing non-nullable bool/int HiveFields (eveningReminderEnabled/eveningReminderMinutes, fields 7/8) have no defaultValue and generate a straight cast with no null-coalescing -- a genuinely old record missing those fields would throw on read, same defect class fixed in 35-03 for the new List<String> fields. Out of scope for 35-03 (pre-existing, not caused by this task); not fixed. FIXED 2026-11-02 (merge 4fb2731): defaultValue false/1200 on fields 7/8; a genuinely old record without them reads defaults instead of throwing. Mutation: removing either default -> runtime Null-cast error on old bytes. Pure data logic, fully host-provable; no schema bump (read-side only). The 4->5 migration comment repeating Q-02's false claim was corrected. | fixed |  | 2026-09-15T13:05:57.449Z | 2026-11-02T00:00:00.000Z |
 | 4 | 36 | deviation | lib/data/calendar/google_calendar_source.dart |  | 36-02 deferred connect()'s three-valued outcome enum (cancelled/connected/failed) to avoid touching 36-03's exclusive file in this wave; bool contract fully covers Task 2 behaviors. 36-06 should introduce the enum when it wires the settings screen. CLOSED 2026-11-02 (merge after 4fb2731): the bool loses no information -- connect() already yields connected/cancelled and THROWS on failure, and requestPermission() must return CalendarPermissionState, which has no failed value, so an enum would carry the same three signals. The real defect was the screen folding a failed sign-in into the silent cancel path; it now shows a SnackBar (PROPOSED, NOT LOCKED copy: "Couldn't connect to Google. Please try again."). Cancel stays silent; WR-05 unchanged. Mutations in both directions runtime red. | fixed |  | 2026-09-25T15:03:20.080Z | 2026-11-02T00:00:00.000Z |
@@ -43,11 +43,11 @@ last_updated: 2026-11-05T00:00:00.000Z
     "phase": "35",
     "file": "lib/data/calendar/ics_calendar_source.dart",
     "line": null,
-    "description": "EXDATE/RDATE/RECURRENCE-ID overrides not implemented — a moved/cancelled single occurrence of a recurring event still appears at its original time FIXED IN CODE 2026-11-02 (merge 7740c35): EXDATE, RDATE and RECURRENCE-ID overrides (incl. cancelled overrides) implemented; a moved occurrence keeps its original key so its block moves in place. Also fixed: Google WKST=SU dropped whole weekly series; zoned series drifted an hour across DST; Apple comma-list EXDATE;VALUE=DATE failed the whole feed. Mutation-proven on host only. STAYS OPEN until observed on a real https feed in the browser or on Android (Re-check-in first). Not implemented: RANGE=THISANDFUTURE (treated as single), RDATE;VALUE=PERIOD (start only).",
-    "status": "open",
+    "description": "EXDATE/RDATE/RECURRENCE-ID overrides not implemented — a moved/cancelled single occurrence of a recurring event still appears at its original time FIXED IN CODE 2026-11-02 (merge 7740c35): EXDATE, RDATE and RECURRENCE-ID overrides (incl. cancelled overrides) implemented; a moved occurrence keeps its original key so its block moves in place. Also fixed: Google WKST=SU dropped whole weekly series; zoned series drifted an hour across DST; Apple comma-list EXDATE;VALUE=DATE failed the whole feed. Mutation-proven on host only. STAYS OPEN until observed on a real https feed in the browser or on Android (Re-check-in first). Not implemented: RANGE=THISANDFUTURE (treated as single), RDATE;VALUE=PERIOD (start only). CLOSED 2026-11-09 by the agent at the owner's request ('go ahead and do 2'): the exact fixture URL was driven through the real fetcher in the Android app on the danserver emulator. Moved override at 4 PM, none at 2 PM; RDATE on Nov 10; EXDATE Nov 16 absent; cancelled standup override absent. See 36-UAT-R3.md E1. Not run in a browser; same Dart parser.",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-09-14T13:15:25.420Z",
-    "resolved_at": null
+    "resolved_at": "2026-11-09T00:00:00.000Z"
   },
   {
     "id": 2,

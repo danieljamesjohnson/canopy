@@ -264,6 +264,7 @@ day it is generated, so regenerate it on a later day before testing.
    **no** Weekly Sync on next Tue (EXDATE). Daily Standup appears from Wed onward.
 
 **E1 — what you saw:**
+RUN BY THE AGENT 2026-11-09 on the danserver Android emulator (debug build 8b293ff, NO preview flag, so the app's own ICS-URL screen). The owner asked the agent to do it. The fixture was regenerated today and the exact URL above was typed into Add calendar URL, so the app's real fetcher ran (no seam). Result: 13 imported, 3 disclosed as not imported (all-day, too short, cancelled). Check-in was done (trap #4). Today: Weekly Sync (moved) at 4 PM; NO Weekly Sync at 2 PM; NO Daily Standup at 9:30 (cancelled override); Product Review (TZID) 3 PM; Design Review (floating) 5 PM; 1:1 11 AM. Commitment blocks: Weekly Sync on Tue Nov 10 10-11 AM (RDATE; the fixture is dated relative to today, so it is Tue here, not the Wed the steps name); NO Weekly Sync on Mon Nov 16 (EXDATE); Daily Standup Nov 10-17. PASS on all four checks. Screenshots: media/entry1-*-emulator-2026-11-09.png. Limit: this ran in the Android app, not a browser. The ICS code is the same Dart; only the HTTP transport differs. Also seen: Work is arranged around every meeting (entry 19).
 
 
 ## Addendum (2026-11-09): Google Connect, on the owner's iPhone
