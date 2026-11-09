@@ -12,7 +12,7 @@
 - ✅ **v1.4 — Energy-Aware** — Phases 18-20 (shipped 2026-06-15)
 - ✅ **v1.5 — Right Now** — Phases 21-26 (shipped 2026-08-14)
 - 📋 **v1.6 — Three Meals** — Phase 37 (planned 2026-11-09, awaiting owner discussion and kickoff)
-- 📋 **v1.7 — On Your Wrist** — Phases 38+ (planned 2026-11-09, awaiting owner discussion and kickoff)
+- 📋 **v1.7 — On Your Wrist** — Phases 38-42 (planned 2026-11-09, awaiting owner discussion and kickoff)
 
 Full per-milestone detail (phase goals, success criteria, coverage maps) is archived in
 `.planning/milestones/`: `v1.2-ROADMAP.md` carries the complete cumulative roadmap through v1.2;
@@ -1089,6 +1089,7 @@ Plans:
 | 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 6/6 built | **All WINDOWS entries closed (2026-11-09).** Entry 1, the ICS overrides, was verified through the real fetcher on the danserver Android emulator, by the agent at the owner's request (`36-UAT-R3.md` E1); not run in a browser. iOS device path verified on the owner's iPhone across Phase 36 R1-R3 | |
 | 36. Connect Google Calendar Without Hunting For a URL | — (standalone) | 7/7 + 3 gap-closure rounds | **One gate left: WINDOWS 15** (Disconnect removes Google's meetings, owner ruling 2026-11-09; built and installed, awaiting the owner's tap). Google Connect passed end to end on the owner's iPhone 2026-11-09 after D-36-08 published the OAuth app. 1055 green | |
 | 37. Three Meals, One Tap | v1.6 | 0/? | Draft context (`37-CONTEXT.md`); 6 open questions for the owner | |
+| 38-42. On Your Wrist | v1.7 | 0/? | Researched (`research/watch/WATCH-RESEARCH.md`); 8 owner decisions open; gate after 40 | |
 
 ### Phase 35: Your Real Commitments, Read From Your Calendar
 
@@ -1373,3 +1374,68 @@ packing starts at 08:00. Prove it first.
 
 **Context and open questions:** `phases/37-three-meals-one-tap/37-CONTEXT.md` (OPEN-1..6: meeting vs
 meal precedence, weekends, tracking, minimum length, existing-user prompt, snacks).
+
+---
+
+## Milestone v1.7 — On Your Wrist (PLANNED 2026-11-09, not started)
+
+Asked for by the owner on 2026-11-09: *"make it work on watches"*. Research:
+`research/watch/WATCH-RESEARCH.md` (sources cited; [V] marks verified claims, [A] assumed ones).
+
+**What shapes the whole milestone:**
+1. **Flutter cannot build an Apple Watch app.** flutter/flutter#28901 is still open at P3. Any watch UI is a
+   native SwiftUI target inside `ios/Runner.xcodeproj`. Wear OS can't pair with his iPhone, so it is out of
+   scope unless he says otherwise.
+2. **The hard part is on the phone, not the watch.** A Complete/Skip tapped on the wrist arrives while the
+   Flutter UI may not be running. A Hive write from a background isolate risks corruption, and hive_ce's
+   `IsolatedHive` does not support `HiveObject`. So every wrist action goes to an **outbox** that the main
+   isolate replays, carrying the tap's own time; G-05 reads the clock.
+3. **The engine stays single-sourced.** Dart precomputes a "wrist timeline" (instant → state) from
+   `resolveNowState`. Swift only displays it. No scheduling logic is ported to Swift.
+4. **The cheapest real win is notifications.** iPhone notifications mirror to the watch for free, and on a
+   Series 9 / Ultra 2 or later, Double Tap triggers the first action. But Canopy schedules no per-chunk
+   notifications today, so this is new work.
+
+### Phase 38: Wrist Snapshot and Outbox
+**Goal:** a versioned "wrist timeline" built from `resolveNowState`, plus an outbox of Complete/Skip
+actions replayed with their tap time. Pure Dart, all unit-tested on danserver.
+**Spike first:** replaying a Complete with an injected tap time reproduces G-05 exactly as a live tap
+would (mutation-tested).
+
+### Phase 39: A Buzz When the Chunk Changes (Tier 0a)
+**Goal:** a local notification at each chunk start, rescheduled on every schedule change, mirrored to
+the watch.
+**Spike first:** rescheduling on every change stays under iOS's 64-pending cap (reserved ID range) and
+never orphans a moved chunk.
+
+### Phase 40: Complete It From Your Wrist (Tier 0b)
+**Goal:** Complete/Skip actions on chunk notifications. Complete comes first, so Double Tap completes.
+They are handled with no Hive write off the main isolate.
+**Spike first, on the real iPhone and watch:** a background action on a suspended or killed app reliably
+lands in the outbox and is replayed on resume.
+
+**GATE after Phase 40:** the owner lives with the notification version for a week, then picks Phase 41's
+path, or stops here.
+
+### Phase 41: Glanceable (owner picks one at the gate)
+- **41a Live Activity (Tier 1):** "Now, time left" on the Lock Screen, Dynamic Island and watch Smart Stack,
+  with no watch app. Risks: the 8-hour cap, and updates with no push server.
+- **41b Watch target skeleton (Tier 2 start):** an empty SwiftUI watch app that builds via `build-ios.sh`,
+  CI and `ios-build-agent.sh`, and installs on his watch. Risk: `flutter build ios` and CI stay green with
+  an embedded watch target, and App Groups sign on team H637CCV562.
+
+### Phase 42: The Watch App (Tier 2, only if 41b)
+**Goal:** the watch shows the current chunk and a complication countdown from the phone's snapshot, with
+Complete/Skip that works out of range and syncs back.
+**Spike first:** `transferUserInfo` on real devices (it cannot be simulated), and a watch message waking
+the Flutter app.
+
+**Owner decisions before planning (research section 8):**
+1. Does he own an Apple Watch, and which model?
+2. Scope ceiling: Tier 0 only, then decide?
+3. Is team H637CCV562 a paid developer team?
+4. Which chunk changes should buzz, and when?
+5. Real meeting titles on the wrist, or generic ones?
+6. Is it OK for a wrist tap to reach the phone only on the next app open?
+7. Is Wear OS out of scope?
+8. Does he accept the extra macOS CI cost?

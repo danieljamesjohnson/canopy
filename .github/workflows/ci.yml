@@ -2,7 +2,8 @@ name: CI
 
 # WHY THIS EXISTS
 # ---------------
-# Canopy is developed on danserver, which has **no Xcode and no Android SDK** — and never will.
+# Canopy is developed on danserver, which has **no Xcode** — and never will. (It has had an Android
+# SDK and emulator since 2026-11-04, for agents to look at the app; CI still builds Android too.)
 # That is not a temporary gap: it means nobody can answer "does the iOS project still compile?"
 # without the owner opening his MacBook. That question has been live and unanswerable more than
 # once (the com.example -> com.danjjohnson bundle-ID rename; Phase 36's Info.plist changes).
@@ -192,8 +193,8 @@ jobs:
           grep -m1 'PRODUCT_BUNDLE_IDENTIFIER = ' ios/Runner.xcodeproj/project.pbxproj
 
   # ---------------------------------------------------------------------------
-  # The other platform danserver can't build (no Android SDK — verified by
-  # flutter doctor during Phase 35, not assumed).
+  # Android. danserver lacked an Android SDK until 2026-11-04 (verified by flutter
+  # doctor in Phase 35); it now has one for the emulator, but CI stays the clean check.
   # ---------------------------------------------------------------------------
   android-build:
     name: Android build
