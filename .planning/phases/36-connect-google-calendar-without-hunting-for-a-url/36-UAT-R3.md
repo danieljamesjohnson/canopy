@@ -265,3 +265,17 @@ day it is generated, so regenerate it on a later day before testing.
 
 **E1 — what you saw:**
 
+
+## Addendum (2026-11-09): Google Connect, on the owner's iPhone
+
+After D-36-08 published the OAuth app In production, the owner connected his Google Workspace work account
+(dan@danjjohnson.com) from Settings → Calendars on build afe8d36.
+
+- PASS: the unverified-app warning appeared and was passed through Advanced → Go to Canopy, as expected.
+- PASS: connected, and the account's calendars were listed.
+- PASS: ticked a work calendar, tapped Sync now, and today's meetings appeared on Today in orange.
+
+This is the first observation of the Google path end to end on a device.
+
+Not recorded: the exact wording of Google's consent screen. CALAUTH-02's read-only evidence is that wording,
+so it is still owed. The requested scope is `calendar.readonly` alone, and the code proves that by grep.
