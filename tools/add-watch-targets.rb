@@ -60,6 +60,11 @@ end
 
 common = {
   'SDKROOT' => 'watchos',
+  # Flutter's PROJECT-level Release/Profile configs pin SUPPORTED_PLATFORMS =
+  # iphoneos, which these targets would inherit — and Xcode then compiles the
+  # widget extension against the iOS SDK ("'accessoryCorner' is unavailable in
+  # iOS"). Measured on the first Mac build, 2026-11-10.
+  'SUPPORTED_PLATFORMS' => 'watchos watchsimulator',
   'WATCHOS_DEPLOYMENT_TARGET' => WATCHOS,
   'TARGETED_DEVICE_FAMILY' => '4',
   'SWIFT_VERSION' => '5.0',
