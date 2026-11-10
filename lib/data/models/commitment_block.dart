@@ -16,6 +16,7 @@ class CommitmentBlock extends HiveObject {
     this.date,
     this.externalEventId,
     this.isFromCalendar = false,
+    this.kind,
   }) : id = id ?? _uuid.v4();
 
   @HiveField(0)
@@ -71,6 +72,24 @@ class CommitmentBlock extends HiveObject {
   /// Additive field — old records deserialize with isFromCalendar == false.
   @HiveField(8)
   bool isFromCalendar;
+
+  /// What sort of block this is, or null for an ordinary commitment (hand
+  /// entered or imported). Phase 37: one of [kindBreakfast], [kindLunch],
+  /// [kindDinner] marks a MEAL (see `lib/utils/meals.dart`) — placed as one
+  /// solid block, carved by meetings, never tracked, and yielded to by
+  /// hand-entered commitments (D-37-01..07). Additive and nullable — a pre-37
+  /// record has no field 9 on disk and reads back as null, i.e. an ordinary
+  /// commitment, with no migration step.
+  @HiveField(9)
+  String? kind;
+
+  static const kindBreakfast = 'breakfast';
+  static const kindLunch = 'lunch';
+  static const kindDinner = 'dinner';
+
+  /// True when this block is one of the three meals (Phase 37).
+  bool get isMeal =>
+      kind == kindBreakfast || kind == kindLunch || kind == kindDinner;
 
   /// True when this is a single-date commitment rather than a recurring one.
   bool get isOneOff => date != null;

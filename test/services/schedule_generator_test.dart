@@ -2408,6 +2408,10 @@ void main() {
                       'mood=$mood: longBreak at $start has the wrong duration',
                 );
                 break;
+              case ChunkType.meal:
+                // A meal is anchored (Phase 37), so the D-01 exemption above
+                // has already skipped it; a synthetic meal cannot exist.
+                fail('mood=$mood: a meal chunk was packed discretionarily');
             }
           }
         }

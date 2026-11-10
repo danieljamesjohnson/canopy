@@ -436,6 +436,9 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     final now = _now();
     final date = DateTime(now.year, now.month, now.day);
     final meetings = ScheduleGeneratorService.meetingWindowsOn(blocks, date);
+    // Phase 37: a meal is rebuilt here too (a meeting carves it, D-37-01),
+    // and a hand-entered commitment yields to meals as well as meetings.
+    final meals = ScheduleGeneratorService.mealWindowsOn(blocks, date);
     bool overlaps(int s, int e, List<({int start, int end})> ws) =>
         ws.any((w) => s < w.end && w.start < e);
     final longBreakEvery = ScheduleGeneratorService.breakCadenceForMood(
@@ -477,7 +480,11 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
           ScheduleGeneratorService.buildCommitmentChunks(
             block,
             longBreakEvery: longBreakEvery,
-            yieldTo: meetings,
+            yieldTo: ScheduleGeneratorService.yieldWindowsFor(
+              block,
+              meetings: meetings,
+              meals: meals,
+            ),
           ).where(
             (c) => !overlaps(
               c.anchoredStartMinutes!,

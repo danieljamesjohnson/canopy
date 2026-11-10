@@ -5,6 +5,7 @@ import 'package:canopy/data/models/completion_log.dart';
 import 'package:canopy/data/models/energy_valence.dart';
 import 'package:canopy/data/models/goal.dart';
 import 'package:canopy/data/models/scheduled_chunk.dart';
+import 'package:canopy/utils/meals.dart' show kMinMealMinutes;
 import 'package:intl/intl.dart';
 
 /// Pure Dart service — no Flutter imports, no async, no side effects.
@@ -215,11 +216,36 @@ class ScheduleGeneratorService {
   /// the parts of its window that no meeting covers — each remaining segment
   /// gets its own 25+5(+30) lattice — so a meeting is never drawn on top of
   /// that commitment's work and break chunks. Calendar blocks ignore it.
+  ///
+  /// Phase 37: a MEAL ([CommitmentBlock.isMeal]) is one solid
+  /// [ChunkType.meal] chunk per piece of its window that [yieldTo] leaves —
+  /// callers pass a meal only the day's MEETINGS, so a meeting wins and a
+  /// meal never yields to Work (D-37-01). A piece shorter than
+  /// [kMinMealMinutes] is dropped, and a meal a meeting fully covers is
+  /// absent that day.
   static List<ScheduledChunk> buildCommitmentChunks(
     CommitmentBlock block, {
     required int longBreakEvery,
     List<({int start, int end})> yieldTo = const [],
   }) {
+    if (block.isMeal) {
+      return [
+        for (final seg in subtractWindows(
+          block.startMinutes,
+          block.endMinutes,
+          yieldTo,
+        ))
+          if (seg.end - seg.start >= kMinMealMinutes)
+            ScheduledChunk(
+              chunkTypeIndex: ChunkType.meal.index,
+              goalId: null,
+              commitmentId: block.id,
+              durationMinutes: seg.end - seg.start,
+              anchoredStartMinutes: seg.start,
+              rationale: block.name,
+            ),
+      ];
+    }
     if (!block.isFromCalendar &&
         yieldTo.any(
           (w) => w.start < block.endMinutes && block.startMinutes < w.end,
@@ -380,6 +406,32 @@ class ScheduleGeneratorService {
       return d.year == date.year && d.month == date.month && d.day == date.day;
     }
     return block.daysOfWeek.contains(date.weekday);
+  }
+
+  /// The windows of the meals that land on [date] (Phase 37) — their whole
+  /// windows, before any meeting carves them. A hand-entered commitment
+  /// yields to these AND to [meetingWindowsOn]; the union is the same
+  /// whether or not a meeting has already taken part of a meal.
+  static List<({int start, int end})> mealWindowsOn(
+    Iterable<CommitmentBlock> blocks,
+    DateTime date,
+  ) => [
+    for (final b in blocks)
+      if (b.isMeal && b.endMinutes > b.startMinutes && anchorsOn(b, date))
+        (start: b.startMinutes, end: b.endMinutes),
+  ];
+
+  /// What [block] yields to on a day with these [meetings] and [meals]:
+  /// a meal yields to meetings only (D-37-01); a hand-entered commitment
+  /// yields to both (entry 19, D-37-07); a calendar block to nothing.
+  static List<({int start, int end})> yieldWindowsFor(
+    CommitmentBlock block, {
+    required List<({int start, int end})> meetings,
+    required List<({int start, int end})> meals,
+  }) {
+    if (block.isFromCalendar) return const [];
+    if (block.isMeal) return meetings;
+    return [...meetings, ...meals];
   }
 
   /// The windows of the calendar meetings that land on [date] (entry 19).
@@ -544,6 +596,7 @@ class ScheduleGeneratorService {
     // Step 1: Commitment block chunks (anchored; not counted against cap).
     // -------------------------------------------------------------------------
     final meetingWindows = meetingWindowsOn(blocks, date);
+    final mealWindows = mealWindowsOn(blocks, date);
     for (final block in blocks) {
       // A one-off (dated) commitment anchors only on its specific calendar day;
       // a recurring commitment anchors on its weekly [daysOfWeek]. This is what
@@ -565,7 +618,11 @@ class ScheduleGeneratorService {
         buildCommitmentChunks(
           block,
           longBreakEvery: longBreakEvery,
-          yieldTo: meetingWindows,
+          yieldTo: yieldWindowsFor(
+            block,
+            meetings: meetingWindows,
+            meals: mealWindows,
+          ),
         ),
       );
     }

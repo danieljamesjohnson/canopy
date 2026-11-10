@@ -4,6 +4,7 @@ import '../data/models/commitment_block.dart';
 import '../data/repositories/commitment_block_repository.dart';
 import '../data/repositories/hive_commitment_block_repository.dart';
 import '../services/calendar_sync_service.dart';
+import '../utils/meals.dart';
 
 class CommitmentsNotifier extends ChangeNotifier {
   /// Construct a CommitmentsNotifier. [repository] defaults to
@@ -27,6 +28,47 @@ class CommitmentsNotifier extends ChangeNotifier {
   /// Saves a commitment block (create or update) and reloads the list.
   Future<void> saveBlock(CommitmentBlock block) async {
     await _repository.save(block);
+    await loadBlocks();
+  }
+
+  /// The saved meal blocks (Phase 37), in no particular order.
+  List<CommitmentBlock> get mealBlocks =>
+      List.unmodifiable(_blocks.where((b) => b.isMeal));
+
+  /// Saves the three meal rows (Phase 37, D-37-02/-05/-07): each switched-on
+  /// meal becomes (or updates) ONE recurring block on all seven days, keyed by
+  /// its [CommitmentBlock.kind]; each switched-off meal's block is deleted.
+  /// Ordinary commitments are never touched. Reloads [blocks] once at the end.
+  Future<void> saveMeals(List<MealDraft> drafts) async {
+    final existing = {
+      for (final b in await _repository.getAll())
+        if (b.isMeal) b.kind!: b,
+    };
+    for (final d in drafts) {
+      final current = existing[d.slot.kind];
+      if (!d.enabled) {
+        if (current != null) await _repository.delete(current.id);
+        continue;
+      }
+      if (current != null) {
+        current
+          ..name = d.slot.label
+          ..daysOfWeek = List.of(kAllWeekdays)
+          ..startMinutes = d.startMinutes
+          ..endMinutes = d.endMinutes;
+        await _repository.save(current);
+      } else {
+        await _repository.save(
+          CommitmentBlock(
+            name: d.slot.label,
+            daysOfWeek: List.of(kAllWeekdays),
+            startMinutes: d.startMinutes,
+            endMinutes: d.endMinutes,
+            kind: d.slot.kind,
+          ),
+        );
+      }
+    }
     await loadBlocks();
   }
 

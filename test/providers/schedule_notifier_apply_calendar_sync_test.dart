@@ -368,4 +368,82 @@ void main() {
       );
     });
   });
+
+  // Phase 37 (D-37-01): a meeting that arrives by sync AFTER check-in carves
+  // today's meal exactly as check-in would have, and Work keeps yielding to
+  // the meal as well as to the meeting.
+  group('a synced meeting carves a meal; Work yields to both (Phase 37)', () {
+    final work9to5 = CommitmentBlock(
+      id: 'workblock',
+      name: 'Work',
+      daysOfWeek: const [1, 2, 3, 4, 5],
+      startMinutes: 9 * 60,
+      endMinutes: 17 * 60,
+    );
+    final lunch = CommitmentBlock(
+      id: 'lunch',
+      name: 'Lunch',
+      daysOfWeek: const [1, 2, 3, 4, 5, 6, 7],
+      startMinutes: 12 * 60,
+      endMinutes: 13 * 60,
+      kind: CommitmentBlock.kindLunch,
+    );
+
+    Future<ScheduleNotifier> checkedIn() async {
+      final generated = ScheduleGeneratorService().generate(
+        goals: const [],
+        blocks: [work9to5, lunch],
+        moodIndex: 3,
+        date: todayDate,
+      );
+      final (notifier, _) = await make(chunks: generated);
+      return notifier;
+    }
+
+    test('a 12:30-13:30 meeting leaves lunch 12:00-12:30 and Work under '
+        'neither', () async {
+      final notifier = await checkedIn();
+      await notifier.applyCalendarSync([
+        work9to5,
+        lunch,
+        calendarBlock('cal', 750, 810),
+      ]);
+      final chunks = notifier.todaySchedule!.chunks;
+      final meal = chunks.where((c) => c.commitmentId == 'lunch').toList();
+      expect(meal, hasLength(1));
+      expect(meal.single.chunkType, ChunkType.meal);
+      expect(meal.single.anchoredStartMinutes, 720);
+      expect(meal.single.durationMinutes, 30);
+      expect(
+        chunks.where(
+          (c) => c.commitmentId == 'workblock' && overlaps(c, 720, 810),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('the meeting going away gives lunch its whole hour back', () async {
+      final notifier = await checkedIn();
+      await notifier.applyCalendarSync([
+        work9to5,
+        lunch,
+        calendarBlock('cal', 750, 810),
+      ]);
+      await notifier.applyCalendarSync(
+        [work9to5, lunch],
+        removedCalendarBlockIds: {'cal'},
+      );
+      final chunks = notifier.todaySchedule!.chunks;
+      final meal = chunks.where((c) => c.commitmentId == 'lunch').toList();
+      expect(meal, hasLength(1));
+      expect(meal.single.durationMinutes, 60);
+      expect(
+        chunks.where(
+          (c) => c.commitmentId == 'workblock' && overlaps(c, 720, 780),
+        ),
+        isEmpty,
+        reason: 'Work regains 13:00-13:30, not lunch',
+      );
+    });
+  });
 }

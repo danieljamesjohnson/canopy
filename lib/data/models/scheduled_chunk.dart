@@ -6,7 +6,13 @@ part 'scheduled_chunk.g.dart';
 const _uuid = Uuid();
 
 /// Type of a scheduled chunk. Break types have null goalId.
-enum ChunkType { work, shortBreak, longBreak }
+///
+/// [meal] (Phase 37, index 3 — APPENDED so the persisted indices 0-2 never
+/// move) is a meal block: anchored, one solid chunk, never tracked
+/// (D-37-03). Every "count the work" site in the app filters on
+/// [ChunkType.work], so a meal is excluded from completion, streaks, the
+/// end-of-day ratio and Complete/Skip by construction.
+enum ChunkType { work, shortBreak, longBreak, meal }
 
 @HiveType(typeId: 3)
 class ScheduledChunk extends HiveObject {

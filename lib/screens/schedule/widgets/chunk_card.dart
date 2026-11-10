@@ -123,6 +123,8 @@ class ChunkCard extends StatelessWidget {
       case ChunkType.shortBreak:
       case ChunkType.longBreak:
         return _buildBreak(context);
+      case ChunkType.meal:
+        return _buildMeal(context);
       case ChunkType.work:
         return _WorkChunkContent(
           chunk: chunk,
@@ -138,6 +140,71 @@ class ChunkCard extends StatelessWidget {
           isImportedCommitment: isImportedCommitment,
         );
     }
+  }
+
+  /// Phase 37 — a meal (D-37-03, -07). One solid card in its own FIXED fill
+  /// ([mealFill]), a meal glyph, the meal's name and its time. **No tap, no
+  /// swipe, no Complete/Skip, no resolved state**: a meal is not tracked, so
+  /// the card offers nothing to do. Sized to its duration on the timeline
+  /// tiers like every other card (D-02); natural height at `detailed`, where
+  /// there is no duration-proportional slot.
+  Widget _buildMeal(BuildContext context) {
+    final theme = Theme.of(context);
+    final on = onMealFill(theme.brightness);
+    final start = chunk.displayStartMinutes;
+    final timeText = start != null && showStartTime
+        ? formatTimeRange(start, start + chunk.durationMinutes)
+        : '${chunk.durationMinutes} min';
+    final title = chunk.rationale.isNotEmpty ? chunk.rationale : 'Meal';
+    final compact = density == ChunkCardDensity.compact;
+    final card = Card(
+      margin: EdgeInsets.symmetric(vertical: compact ? 0 : 4),
+      color: mealFill(theme.brightness),
+      clipBehavior: Clip.antiAlias,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        side: BorderSide.none,
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: compact ? 2 : 8,
+        ),
+        child: Row(
+          crossAxisAlignment: compact
+              ? CrossAxisAlignment.center
+              : CrossAxisAlignment.start,
+          children: [
+            Semantics(
+              label: 'Meal',
+              child: Icon(Icons.restaurant, size: 16, color: on),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: on,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              timeText,
+              style: theme.textTheme.bodySmall?.copyWith(color: on),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (density == ChunkCardDensity.detailed) return card;
+    return SizedBox(
+      height: chunk.durationMinutes * kPixelsPerMinute,
+      child: card,
+    );
   }
 
   /// **Phase 32 (D-32-02, TAPBREAK-01/03) — supersedes D-06's original
@@ -748,7 +815,9 @@ class _WorkChunkContent extends StatelessWidget {
                         ),
                         if (isImportedCommitment) ...[
                           const SizedBox(width: 4),
-                          _ImportedGlyph(color: theme.colorScheme.onSurfaceVariant),
+                          _ImportedGlyph(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ],
                         const SizedBox(width: 8),
                         Text(timeText, style: timeStyle),
@@ -919,8 +988,23 @@ class _WorkChunkContent extends StatelessWidget {
 /// minimum RGB distance from every fill a card can carry.
 Color calendarMeetingFill(Brightness brightness) =>
     brightness == Brightness.dark
-        ? const Color(0xFF8D5A1A)
-        : const Color(0xFFFFB74D);
+    ? const Color(0xFF8D5A1A)
+    : const Color(0xFFFFB74D);
+
+/// The fill for a meal (Phase 37, D-37-07). FIXED, like [calendarMeetingFill]
+/// and for the same reason: the app scheme moves with mood, and mood never
+/// colours the timeline (D-36-07). Green — the one hue the timeline did not
+/// already use: Work is the schedule scheme's tertiaryContainer, meetings are
+/// orange, breaks and free time are the neutral/secondary ramp. The test
+/// `meal fill is visibly apart from every other card` pins the distance.
+Color mealFill(Brightness brightness) => brightness == Brightness.dark
+    ? const Color(0xFF2E5E35)
+    : const Color(0xFFA5D6A7);
+
+/// Text and glyph colour on [mealFill].
+Color onMealFill(Brightness brightness) => brightness == Brightness.dark
+    ? const Color(0xFFE3F2E4)
+    : const Color(0xFF173B1C);
 
 /// File-private imported-commitment glyph (D-35-11, UI-SPEC §4). Identical
 /// icon/size/color/semantics to `_CommitmentRow`'s treatment on the
