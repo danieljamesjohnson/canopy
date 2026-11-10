@@ -16,6 +16,7 @@ import 'providers/settings_notifier.dart';
 import 'providers/theme_notifier.dart';
 import 'router.dart' show createRouter;
 import 'services/notification_service.dart';
+import 'services/wrist/wrist_sync.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,6 +88,17 @@ void main() async {
   // Initialize notification service before runApp.
   // Web: no-op (in-app banner used instead).
   await NotificationService.initialize();
+
+  // v1.7 Phase 39: keep the Apple Watch's copy of today in step with every
+  // schedule change. iOS only; everywhere else there is no bridge to talk to.
+  if (wristSyncSupported) {
+    WristSync(
+      schedule: scheduleNotifier,
+      goals: goalsNotifier,
+      transport: const MethodChannelWristTransport(),
+      now: DevClock.now,
+    ).start();
+  }
 
   // LOOP-04: capture the GoRouter instance so the notification tap callback
   // can navigate via router.go() instead of Navigator.pushNamed() — named
