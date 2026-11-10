@@ -176,8 +176,18 @@ struct CanopyComplicationView: View {
   private var circular: some View {
     ZStack {
       if let e, e.state == .active, let c = e.current {
+        // The ring drains; the centre is the countdown, sized to sit INSIDE
+        // the ring (the default label is a full-size "16:44", which ran over
+        // the ring's edges in the first Simulator shots).
         ProgressView(timerInterval: c.start...c.end, countsDown: true) {
           Image(systemName: c.kind.symbol)
+        } currentValueLabel: {
+          Text(timerInterval: entry.date...max(entry.date, c.end), countsDown: true)
+            .font(.system(size: 12, weight: .semibold))
+            .monospacedDigit()
+            .multilineTextAlignment(.center)
+            .minimumScaleFactor(0.6)
+            .frame(maxWidth: 30)
         }
         .progressViewStyle(.circular)
       } else {
