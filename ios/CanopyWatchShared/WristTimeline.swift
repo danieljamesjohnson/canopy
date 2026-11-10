@@ -138,3 +138,55 @@ extension WristEntry {
     }
   }
 }
+
+// MARK: - Wrist taps (Phase 40)
+
+/// A Complete/Skip tapped on the watch. Same JSON as Dart's `WristAction`
+/// (lib/services/wrist/wrist_outbox.dart), which parses it on the phone.
+struct WristTap: Codable, Hashable {
+  let id: String
+  let chunkId: String
+  let kind: String  // "complete" | "skip"
+  let tappedAt: Double
+  let dateYmd: String
+
+  var json: String? {
+    (try? JSONEncoder().encode(self)).flatMap { String(data: $0, encoding: .utf8) }
+  }
+}
+
+/// Taps the phone has not yet reflected. Shown as an overlay ("Sent ✓") on top
+/// of the snapshot — the watch never edits the schedule itself (research
+/// pitfall 7) — and dropped as soon as a snapshot no longer offers that chunk
+/// an action (the phone applied it, or dropped it), or the day changes.
+enum WristPending {
+  private static var url: URL? {
+    FileManager.default
+      .containerURL(forSecurityApplicationGroupIdentifier: wristAppGroup)?
+      .appendingPathComponent("wrist-pending.json")
+  }
+
+  static func load() -> [WristTap] {
+    guard let url, let data = try? Data(contentsOf: url),
+      let taps = try? JSONDecoder().decode([WristTap].self, from: data)
+    else { return [] }
+    return taps
+  }
+
+  static func save(_ taps: [WristTap]) {
+    guard let url, let data = try? JSONEncoder().encode(taps) else { return }
+    try? data.write(to: url, options: .atomic)
+  }
+
+  static func add(_ tap: WristTap) { save(load() + [tap]) }
+
+  /// Keeps only taps whose chunk is still actionable in [timeline].
+  static func reconcile(with timeline: WristTimeline) {
+    let actionable = Set(
+      timeline.entries.flatMap { [$0.current, $0.next] }.compactMap { $0 }
+        .filter { $0.canSkip }.map(\.id))
+    save(load().filter { $0.dateYmd == timeline.dateYmd && actionable.contains($0.chunkId) })
+  }
+
+  static func isPending(_ chunkId: String) -> Bool { load().contains { $0.chunkId == chunkId } }
+}

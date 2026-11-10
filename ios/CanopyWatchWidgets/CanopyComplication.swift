@@ -110,6 +110,13 @@ struct CanopyComplicationView: View {
 
   private var e: WristEntry? { entry.entry }
 
+  /// The running chunk was completed/skipped on the wrist and the phone has
+  /// not confirmed yet (Phase 40). An overlay only; the snapshot is untouched.
+  private var sent: Bool {
+    guard let c = e?.current else { return false }
+    return WristPending.isPending(c.id)
+  }
+
   /// The timed chunk this entry is about: the running one, or the next one.
   private var focus: WristChunk? {
     guard let e else { return nil }
@@ -124,7 +131,7 @@ struct CanopyComplicationView: View {
   private var rectangular: some View {
     VStack(alignment: .leading, spacing: 1) {
       if let e {
-        Text(e.kicker)
+        Text(sent ? "SENT ✓" : e.kicker)
           .font(.system(size: 11, weight: .semibold))
           .foregroundStyle(.secondary)
           .widgetAccentable()

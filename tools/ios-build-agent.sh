@@ -47,14 +47,27 @@
 
 set -uo pipefail
 
-LABEL="com.canopy.iosbuild"
+# PARALLEL CHECKOUTS (added 2026-11-10 for v1.7). Defaults are the original single
+# agent. A second checkout gets its own agent, runner and log, so two lanes never
+# share one LaunchAgent:
+#   CANOPY_REPO=$HOME/CodeProjects/canopy-watch \
+#   CANOPY_AGENT_LABEL=com.canopy.iosbuild.watch \
+#   CANOPY_LOG_NAME=canopy-ios-build-watch tools/ios-build-agent.sh install
+# The values are baked into the generated runner and plist at install time, so
+# the kickstart needs no env: launchctl kickstart -p gui/501/com.canopy.iosbuild.watch
+LABEL="${CANOPY_AGENT_LABEL:-com.canopy.iosbuild}"
 UID_NUM="$(id -u)"
 PLIST="$HOME/Library/LaunchAgents/${LABEL}.plist"
-RUNNER="$HOME/Library/Application Support/canopy/ios-build-runner.sh"
 LOG_DIR="$HOME/Library/Logs"
-BUILD_LOG="$LOG_DIR/canopy-ios-build.log"
+LOG_NAME="${CANOPY_LOG_NAME:-canopy-ios-build}"
+if [[ "$LABEL" == "com.canopy.iosbuild" ]]; then
+  RUNNER="$HOME/Library/Application Support/canopy/ios-build-runner.sh"
+else
+  RUNNER="$HOME/Library/Application Support/canopy/${LABEL}-runner.sh"
+fi
+BUILD_LOG="$LOG_DIR/${LOG_NAME}.log"
 DIAG_LOG="$LOG_DIR/canopy-ios-signing-diagnosis.log"
-REPO="$HOME/CodeProjects/canopy"
+REPO="${CANOPY_REPO:-$HOME/CodeProjects/canopy}"
 
 # The phone's *flutter* device id (a UDID). NOTE this is NOT the same string as
 # its devicectl CoreDevice identifier (66110258-0097-5E64-9C90-B9815966D67E).
@@ -208,8 +221,8 @@ cmd_install() {
   <key>RunAtLoad</key><false/>
   <key>KeepAlive</key><false/>
   <key>ProcessType</key><string>Interactive</string>
-  <key>StandardOutPath</key><string>$LOG_DIR/canopy-ios-build.launchd.out</string>
-  <key>StandardErrorPath</key><string>$LOG_DIR/canopy-ios-build.launchd.err</string>
+  <key>StandardOutPath</key><string>$LOG_DIR/${LOG_NAME}.launchd.out</string>
+  <key>StandardErrorPath</key><string>$LOG_DIR/${LOG_NAME}.launchd.err</string>
 </dict>
 </plist>
 PLIST_EOF

@@ -16,6 +16,8 @@ import 'providers/settings_notifier.dart';
 import 'providers/theme_notifier.dart';
 import 'router.dart' show createRouter;
 import 'services/notification_service.dart';
+import 'services/wrist/wrist_outbox.dart';
+import 'services/wrist/wrist_outbox_channel.dart';
 import 'services/wrist/wrist_sync.dart';
 
 void main() async {
@@ -97,6 +99,14 @@ void main() async {
       goals: goalsNotifier,
       transport: const MethodChannelWristTransport(),
       now: DevClock.now,
+    ).start();
+    // v1.7 Phase 40: replay Complete/Skip taps made on the watch (queued
+    // natively by WatchBridge.swift) with their tap time, on this isolate.
+    WristOutboxCoordinator(
+      replayer: WristOutboxReplayer(
+        store: MethodChannelWristOutboxStore(),
+        schedule: scheduleNotifier,
+      ),
     ).start();
   }
 

@@ -14,9 +14,47 @@ struct CanopyWatchApp: App {
   }
 }
 
-/// Holds the latest snapshot for the app's own screen.
+/// Holds the latest snapshot for the app's own screen, plus taps not yet
+/// reflected by the phone.
 final class WristModel: ObservableObject {
   @Published var timeline: WristTimeline? = WristStore.load()
+  @Published var pending: [WristTap] = WristPending.load()
+
+  func isPending(_ chunkId: String) -> Bool { pending.contains { $0.chunkId == chunkId } }
+
+  /// Complete/Skip from the wrist (Phase 40). sendMessage when the phone is
+  /// reachable (it wakes the iPhone app, which writes the tap to its outbox
+  /// before replying); otherwise, or if that fails, transferUserInfo, which
+  /// watchOS queues and delivers later. Either way the phone replays the tap
+  /// with ITS time, so a late delivery changes nothing.
+  func tap(_ chunk: WristChunk, kind: String) {
+    guard let timeline else { return }
+    let tap = WristTap(
+      id: UUID().uuidString, chunkId: chunk.id, kind: kind,
+      tappedAt: Date().timeIntervalSince1970 * 1000, dateYmd: timeline.dateYmd)
+    guard let json = tap.json else { return }
+    WristPending.add(tap)
+    pending = WristPending.load()
+    WidgetCenter.shared.reloadAllTimelines()
+    WKInterfaceDevice.current().play(.success)
+
+    let payload: [String: Any] = ["action": json]
+    let session = WCSession.default
+    guard session.activationState == .activated else { return }
+    if session.isReachable {
+      // A reply handler is required: the phone implements only the
+      // didReceiveMessage:replyHandler: variant, and replies once the tap is
+      // safely on its disk.
+      session.sendMessage(
+        payload,
+        replyHandler: { reply in
+          if (reply["ok"] as? Bool) != true { session.transferUserInfo(payload) }
+        },
+        errorHandler: { _ in session.transferUserInfo(payload) })
+    } else {
+      session.transferUserInfo(payload)
+    }
+  }
 }
 
 /// Receives the phone's timeline over WatchConnectivity, in the foreground or
@@ -92,7 +130,11 @@ final class WatchAppDelegate: NSObject, WKApplicationDelegate, WCSessionDelegate
     guard let json = payload["timeline"] as? String,
       let saved = WristStore.save(json)
     else { return }
+    WristPending.reconcile(with: saved)
     WidgetCenter.shared.reloadAllTimelines()
-    DispatchQueue.main.async { self.model.timeline = saved }
+    DispatchQueue.main.async {
+      self.model.timeline = saved
+      self.model.pending = WristPending.load()
+    }
   }
 }

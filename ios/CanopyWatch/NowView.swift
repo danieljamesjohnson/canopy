@@ -24,6 +24,7 @@ struct NowView: View {
             .font(.title3.weight(.semibold))
             .lineLimit(3)
           detail(entry, now: now)
+          actions(entry)
           if let next = upNext(entry) {
             Divider().padding(.vertical, 2)
             Text("THEN").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
@@ -92,6 +93,42 @@ struct NowView: View {
       Text("Nothing else scheduled today.").font(.footnote).foregroundStyle(.secondary)
     case .noSchedule:
       Text("No plan for today yet.").font(.footnote).foregroundStyle(.secondary)
+    }
+  }
+
+  /// Complete/Skip for the chunk the screen is about (Phase 40). Same gates
+  /// as the phone's live row, carried in the snapshot: breaks are skip-only.
+  /// Once tapped, the buttons give way to "Sent" until the phone's next
+  /// snapshot reflects it.
+  @ViewBuilder
+  private func actions(_ entry: WristEntry) -> some View {
+    if let c = entry.current, entry.state == .active || entry.state == .overdue {
+      if model.isPending(c.id) {
+        Label("Sent to iPhone", systemImage: "checkmark.circle")
+          .font(.footnote)
+          .foregroundStyle(.green)
+      } else if c.canComplete || c.canSkip {
+        HStack(spacing: 6) {
+          if c.canComplete {
+            Button {
+              model.tap(c, kind: "complete")
+            } label: {
+              Label("Done", systemImage: "checkmark")
+            }
+            .tint(.green)
+          }
+          if c.canSkip {
+            Button {
+              model.tap(c, kind: "skip")
+            } label: {
+              Label("Skip", systemImage: "forward.end")
+            }
+          }
+        }
+        .font(.footnote)
+        .labelStyle(.titleAndIcon)
+        .buttonStyle(.bordered)
+      }
     }
   }
 
