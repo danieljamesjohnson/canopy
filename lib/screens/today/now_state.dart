@@ -173,7 +173,16 @@ NowState resolveNowState({
   // return GapBeforeNext(upcoming) when unresolved future work remains (an
   // honest "up next" state, NOT day-complete), and DayComplete only when no
   // unresolved future chunk remains. Never show a future chunk as "Now".
-  while (active.isCompleted || active.isSkipped) {
+  // Phase 37: a meal can never be completed or skipped (D-37-03), so once
+  // its window has ended it counts as settled here — otherwise a past
+  // breakfast stays "RIGHT NOW" (Overdue) until the next chunk opens, which
+  // is exactly what the emulator showed at 8:25 on 2026-11-10.
+  bool settled(ScheduledChunk c) =>
+      c.isCompleted ||
+      c.isSkipped ||
+      (c.chunkType == ChunkType.meal &&
+          currentMinutes >= c.displayStartMinutes! + c.durationMinutes);
+  while (settled(active)) {
     final idx = scheduled.indexOf(active);
     if (idx + 1 >= scheduled.length) return DayComplete();
     final candidate = scheduled[idx + 1];
