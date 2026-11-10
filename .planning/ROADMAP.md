@@ -11,7 +11,7 @@
 - ✅ **v1.3 — An Honest Day** — Phases 15-17 (shipped 2026-06-14)
 - ✅ **v1.4 — Energy-Aware** — Phases 18-20 (shipped 2026-06-15)
 - ✅ **v1.5 — Right Now** — Phases 21-26 (shipped 2026-08-14)
-- 📋 **v1.6 — Three Meals** — Phase 37 (planned 2026-11-09, awaiting owner discussion and kickoff)
+- 🚧 **v1.6 — Three Meals** — Phase 37 (built 2026-11-10; awaiting owner UAT on the iPhone)
 - 📋 **v1.7 — On Your Wrist** — Phases 38-42 (planned 2026-11-09, awaiting owner discussion and kickoff)
 
 Full per-milestone detail (phase goals, success criteria, coverage maps) is archived in
@@ -1088,7 +1088,7 @@ Plans:
 | 34. Adding a Goal Feels Like Onboarding | — (standalone) | 3/3 | Complete | 2026-09-09 |
 | 35. Your Real Commitments, Read From Your Calendar | — (standalone) | 6/6 built | **All WINDOWS entries closed (2026-11-09).** Entry 1, the ICS overrides, was verified through the real fetcher on the danserver Android emulator, by the agent at the owner's request (`36-UAT-R3.md` E1); not run in a browser. iOS device path verified on the owner's iPhone across Phase 36 R1-R3 | |
 | 36. Connect Google Calendar Without Hunting For a URL | — (standalone) | 7/7 + 3 gap-closure rounds | **One gate left: WINDOWS 15** (Disconnect removes Google's meetings, owner ruling 2026-11-09; built and installed, awaiting the owner's tap). Google Connect passed end to end on the owner's iPhone 2026-11-09 after D-36-08 published the OAuth app. 1055 green | |
-| 37. Three Meals, One Tap | v1.6 | 0/? | Draft context (`37-CONTEXT.md`); 6 open questions for the owner | |
+| 37. Three Meals, One Tap | v1.6 | 2/3 | Built and emulator-verified 2026-11-10 (owner rulings D-37-01..07). 37-03 waits on the owner's iPhone UAT (`37-UAT.md`). iPhone install pending: the Mac was asleep. 1094 green | |
 | 38-42. On Your Wrist | v1.7 | 0/? | Researched (`research/watch/WATCH-RESEARCH.md`); 8 owner decisions open; gate after 40 | |
 
 ### Phase 35: Your Real Commitments, Read From Your Calendar
@@ -1350,7 +1350,7 @@ Plans:
 
 ---
 
-## Milestone v1.6 — Three Meals (PLANNED 2026-11-09, not started)
+## Milestone v1.6 — Three Meals (BUILT 2026-11-10, awaiting owner UAT)
 
 Asked for by the owner on 2026-11-09: *"add breakfast / lunch / dinner to onboarding. assume some times,
 some lengths, etc. allow the person to edit but have the default be one button press and they go."*
@@ -1361,7 +1361,7 @@ One small phase. It reuses the meeting-block placement (D-36-06) and the yield r
 **Goal:** a new user's day has room to eat, with one tap. Three pre-filled meals (breakfast 7–7:30,
 lunch 12–1, dinner 6–7), each editable or switched off, and a single button to accept them.
 
-**Requirements (draft):**
+**Requirements** (status 2026-11-10: all five built and emulator-verified; owner UAT pending):
 - MEAL-01: onboarding gains a meals beat. One tap on the primary button saves the three default meals.
 - MEAL-02: each meal's start and end time can be edited, and each meal can be switched off, before
   saving.
@@ -1372,8 +1372,12 @@ lunch 12–1, dinner 6–7), each editable or switched off, and a single button 
 **Riskiest assumption:** a 7:00 breakfast renders and survives generation even though discretionary
 packing starts at 08:00. Prove it first.
 
-**Context and open questions:** `phases/37-three-meals-one-tap/37-CONTEXT.md` (OPEN-1..6: meeting vs
-meal precedence, weekends, tracking, minimum length, existing-user prompt, snacks).
+**Context and rulings:** `phases/37-three-meals-one-tap/37-CONTEXT.md`. Owner rulings D-37-01..07
+(2026-11-10): the meeting wins; same times every day; meals not tracked; 10-minute minimum;
+existing users via Settings → Meals only; no snacks.
+
+**Plans:** 37-01 (engine and model) ✅, 37-02 (UI) ✅, 37-03 (device and owner UAT) ⏳.
+Verification: `37-VERIFICATION.md`; UAT: `37-UAT.md`.
 
 ---
 

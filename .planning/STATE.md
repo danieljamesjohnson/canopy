@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
 milestone: none
-current_phase: 36
-current_phase_name: Connect Google Calendar Without Hunting For a URL
+current_phase: 37
+current_phase_name: Three Meals, One Tap
 status: awaiting-human
-current_phase_next: "2026-11-09. PHASE 36: one gate left, WINDOWS 15 (Google Disconnect removes its meetings; owner ruling 2026-11-09; built 8b293ff and installed on the iPhone; closes when the owner disconnects and sees them leave Today). Everything else closed: 14, 16-19 on hardware; 1 (ICS overrides) on the emulator through the real fetcher. Google Connect passed end to end after D-36-08 published the OAuth app. 1055 green, CI green. NEXT, awaiting the owner's discussion and kickoff: v1.6 Three Meals (Phase 37, 37-CONTEXT.md, 6 open questions) and v1.7 On Your Wrist (Phases 38-42, research/watch/WATCH-RESEARCH.md, 8 owner decisions). Neither is started."
+current_phase_next: "2026-11-10. PHASE 37 (v1.6 Three Meals) BUILT AND EMULATOR-VERIFIED, AWAITING OWNER UAT (37-UAT.md). Owner rulings D-37-01..07 in 37-CONTEXT.md. 1094 green, analyzer clean, CI green. iPhone build NOT yet installed: dans-macbook-air was offline (asleep) at build time. Once awake: ssh dans-macbook-air 'cd ~/CodeProjects/canopy && git pull -q --ff-only && rm -f ~/Library/Logs/canopy-ios-build.log; launchctl kickstart -p gui/501/com.canopy.iosbuild' then tail ~/Library/Logs/canopy-ios-build.log for BUILD END. STILL OPEN from Phase 36: WINDOWS 15 (owner taps Google Disconnect). v1.7 On Your Wrist (38-42) not started."
 stopped_at: "PHASE 36 EXECUTED 2026-09-25..28 under /gsd-autonomous. 44 commits (37 non-merge + 7 worktree merges). Waves 1-4 all landed and merged; wave 5 halted at its human gate by design. 908/908 green (821 at phase start), flutter analyze clean, schedule_generator.dart BYTE-IDENTICAL throughout (git-verified, not assumed). || WHAT IS DONE: the whole Google path exists — google_oauth_config/google_auth_client/google_calendar_source, AppSettings schema 11->12 (4 additive fields), CALAUTH-03's three-way failure classification, Google event mapping against Google-shaped fixtures, iOS CFBundleURLTypes via a build setting + tools/build-ios.sh, CompositeCalendarSource so both iOS sources coexist (D-36-03) with the double-tick overlap detector, and the settings screen with Connect/reconnect/overlap disclosure. || CODE REVIEW: 36-REVIEW.md, 0 critical / 5 warning. WR-01..WR-04 FIXED (commits e89c766, 956daea, ae94a93, 26727dc), each mutation-proven. WR-05 DELIBERATELY NOT FIXED — it needs a new user-visible state and its copy, which belongs to an owner-reviewed UI-SPEC, not an agent. See 'WR-05 is the owner's call' below. || VERIFICATION: 36-VERIFICATION.md, status human_needed, gaps: []. Nothing was quietly skipped to get here. || DO NOT RE-ASK: every owner ruling is taken (36-DECISIONS.md D-36-01..D-36-04). D-36-04 is NEW this run — it clears 36-01 Task 1's package gate with the pub.dev/GitHub readings recorded as observations, including the two things that gate did NOT establish. || TWO NEW OWNER QUESTIONS in QUESTIONS.md, neither blocking: Q-01 the real client ID is committed in 36-RESEARCH.md and already on public origin (NOT a CALAUTH-04 violation — no secret exists for a native client — but it contradicts the deliberate gitignore posture; rotate/scrub/accept is his call). Q-02 migrations.dart asserts in three comments that the Hive reader 'returns null/false/0 for missing fields'; that is FALSE for non-nullable fields, 36-01's plan believed it and only a pre-existing test caught the resulting crash. The stale comment is the defect that keeps reproducing. || WINDOWS.md now has 6 entries. 5 was FIXED this phase and was load-bearing (GoogleCalendarSource had calendarIds: const [], so the picker would look healthy and import zero events). 4 and 6 are open and deliberate; 6 was logged by the orchestrator, not by 36-06, because 36-07's UAT must warn the owner that the Connect CTA reappearing on screen re-open is expected. || STILL UNVERIFIED AND LOAD-BEARING: Phase 35 Assumption A1 (device_calendar_plus returns expanded occurrences with exceptions applied) has NEVER been checked on a device, and 36-DECISIONS.md's correction that sign-in adds no recurrence benefit on iOS rests entirely on it. 36-UAT.md runs the recurrence check on BOTH sources so this finally gets settled."
-last_updated: "2026-11-09T00:00:00.000Z"
-last_activity: 2026-11-09
-last_activity_desc: "Google Disconnect removes its meetings; WINDOWS 1 closed on the emulator; v1.6 and v1.7 planned"
+last_updated: "2026-11-10T00:00:00.000Z"
+last_activity: 2026-11-10
+last_activity_desc: "Phase 37 Three Meals built (10647ab, ff91750, 47d40ae), emulator-verified; awaiting owner UAT and iPhone install"
 state_head: 0232138
 progress:
   total_phases: 10
@@ -32,6 +32,20 @@ milestone_name: milestone
 ---
 
 ## Current Position
+
+**2026-11-10 — Phase 37 (v1.6 Three Meals, One Tap) is built and awaiting the owner's UAT.**
+Read `phases/37-three-meals-one-tap/37-VERIFICATION.md` first, then `37-UAT.md`.
+- Commits: `9802bb2` (rulings and plans), `10647ab` (engine and model), `ff91750` (UI),
+  `47d40ae` (a past meal is not "right now", found on the emulator), then screenshots and docs.
+- 1094 tests green (baseline 1055), analyzer clean, CI green.
+- **The iPhone install is pending.** The MacBook was asleep, offline on tailscale; the command is
+  in the frontmatter's `current_phase_next`.
+- **Do not mark Phase 37 complete.** That waits on the owner's UAT. Phase 36's WINDOWS 15 is
+  still open and untouched.
+
+---
+
+*Older position notes follow; they describe Phase 36 and earlier.*
 
 **Phase 36 is planned and unexecuted. Run `/gsd-execute-phase 36`.** Phase 35 is built but still
 open at two owner gates — 36 does not supersede it.
