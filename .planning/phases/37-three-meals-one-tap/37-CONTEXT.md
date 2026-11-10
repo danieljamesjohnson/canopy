@@ -1,9 +1,8 @@
-# Phase 37: Three Meals, One Tap — Context (DRAFT, awaiting owner discussion)
+# Phase 37: Three Meals, One Tap — Context (DECIDED 2026-11-10)
 
-**Status:** pre-discussion draft written by the agent on 2026-11-09, at the owner's request: *"do some gsd
-planning to get these ready to go when i come back then we'll discuss and kick it off"*. Nothing here is
-ruled yet. Items marked **PROPOSED** are the agent's defaults. **OPEN** items need the owner's call before
-`/gsd-plan-phase 37`.
+**Status:** decided. The draft below was written by the agent on 2026-11-09 at the owner's request; the owner
+approved it on **2026-11-10** ("full send") and ruled every OPEN item. The rulings are recorded under
+**DECIDED** below, replacing the OPEN section. PROPOSED items not contradicted by a ruling are adopted as written.
 
 ## The ask, in the owner's words (2026-11-09)
 
@@ -55,27 +54,44 @@ single button; the uncommon cases are a quick time change or switching a meal of
    like any past commitment, and mood capacity is unchanged, because a meal is not counted against the
    chunk cap.
 
-## OPEN — the owner's calls
+## DECIDED — the owner's rulings (2026-11-10)
 
-1. **When a meeting overlaps a meal, who wins?** (For example, a 12:30 meeting during a 12–1 lunch.)
-   - **(a) The meeting wins:** lunch shrinks to what's left (12–12:30), or disappears if nothing is left.
-   - **(b) Both show**, side by side.
-   - **(c) The meal wins:** the meeting still imports, but is flagged as a clash.
-   **Agent recommends (a):** a meeting is someone else's time, and a meal is yours to move. Better still,
-   lunch could slide to the nearest free hour. That is "smart", though, and may cross the product line,
-   so (a) is the dumb, predictable version.
-2. **Same times every day, or different on weekends?** **PROPOSED:** same every day in onboarding, with
-   per-day editing later in Settings → Meals if wanted.
-3. **Is a meal trackable?** Does it get Complete/Skip like a work chunk (feeding streaks and history), or
-   is it just a block on the timeline?
-   **PROPOSED:** not tracked, just a block. It is not a goal, and Canopy does not need to know whether
-   you ate.
-4. **Minimum meal length.** **PROPOSED:** 10 minutes for meals; the 25-minute floor stays for lattice
-   commitments.
-5. **Existing users.** Show a one-time "Add your meals?" card on Today, or only add Settings → Meals?
-6. **Snacks and other meals** (a 3pm snack, second breakfast): out of scope for this phase?
-   **PROPOSED:** yes, out of scope. The three-row screen is the whole feature; anything else is a
-   hand-entered commitment.
+- **D-37-01 — Meeting vs meal: the MEETING wins.** The meal is carved by the meeting window with the
+  same `subtractWindows` the entry 19 path uses. Leftover pieces shorter than **10 minutes** are dropped;
+  if nothing is left, the meal does not appear that day. No "slide lunch to a free hour" — that is smart,
+  and the engine stays dumb and predictable.
+- **D-37-02 — Same times all seven days.** No per-day editing in this phase.
+- **D-37-03 — Meals are NOT tracked.** No Complete/Skip, no effect on streaks, history, the chunk cap or
+  mood capacity. A meal is a block on the timeline with a meal glyph, nothing more.
+- **D-37-04 — Minimum meal length is 10 minutes.** The 25-minute lattice floor stays for ordinary
+  commitments.
+- **D-37-05 — Existing users get Settings → Meals only** (the same three rows); no one-time prompt card on
+  Today. The owner is an existing user, so this screen is how he will test the feature.
+- **D-37-06 — Snacks and extra meals are out of scope.**
+- **D-37-07 — PROPOSED design adopted as written:** a fifth onboarding beat after Job; defaults Breakfast
+  7:00–7:30, Lunch 12:00–13:00, Dinner 18:00–19:00, each with an on/off switch and editable start/end;
+  the primary button **"Looks good"** saves and finishes in one tap. Meals are `CommitmentBlock`s with an
+  additive `kind` field; one solid block, no 25+5 lattice; their own fixed colour, apart from Work and
+  meetings (mood never colours the timeline, D-36-07); hand-entered commitments (Work) yield to meals
+  exactly as they yield to meetings. The riskiest assumption — a 7:00 breakfast against
+  `dayStartMinutes` = 480 — must be proven by a test **and** on the emulator.
+
+### Implementation choices made by the agent within those rulings (recorded, not owner rulings)
+
+- **`kind` is `HiveField(9)` on `CommitmentBlock`** — verified free (fields 0–8 are used, generated
+  adapter writes 9 fields). Values `breakfast` / `lunch` / `dinner`; null = an ordinary commitment.
+  Nullable, so old records read it as null with no migration step; a round-trip test writes the
+  pre-37 9-field binary and reads it back.
+- **A meal's chunk is a new `ChunkType.meal`** (index 3, appended — existing persisted indices 0–2 are
+  unchanged). This is how D-37-03 is enforced structurally rather than by remembering to check a flag:
+  every "count the work chunks" site (end-of-day, progress bar, check-in, focus, Complete/Skip, swipe)
+  already filters on `ChunkType.work`, so a meal is excluded by construction.
+- **Switching a meal off deletes its block.** Settings → Meals with no meal blocks at all shows the three
+  defaults switched on, so an existing user's first visit is the same one tap as onboarding.
+- **Meals are hidden from the Commitments screen** — they are edited in Settings → Meals, where the
+  10-minute floor applies, not in the commitment form, where the 25-minute floor would reject them.
+- **Today is not rebuilt on save** (trap #4): Settings → Meals says so in its confirmation and the UAT
+  makes ⟳ Re-check-in the mandatory first step.
 
 ## Verification shape (for the planner)
 
