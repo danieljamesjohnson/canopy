@@ -182,12 +182,18 @@ struct CanopyComplicationView: View {
         ProgressView(timerInterval: c.start...c.end, countsDown: true) {
           Image(systemName: c.kind.symbol)
         } currentValueLabel: {
-          Text(timerInterval: entry.date...max(entry.date, c.end), countsDown: true)
-            .font(.system(size: 12, weight: .semibold))
-            .monospacedDigit()
-            .multilineTextAlignment(.center)
-            .minimumScaleFactor(0.6)
-            .frame(maxWidth: 30)
+          // minimumScaleFactor does not shrink a live timer (measured: it
+          // wrapped to "16:4/1"), so size it explicitly: one line, 11pt, and
+          // no hours field so a long chunk reads "65:00", not "1:05:00".
+          Text(
+            timerInterval: entry.date...max(entry.date, c.end), countsDown: true,
+            showsHours: false
+          )
+          .font(.system(size: 11, weight: .semibold))
+          .monospacedDigit()
+          .lineLimit(1)
+          .multilineTextAlignment(.center)
+          .frame(maxWidth: 36)
         }
         .progressViewStyle(.circular)
       } else {
