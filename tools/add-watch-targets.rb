@@ -43,6 +43,12 @@ def configure(target, xcconfig, settings)
   target.build_configurations.each do |c|
     c.base_configuration_reference = xcconfig
     c.build_settings.merge!(settings)
+    if c.name == 'Debug'
+      # Flutter's project-level Debug config does not define DEBUG for Swift
+      # (Runner gets it elsewhere), so #if DEBUG code was silently compiled out.
+      c.build_settings['SWIFT_ACTIVE_COMPILATION_CONDITIONS'] = 'DEBUG $(inherited)'
+      c.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Onone'
+    end
     # xcodeproj defaults we do not want: no AccentColor asset exists, and
     # watchOS 10 ships the Swift runtime, so nothing needs embedding.
     %w[ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME

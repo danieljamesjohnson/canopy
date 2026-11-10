@@ -7,31 +7,38 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		03081DB248DAAD8991D7A506 /* CanopyWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A80F25944E8DD4DF40D6A17 /* CanopyWatchApp.swift */; };
-		127848D40251C879D8435D30 /* DebugGallery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3329EC426B7000F3CF5F0D3F /* DebugGallery.swift */; };
+		0E2BA6E206285263B7F8EEAA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E7CEC8FDAEE6A7208A27FD90 /* Assets.xcassets */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
-		24D6CF1F4EEF376715656740 /* NowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41EA2098CC6603FFE88AA07 /* NowView.swift */; };
-		25D7D86D7E6603D8CA449C03 /* CanopyWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 2225DC7B909D0E1DD59089BB /* CanopyWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		15B4A449C4F7B7DD4DA954B3 /* CanopyComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1750960DDBB614FF627F0B4A /* CanopyComplication.swift */; };
+		1DFA356F1D392397F5D77C35 /* NowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44AE45D45CD853931BBE7B44 /* NowView.swift */; };
+		216A421082970D3D85B91BCE /* CanopyWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = E0D15ED4817E93EC534DC755 /* CanopyWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		24D297960E989818AA771D8B /* Buzz.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7C1D582D71C60C75E8189B /* Buzz.swift */; };
 		26E4B2A4479C600D124D5F6B /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1FCE7F8F8323918404730F6 /* Pods_Runner.framework */; };
+		2D05A272FB662E7E3DCB79C0 /* WristTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = C80AC8B2494283D3060A71CA /* WristTimeline.swift */; };
+		2E0EAA09CBB9035197A57E04 /* CanopyWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39D76321241FCCAF4F08BE3A /* CanopyWatchApp.swift */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
-		383DA18F94420800CF21D949 /* CanopyComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42667A6E0F0BDF4D0A0FC8CE /* CanopyComplication.swift */; };
-		384BBEE9EF12B2CFFD4EFCBC /* WatchBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373BD63BEC7388648E5E0E72 /* WatchBridge.swift */; };
-		3ABE1A5EE09041BD5EEAFC0E /* CanopyComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42667A6E0F0BDF4D0A0FC8CE /* CanopyComplication.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
-		4A106F2F28D40BD2167AF6DD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1E9D81B4FAADAC36D983D0DB /* Assets.xcassets */; };
-		51AD28CC13BA673ADF400E08 /* Buzz.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6DE95E33897E2B91492AD88 /* Buzz.swift */; };
-		5697C1026519EC3CC4EECA49 /* WristTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7EA6D412FA7A2F57A2D36E /* WristTimeline.swift */; };
+		4E4F937182FADF6BA1D2DF38 /* DebugGallery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D2E65255A7EE69ED4C89A7D /* DebugGallery.swift */; };
+		733FECBEE8424B00D6CF26C6 /* WatchBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F63C502757B0E2855A4F94A1 /* WatchBridge.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
-		75AB3B639007223CEEC43504 /* CanopyWatchWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7093ABB738C58416DE6F270 /* CanopyWatchWidgetsBundle.swift */; };
-		7ACF79767925998012A5E820 /* CanopyWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5A6F450356554E37F2E15D34 /* CanopyWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		924F0E44DCF25381E08781E5 /* WristTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7EA6D412FA7A2F57A2D36E /* WristTimeline.swift */; };
+		931011676EC03FD5F02C9D07 /* CanopyWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6351EAB6D960061C36C2F61E /* CanopyWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		952EF19AC5EE003C52172181 /* WristTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = C80AC8B2494283D3060A71CA /* WristTimeline.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		C3E5AC181883A893CBDD22D7 /* CanopyComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1750960DDBB614FF627F0B4A /* CanopyComplication.swift */; };
 		D9B8EF0D8A38201E67E19969 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9C03D5BEE1AB56D0524B2F5 /* Pods_RunnerTests.framework */; };
+		FA976F07F736A82B98005194 /* CanopyWatchWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C5798E3660665D724B43EE1 /* CanopyWatchWidgetsBundle.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		17037C148ECF5499544505C7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0DF87E873AF9E4F5EBD6E5FF;
+			remoteInfo = CanopyWatch;
+		};
 		331C8085294A63A400263BE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
@@ -39,32 +46,25 @@
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
 		};
-		CB5908612FCF0E6B4F927F02 /* PBXContainerItemProxy */ = {
+		EFF20A82383AFE0AB8D780FB /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 1E2427BB1A71B2A6F53E07D8;
+			remoteGlobalIDString = 0780E127B2DBF7C2BF8074E7;
 			remoteInfo = CanopyWatchWidgets;
-		};
-		F6F3D960EC025B0E8291EEBF /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 4309CDB3538BB9974B9DC216;
-			remoteInfo = CanopyWatch;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		6B17A318DBC839A9A6DD67D3 /* Embed Foundation Extensions */ = {
+		678A2B44621DEF2E30A5642C /* Embed Watch Content */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
 			files = (
-				7ACF79767925998012A5E820 /* CanopyWatchWidgets.appex in Embed Foundation Extensions */,
+				216A421082970D3D85B91BCE /* CanopyWatch.app in Embed Watch Content */,
 			);
-			name = "Embed Foundation Extensions";
+			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
@@ -77,41 +77,38 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		D204324FE570DFC23D75EE09 /* Embed Watch Content */ = {
+		DD1ABE2F8BA3BF4F488B7E44 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
-			dstSubfolderSpec = 16;
+			dstPath = "";
+			dstSubfolderSpec = 13;
 			files = (
-				25D7D86D7E6603D8CA449C03 /* CanopyWatch.app in Embed Watch Content */,
+				931011676EC03FD5F02C9D07 /* CanopyWatchWidgets.appex in Embed Foundation Extensions */,
 			);
-			name = "Embed Watch Content";
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0C5798E3660665D724B43EE1 /* CanopyWatchWidgetsBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanopyWatchWidgetsBundle.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
-		1E9D81B4FAADAC36D983D0DB /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		2225DC7B909D0E1DD59089BB /* CanopyWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CanopyWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1750960DDBB614FF627F0B4A /* CanopyComplication.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanopyComplication.swift; sourceTree = "<group>"; };
 		27460F009D625441B20FD6DE /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		3329EC426B7000F3CF5F0D3F /* DebugGallery.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DebugGallery.swift; sourceTree = "<group>"; };
-		373BD63BEC7388648E5E0E72 /* WatchBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchBridge.swift; sourceTree = "<group>"; };
+		39D76321241FCCAF4F08BE3A /* CanopyWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanopyWatchApp.swift; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
-		3FAC669A6DBB0725A1783B0D /* CanopyWatchWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = CanopyWatchWidgets.entitlements; sourceTree = "<group>"; };
-		42667A6E0F0BDF4D0A0FC8CE /* CanopyComplication.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanopyComplication.swift; sourceTree = "<group>"; };
-		56B3E9F9F5E0B65F24D968AB /* Watch.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Watch.xcconfig; path = Flutter/Watch.xcconfig; sourceTree = "<group>"; };
-		5A6F450356554E37F2E15D34 /* CanopyWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CanopyWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		44AE45D45CD853931BBE7B44 /* NowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NowView.swift; sourceTree = "<group>"; };
+		4B7C1D582D71C60C75E8189B /* Buzz.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Buzz.swift; sourceTree = "<group>"; };
+		5D2E65255A7EE69ED4C89A7D /* DebugGallery.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DebugGallery.swift; sourceTree = "<group>"; };
 		5DE36992C2D4E5C77BD133A6 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		6351EAB6D960061C36C2F61E /* CanopyWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CanopyWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		664C2A2A9313337D7E86CEE2 /* CanopyWatchWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = CanopyWatchWidgets.entitlements; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
-		8A7EA6D412FA7A2F57A2D36E /* WristTimeline.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WristTimeline.swift; sourceTree = "<group>"; };
-		8A80F25944E8DD4DF40D6A17 /* CanopyWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanopyWatchApp.swift; sourceTree = "<group>"; };
-		90F61C5742E291CF0F1E2C9A /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9499A613AF022B6B27065565 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
@@ -124,15 +121,25 @@
 		9E65389EAB83AE12F19C99DE /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		9F415FD22DE2D21737094ECB /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		A1FCE7F8F8323918404730F6 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		C0E33B3517210E129D655863 /* CanopyWatch.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = CanopyWatch.entitlements; sourceTree = "<group>"; };
-		C41EA2098CC6603FFE88AA07 /* NowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NowView.swift; sourceTree = "<group>"; };
-		C6DE95E33897E2B91492AD88 /* Buzz.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Buzz.swift; sourceTree = "<group>"; };
-		E5E42190E38A95490C049418 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B2079DA291BFED05E6791862 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		BFD0B848C1502D237C8241C9 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C80AC8B2494283D3060A71CA /* WristTimeline.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WristTimeline.swift; sourceTree = "<group>"; };
+		CBE09823F38516B60A93C94B /* Watch.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Watch.xcconfig; path = Flutter/Watch.xcconfig; sourceTree = "<group>"; };
+		E0D15ED4817E93EC534DC755 /* CanopyWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CanopyWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E3629052EB477239A2A03C56 /* CanopyWatch.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = CanopyWatch.entitlements; sourceTree = "<group>"; };
+		E7CEC8FDAEE6A7208A27FD90 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E9C03D5BEE1AB56D0524B2F5 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		F7093ABB738C58416DE6F270 /* CanopyWatchWidgetsBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CanopyWatchWidgetsBundle.swift; sourceTree = "<group>"; };
+		F63C502757B0E2855A4F94A1 /* WatchBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchBridge.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		3A9BAC773189C846562DC499 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6DB7B9206561CD1EA5D946F9 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -141,25 +148,18 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		707188C0A05F71686BB9974E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				26E4B2A4479C600D124D5F6B /* Pods_Runner.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9944C1039A8C040595E9D41E /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B6604A6A3BC963F4099C7CEE /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -179,48 +179,12 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
-		2207077723BB50F24CA73C4D /* CanopyWatch */ = {
-			isa = PBXGroup;
-			children = (
-				8A80F25944E8DD4DF40D6A17 /* CanopyWatchApp.swift */,
-				C41EA2098CC6603FFE88AA07 /* NowView.swift */,
-				C6DE95E33897E2B91492AD88 /* Buzz.swift */,
-				3329EC426B7000F3CF5F0D3F /* DebugGallery.swift */,
-				1E9D81B4FAADAC36D983D0DB /* Assets.xcassets */,
-				90F61C5742E291CF0F1E2C9A /* Info.plist */,
-				C0E33B3517210E129D655863 /* CanopyWatch.entitlements */,
-			);
-			name = CanopyWatch;
-			path = CanopyWatch;
-			sourceTree = "<group>";
-		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXGroup;
 			children = (
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
 			);
 			path = RunnerTests;
-			sourceTree = "<group>";
-		};
-		4FD09A10334C120AF82E8455 /* CanopyWatchWidgets */ = {
-			isa = PBXGroup;
-			children = (
-				42667A6E0F0BDF4D0A0FC8CE /* CanopyComplication.swift */,
-				F7093ABB738C58416DE6F270 /* CanopyWatchWidgetsBundle.swift */,
-				E5E42190E38A95490C049418 /* Info.plist */,
-				3FAC669A6DBB0725A1783B0D /* CanopyWatchWidgets.entitlements */,
-			);
-			name = CanopyWatchWidgets;
-			path = CanopyWatchWidgets;
-			sourceTree = "<group>";
-		};
-		69248FA3D80F8260A35C2575 /* CanopyWatchShared */ = {
-			isa = PBXGroup;
-			children = (
-				8A7EA6D412FA7A2F57A2D36E /* WristTimeline.swift */,
-			);
-			name = CanopyWatchShared;
-			path = CanopyWatchShared;
 			sourceTree = "<group>";
 		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
@@ -230,7 +194,7 @@
 				9740EEB21CF90195004384FC /* Debug.xcconfig */,
 				7AFA3C8E1D35360C0083082E /* Release.xcconfig */,
 				9740EEB31CF90195004384FC /* Generated.xcconfig */,
-				56B3E9F9F5E0B65F24D968AB /* Watch.xcconfig */,
+				CBE09823F38516B60A93C94B /* Watch.xcconfig */,
 			);
 			name = Flutter;
 			sourceTree = "<group>";
@@ -244,9 +208,9 @@
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				0B4381CF8A72EB36469E25CF /* Pods */,
 				BBC31672DB1DDBC380BA65DF /* Frameworks */,
-				69248FA3D80F8260A35C2575 /* CanopyWatchShared */,
-				2207077723BB50F24CA73C4D /* CanopyWatch */,
-				4FD09A10334C120AF82E8455 /* CanopyWatchWidgets */,
+				A02D4B03D7745D91BE3AF71E /* CanopyWatchShared */,
+				B3F20BDD51880A01145CE900 /* CanopyWatch */,
+				B88BD3EFFFC100873FEE7492 /* CanopyWatchWidgets */,
 			);
 			sourceTree = "<group>";
 		};
@@ -255,8 +219,8 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
-				2225DC7B909D0E1DD59089BB /* CanopyWatch.app */,
-				5A6F450356554E37F2E15D34 /* CanopyWatchWidgets.appex */,
+				E0D15ED4817E93EC534DC755 /* CanopyWatch.app */,
+				6351EAB6D960061C36C2F61E /* CanopyWatchWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -272,9 +236,45 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
-				373BD63BEC7388648E5E0E72 /* WatchBridge.swift */,
+				F63C502757B0E2855A4F94A1 /* WatchBridge.swift */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		A02D4B03D7745D91BE3AF71E /* CanopyWatchShared */ = {
+			isa = PBXGroup;
+			children = (
+				C80AC8B2494283D3060A71CA /* WristTimeline.swift */,
+			);
+			name = CanopyWatchShared;
+			path = CanopyWatchShared;
+			sourceTree = "<group>";
+		};
+		B3F20BDD51880A01145CE900 /* CanopyWatch */ = {
+			isa = PBXGroup;
+			children = (
+				39D76321241FCCAF4F08BE3A /* CanopyWatchApp.swift */,
+				44AE45D45CD853931BBE7B44 /* NowView.swift */,
+				4B7C1D582D71C60C75E8189B /* Buzz.swift */,
+				5D2E65255A7EE69ED4C89A7D /* DebugGallery.swift */,
+				E7CEC8FDAEE6A7208A27FD90 /* Assets.xcassets */,
+				BFD0B848C1502D237C8241C9 /* Info.plist */,
+				E3629052EB477239A2A03C56 /* CanopyWatch.entitlements */,
+			);
+			name = CanopyWatch;
+			path = CanopyWatch;
+			sourceTree = "<group>";
+		};
+		B88BD3EFFFC100873FEE7492 /* CanopyWatchWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				1750960DDBB614FF627F0B4A /* CanopyComplication.swift */,
+				0C5798E3660665D724B43EE1 /* CanopyWatchWidgetsBundle.swift */,
+				B2079DA291BFED05E6791862 /* Info.plist */,
+				664C2A2A9313337D7E86CEE2 /* CanopyWatchWidgets.entitlements */,
+			);
+			name = CanopyWatchWidgets;
+			path = CanopyWatchWidgets;
 			sourceTree = "<group>";
 		};
 		BBC31672DB1DDBC380BA65DF /* Frameworks */ = {
@@ -289,13 +289,13 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1E2427BB1A71B2A6F53E07D8 /* CanopyWatchWidgets */ = {
+		0780E127B2DBF7C2BF8074E7 /* CanopyWatchWidgets */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A6702A238333F4A98E5C6B6D /* Build configuration list for PBXNativeTarget "CanopyWatchWidgets" */;
+			buildConfigurationList = 38CCC87C48292B42ECBA5768 /* Build configuration list for PBXNativeTarget "CanopyWatchWidgets" */;
 			buildPhases = (
-				CF60651A0C97C2AC852707C7 /* Sources */,
-				B6604A6A3BC963F4099C7CEE /* Frameworks */,
-				9293F891F79DCCFE2791E8A2 /* Resources */,
+				C83B1B9D9EE5969CFD261C2B /* Sources */,
+				3A9BAC773189C846562DC499 /* Frameworks */,
+				5D889EA730672A8E7CACF58A /* Resources */,
 			);
 			buildRules = (
 			);
@@ -303,8 +303,27 @@
 			);
 			name = CanopyWatchWidgets;
 			productName = CanopyWatchWidgets;
-			productReference = 5A6F450356554E37F2E15D34 /* CanopyWatchWidgets.appex */;
+			productReference = 6351EAB6D960061C36C2F61E /* CanopyWatchWidgets.appex */;
 			productType = "com.apple.product-type.app-extension";
+		};
+		0DF87E873AF9E4F5EBD6E5FF /* CanopyWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 57281F63C01DD6F976405A02 /* Build configuration list for PBXNativeTarget "CanopyWatch" */;
+			buildPhases = (
+				E24BA969398A2CEC7C2D4BB7 /* Sources */,
+				707188C0A05F71686BB9974E /* Frameworks */,
+				EF731A90A7E9761F8CA98E80 /* Resources */,
+				DD1ABE2F8BA3BF4F488B7E44 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2C6954BB83C846115C129785 /* PBXTargetDependency */,
+			);
+			name = CanopyWatch;
+			productName = CanopyWatch;
+			productReference = E0D15ED4817E93EC534DC755 /* CanopyWatch.app */;
+			productType = "com.apple.product-type.application";
 		};
 		331C8080294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXNativeTarget;
@@ -325,25 +344,6 @@
 			productReference = 331C8081294A63A400263BE5 /* RunnerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		4309CDB3538BB9974B9DC216 /* CanopyWatch */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 775C123A5D2FC575DABD560C /* Build configuration list for PBXNativeTarget "CanopyWatch" */;
-			buildPhases = (
-				14B11BA21E6F2C9A45667D86 /* Sources */,
-				9944C1039A8C040595E9D41E /* Frameworks */,
-				5F6FCAB0506D1161786E211B /* Resources */,
-				6B17A318DBC839A9A6DD67D3 /* Embed Foundation Extensions */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				8FD19759B719CE953E7F3325 /* PBXTargetDependency */,
-			);
-			name = CanopyWatch;
-			productName = CanopyWatch;
-			productReference = 2225DC7B909D0E1DD59089BB /* CanopyWatch.app */;
-			productType = "com.apple.product-type.application";
-		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
@@ -354,14 +354,14 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
-				D204324FE570DFC23D75EE09 /* Embed Watch Content */,
+				678A2B44621DEF2E30A5642C /* Embed Watch Content */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				C16BE0DF6941CCD2EBE1040E /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				400E752BEE372AFAED6BCE5B /* PBXTargetDependency */,
+				756E2C26181F3BFF389B13F4 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -403,8 +403,8 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
-				4309CDB3538BB9974B9DC216 /* CanopyWatch */,
-				1E2427BB1A71B2A6F53E07D8 /* CanopyWatchWidgets */,
+				0DF87E873AF9E4F5EBD6E5FF /* CanopyWatch */,
+				0780E127B2DBF7C2BF8074E7 /* CanopyWatchWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -417,15 +417,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		5F6FCAB0506D1161786E211B /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				4A106F2F28D40BD2167AF6DD /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9293F891F79DCCFE2791E8A2 /* Resources */ = {
+		5D889EA730672A8E7CACF58A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -440,6 +432,14 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EF731A90A7E9761F8CA98E80 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0E2BA6E206285263B7F8EEAA /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -541,19 +541,6 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		14B11BA21E6F2C9A45667D86 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5697C1026519EC3CC4EECA49 /* WristTimeline.swift in Sources */,
-				03081DB248DAAD8991D7A506 /* CanopyWatchApp.swift in Sources */,
-				24D6CF1F4EEF376715656740 /* NowView.swift in Sources */,
-				51AD28CC13BA673ADF400E08 /* Buzz.swift in Sources */,
-				127848D40251C879D8435D30 /* DebugGallery.swift in Sources */,
-				383DA18F94420800CF21D949 /* CanopyComplication.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		331C807D294A63A400263BE5 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -568,39 +555,52 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
-				384BBEE9EF12B2CFFD4EFCBC /* WatchBridge.swift in Sources */,
+				733FECBEE8424B00D6CF26C6 /* WatchBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		CF60651A0C97C2AC852707C7 /* Sources */ = {
+		C83B1B9D9EE5969CFD261C2B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				924F0E44DCF25381E08781E5 /* WristTimeline.swift in Sources */,
-				3ABE1A5EE09041BD5EEAFC0E /* CanopyComplication.swift in Sources */,
-				75AB3B639007223CEEC43504 /* CanopyWatchWidgetsBundle.swift in Sources */,
+				2D05A272FB662E7E3DCB79C0 /* WristTimeline.swift in Sources */,
+				15B4A449C4F7B7DD4DA954B3 /* CanopyComplication.swift in Sources */,
+				FA976F07F736A82B98005194 /* CanopyWatchWidgetsBundle.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E24BA969398A2CEC7C2D4BB7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				952EF19AC5EE003C52172181 /* WristTimeline.swift in Sources */,
+				2E0EAA09CBB9035197A57E04 /* CanopyWatchApp.swift in Sources */,
+				1DFA356F1D392397F5D77C35 /* NowView.swift in Sources */,
+				24D297960E989818AA771D8B /* Buzz.swift in Sources */,
+				4E4F937182FADF6BA1D2DF38 /* DebugGallery.swift in Sources */,
+				C3E5AC181883A893CBDD22D7 /* CanopyComplication.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		2C6954BB83C846115C129785 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = CanopyWatchWidgets;
+			target = 0780E127B2DBF7C2BF8074E7 /* CanopyWatchWidgets */;
+			targetProxy = EFF20A82383AFE0AB8D780FB /* PBXContainerItemProxy */;
+		};
 		331C8086294A63A400263BE5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
 		};
-		400E752BEE372AFAED6BCE5B /* PBXTargetDependency */ = {
+		756E2C26181F3BFF389B13F4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = CanopyWatch;
-			target = 4309CDB3538BB9974B9DC216 /* CanopyWatch */;
-			targetProxy = F6F3D960EC025B0E8291EEBF /* PBXContainerItemProxy */;
-		};
-		8FD19759B719CE953E7F3325 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = CanopyWatchWidgets;
-			target = 1E2427BB1A71B2A6F53E07D8 /* CanopyWatchWidgets */;
-			targetProxy = CB5908612FCF0E6B4F927F02 /* PBXContainerItemProxy */;
+			target = 0DF87E873AF9E4F5EBD6E5FF /* CanopyWatch */;
+			targetProxy = 17037C148ECF5499544505C7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -624,40 +624,9 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		00196F9C7032B98AC49601F2 /* Debug */ = {
+		0980FF096C20D055D5979EE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 56B3E9F9F5E0B65F24D968AB /* Watch.xcconfig */;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = CanopyWatchWidgets/CanopyWatchWidgets.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = H637CCV562;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = CanopyWatchWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Canopy;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.danjjohnson.canopy.watchkitapp.widgets;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 10.0;
-			};
-			name = Debug;
-		};
-		02B7BA0A1EFF16294866B869 /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 56B3E9F9F5E0B65F24D968AB /* Watch.xcconfig */;
+			baseConfigurationReference = CBE09823F38516B60A93C94B /* Watch.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CanopyWatch/CanopyWatch.entitlements;
@@ -680,17 +649,18 @@
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				VALIDATE_PRODUCT = YES;
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
-			name = Release;
+			name = Debug;
 		};
-		12166DCAE1C655BD5BDE6740 /* Profile */ = {
+		1ED4A4525DF10D424809E3CE /* Profile */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 56B3E9F9F5E0B65F24D968AB /* Watch.xcconfig */;
+			baseConfigurationReference = CBE09823F38516B60A93C94B /* Watch.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = CanopyWatchWidgets/CanopyWatchWidgets.entitlements;
@@ -794,38 +764,6 @@
 			};
 			name = Profile;
 		};
-		30079DE4F0D5A4F800DB1C38 /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 56B3E9F9F5E0B65F24D968AB /* Watch.xcconfig */;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = CanopyWatchWidgets/CanopyWatchWidgets.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = H637CCV562;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = CanopyWatchWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Canopy;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.danjjohnson.canopy.watchkitapp.widgets;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				VALIDATE_PRODUCT = YES;
-				WATCHOS_DEPLOYMENT_TARGET = 10.0;
-			};
-			name = Release;
-		};
 		331C8088294A63A400263BE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9E65389EAB83AE12F19C99DE /* Pods-RunnerTests.debug.xcconfig */;
@@ -876,9 +814,9 @@
 			};
 			name = Profile;
 		};
-		3EA393E929EECC824D67F3EE /* Profile */ = {
+		33B3080269D5A332754D1649 /* Profile */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 56B3E9F9F5E0B65F24D968AB /* Watch.xcconfig */;
+			baseConfigurationReference = CBE09823F38516B60A93C94B /* Watch.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CanopyWatch/CanopyWatch.entitlements;
@@ -908,6 +846,39 @@
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Profile;
+		};
+		8E4D4DCB8AEF6186B6D07CCE /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = CBE09823F38516B60A93C94B /* Watch.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = CanopyWatch/CanopyWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = H637CCV562;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CanopyWatch/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Canopy;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.danjjohnson.canopy;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.danjjohnson.canopy.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
 		};
 		97C147031CF9000F007C117D /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1065,32 +1036,65 @@
 			};
 			name = Release;
 		};
-		9D0D6D1D9344C27EFB584CC5 /* Debug */ = {
+		B3E42217654165FF8149C236 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 56B3E9F9F5E0B65F24D968AB /* Watch.xcconfig */;
+			baseConfigurationReference = CBE09823F38516B60A93C94B /* Watch.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = CanopyWatch/CanopyWatch.entitlements;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = CanopyWatchWidgets/CanopyWatchWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = H637CCV562;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = CanopyWatch/Info.plist;
+				INFOPLIST_FILE = CanopyWatchWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Canopy;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.danjjohnson.canopy;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.danjjohnson.canopy.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.danjjohnson.canopy.watchkitapp.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		B7302A4263E9F475C81795DF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = CBE09823F38516B60A93C94B /* Watch.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = CanopyWatchWidgets/CanopyWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = H637CCV562;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CanopyWatchWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Canopy;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.danjjohnson.canopy.watchkitapp.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
@@ -1110,12 +1114,22 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		775C123A5D2FC575DABD560C /* Build configuration list for PBXNativeTarget "CanopyWatch" */ = {
+		38CCC87C48292B42ECBA5768 /* Build configuration list for PBXNativeTarget "CanopyWatchWidgets" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				02B7BA0A1EFF16294866B869 /* Release */,
-				9D0D6D1D9344C27EFB584CC5 /* Debug */,
-				3EA393E929EECC824D67F3EE /* Profile */,
+				B3E42217654165FF8149C236 /* Release */,
+				B7302A4263E9F475C81795DF /* Debug */,
+				1ED4A4525DF10D424809E3CE /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		57281F63C01DD6F976405A02 /* Build configuration list for PBXNativeTarget "CanopyWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8E4D4DCB8AEF6186B6D07CCE /* Release */,
+				0980FF096C20D055D5979EE5 /* Debug */,
+				33B3080269D5A332754D1649 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1136,16 +1150,6 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		A6702A238333F4A98E5C6B6D /* Build configuration list for PBXNativeTarget "CanopyWatchWidgets" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				30079DE4F0D5A4F800DB1C38 /* Release */,
-				00196F9C7032B98AC49601F2 /* Debug */,
-				12166DCAE1C655BD5BDE6740 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
