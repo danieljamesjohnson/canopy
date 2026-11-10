@@ -93,8 +93,13 @@ struct CanopyComplication: Widget {
 }
 
 struct CanopyComplicationView: View {
-  @Environment(\.widgetFamily) private var family
+  @Environment(\.widgetFamily) private var environmentFamily
   let entry: CanopyWidgetEntry
+  /// Set only by the watch app's DEBUG gallery, which renders these views
+  /// outside WidgetKit for Simulator screenshots.
+  var familyOverride: WidgetFamily? = nil
+
+  private var family: WidgetFamily { familyOverride ?? environmentFamily }
 
   var body: some View {
     Group {
@@ -213,9 +218,3 @@ struct CanopyComplicationView: View {
   }
 }
 
-@main
-struct CanopyWatchWidgets: WidgetBundle {
-  var body: some Widget {
-    CanopyComplication()
-  }
-}

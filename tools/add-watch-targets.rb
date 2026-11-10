@@ -115,12 +115,16 @@ watch.add_file_references([shared_ref])
 widgets.add_file_references([shared_ref])
 
 wg = group_for(proj, 'CanopyWatch')
-watch.add_file_references(%w[CanopyWatchApp.swift NowView.swift Buzz.swift].map { |f| wg.new_reference(f) })
+watch.add_file_references(%w[CanopyWatchApp.swift NowView.swift Buzz.swift DebugGallery.swift].map { |f| wg.new_reference(f) })
 watch.add_resources([wg.new_reference('Assets.xcassets')])
 %w[Info.plist CanopyWatch.entitlements].each { |f| wg.new_reference(f) }
 
 xg = group_for(proj, 'CanopyWatchWidgets')
-widgets.add_file_references(%w[CanopyComplication.swift].map { |f| xg.new_reference(f) })
+complication = xg.new_reference('CanopyComplication.swift')
+widgets.add_file_references([complication, xg.new_reference('CanopyWatchWidgetsBundle.swift')])
+# The app compiles the complication views too, for its DEBUG gallery
+# (Simulator screenshots); the @main WidgetBundle stays extension-only.
+watch.add_file_references([complication])
 %w[Info.plist CanopyWatchWidgets.entitlements].each { |f| xg.new_reference(f) }
 
 rg = proj.main_group.find_subpath('Runner', false)

@@ -9,7 +9,15 @@ struct CanopyWatchApp: App {
 
   var body: some Scene {
     WindowGroup {
-      NowView(model: delegate.model)
+      #if DEBUG
+        if DebugLaunch.gallery, let t = DebugLaunch.timeline() {
+          DebugGallery(timeline: t)
+        } else {
+          NowView(model: delegate.model)
+        }
+      #else
+        NowView(model: delegate.model)
+      #endif
     }
   }
 }
@@ -17,7 +25,11 @@ struct CanopyWatchApp: App {
 /// Holds the latest snapshot for the app's own screen, plus taps not yet
 /// reflected by the phone.
 final class WristModel: ObservableObject {
-  @Published var timeline: WristTimeline? = WristStore.load()
+  #if DEBUG
+    @Published var timeline: WristTimeline? = DebugLaunch.timeline() ?? WristStore.load()
+  #else
+    @Published var timeline: WristTimeline? = WristStore.load()
+  #endif
   @Published var pending: [WristTap] = WristPending.load()
 
   func isPending(_ chunkId: String) -> Bool { pending.contains { $0.chunkId == chunkId } }
