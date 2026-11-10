@@ -26,7 +26,7 @@ end
 
 runner = proj.targets.find { |t| t.name == 'Runner' }
 watch_xcconfig = proj.main_group.find_subpath('Flutter', false)
-                     .new_reference('Watch.xcconfig')
+                     .new_reference('Flutter/Watch.xcconfig')
 
 def group_for(proj, name)
   proj.main_group.find_subpath(name, false) || proj.main_group.new_group(name, name)
