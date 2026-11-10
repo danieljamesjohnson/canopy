@@ -168,16 +168,31 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build iOS (simulator, unsigned)
-        # --simulator --no-codesign is deliberate: it exercises the real Xcode toolchain,
-        # the Podfile, and every native plugin, WITHOUT needing signing certificates in CI.
-        # A signing failure would otherwise masquerade as a build failure.
+      - name: Make sure the watchOS SDK is present
+        # v1.7 embeds a watchOS app + widget extension in Runner, so the iOS build
+        # now also compiles for watchOS. Runner images normally carry the SDK; if a
+        # future image doesn't, fetch it rather than fail confusingly.
+        run: |
+          if ! xcodebuild -showsdks | grep -q watchos; then
+            xcodebuild -downloadPlatform watchOS
+          fi
+
+      - name: Build iOS (device, unsigned)
+        # --no-codesign is deliberate: it exercises the real Xcode toolchain, the
+        # Podfile, every native plugin AND the embedded watch app, WITHOUT needing
+        # signing certificates in CI. A signing failure would otherwise masquerade as
+        # a build failure.
+        #
+        # Device, not --simulator, since v1.7: once Runner embeds a watch companion,
+        # flutter_tools drops `-sdk` and REFUSES a simulator build that has no device
+        # id ("A device ID is required to build an app with a watchOS companion
+        # app", flutter_tools ios/mac.dart). A generic-device build needs none.
         run: |
           set -euo pipefail
-          flutter build ios --simulator --no-codesign || {
+          flutter build ios --no-codesign || {
             echo "::warning::iOS build failed. Retrying once after clearing CocoaPods state — Flutter's project migrator can leave Podfile.lock out of sync with the Pods sandbox on a newer stable than the template was generated against."
             rm -rf ios/Pods ios/Podfile.lock ios/.symlinks
-            flutter build ios --simulator --no-codesign
+            flutter build ios --no-codesign
           }
 
       - name: Confirm the bundle identifier is not the placeholder

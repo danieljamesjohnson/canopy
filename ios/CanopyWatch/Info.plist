@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyLists/1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Canopy</string>
+	<key>WKApplication</key>
+	<true/>
+	<!-- Literal, not $(...): flutter_tools detects a watch companion by reading
+	     this file and comparing it with Runner's bundle id (xcode_project.dart
+	     containsWatchCompanion), which is what makes `flutter build ios` drop
+	     `-sdk iphoneos` so the watch target can build. -->
+	<key>WKCompanionAppBundleIdentifier</key>
+	<string>com.danjjohnson.canopy</string>
+</dict>
+</plist>

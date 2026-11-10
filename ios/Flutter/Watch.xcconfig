@@ -1,0 +1,8 @@
+// Base configuration for the watch app and its widget extension (v1.7).
+// Only Generated.xcconfig is pulled in, never the Pods xcconfig: the watch
+// targets use no pods, and Pods' iOS search paths would break a watchOS build.
+// It supplies FLUTTER_BUILD_NAME / FLUTTER_BUILD_NUMBER, which the watch
+// Info.plists use so their versions match Runner's (Xcode's
+// ValidateEmbeddedBinary step rejects an embedded watch app whose
+// CFBundleShortVersionString/CFBundleVersion differ from its companion's).
+#include? "Generated.xcconfig"
