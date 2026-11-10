@@ -691,7 +691,7 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
   /// its previous values, so `markComplete`'s WR-05 `catch` can restore both
   /// together if the save subsequently fails.
   ({ScheduledChunk chunk, int? previousStart, int previousDuration})?
-  _absorbReclaimedTimeIntoNextBreak(ScheduledChunk completed) {
+  _absorbReclaimedTimeIntoNextBreak(ScheduledChunk completed, {DateTime? at}) {
     final schedule = _todaySchedule;
     if (schedule == null) return null;
 
@@ -704,7 +704,10 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     // Read the clock once through the injectable _now() seam (never
     // DateTime.now() directly), matching resolveNowState's local
     // wall-clock, no-toUtc() convention (FRAME-OF-REFERENCE, now_state.dart).
-    final nowDt = _now();
+    // Phase 38: a wrist tap replayed from the outbox passes its own tap
+    // time as [at], so the break moves exactly as it would have if the tap
+    // had landed live.
+    final nowDt = at ?? _now();
     final nowMinutes = nowDt.hour * 60 + nowDt.minute;
 
     // Guard 3: never move a break earlier than the work chunk's own start.
@@ -767,7 +770,11 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Marks the chunk with [chunkId] as completed, saves the updated schedule,
   /// and appends a CompletionLog entry.
-  Future<void> markComplete(String chunkId) async {
+  ///
+  /// [at] is when the user actually tapped Complete, for a tap replayed later
+  /// (Phase 38's wrist outbox). It feeds G-05's "how much time was
+  /// reclaimed" in place of the clock. Omit it for a live tap.
+  Future<void> markComplete(String chunkId, {DateTime? at}) async {
     if (_todaySchedule == null) return;
     final chunk = _todaySchedule!.chunks
         .where((c) => c.id == chunkId)
@@ -777,7 +784,7 @@ class ScheduleNotifier extends ChangeNotifier with WidgetsBindingObserver {
     chunk.isCompleted = true;
     // G-05: absorb reclaimed time into the following break, if eligible,
     // BEFORE the single save below so one write persists both facts.
-    final absorbedBreak = _absorbReclaimedTimeIntoNextBreak(chunk);
+    final absorbedBreak = _absorbReclaimedTimeIntoNextBreak(chunk, at: at);
     try {
       await _repo.save(_todaySchedule!);
 

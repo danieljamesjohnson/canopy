@@ -20,6 +20,7 @@ import '../../providers/restoratives_notifier.dart';
 import '../../providers/schedule_notifier.dart';
 import '../../providers/theme_notifier.dart';
 import '../../services/quarterly_aggregation_service.dart';
+import '../../utils/chunk_title.dart';
 import '../../utils/rationale_mapper.dart';
 import '../../utils/time_format.dart';
 import '../../widgets/adaptive_form_modal.dart';
@@ -895,13 +896,8 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   /// The two break literals deliberately match the non-live break row in
   /// the schedule chunk card, so the same break reads identically whether
   /// it is above or below the live row.
-  String _chunkTitle(BuildContext context, ScheduledChunk chunk) {
-    if (chunk.chunkType == ChunkType.shortBreak) return 'Short break';
-    if (chunk.chunkType == ChunkType.longBreak) return 'Long break';
-    final goalName = _lookupGoalName(context, chunk);
-    if (goalName != null && goalName.isNotEmpty) return goalName;
-    return chunk.rationale.isNotEmpty ? chunk.rationale : 'Work block';
-  }
+  String _chunkTitle(BuildContext context, ScheduledChunk chunk) =>
+      chunkReferenceTitle(chunk, _lookupGoalName(context, chunk));
 
   /// Present-continuous title for the CURRENT activity only (D-02). These
   /// two strings are LOCKED and must never be used for a future chunk —

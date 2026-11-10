@@ -70,7 +70,7 @@ class _FakeScheduleNotifierWithSchedule extends _FakeScheduleNotifier {
   String? lastSkippedId;
 
   @override
-  Future<void> markComplete(String chunkId) async {
+  Future<void> markComplete(String chunkId, {DateTime? at}) async {
     lastCompletedId = chunkId;
   }
 
