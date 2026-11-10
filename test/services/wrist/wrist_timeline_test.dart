@@ -47,6 +47,16 @@ ScheduledChunk _meeting(String id, int start, int dur, String name) =>
       commitmentId: 'c-$id',
     );
 
+ScheduledChunk _meal(String id, int start, int dur, String name) =>
+    ScheduledChunk(
+      id: id,
+      chunkTypeIndex: ChunkType.meal.index,
+      durationMinutes: dur,
+      anchoredStartMinutes: start,
+      rationale: name,
+      commitmentId: 'c-$id',
+    );
+
 /// 9:00 Deep work (50) · 9:50 break (10) · 10:00 Standup (60) · gap ·
 /// 11:40 Deep work (30) · done at 12:10.
 List<ScheduledChunk> _day() => [
@@ -122,7 +132,11 @@ void main() {
     final chunks = _day();
     chunks[0].isCompleted = true; // w1 done early → gap until the break
     chunks[2].isSkipped = true; // standup skipped
-    for (final variant in [_day(), chunks]) {
+    // Phase 37: a meal settles itself when its window ends, a
+    // time-dependent rule inside resolveNowState that the timeline must
+    // still sample correctly.
+    final withLunch = [..._day(), _meal('l1', 760, 30, 'Lunch')];
+    for (final variant in [_day(), chunks, withLunch]) {
       final t = _build(variant);
       for (var m = 0; m < 24 * 60; m++) {
         final at = DateTime(2026, 11, 10, 0, m);
@@ -183,6 +197,21 @@ void main() {
     // the phone.
     final orphan = _build([_work('w', 540, 30, goalId: 'gone')]);
     expect(orphan.entries[1].current!.title, 'Habit');
+  });
+
+  test('a meal is its own kind, titled by name, and offers no action at all '
+      '(D-37-03)', () {
+    final t = _build([_work('w1', 540, 30), _meal('l1', 720, 30, 'Lunch')]);
+    final lunch = _pick(t, DateTime(2026, 11, 10, 12, 5)).current!;
+    expect(lunch.kind, WristChunkKind.meal);
+    expect(lunch.title, 'Lunch');
+    expect(lunch.canComplete, isFalse);
+    expect(lunch.canSkip, isFalse);
+    // And it is over when its window ends, as on the phone.
+    expect(
+      _pick(t, DateTime(2026, 11, 10, 12, 30)).state,
+      WristStateKind.dayComplete,
+    );
   });
 
   test('a resolved chunk offers no action', () {

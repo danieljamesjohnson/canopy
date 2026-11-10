@@ -16,7 +16,7 @@ enum WristStateKind: String, Codable {
 }
 
 enum WristChunkKind: String, Codable {
-  case work, commitment, shortBreak, longBreak
+  case work, commitment, shortBreak, longBreak, meal
 
   var isBreak: Bool { self == .shortBreak || self == .longBreak }
 
@@ -27,6 +27,7 @@ enum WristChunkKind: String, Codable {
     case .commitment: return "person.2.fill"
     case .shortBreak: return "cup.and.saucer.fill"
     case .longBreak: return "figure.walk"
+    case .meal: return "fork.knife"
     }
   }
 }

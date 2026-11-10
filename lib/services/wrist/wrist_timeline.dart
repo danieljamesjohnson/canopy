@@ -16,8 +16,9 @@ const int wristTimelineSchemaVersion = 1;
 enum WristStateKind { noSchedule, preStart, active, overdue, gap, dayComplete }
 
 /// The watch styles a chunk by kind. A commitment is a work-typed chunk that
-/// came from a commitment block (a meeting or a meal), not from a goal.
-enum WristChunkKind { work, commitment, shortBreak, longBreak }
+/// came from a commitment block (a meeting), not from a goal. A meal
+/// (Phase 37) is its own kind and is never actionable (D-37-03).
+enum WristChunkKind { work, commitment, shortBreak, longBreak, meal }
 
 /// One chunk as the watch sees it. Times are absolute instants, computed once
 /// here, so Swift never re-derives a time from minutes-of-day (research
@@ -40,8 +41,8 @@ class WristChunk {
   final DateTime endAt;
 
   /// Same gate as the Today screen's live row: work and commitments can be
-  /// completed, breaks cannot (`showComplete: !isBreak`). Nothing resolved
-  /// offers an action.
+  /// completed, breaks cannot (`showComplete: !isBreak`), and a meal offers
+  /// nothing at all (D-37-03). Nothing resolved offers an action.
   final bool canComplete;
   final bool canSkip;
 
@@ -163,6 +164,7 @@ WristTimeline buildWristTimeline({
   WristChunk wrist(ScheduledChunk c) {
     final start = c.displayStartMinutes!;
     final isBreak = c.chunkType != ChunkType.work;
+    final isMeal = c.chunkType == ChunkType.meal;
     final unresolved = !c.isCompleted && !c.isSkipped;
     final WristChunkKind kind;
     switch (c.chunkType) {
@@ -170,6 +172,8 @@ WristTimeline buildWristTimeline({
         kind = WristChunkKind.shortBreak;
       case ChunkType.longBreak:
         kind = WristChunkKind.longBreak;
+      case ChunkType.meal:
+        kind = WristChunkKind.meal;
       case ChunkType.work:
         kind = c.commitmentId != null
             ? WristChunkKind.commitment
@@ -183,7 +187,7 @@ WristTimeline buildWristTimeline({
       startAt: instant(start),
       endAt: instant(start + c.durationMinutes),
       canComplete: unresolved && !isBreak,
-      canSkip: unresolved,
+      canSkip: unresolved && !isMeal,
     );
   }
 

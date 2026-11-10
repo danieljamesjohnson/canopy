@@ -247,6 +247,38 @@ void main() {
     expect(rig.chunk('b1').isCompleted, isFalse);
   });
 
+  test(
+    'a meal cannot be completed or skipped from the wrist (D-37-03)',
+    () async {
+      final rig = _Rig(clock: replayClock);
+      rig.repo.stored!.chunks.add(
+        ScheduledChunk(
+          id: 'm1',
+          chunkTypeIndex: ChunkType.meal.index,
+          durationMinutes: 30,
+          anchoredStartMinutes: 720,
+          rationale: 'Lunch',
+          commitmentId: 'c-lunch',
+        ),
+      );
+      await rig.notifier.init();
+      final store = InMemoryWristOutboxStore([
+        _act('c', 'm1', WristActionKind.complete, tap),
+        _act('s', 'm1', WristActionKind.skip, tap),
+      ]);
+      final result = await WristOutboxReplayer(
+        store: store,
+        schedule: rig.notifier,
+      ).drain();
+      expect(result.dropped, {
+        'c': WristDropReason.notAllowed,
+        's': WristDropReason.notAllowed,
+      });
+      expect(rig.chunk('m1').isSkipped, isFalse);
+      expect(rig.logs.logs, isEmpty);
+    },
+  );
+
   test('taps against another day, or a chunk that no longer exists, are '
       'dropped and never touch today', () async {
     final rig = _Rig(clock: replayClock);

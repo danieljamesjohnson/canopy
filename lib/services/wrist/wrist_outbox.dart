@@ -101,7 +101,8 @@ enum WristDropReason {
   /// resolved it first).
   alreadyResolved,
 
-  /// Complete on a break, which the Today screen never offers either.
+  /// Complete on a break, or anything on a meal, which the Today screen never
+  /// offers either.
   notAllowed,
 }
 
@@ -179,6 +180,8 @@ class WristOutboxReplayer {
         chunk.chunkType != ChunkType.work) {
       return WristDropReason.notAllowed;
     }
+    // A meal is never tracked (Phase 37, D-37-03): not even Skip.
+    if (chunk.chunkType == ChunkType.meal) return WristDropReason.notAllowed;
     return null;
   }
 }

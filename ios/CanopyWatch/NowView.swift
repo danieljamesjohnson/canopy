@@ -145,6 +145,7 @@ struct NowView: View {
     switch kind {
     case .shortBreak?, .longBreak?: return .teal
     case .commitment?: return .purple
+    case .meal?: return .green
     default: return .orange
     }
   }
