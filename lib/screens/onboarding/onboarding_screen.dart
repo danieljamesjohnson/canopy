@@ -10,30 +10,43 @@ import '../../providers/restoratives_notifier.dart';
 import '../../providers/settings_notifier.dart';
 import '../../services/notification_service.dart';
 import '../../utils/commitment_window.dart';
+import '../../utils/meals.dart';
+import '../../widgets/meals_editor.dart';
 import '../../widgets/preset_chip_grid.dart';
 import '../../widgets/quick_add_field.dart';
 import '../goals/widgets/goal_preset_picker_sheet.dart' show kCommonGoals;
 import '../restoratives/restoratives_screen.dart' show kCommonRestoratives;
 
-/// Onboarding as "let the app get to know you", in four short, centered beats:
+/// Onboarding as "let the app get to know you", in five short, centered beats:
 ///   1. Goals    — what do you want to make time for?
 ///   2. Recharge — what helps you recharge? (restoratives)
 ///   3. Energy   — which of those goals lift you up, and which drain you?
 ///   4. Job      — any fixed commitment we should schedule around?
+///   5. Meals    — when do you eat? (Phase 37: three pre-filled meals, and
+///                 "Looks good" saves them and finishes in one tap)
 ///
 /// Goals and restoratives are captured with tappable preset chips plus a fast
 /// type/paste field, and persist immediately so the energy beat reads them
 /// straight back. Completion just flips the onboarding flag, which the router
 /// watches to leave onboarding.
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+  const OnboardingScreen({super.key, this.pickMealTime = showMealTimePicker});
+
+  /// The meals beat's time picker — injectable so a test can set a time
+  /// without driving the platform dial.
+  final MealTimePicker pickMealTime;
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  static const _totalBeats = 4;
+  static const _totalBeats = 5;
+
+  /// The job chosen on beat 4, held until the meals beat finishes onboarding
+  /// (null = no fixed commitment). One instance, so a retry after a failed
+  /// finish re-saves the same block instead of adding a second.
+  CommitmentBlock? _pendingJob;
 
   final _controller = PageController();
   int _currentPage = 0;
@@ -69,10 +82,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  /// Saves the optional job, marks onboarding complete (router watches this to
-  /// leave onboarding), and schedules the morning notification. On a write
-  /// failure we re-enable and let the user retry rather than trap them.
-  Future<void> _finish({CommitmentBlock? job}) async {
+  /// Beat 4's actions: remember the job (or none) and move on to meals.
+  void _jobChosen({CommitmentBlock? job}) {
+    _pendingJob = job;
+    _next();
+  }
+
+  /// Saves the optional job and the meals, marks onboarding complete (router
+  /// watches this to leave onboarding), and schedules the morning
+  /// notification. On a write failure we re-enable and let the user retry
+  /// rather than trap them; both saves are upserts, so a retry never
+  /// duplicates.
+  Future<void> _finish({required List<MealDraft> meals}) async {
+    final job = _pendingJob;
     if (_isFinishing) return;
     setState(() => _isFinishing = true);
 
@@ -84,6 +106,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       if (job != null) {
         await commitments.saveBlock(job);
       }
+      await commitments.saveMeals(meals);
       await settings.setOnboardingComplete(true);
       if (settings.morningNotificationEnabled) {
         await NotificationService.scheduleMorningNotification(
@@ -121,10 +144,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   _GoalsBeat(onNext: _next),
                   _RestorativesBeat(onNext: _next, onBack: _back),
                   _EnergyBeat(onNext: _next, onBack: _back),
-                  _JobBeat(
+                  _JobBeat(onBack: _back, onChosen: _jobChosen),
+                  _MealsBeat(
                     isFinishing: _isFinishing,
                     onBack: _back,
                     onFinish: _finish,
+                    pickTime: widget.pickMealTime,
                   ),
                 ],
               ),
@@ -417,15 +442,13 @@ class _EnergyRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _JobBeat extends StatefulWidget {
-  const _JobBeat({
-    required this.isFinishing,
-    required this.onBack,
-    required this.onFinish,
-  });
+  const _JobBeat({required this.onBack, required this.onChosen});
 
-  final bool isFinishing;
   final VoidCallback onBack;
-  final Future<void> Function({CommitmentBlock? job}) onFinish;
+
+  /// Called with the job to save (or none); onboarding then moves on to the
+  /// meals beat, which is what finishes it (Phase 37).
+  final void Function({CommitmentBlock? job}) onChosen;
 
   @override
   State<_JobBeat> createState() => _JobBeatState();
@@ -433,6 +456,7 @@ class _JobBeat extends StatefulWidget {
 
 class _JobBeatState extends State<_JobBeat> {
   final _nameController = TextEditingController();
+
   final Set<int> _selectedDays = {1, 2, 3, 4, 5}; // default weekdays
   int _startMinutes = 9 * 60;
   int _endMinutes = 17 * 60;
@@ -481,7 +505,7 @@ class _JobBeatState extends State<_JobBeat> {
   /// field.
   bool get _scheduleValid => _selectedDays.isNotEmpty && !_windowTooShort;
 
-  Future<void> _addAndFinish() async {
+  void _addAndContinue() {
     final typed = _nameController.text.trim();
     final job = CommitmentBlock(
       name: typed.isEmpty ? 'Work' : typed,
@@ -489,10 +513,10 @@ class _JobBeatState extends State<_JobBeat> {
       startMinutes: _startMinutes,
       endMinutes: _endMinutes,
     );
-    await widget.onFinish(job: job);
+    widget.onChosen(job: job);
   }
 
-  Future<void> _finishWithoutJob() async => widget.onFinish();
+  void _continueWithoutJob() => widget.onChosen();
 
   @override
   Widget build(BuildContext context) {
@@ -587,19 +611,15 @@ class _JobBeatState extends State<_JobBeat> {
 
           Row(
             children: [
-              TextButton(
-                onPressed: widget.isFinishing ? null : widget.onBack,
-                child: const Text('Back'),
-              ),
+              TextButton(onPressed: widget.onBack, child: const Text('Back')),
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton(
-                  // Saves the pre-filled/edited job. Disabled only if the user
-                  // broke the schedule (no days / too-short window).
-                  onPressed: (widget.isFinishing || !_scheduleValid)
-                      ? null
-                      : _addAndFinish,
-                  child: const Text('Add & finish'),
+                  // Keeps the pre-filled/edited job and moves on to meals.
+                  // Disabled only if the user broke the schedule (no days /
+                  // too-short window).
+                  onPressed: _scheduleValid ? _addAndContinue : null,
+                  child: const Text('Add & continue'),
                 ),
               ),
             ],
@@ -609,8 +629,78 @@ class _JobBeatState extends State<_JobBeat> {
           // Always-available escape for anyone without a fixed commitment, so
           // the prominent action can safely capture the pre-filled job.
           TextButton(
-            onPressed: widget.isFinishing ? null : _finishWithoutJob,
+            onPressed: _continueWithoutJob,
             child: const Text("I don't have a fixed commitment"),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Beat 5: Meals (Phase 37)
+// ---------------------------------------------------------------------------
+
+/// "When do you eat?" — three pre-filled meals (D-37-07). The common case is
+/// one tap: "Looks good" saves whichever meals are switched on, at whatever
+/// times they show, and finishes onboarding. Switching every meal off and
+/// tapping it is the way to have none.
+class _MealsBeat extends StatefulWidget {
+  const _MealsBeat({
+    required this.isFinishing,
+    required this.onBack,
+    required this.onFinish,
+    required this.pickTime,
+  });
+
+  final bool isFinishing;
+  final VoidCallback onBack;
+  final Future<void> Function({required List<MealDraft> meals}) onFinish;
+  final MealTimePicker pickTime;
+
+  @override
+  State<_MealsBeat> createState() => _MealsBeatState();
+}
+
+class _MealsBeatState extends State<_MealsBeat> {
+  final List<MealDraft> _drafts = MealDraft.defaults();
+
+  @override
+  Widget build(BuildContext context) {
+    final valid = MealsEditor.allValid(_drafts);
+    return _ScreenLayout(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const _BeatTitle('When do you eat?'),
+          const SizedBox(height: 8),
+          const _CenteredHint(
+            "We'll keep these free every day. Switch off any meal you skip.",
+          ),
+          MealsEditor(
+            drafts: _drafts,
+            onChanged: () => setState(() {}),
+            pickTime: widget.pickTime,
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              TextButton(
+                onPressed: widget.isFinishing ? null : widget.onBack,
+                child: const Text('Back'),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: (widget.isFinishing || !valid)
+                      ? null
+                      : () => widget.onFinish(meals: _drafts),
+                  child: const Text('Looks good'),
+                ),
+              ),
+            ],
           ),
         ],
       ),

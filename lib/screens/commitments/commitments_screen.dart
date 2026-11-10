@@ -178,7 +178,11 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
       ),
       body: Consumer<CommitmentsNotifier>(
         builder: (ctx, notifier, _) {
-          if (notifier.blocks.isEmpty) {
+          // Phase 37: meals are edited in Settings → Meals (10-minute floor,
+          // one solid block), not here, where the commitment form's
+          // 25-minute lattice floor would reject them.
+          final blocks = notifier.blocks.where((b) => !b.isMeal).toList();
+          if (blocks.isEmpty) {
             return Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
@@ -192,9 +196,9 @@ class _CommitmentsScreenState extends State<CommitmentsScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 720),
               child: ListView.builder(
-                itemCount: notifier.blocks.length,
+                itemCount: blocks.length,
                 itemBuilder: (ctx, i) {
-                  final block = notifier.blocks[i];
+                  final block = blocks[i];
                   return _CommitmentRow(
                     block: block,
                     colorSwatch: _parseColor(block.color),

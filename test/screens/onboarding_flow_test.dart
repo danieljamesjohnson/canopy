@@ -21,6 +21,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import 'package:canopy/widgets/meals_editor.dart';
+
 import '../test_helpers/viewport.dart';
 
 // --- In-memory repositories -------------------------------------------------
@@ -115,7 +117,7 @@ void main() {
     settings = _FakeSettingsNotifier();
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {MealTimePicker? pickMealTime}) async {
     setViewport(tester, const Size(900, 1400));
     await tester.pumpWidget(
       MultiProvider(
@@ -127,13 +129,30 @@ void main() {
           ChangeNotifierProvider<CommitmentsNotifier>.value(value: commitments),
           ChangeNotifierProvider<SettingsNotifier>.value(value: settings),
         ],
-        child: const MaterialApp(home: OnboardingScreen()),
+        child: MaterialApp(
+          home: pickMealTime == null
+              ? const OnboardingScreen()
+              : OnboardingScreen(pickMealTime: pickMealTime),
+        ),
       ),
     );
     await tester.pumpAndSettle();
   }
 
   Finder quickAddField() => find.byType(TextField).first;
+
+  // Phase 37: the job beat no longer finishes onboarding — the meals beat
+  // after it does. Ordinary (non-meal) commitments, for the job assertions.
+  List<CommitmentBlock> jobs() =>
+      commitments.blocks.where((b) => !b.isMeal).toList();
+
+  Future<void> looksGood(WidgetTester tester) async {
+    final f = find.widgetWithText(ElevatedButton, 'Looks good');
+    await tester.ensureVisible(f);
+    await tester.pumpAndSettle();
+    await tester.tap(f);
+    await tester.pumpAndSettle();
+  }
 
   // Scroll a control into view (it may be below the fold on a short viewport or
   // at large text scale) before tapping it.
@@ -180,26 +199,23 @@ void main() {
     );
   });
 
-  testWidgets(
-    'the added chip\'s delete affordance removes a goal added during '
-    'onboarding (beat 1, D-34-07/T-34-05)',
-    (tester) async {
-      await pump(tester);
-      await tester.tap(find.widgetWithText(FilterChip, 'Reading'));
-      await tester.pumpAndSettle();
-      expect(goals.goals, hasLength(1));
+  testWidgets('the added chip\'s delete affordance removes a goal added during '
+      'onboarding (beat 1, D-34-07/T-34-05)', (tester) async {
+    await pump(tester);
+    await tester.tap(find.widgetWithText(FilterChip, 'Reading'));
+    await tester.pumpAndSettle();
+    expect(goals.goals, hasLength(1));
 
-      // The preset grid is createOnly and cannot remove anything — the
-      // removal gesture lives only on the added-chip row's own InputChip.
-      final addedChip = tester.widget<InputChip>(
-        find.widgetWithText(InputChip, 'Reading'),
-      );
-      addedChip.onDeleted!();
-      await tester.pumpAndSettle();
+    // The preset grid is createOnly and cannot remove anything — the
+    // removal gesture lives only on the added-chip row's own InputChip.
+    final addedChip = tester.widget<InputChip>(
+      find.widgetWithText(InputChip, 'Reading'),
+    );
+    addedChip.onDeleted!();
+    await tester.pumpAndSettle();
 
-      expect(goals.goals, isEmpty);
-    },
-  );
+    expect(goals.goals, isEmpty);
+  });
 
   testWidgets(
     'the added chip\'s delete affordance removes a restorative added during '
@@ -260,15 +276,18 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
     await tester.pumpAndSettle();
 
-    // Beat 4 — job. Fill it, finish.
+    // Beat 4 — job. Fill it, continue; beat 5 — meals, one tap finishes.
     expect(find.text('Do you have a job or fixed commitment?'), findsOneWidget);
     await tester.enterText(
       find.widgetWithText(TextField, 'e.g. Work, Class, Gym'),
       'Work',
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Add & finish'));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Add & continue'));
     await tester.pumpAndSettle();
+    expect(find.text('When do you eat?'), findsOneWidget);
+    expect(settings.completed, isFalse);
+    await looksGood(tester);
 
     // Onboarding is marked complete, and the job was saved.
     expect(settings.completed, isTrue);
@@ -353,22 +372,23 @@ void main() {
     }
 
     // Finish is blocked and a warning is shown.
-    final finish = find.widgetWithText(ElevatedButton, 'Add & finish');
+    final finish = find.widgetWithText(ElevatedButton, 'Add & continue');
     expect(tester.widget<ElevatedButton>(finish).onPressed, isNull);
     expect(
       find.text('Pick at least one day for this commitment.'),
       findsOneWidget,
     );
 
-    // The escape hatch finishes onboarding without saving a broken job.
+    // The escape hatch moves on without saving a broken job.
     await tester.tap(find.text("I don't have a fixed commitment"));
     await tester.pumpAndSettle();
+    await looksGood(tester);
     expect(settings.completed, isTrue);
-    expect(commitments.blocks, isEmpty);
+    expect(jobs(), isEmpty);
   });
 
   testWidgets(
-    'a standard pre-filled job is captured on Add & finish without typing a name',
+    'a standard pre-filled job is captured on Add & continue without typing a name',
     (tester) async {
       await pump(tester);
 
@@ -384,12 +404,13 @@ void main() {
 
       // The beat opens pre-filled (M–F 9–5). Tapping the primary action WITHOUT
       // typing a name must capture that job, not discard it.
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Add & finish'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add & continue'));
       await tester.pumpAndSettle();
+      await looksGood(tester);
 
       expect(settings.completed, isTrue);
-      expect(commitments.blocks, hasLength(1));
-      final block = commitments.blocks.single;
+      expect(jobs(), hasLength(1));
+      final block = jobs().single;
       expect(block.name, 'Work'); // sensible default for a blank name
       expect(block.daysOfWeek, [1, 2, 3, 4, 5]);
       expect(block.startMinutes, 9 * 60);
@@ -412,9 +433,12 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Add & continue'));
+    await tester.pumpAndSettle();
+
     // First finish tap fails the write.
     settings.failNextComplete = true;
-    final finish = find.widgetWithText(ElevatedButton, 'Add & finish');
+    final finish = find.widgetWithText(ElevatedButton, 'Looks good');
     await tester.tap(finish);
     await tester.pumpAndSettle();
 
@@ -430,10 +454,12 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
 
-    // Retry succeeds.
+    // Retry succeeds — and re-saving is an upsert: one job, three meals.
     await tester.tap(finish);
     await tester.pumpAndSettle();
     expect(settings.completed, isTrue);
+    expect(jobs(), hasLength(1));
+    expect(commitments.mealBlocks, hasLength(3));
   });
 
   testWidgets(
@@ -467,16 +493,13 @@ void main() {
       await tapButton(tester, 'Skip');
       await tapButton(tester, 'Continue');
 
-      // No RenderFlex overflow was thrown getting here. The finish action is
-      // reachable by scrolling and works.
-      final finish = find.widgetWithText(ElevatedButton, 'Add & finish');
-      await tester.ensureVisible(finish);
-      await tester.pumpAndSettle();
-      await tester.tap(finish);
-      await tester.pumpAndSettle();
+      // No RenderFlex overflow was thrown getting here. The job and meals
+      // actions are reachable by scrolling and work.
+      await tapButton(tester, 'Add & continue');
+      await looksGood(tester);
 
       expect(settings.completed, isTrue);
-      expect(commitments.blocks, hasLength(1));
+      expect(jobs(), hasLength(1));
     },
   );
 
@@ -540,11 +563,120 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
     await tester.pumpAndSettle();
 
-    // Beat 4: no fixed job → the explicit escape finishes without saving one.
+    // Beat 4: no fixed job → the explicit escape moves on without saving one.
     await tester.tap(find.text("I don't have a fixed commitment"));
     await tester.pumpAndSettle();
+    await looksGood(tester);
 
     expect(settings.completed, isTrue);
-    expect(commitments.blocks, isEmpty);
+    expect(jobs(), isEmpty);
+  });
+
+  // Phase 37 — the meals beat. Mutation log: 37-02-SUMMARY.md.
+  group('beat 5: meals (Phase 37)', () {
+    Future<void> toMeals(WidgetTester tester) async {
+      await tester.enterText(quickAddField(), 'Read\n');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text("I don't have a fixed commitment"));
+      await tester.pumpAndSettle();
+      expect(find.text('When do you eat?'), findsOneWidget);
+    }
+
+    List<(String?, int, int, String)> saved() =>
+        (commitments.mealBlocks.toList()
+              ..sort((a, b) => a.startMinutes.compareTo(b.startMinutes)))
+            .map(
+              (b) =>
+                  (b.kind, b.startMinutes, b.endMinutes, b.daysOfWeek.join()),
+            )
+            .toList();
+
+    testWidgets('one tap on "Looks good" saves exactly the three default '
+        'meals, every day, and finishes', (tester) async {
+      await pump(tester);
+      await toMeals(tester);
+      await looksGood(tester);
+      expect(settings.completed, isTrue);
+      expect(commitments.blocks, hasLength(3));
+      expect(saved(), [
+        ('breakfast', 420, 450, '1234567'),
+        ('lunch', 720, 780, '1234567'),
+        ('dinner', 1080, 1140, '1234567'),
+      ]);
+    });
+
+    testWidgets('switching dinner off saves two', (tester) async {
+      await pump(tester);
+      await toMeals(tester);
+      await tester.tap(find.byKey(const Key('meal-switch-dinner')));
+      await tester.pumpAndSettle();
+      await looksGood(tester);
+      expect(saved().map((m) => m.$1), ['breakfast', 'lunch']);
+    });
+
+    testWidgets('editing lunch to 12:30-1:15 saves that window', (
+      tester,
+    ) async {
+      final answers = [750, 795];
+      await pump(tester, pickMealTime: (_, _) async => answers.removeAt(0));
+      await toMeals(tester);
+      await tester.tap(find.byKey(const Key('meal-start-lunch')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('meal-end-lunch')));
+      await tester.pumpAndSettle();
+      expect(find.text('12:30 PM'), findsOneWidget);
+      expect(find.text('1:15 PM'), findsOneWidget);
+      await looksGood(tester);
+      expect(saved()[1], ('lunch', 750, 795, '1234567'));
+    });
+
+    testWidgets('a meal under 10 minutes blocks "Looks good" until fixed', (
+      tester,
+    ) async {
+      final answers = [725, 730];
+      await pump(tester, pickMealTime: (_, _) async => answers.removeAt(0));
+      await toMeals(tester);
+      await tester.tap(find.byKey(const Key('meal-end-lunch')));
+      await tester.pumpAndSettle();
+      final button = find.widgetWithText(ElevatedButton, 'Looks good');
+      expect(tester.widget<ElevatedButton>(button).onPressed, isNull);
+      expect(
+        find.text('End needs to be at least 10 minutes after the start.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const Key('meal-end-lunch')));
+      await tester.pumpAndSettle();
+      expect(tester.widget<ElevatedButton>(button).onPressed, isNotNull);
+    });
+
+    testWidgets('Back from meals, then "no fixed commitment", saves no job', (
+      tester,
+    ) async {
+      await pump(tester);
+      await tester.enterText(quickAddField(), 'Read\n');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Skip'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add & continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Back'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text("I don't have a fixed commitment"));
+      await tester.pumpAndSettle();
+      await looksGood(tester);
+      expect(settings.completed, isTrue);
+      expect(jobs(), isEmpty);
+      expect(commitments.mealBlocks, hasLength(3));
+    });
   });
 }

@@ -1034,13 +1034,16 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     // will not accept, the same rule SwipeableChunkCard enforces with
     // DismissDirection.none.
     final isBreak = chunk.chunkType != ChunkType.work;
+    // Phase 37 (D-37-03): a meal is not tracked — as the live row it offers
+    // nothing at all, not even a break's Skip.
+    final isMeal = chunk.chunkType == ChunkType.meal;
     return LiveRowCard(
       chunkId: chunk.id,
       kicker: _liveKicker(chunk),
       title: title,
       remainingLabel: remainingLabel,
       slotHeight: slotHeight,
-      showActions: isBreak ? !chunk.isSkipped : true,
+      showActions: isMeal ? false : (isBreak ? !chunk.isSkipped : true),
       showComplete: !isBreak,
       isSkipped: chunk.isSkipped,
       onTap: onTap,

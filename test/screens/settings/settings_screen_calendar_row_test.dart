@@ -6,13 +6,13 @@
 // `_calendarSubtitle` is private to `_SettingsScreenState`, so these tests
 // drive it the only way available from outside the file: render the real
 // `SettingsScreen` and read the "Calendars" row's rendered subtitle text.
-// `SettingsScreen.build()` only ever `context.watch`es `SettingsNotifier`
-// directly (every other provider it reads is inside a button callback, none
-// of which these tests ever trigger), so a single `SettingsNotifier`
-// provider is enough to pump the whole screen — confirmed by reading the
-// file directly before writing this test, not assumed.
+// `SettingsScreen.build()` `context.watch`es `SettingsNotifier` and — since
+// Phase 37's Meals row — `CommitmentsNotifier` (every other provider it reads
+// is inside a button callback, none of which these tests ever trigger), so
+// those two providers are enough to pump the whole screen.
 
 import 'package:canopy/data/repositories/in_memory_app_settings_repository.dart';
+import 'package:canopy/providers/commitments_notifier.dart';
 import 'package:canopy/providers/settings_notifier.dart';
 import 'package:canopy/screens/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
@@ -24,8 +24,13 @@ Future<void> _pumpSettingsScreen(
   SettingsNotifier settings,
 ) async {
   await tester.pumpWidget(
-    ChangeNotifierProvider<SettingsNotifier>.value(
-      value: settings,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<SettingsNotifier>.value(value: settings),
+        ChangeNotifierProvider<CommitmentsNotifier>.value(
+          value: CommitmentsNotifier(),
+        ),
+      ],
       child: const MaterialApp(home: SettingsScreen()),
     ),
   );

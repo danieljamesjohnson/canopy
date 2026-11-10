@@ -2977,4 +2977,84 @@ void main() {
       handle.dispose();
     });
   });
+
+  // Phase 37 (D-37-03, -07): a meal on Today — one solid card with the meal
+  // glyph, nothing to tap, swipe, complete or skip, live or not; and a 7:00
+  // breakfast renders even though discretionary packing starts at 08:00.
+  group('Phase 37 — meals on Today', () {
+    ScheduledChunk mealChunk(String id, int start, int minutes, String name) =>
+        ScheduledChunk(
+          id: id,
+          chunkTypeIndex: ChunkType.meal.index,
+          commitmentId: 'meal-$id',
+          durationMinutes: minutes,
+          anchoredStartMinutes: start,
+          rationale: name,
+        );
+
+    Future<void> pumpMeals(WidgetTester tester, DateTime at) async {
+      setViewport(tester, const Size(430, 2400));
+      final schedule = DailySchedule(
+        dateYmd: _todayYmd(),
+        moodIndex: 3,
+        chunks: [
+          mealChunk('b', 420, 30, 'Breakfast'),
+          _workChunk(id: 'w1', syntheticStartMinutes: 480),
+          _breakChunk(id: 'br1', syntheticStartMinutes: 505),
+          mealChunk('l', 720, 60, 'Lunch'),
+          _workChunk(id: 'w2', syntheticStartMinutes: 780),
+        ],
+      );
+      await _pumpTodayScreen(
+        tester,
+        scheduleNotifier: _FakeScheduleNotifierWithSchedule(schedule),
+        now: () => at,
+      );
+      await tester.pump();
+    }
+
+    testWidgets('before the day starts, a 7:00 breakfast is on the timeline '
+        'as a meal card, with no swipe and no Complete/Skip', (tester) async {
+      await pumpMeals(tester, DateTime(2026, 8, 7, 6, 30));
+      final breakfast = find.text('Breakfast');
+      expect(breakfast, findsOneWidget);
+      expect(
+        find.ancestor(of: breakfast, matching: find.byType(Dismissible)),
+        findsNothing,
+      );
+      final card = find.ancestor(
+        of: breakfast,
+        matching: find.byType(ChunkCard),
+      );
+      expect(card, findsOneWidget);
+      expect(
+        find.descendant(of: card, matching: find.byIcon(Icons.restaurant)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: card,
+          matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('as the live row, lunch offers no actions at all', (
+      tester,
+    ) async {
+      await pumpMeals(tester, DateTime(2026, 8, 7, 12, 15));
+      final live = tester.widget<LiveRowCard>(find.byType(LiveRowCard));
+      expect(live.chunkId, 'l');
+      expect(live.showActions, isFalse);
+    });
+
+    testWidgets('tapping a meal opens nothing', (tester) async {
+      await pumpMeals(tester, DateTime(2026, 8, 7, 9, 0));
+      await tester.ensureVisible(find.text('Lunch'));
+      await tester.tap(find.text('Lunch'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ChunkDetailSheet), findsNothing);
+    });
+  });
 }

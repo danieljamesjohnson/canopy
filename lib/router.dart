@@ -13,6 +13,7 @@ import 'screens/focus/focus_screen.dart';
 import 'screens/quarterly_review/quarterly_review_screen.dart';
 import 'screens/restoratives/restoratives_screen.dart';
 import 'screens/settings/calendar_settings_screen.dart';
+import 'screens/settings/meals_screen.dart';
 import 'screens/settings/past_reviews_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'widgets/responsive_shell.dart';
@@ -100,6 +101,10 @@ GoRouter createRouter(SettingsNotifier settingsNotifier) {
                   GoRoute(
                     path: 'calendars',
                     builder: (context, state) => const CalendarSettingsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'meals',
+                    builder: (context, state) => const MealsScreen(),
                   ),
                 ],
               ),

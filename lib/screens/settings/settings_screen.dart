@@ -14,6 +14,7 @@ import '../../providers/settings_notifier.dart';
 import '../../providers/theme_notifier.dart';
 import '../../services/export_service.dart';
 import '../../services/notification_service.dart';
+import '../../utils/time_format.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -422,6 +423,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const Divider(indent: 16, endIndent: 16),
 
+          // Meals (Phase 37, D-37-05) — existing users set up the same three
+          // meals onboarding offers.
+          ListTile(
+            key: const Key('settings-meals'),
+            leading: const Icon(Icons.restaurant),
+            title: const Text('Meals'),
+            subtitle: Text(mealsSubtitle(context.watch<CommitmentsNotifier>())),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/meals'),
+          ),
+
+          const Divider(indent: 16, endIndent: 16),
+
           // Calendar section heading
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -751,4 +765,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+}
+
+/// The Settings → Meals row's subtitle (Phase 37): the saved meals by start
+/// time, or an invitation when there are none.
+String mealsSubtitle(CommitmentsNotifier commitments) {
+  final meals = commitments.mealBlocks.toList()
+    ..sort((a, b) => a.startMinutes.compareTo(b.startMinutes));
+  if (meals.isEmpty) return 'Set breakfast, lunch and dinner';
+  return meals
+      .map((b) => '${b.name} ${formatMinutesCompact(b.startMinutes)}')
+      .join(' · ');
 }
