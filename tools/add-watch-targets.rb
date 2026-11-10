@@ -110,7 +110,7 @@ watch.add_file_references([shared_ref])
 widgets.add_file_references([shared_ref])
 
 wg = group_for(proj, 'CanopyWatch')
-watch.add_file_references(%w[CanopyWatchApp.swift NowView.swift].map { |f| wg.new_reference(f) })
+watch.add_file_references(%w[CanopyWatchApp.swift NowView.swift Buzz.swift].map { |f| wg.new_reference(f) })
 watch.add_resources([wg.new_reference('Assets.xcassets')])
 %w[Info.plist CanopyWatch.entitlements].each { |f| wg.new_reference(f) }
 

@@ -132,6 +132,7 @@ final class WatchAppDelegate: NSObject, WKApplicationDelegate, WCSessionDelegate
     else { return }
     WristPending.reconcile(with: saved)
     WidgetCenter.shared.reloadAllTimelines()
+    Buzz.reschedule(saved)
     DispatchQueue.main.async {
       self.model.timeline = saved
       self.model.pending = WristPending.load()

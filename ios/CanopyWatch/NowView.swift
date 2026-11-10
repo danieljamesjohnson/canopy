@@ -5,6 +5,7 @@ import SwiftUI
 /// countdown itself is a live `Text(timerInterval:)`.
 struct NowView: View {
   @ObservedObject var model: WristModel
+  @State private var buzz = Buzz.enabled
 
   var body: some View {
     TimelineView(.everyMinute) { context in
@@ -34,6 +35,13 @@ struct NowView: View {
               Text(next.start, style: .time).font(.footnote).foregroundStyle(.secondary)
             }
           }
+          // Phase 41: optional, off by default.
+          Toggle("Buzz when a chunk starts", isOn: $buzz)
+            .font(.footnote)
+            .padding(.top, 6)
+            .onChange(of: buzz) { _, on in
+              Buzz.setEnabled(on, timeline: model.timeline) { granted in buzz = granted }
+            }
           // Debug footer (WATCH-RESEARCH pitfall 4): proves which snapshot
           // the watch is showing after a Re-check-in on the phone.
           Text("Synced \(timeline.generated.formatted(date: .omitted, time: .shortened))")
